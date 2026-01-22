@@ -1,12 +1,11 @@
-import crypto from 'crypto// import { createClient } from '@supabase/supabase-js';
-import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import { createClient } from '@supabase/supabase-js';
 
 export async function POST(request) {
   const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
   const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
   const rawBody = await request.text();
   const signature = request.headers.get('x-shopify-hmac-sha256');
-  // Verify HMAC signature
   const computedHmac = crypto
     .createHmac('sha256', secret)
     .update(rawBody, 'utf8')
@@ -21,7 +20,6 @@ export async function POST(request) {
   } catch (err) {
     payload = {};
   }
-  // Log webhook
   await supabase.from('webhook_logs').insert({
     source: 'shopify',
     topic,
@@ -29,7 +27,6 @@ export async function POST(request) {
     processed: false,
   });
 
-  // Utility functions
   function generateTempPassword() {
     const adjectives = ['Swift','Bright','Shiny','Aero','Smooth','Rapid','Sleek','Bold'];
     const nouns = ['Jet','Wing','Sky','Tail','Eagle','Falcon','Hawk','Cloud'];
@@ -84,10 +81,8 @@ export async function POST(request) {
     const email = payload?.customer?.email;
     const name = payload?.customer?.first_name ? `${payload.customer.first_name} ${payload.customer.last_name || ''}`.trim() : 'Customer';
     const phone = payload?.customer?.phone || null;
-    // find existing detailer by email
     const { data: existingDetailer } = await supabase.from('detailers').select().eq('email', email).maybeSingle();
     if (existingDetailer) {
-      // Reactivate if suspended and update plan
       if (existingDetailer.status === 'suspended') {
         await supabase.from('detailers').update({ status: 'active', plan }).eq('id', existingDetailer.id);
         if (phone) {
@@ -97,9 +92,9 @@ export async function POST(request) {
         await supabase.from('detailers').update({ plan }).eq('id', existingDetailer.id);
       }
     } else {
-      // new user
       const tempPassword = generateTempPassword();
-      const hashed = await bcrypt.hash(tempPassword, 10);
+      const bcrypt = (await import('bcryptjs')).default;
+      const hashed = bcrypt.hashSync(tempPassword, 10);
       const { data: inserted } = await supabase
         .from('detailers')
         .insert({
@@ -124,7 +119,6 @@ export async function POST(request) {
             `<p>Hello ${name},</p><p>Your Vector account is ready. Your temporary password is <strong>${tempPassword}</strong>. Please log in at <a href="https://app.aircraftdetailing.ai">app.aircraftdetailing.ai</a> and complete onboarding.</p>`
           );
         }
-        // schedule drip messages day 0,1,3,5,7
         const now = new Date();
         const offsets = [0, 1, 3, 5, 7];
         const dripRows = offsets.map(offset => {
