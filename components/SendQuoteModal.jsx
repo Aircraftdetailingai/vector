@@ -1,0 +1,270 @@
+"use client";
+import { useState, useEffect } from "react";
+
+export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
+  const [clientName, setClientName] = useState("");
+  const [clientPhone, setClientPhone] = useState("");
+  const [clientEmail, setClientEmail] = useState("");
+  const [method, setMethod] = useState("link"); // 'link', 'sms', 'email', 'both'
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
+  const [quoteLink, setQuoteLink] = useState("");
+
+  // Close when not open
+  if (!isOpen) return null;
+
+  const isBusiness = user?.plan === "business";
+  const requiresSms = method === "sms" || method === "both";
+  const requiresEmail = method === "email" || method === "both";
+
+  const totalPrice = quote?.totalPrice || 0;
+  const aircraftName = quote?.aircraft?.name || "";
+
+  const createQuoteIfNeeded = async () => {
+    // If quote already has id and share_link, return
+    if (quote?.id && quote?.share_link) {
+      return { id: quote.id, share_link: quote.share_link };
+    }
+    // Build payload from quote prop
+    const payload = {
+      aircraft_type: quote?.aircraft?.category || "",
+      aircraft_model: quote?.aircraft?.name || "",
+      services: quote?.services || {},
+      total_hours: quote?.totalHours || 0,
+      total_price: quote?.totalPrice || 0,
+      notes: quote?.notes || "",
+    };
+    const res = await fetch("/api/quotes", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${localStorage.getItem("vector_token")}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      throw new Error("Failed to create quote");
+    }
+    const data = await res.json();
+    return { id: data.id, share_link: data.share_link };
+  };
+
+  const handleSend = async () => {
+    setError("");
+    setLoading(true);
+    try {
+      // Validate fields
+      if (!clientName) {
+        throw new Error("Client name is required");
+      }
+      if (requiresSms && isBusiness && !clientPhone) {
+        throw new Error("Client phone is required for SMS");
+      }
+      if (requiresEmail && !clientEmail) {
+        throw new Error("Client email is required for email");
+      }
+      // Create quote if needed
+      const { id, share_link } = await createQuoteIfNeeded();
+      // Build send payload
+      const sendPayload = {
+        clientName,
+      };
+      if (requiresSms && isBusiness) {
+        sendPayload.clientPhone = clientPhone;
+      }
+      if (requiresEmail) {
+        sendPayload.clientEmail = clientEmail;
+      }
+      const res = await fetch(`/api/quotes/${id}/send`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("vector_token")}`,
+        },
+        body: JSON.stringify(sendPayload),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        throw new Error(data?.error || "Failed to send quote");
+      }
+      // success
+      const link = `${window.location.origin}/q/${share_link}`;
+      setQuoteLink(link);
+      setSuccess(true);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(quoteLink);
+    } catch (e) {
+      console.error("Failed to copy", e);
+    }
+  };
+
+  // Render send method options
+  const renderMethodOption = (value, label, locked) => {
+    const isSelected = method === value;
+    return (
+      <div
+        onClick={() => {
+          if (locked) return;
+          setMethod(value);
+        }}
+        className={`cursor-pointer border rounded p-3 flex items-center justify-between mb-2 ${
+          locked ? "opacity-50" : ""
+        } ${isSelected ? "border-amber-500" : "border-gray-300"}`}
+      >
+        <span>{label}</span>
+        {locked && <span className="text-sm text-gray-500">Business Plan</span>}
+      </div>
+    );
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+      <div className="bg-white rounded-lg p-6 w-full max-w-md overflow-y-auto max-h-[90vh]">
+        {!success ? (
+          <div>
+            <h2 className="text-xl font-semibold mb-2">Send Quote to Client</h2>
+            <p className="mb-4 text-gray-600">
+              {aircraftName && `Aircraft: ${aircraftName}`} • Total: ${totalPrice.toFixed(2)}
+            </p>
+            {error && <p className="text-red-600 mb-2">{error}</p>}
+            <label className="block mb-2 text-sm font-medium">Client Name</label>
+            <input
+              type="text"
+              value={clientName}
+              onChange={(e) => setClientName(e.target.value)}
+              className="w-full border rounded px-3 py-2 mb-3"
+            />
+            {/* Method selection */}
+            <div className="mb-3">
+              {renderMethodOption("link", "🔗 Copy link only", false)}
+              {renderMethodOption(
+                "sms",
+                "📱 Send via SMS",
+                !isBusiness
+              )}
+              {renderMethodOption("email", "📧 Send via Email", false)}
+              {renderMethodOption(
+                "both",
+                "📱📧 Send SMS + Email",
+                !isBusiness
+              )}
+            </div>
+            {/* Inputs based on method */}
+            {requiresSms && !isBusiness && (
+              <div className="bg-yellow-100 p-3 rounded mb-3 text-sm">
+                Want us to text it for you?{' '}
+                <a
+                  href="/settings?upgrade=business"
+                  className="text-blue-600 underline"
+                >
+                  Upgrade to Business
+                </a>
+              </div>
+            )}
+            {requiresSms && isBusiness && (
+              <div className="mb-3">
+                <label className="block mb-2 text-sm font-medium">Client Phone</label>
+                <input
+                  type="tel"
+                  value={clientPhone}
+                  onChange={(e) => setClientPhone(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                />
+                {/* Preview message */}
+                {clientName && (
+                  <div className="bg-green-100 text-green-800 p-3 rounded mt-2 text-sm whitespace-pre-line">
+                    {`Hi ${clientName}, here's your quote for the ${aircraftName} detail:\n${quoteLink || '[link will appear after sending]'}\nTotal: $${totalPrice.toFixed(2)}\n- ${user?.name || ''}, ${user?.company || ''}`}
+                  </div>
+                )}
+              </div>
+            )}
+            {requiresEmail && (
+              <div className="mb-3">
+                <label className="block mb-2 text-sm font-medium">Client Email</label>
+                <input
+                  type="email"
+                  value={clientEmail}
+                  onChange={(e) => setClientEmail(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                />
+              </div>
+            )}
+            <div className="flex justify-end space-x-2 mt-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 border rounded text-gray-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={loading}
+                className="px-4 py-2 rounded bg-gradient-to-r from-amber-500 to-amber-600 text-white disabled:opacity-50"
+              >
+                {loading ? 'Sending...' : 'Send'}
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="text-center">
+            <div className="text-green-600 text-4xl mb-2">✓</div>
+            <h2 className="text-xl font-semibold mb-2">Quote Sent!</h2>
+            <p className="mb-3">
+              <a
+                href={quoteLink}
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 underline break-words"
+              >
+                {quoteLink}
+              </a>
+              <button
+                type="button"
+                onClick={copyToClipboard}
+                className="ml-2 text-sm text-blue-600 underline"
+              >
+                Copy
+              </button>
+            </p>
+            <div className="text-left mb-4 text-sm">
+              <p className="font-semibold mb-1">What happens next:</p>
+              {isBusiness ? (
+                <ul className="list-disc list-inside">
+                  <li>Your client will receive the quote via SMS/Email.</li>
+                  <li>We'll send follow-up reminders after 3 and 7 days.</li>
+                  <li>You can track views and acceptance in your dashboard.</li>
+                </ul>
+              ) : (
+                <ul className="list-disc list-inside">
+                  <li>Share the link with your client.</li>
+                  <li>Upgrade to Business to send SMS follow-ups automatically.</li>
+                </ul>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setSuccess(false);
+                onClose();
+              }}
+              className="px-4 py-2 rounded bg-gradient-to-r from-amber-500 to-amber-600 text-white"
+            >
+              Done
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
