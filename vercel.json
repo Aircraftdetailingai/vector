@@ -1,0 +1,7 @@
+{
+  "crons": [
+    { "path": "/api/cron/drip", "schedule": "0 * * * *" },
+    { "path": "/api/cron/followups", "schedule": "0 * * * *" },
+    { "path": "/api/cron/expirations", "schedule": "0 14 * * *" }
+  ]
+}
