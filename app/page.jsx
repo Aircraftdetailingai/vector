@@ -1,7 +1,105 @@
+"use client";
+import { useState } from 'react';
+import { useRouter } from 'next/navigation';
+
 export default function Page() {
+  const router = useRouter();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError('');
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
+      if (data.token) {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('vector_token', data.token);
+          localStorage.setItem('vector_user', JSON.stringify(data.user));
+        }
+        if (data.must_change_password) {
+          router.push('/onboarding');
+        } else {
+          router.push('/dashboard');
+        }
+      }
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <h1 className="text-2xl font-bold">Login Page</h1>
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
+        <div className="flex flex-col items-center mb-6">
+          <h1 className="text-2xl font-bold text-[#1e3a5f] flex items-center">
+            <span className="mr-2">✈️</span> Vector
+          </h1>
+          <p className="text-gray-500 mt-1 text-center">
+            Professional Aircraft Detailing Quotes
+          </p>
+        </div>
+        {error && <div className="text-red-600 mb-4">{error}</div>}
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              className="w-full border border-gray-300 rounded-md p-2"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input
+              type="password"
+              className="w-full border border-gray-300 rounded-md p-2"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full py-2 rounded-md text-white font-medium bg-gradient-to-r from-[#f59e0b] to-[#d97706] hover:opacity-90"
+            disabled={loading}
+          >
+            {loading ? 'Signing in...' : 'Sign In'}
+          </button>
+        </form>
+        <div className="mt-2 text-right">
+          <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
+            Forgot password?
+          </a>
+        </div>
+        <div className="my-6 flex items-center">
+          <div className="flex-grow border-t border-gray-300"></div>
+          <span className="mx-2 text-gray-500 text-sm">New to Vector?</span>
+          <div className="flex-grow border-t border-gray-300"></div>
+        </div>
+        <a
+          href="https://aircraftdetailing101.com/products/vector"
+          className="block w-full text-center bg-[#1e3a5f] text-white py-2 rounded-md font-medium hover:opacity-90"
+        >
+          Get Vector - $29.95/mo
+        </a>
+        <p className="mt-4 text-xs text-gray-400 text-center">By Aircraft Detailing 101</p>
+      </div>
     </div>
   );
 }
