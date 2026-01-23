@@ -1,5 +1,5 @@
 "use client";
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 export default function Page() {
@@ -8,6 +8,15 @@ export default function Page() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Redirect to dashboard if already logged in
+  useEffect(() => {
+    const token = localStorage.getItem('vector_token');
+    const user = localStorage.getItem('vector_user');
+    if (token && user) {
+      router.push('/dashboard');
+    }
+  }, [router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();

@@ -84,11 +84,14 @@ export default function DashboardPage() {
   const [isModalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
+    const token = localStorage.getItem('vector_token');
     const stored = localStorage.getItem('vector_user');
-    if (stored) {
-      setUser(JSON.parse(stored));
+    if (!token || !stored) {
+      router.push('/');
+      return;
     }
-  }, []);
+    setUser(JSON.parse(stored));
+  }, [router]);
 
   useEffect(() => {
     if (selectedAircraft) {

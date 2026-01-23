@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, Suspense } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 
 const rateFields = [
   { key: 'exterior', label: 'Exterior Wash & Detail' },
@@ -11,6 +11,7 @@ const rateFields = [
 ];
 
 function SettingsContent() {
+  const router = useRouter();
   const params = useSearchParams();
   const [user, setUser] = useState(null);
   const [rates, setRates] = useState({
@@ -39,11 +40,15 @@ function SettingsContent() {
   const [priceReminder, setPriceReminder] = useState(6);
 
   useEffect(() => {
+    const token = localStorage.getItem('vector_token');
     const stored = localStorage.getItem('vector_user');
-    if (stored) {
-      const u = JSON.parse(stored);
-      setUser(u);
-      setRates({ ...u.rates });
+    if (!token || !stored) {
+      router.push('/');
+      return;
+    }
+    const u = JSON.parse(stored);
+    setUser(u);
+    setRates({ ...u.rates });
       setPriceReminder(u.price_reminder_months || 6);
       setEmailNotifs({
         quoteCreated: u.notification_settings?.quoteCreated || false,
@@ -61,8 +66,7 @@ function SettingsContent() {
         followup7: u.notification_settings?.followup7 || false,
         expiration: u.notification_settings?.expiration || false,
       });
-    }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const upgrade = params.get('upgrade');
