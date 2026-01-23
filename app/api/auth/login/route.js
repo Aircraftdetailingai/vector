@@ -34,6 +34,9 @@ export async function POST(request) {
       company: data.company,
       plan: data.plan,
       status: data.status,
+      rates: data.rates || {},
+      notification_settings: data.notification_settings || {},
+      price_reminder_months: data.price_reminder_months || 6,
     };
     return new Response(
       JSON.stringify({ token, user, must_change_password: data.must_change_password }),
