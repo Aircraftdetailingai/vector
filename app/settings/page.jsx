@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 const rateFields = [
@@ -10,7 +10,7 @@ const rateFields = [
   { key: 'engineDetail', label: 'Engine Detail' },
 ];
 
-export default function SettingsPage() {
+function SettingsContent() {
   const params = useSearchParams();
   const [user, setUser] = useState(null);
   const [rates, setRates] = useState({
@@ -243,5 +243,13 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">Loading...</div>}>
+      <SettingsContent />
+    </Suspense>
   );
 }

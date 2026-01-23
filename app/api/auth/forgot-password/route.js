@@ -1,6 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+function getSupabase() {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+}
 
 function generateToken(length = 48) {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
@@ -13,6 +15,7 @@ function generateToken(length = 48) {
 
 export async function POST(request) {
   try {
+    const supabase = getSupabase();
     const { email } = await request.json();
     if (!email) {
       return new Response(JSON.stringify({ error: 'Email is required' }), { status: 400 });

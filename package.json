@@ -1,7 +1,7 @@
 {
   "name": "vector",
   "version": "0.1.1",
-  private": true,
+  "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",

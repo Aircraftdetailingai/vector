@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 
-const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+function getSupabase() {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+}
 
 export async function POST(request, { params }) {
+  const supabase = getSupabase();
   const user = await getAuthUser(request);
   if (!user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
