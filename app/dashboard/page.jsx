@@ -84,13 +84,19 @@ export default function DashboardPage() {
   const [isModalOpen, setModalOpen] = useState(false);
 
   useEffect(() => {
+    console.log('=== DASHBOARD LOAD ===');
     const token = localStorage.getItem('vector_token');
     const stored = localStorage.getItem('vector_user');
+    console.log('Token exists:', !!token);
+    console.log('User exists:', !!stored);
     if (!token || !stored) {
+      console.log('Not authenticated, redirecting to /');
       router.push('/');
       return;
     }
+    console.log('User data:', stored);
     setUser(JSON.parse(stored));
+    console.log('Dashboard ready');
   }, [router]);
 
   useEffect(() => {

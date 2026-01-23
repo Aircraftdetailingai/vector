@@ -20,33 +20,50 @@ export default function Page() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log('=== LOGIN ATTEMPT ===');
+    console.log('Email:', email);
+    console.log('Password length:', password.length);
     setLoading(true);
     setError('');
     try {
+      console.log('Sending request to /api/auth/login...');
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      console.log('Response status:', res.status);
       const data = await res.json();
+      console.log('Response data:', data);
       if (!res.ok) {
+        console.log('Login failed - res.ok is false');
         throw new Error(data.error || 'Login failed');
       }
       if (data.token) {
+        console.log('Token received, saving to localStorage...');
         if (typeof window !== 'undefined') {
           localStorage.setItem('vector_token', data.token);
           localStorage.setItem('vector_user', JSON.stringify(data.user));
+          console.log('Saved to localStorage');
+          console.log('Stored token:', localStorage.getItem('vector_token')?.substring(0, 20) + '...');
+          console.log('Stored user:', localStorage.getItem('vector_user'));
         }
         if (data.must_change_password) {
+          console.log('Redirecting to /onboarding (must_change_password: true)');
           router.push('/onboarding');
         } else {
+          console.log('Redirecting to /dashboard (must_change_password: false)');
           router.push('/dashboard');
         }
+      } else {
+        console.log('No token in response!');
       }
     } catch (err) {
+      console.log('Login error:', err.message);
       setError(err.message);
     } finally {
       setLoading(false);
+      console.log('=== LOGIN COMPLETE ===');
     }
   };
 
