@@ -316,10 +316,28 @@ export default function QuoteViewPage() {
               </ul>
             </div>
 
-            {quote.total_hours > 0 && (
-              <div className="flex justify-between text-sm text-gray-600">
-                <span>Estimated Hours:</span>
-                <span>{quote.total_hours}</span>
+            {/* Pricing based on detailer preference */}
+            {detailer?.quote_display_preference === 'full_breakdown' && quote.line_items && (
+              <div className="pt-3 border-t space-y-2">
+                {quote.line_items.map((item, i) => (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="text-gray-700">{item.description}</span>
+                    <span className="text-gray-900">${(item.amount || 0).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {detailer?.quote_display_preference === 'labor_products' && (
+              <div className="pt-3 border-t space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700">Labor</span>
+                  <span className="text-gray-900">${(quote.labor_total || quote.total_price * 0.7 || 0).toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-700">Products & Materials</span>
+                  <span className="text-gray-900">${(quote.products_total || quote.total_price * 0.3 || 0).toFixed(2)}</span>
+                </div>
               </div>
             )}
 
@@ -329,6 +347,13 @@ export default function QuoteViewPage() {
             </div>
           </div>
         </div>
+
+        {/* Notes */}
+        {quote.notes && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+            <p className="text-sm text-blue-800">{quote.notes}</p>
+          </div>
+        )}
 
         {/* Valid Until Notice */}
         <p className="text-center text-sm text-gray-500 mb-4">

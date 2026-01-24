@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { notifyNewQuoteRequest } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -53,9 +54,14 @@ export async function POST(request) {
     // Fetch detailer for notification
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('email, phone, company, notification_settings')
+      .select('email, phone, company, notification_settings, fcm_token')
       .eq('id', originalQuote.detailer_id)
       .single();
+
+    // Send push notification
+    if (detailer?.fcm_token) {
+      notifyNewQuoteRequest({ fcmToken: detailer.fcm_token, quote: originalQuote }).catch(console.error);
+    }
 
     // Send notification to detailer
     if (detailer?.email) {

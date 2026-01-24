@@ -37,6 +37,9 @@ export async function POST(request) {
       rates: data.rates || {},
       notification_settings: data.notification_settings || {},
       price_reminder_months: data.price_reminder_months || 6,
+      quote_display_preference: data.quote_display_preference || 'package',
+      efficiency_factor: data.efficiency_factor || 1.0,
+      default_labor_rate: data.default_labor_rate || 25,
     };
     return new Response(
       JSON.stringify({ token, user, must_change_password: data.must_change_password }),

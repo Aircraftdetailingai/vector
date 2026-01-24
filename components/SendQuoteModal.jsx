@@ -30,10 +30,18 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
     const payload = {
       aircraft_type: quote?.aircraft?.category || "",
       aircraft_model: quote?.aircraft?.name || "",
+      aircraft_id: quote?.aircraft?.id || null,
+      surface_area_sqft: quote?.aircraft?.surface_area_sqft || null,
       services: quote?.services || {},
+      base_hours: quote?.baseHours || 0,
       total_hours: quote?.totalHours || 0,
       total_price: quote?.totalPrice || 0,
       notes: quote?.notes || "",
+      line_items: quote?.lineItems || [],
+      labor_total: quote?.laborTotal || 0,
+      products_total: quote?.productsTotal || 0,
+      efficiency_factor: quote?.efficiencyFactor || 1.0,
+      access_difficulty: quote?.accessDifficulty || 1.0,
     };
     const res = await fetch("/api/quotes", {
       method: "POST",
