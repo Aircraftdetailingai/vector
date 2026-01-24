@@ -4,13 +4,16 @@ import Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
 export async function GET(request) {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return new Response(JSON.stringify({ connected: false, status: 'NOT_CONFIGURED', message: 'Stripe not configured' }), { status: 200 });
+  }
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
   const user = await getAuthUser(request);
   if (!user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
