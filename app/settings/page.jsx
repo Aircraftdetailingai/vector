@@ -104,6 +104,7 @@ function SettingsContent() {
 
   const handleConnectStripe = async () => {
     setStripeLoading(true);
+    setStripeError(null);
     try {
       const token = localStorage.getItem('vector_token');
       const res = await fetch('/api/stripe/connect', {
@@ -111,11 +112,17 @@ function SettingsContent() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
+      console.log('Stripe connect response:', data);
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.error) {
+        setStripeError(data.error);
+      } else {
+        setStripeError('No redirect URL received from Stripe');
       }
     } catch (err) {
       console.error('Failed to connect Stripe:', err);
+      setStripeError(err.message || 'Failed to connect to Stripe');
     } finally {
       setStripeLoading(false);
     }
