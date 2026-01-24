@@ -13,6 +13,7 @@ export function EquipmentTeaser({ monthlySavings, existingServices = [] }) {
   if (!recommendation || monthlySavings < 20) return null;
 
   const roi = formatROIMessage(recommendation);
+  const monthText = recommendation.monthsToAfford <= 1 ? 'just 1 month' : `${recommendation.monthsToAfford} months`;
 
   return (
     <div className="mt-4 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
@@ -20,13 +21,20 @@ export function EquipmentTeaser({ monthlySavings, existingServices = [] }) {
         <span className="text-2xl">💡</span>
         <div className="flex-1">
           <p className="text-sm text-blue-800 font-medium">
-            Your savings can buy a {recommendation.name} in {recommendation.monthsToAfford} month{recommendation.monthsToAfford > 1 ? 's' : ''}!
+            Your ${monthlySavings.toFixed(0)}/month savings could pay for a {recommendation.name.toLowerCase()} in {monthText}.
           </p>
-          <p className="text-xs text-blue-600 mt-1">
-            {roi.headline} → {roi.earnings}
-          </p>
-          <p className="text-xs text-green-600 font-medium mt-1">
-            ROI: {roi.payoff}
+          {recommendation.headline && (
+            <p className="text-sm text-blue-900 font-semibold mt-2">
+              {recommendation.headline}
+            </p>
+          )}
+          {recommendation.benefit && (
+            <p className="text-xs text-blue-700 mt-1">
+              {recommendation.benefit}
+            </p>
+          )}
+          <p className="text-xs text-green-600 font-medium mt-2">
+            +${recommendation.services[0].suggestedRate}/job × {recommendation.services[0].avgJobsPerMonth} jobs = +${roi.monthlyRevenue}/month • {roi.payoff}
           </p>
         </div>
       </div>
@@ -52,7 +60,17 @@ export function EquipmentCard({ equipment, onAddService }) {
             {equipment.roi.weeksToPayoff} week ROI
           </span>
         </div>
+        {equipment.headline && (
+          <p className="mt-2 text-white font-medium">{equipment.headline}</p>
+        )}
       </div>
+
+      {/* Benefit Statement */}
+      {equipment.benefit && (
+        <div className="px-4 py-3 bg-amber-50 border-b border-amber-100">
+          <p className="text-sm text-amber-900">{equipment.benefit}</p>
+        </div>
+      )}
 
       {/* ROI Flow */}
       <div className="p-4 space-y-3">
