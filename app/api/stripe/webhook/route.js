@@ -1,21 +1,18 @@
 import { createClient } from '@supabase/supabase-js';
+import Stripe from 'stripe';
 import { sendPaymentReceivedEmail, sendPaymentConfirmedEmail } from '@/lib/email';
 import { notifyQuotePaid } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
-async function getStripe() {
-  const Stripe = (await import('stripe')).default;
-  return new Stripe(process.env.STRIPE_SECRET_KEY);
-}
-
 export async function POST(request) {
   const supabase = getSupabase();
-  const stripe = await getStripe();
 
   const body = await request.text();
   const sig = request.headers.get('stripe-signature');

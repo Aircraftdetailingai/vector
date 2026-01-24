@@ -1,25 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
+import Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
+
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
-async function getStripe() {
-  const Stripe = (await import('stripe')).default;
-  return new Stripe(process.env.STRIPE_SECRET_KEY);
-}
-
 export async function GET(request) {
-  const supabase = getSupabase();
-  const stripe = await getStripe();
-
   const user = await getAuthUser(request);
   if (!user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
+
+  const supabase = getSupabase();
 
   try {
     // Fetch detailer's Stripe account ID
@@ -37,21 +34,15 @@ export async function GET(request) {
       }), { status: 200 });
     }
 
-    // Verify with Stripe API
+    // Retrieve account from Stripe
     const account = await stripe.accounts.retrieve(detailer.stripe_account_id);
 
-    // For Standard accounts, charges_enabled is typically true once connected
-    const status = account.charges_enabled && account.payouts_enabled
-      ? 'ACTIVE'
-      : account.details_submitted
-        ? 'PENDING'
-        : 'INCOMPLETE';
-
-    // Get bank account info if available
-    let bankAccount = null;
-    if (account.external_accounts?.data?.[0]) {
-      const extAccount = account.external_accounts.data[0];
-      bankAccount = `****${extAccount.last4}`;
+    // Determine status
+    let status = 'INCOMPLETE';
+    if (account.charges_enabled && account.payouts_enabled) {
+      status = 'ACTIVE';
+    } else if (account.details_submitted) {
+      status = 'PENDING';
     }
 
     return new Response(JSON.stringify({
@@ -60,12 +51,11 @@ export async function GET(request) {
       chargesEnabled: account.charges_enabled,
       payoutsEnabled: account.payouts_enabled,
       detailsSubmitted: account.details_submitted,
-      accountType: account.type, // 'standard', 'express', or 'custom'
-      bankAccount,
+      accountType: account.type,
       email: account.email,
     }), { status: 200 });
   } catch (err) {
-    console.error('Stripe status check error:', err);
+    console.error('Stripe status error:', err);
     return new Response(JSON.stringify({
       connected: false,
       status: 'ERROR',

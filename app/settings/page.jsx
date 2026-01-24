@@ -74,6 +74,9 @@ function SettingsContent() {
     if (stripeParam === 'success') {
       // Refresh Stripe status
       checkStripeStatus();
+    } else if (stripeParam === 'refresh') {
+      // User needs to restart onboarding - trigger connect again
+      handleConnectStripe();
     } else if (stripeParam === 'error') {
       const message = params.get('message');
       setStripeError(message || 'Failed to connect Stripe');
