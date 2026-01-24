@@ -2,25 +2,11 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
-const rateFields = [
-  { key: 'exterior', label: 'Exterior Wash & Detail' },
-  { key: 'interior', label: 'Interior Detail' },
-  { key: 'brightwork', label: 'Brightwork Polish' },
-  { key: 'ceramicCoating', label: 'Ceramic Coating' },
-  { key: 'engineDetail', label: 'Engine Detail' },
-];
-
 function SettingsContent() {
   const router = useRouter();
   const params = useSearchParams();
   const [user, setUser] = useState(null);
-  const [rates, setRates] = useState({
-    exterior: 0,
-    interior: 0,
-    brightwork: 0,
-    ceramicCoating: 0,
-    engineDetail: 0,
-  });
+  const [laborRate, setLaborRate] = useState(25);
   const [emailNotifs, setEmailNotifs] = useState({
     quoteCreated: false,
     quoteSent: false,
@@ -38,6 +24,8 @@ function SettingsContent() {
     expiration: false,
   });
   const [priceReminder, setPriceReminder] = useState(6);
+  const [quoteDisplayPref, setQuoteDisplayPref] = useState('package');
+  const [efficiencyFactor, setEfficiencyFactor] = useState(1.0);
   const [stripeStatus, setStripeStatus] = useState({ connected: false, status: 'UNKNOWN' });
   const [stripeLoading, setStripeLoading] = useState(false);
 
@@ -50,8 +38,10 @@ function SettingsContent() {
     }
     const u = JSON.parse(stored);
     setUser(u);
-    setRates({ ...u.rates });
-      setPriceReminder(u.price_reminder_months || 6);
+    setPriceReminder(u.price_reminder_months || 6);
+    setQuoteDisplayPref(u.quote_display_preference || 'package');
+    setEfficiencyFactor(u.efficiency_factor || 1.0);
+    setLaborRate(u.default_labor_rate || 25);
       setEmailNotifs({
         quoteCreated: u.notification_settings?.quoteCreated || false,
         quoteSent: u.notification_settings?.quoteSent || false,
@@ -70,6 +60,8 @@ function SettingsContent() {
       });
   }, [router]);
 
+  const [stripeError, setStripeError] = useState(null);
+
   useEffect(() => {
     const upgrade = params.get('upgrade');
     if (upgrade === 'business') {
@@ -82,6 +74,9 @@ function SettingsContent() {
     if (stripeParam === 'success') {
       // Refresh Stripe status
       checkStripeStatus();
+    } else if (stripeParam === 'error') {
+      const message = params.get('message');
+      setStripeError(message || 'Failed to connect Stripe');
     }
   }, [params]);
 
@@ -123,16 +118,44 @@ function SettingsContent() {
     }
   };
 
-  const saveRates = async () => {
-    await fetch('/api/user/update-rates', {
+  const saveQuoteDisplayPref = async (pref) => {
+    await fetch('/api/user/quote-display', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${localStorage.getItem('vector_token')}`,
       },
-      body: JSON.stringify({ rates }),
+      body: JSON.stringify({ quote_display_preference: pref }),
     });
-    const newUser = { ...user, rates };
+    const newUser = { ...user, quote_display_preference: pref };
+    localStorage.setItem('vector_user', JSON.stringify(newUser));
+    setUser(newUser);
+  };
+
+  const saveEfficiencyFactor = async (factor) => {
+    await fetch('/api/user/efficiency-factor', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('vector_token')}`,
+      },
+      body: JSON.stringify({ efficiency_factor: factor }),
+    });
+    const newUser = { ...user, efficiency_factor: factor };
+    localStorage.setItem('vector_user', JSON.stringify(newUser));
+    setUser(newUser);
+  };
+
+  const saveLaborRate = async (rate) => {
+    await fetch('/api/user/labor-rate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('vector_token')}`,
+      },
+      body: JSON.stringify({ default_labor_rate: rate }),
+    });
+    const newUser = { ...user, default_labor_rate: rate };
     localStorage.setItem('vector_user', JSON.stringify(newUser));
     setUser(newUser);
   };
@@ -154,12 +177,7 @@ function SettingsContent() {
   const planPrice = user?.plan === 'starter' ? '29.95' : user?.plan === 'pro' ? '49.95' : '79.95';
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 text-gray-900">
-      <header className="text-white flex items-center mb-4 space-x-2">
-        <a href="/dashboard" className="text-2xl">&#8592;</a>
-        <h1 className="text-2xl font-bold">Settings</h1>
-      </header>
-      <div className="space-y-4">
+    <div className="space-y-4">
         {/* Plan banner */}
         <div className="bg-[#0f172a] text-white p-4 rounded">
           <h2 className="text-lg font-semibold mb-1">Current Plan</h2>
@@ -172,6 +190,12 @@ function SettingsContent() {
         {/* Stripe Connect */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold mb-2">Stripe Payments</h3>
+          {stripeError && (
+            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+              {stripeError}
+              <button onClick={() => setStripeError(null)} className="ml-2 text-red-500 hover:text-red-700">&times;</button>
+            </div>
+          )}
           {stripeStatus.connected && stripeStatus.status === 'ACTIVE' ? (
             <div>
               <div className="flex items-center mb-2">
@@ -224,27 +248,107 @@ function SettingsContent() {
           )}
         </div>
 
-        {/* Hourly rates */}
+        {/* Efficiency Factor */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Hourly Rates</h3>
-          {rateFields.map((f) => (
-            <div key={f.key} className="flex items-center mb-2">
-              <label className="w-48">{f.label}</label>
-              <div className="flex items-center">
-                <span className="mr-1">$</span>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={rates[f.key] || 0}
-                  onChange={(e) => setRates({ ...rates, [f.key]: parseFloat(e.target.value) || 0 })}
-                  className="w-24 border rounded px-2 py-1"
-                />
-                <span className="ml-1">/hr</span>
-              </div>
+          <h3 className="font-semibold mb-2">Efficiency Factor</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Adjust estimated hours based on your team's speed. 1.0 = standard, 0.8 = 20% faster, 1.2 = 20% slower.
+          </p>
+          <div className="flex items-center space-x-4">
+            <input
+              type="range"
+              min="0.5"
+              max="1.5"
+              step="0.05"
+              value={efficiencyFactor}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value);
+                setEfficiencyFactor(val);
+                saveEfficiencyFactor(val);
+              }}
+              className="flex-1"
+            />
+            <div className="w-20 text-center">
+              <span className="text-2xl font-bold">{efficiencyFactor.toFixed(2)}</span>
+              <p className="text-xs text-gray-500">
+                {efficiencyFactor < 1 ? `${Math.round((1 - efficiencyFactor) * 100)}% faster` :
+                 efficiencyFactor > 1 ? `${Math.round((efficiencyFactor - 1) * 100)}% slower` : 'Standard'}
+              </p>
             </div>
-          ))}
-          <button onClick={saveRates} className="mt-2 px-4 py-2 rounded bg-gradient-to-r from-amber-500 to-amber-600 text-white">Save Rates</button>
+          </div>
+          <div className="mt-3 flex justify-between text-xs text-gray-400">
+            <span>Faster (0.5x)</span>
+            <span>Standard (1.0x)</span>
+            <span>Slower (1.5x)</span>
+          </div>
         </div>
+
+        {/* Default Labor Rate for Profitability */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Default Labor Rate</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Your internal labor cost per hour. Used for profitability tracking after job completion.
+          </p>
+          <div className="flex items-center space-x-2">
+            <span className="text-gray-500">$</span>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              value={laborRate}
+              onChange={(e) => {
+                const val = parseFloat(e.target.value) || 0;
+                setLaborRate(val);
+              }}
+              onBlur={(e) => {
+                const val = parseFloat(e.target.value) || 0;
+                saveLaborRate(val);
+              }}
+              className="w-24 border rounded px-3 py-2"
+            />
+            <span className="text-gray-500">/hr</span>
+          </div>
+          <p className="text-xs text-gray-400 mt-2">
+            This is your cost (wages, overhead), not what you charge customers.
+          </p>
+        </div>
+
+        {/* Quote Display Preference */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Quote Display for Customers</h3>
+          <p className="text-sm text-gray-600 mb-3">Choose what pricing details customers see on their quotes.</p>
+          <div className="space-y-3">
+            {[
+              { value: 'package', label: 'Package Price Only', desc: 'Customer sees single total price (recommended)' },
+              { value: 'labor_products', label: 'Labor + Products', desc: 'Shows two line items: labor and products/materials' },
+              { value: 'full_breakdown', label: 'Full Breakdown', desc: 'Shows all service line items with individual pricing' },
+            ].map((option) => (
+              <label
+                key={option.value}
+                className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
+                  quoteDisplayPref === option.value ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="quoteDisplay"
+                  value={option.value}
+                  checked={quoteDisplayPref === option.value}
+                  onChange={(e) => {
+                    setQuoteDisplayPref(e.target.value);
+                    saveQuoteDisplayPref(e.target.value);
+                  }}
+                  className="mt-1 mr-3"
+                />
+                <div>
+                  <p className="font-medium">{option.label}</p>
+                  <p className="text-sm text-gray-500">{option.desc}</p>
+                </div>
+              </label>
+            ))}
+          </div>
+        </div>
+
         {/* Email Notifications */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold mb-2">Email Notifications</h3>
@@ -349,13 +453,12 @@ function SettingsContent() {
           </div>
         </div>
       </div>
-    </div>
   );
 }
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">Loading...</div>}>
+    <Suspense fallback={<div className="text-gray-500 p-4">Loading...</div>}>
       <SettingsContent />
     </Suspense>
   );

@@ -1,4 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
+import { sendPaymentReceivedEmail, sendPaymentConfirmedEmail } from '@/lib/email';
+import { notifyQuotePaid } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,25 +58,37 @@ export async function POST(request) {
           .single();
 
         if (quote) {
-          // Send notification to detailer (email)
           const detailer = quote.detailers;
+
+          // Send payment received notification to detailer (email)
           if (detailer?.email) {
             try {
-              await fetch('https://api.resend.com/emails', {
-                method: 'POST',
-                headers: {
-                  Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                  from: 'no-reply@aircraftdetailing.ai',
-                  to: detailer.email,
-                  subject: 'Quote Approved & Paid!',
-                  text: `Great news! Your quote for ${quote.aircraft_model || quote.aircraft_type} has been approved and paid.\n\nAmount: $${quote.total_price}\nCustomer: ${quote.client_name || 'Customer'}\n\nLog in to Vector to view details.`
-                })
+              await sendPaymentReceivedEmail({
+                detailerEmail: detailer.email,
+                detailerName: detailer.name,
+                quote,
               });
             } catch (e) {
-              console.error('Failed to send notification email:', e);
+              console.error('Failed to send detailer email:', e);
+            }
+          }
+
+          // Send push notification to detailer
+          if (detailer?.fcm_token) {
+            notifyQuotePaid({ fcmToken: detailer.fcm_token, quote }).catch(console.error);
+          }
+
+          // Send payment confirmation to customer
+          if (quote.client_email) {
+            try {
+              await sendPaymentConfirmedEmail({
+                customerEmail: quote.client_email,
+                customerName: quote.client_name,
+                quote,
+                detailer,
+              });
+            } catch (e) {
+              console.error('Failed to send customer confirmation:', e);
             }
           }
         }
@@ -118,6 +132,73 @@ export async function POST(request) {
             refund_amount: charge.amount_refunded / 100,
           })
           .eq('id', quote.id);
+      }
+      break;
+    }
+
+    // Subscription events for tier upgrades
+    case 'customer.subscription.created':
+    case 'customer.subscription.updated': {
+      const subscription = event.data.object;
+      const detailerId = subscription.metadata?.detailer_id;
+      const tier = subscription.metadata?.tier;
+
+      if (detailerId && tier && subscription.status === 'active') {
+        await supabase
+          .from('detailers')
+          .update({
+            plan: tier,
+            stripe_subscription_id: subscription.id,
+            subscription_status: subscription.status,
+            subscription_updated_at: new Date().toISOString(),
+          })
+          .eq('id', detailerId);
+
+        console.log(`Updated detailer ${detailerId} to ${tier} plan`);
+      }
+      break;
+    }
+
+    case 'customer.subscription.deleted': {
+      const subscription = event.data.object;
+      const detailerId = subscription.metadata?.detailer_id;
+
+      if (detailerId) {
+        // Downgrade to free tier when subscription is cancelled
+        await supabase
+          .from('detailers')
+          .update({
+            plan: 'free',
+            subscription_status: 'cancelled',
+            subscription_updated_at: new Date().toISOString(),
+          })
+          .eq('id', detailerId);
+
+        console.log(`Downgraded detailer ${detailerId} to free plan`);
+      }
+      break;
+    }
+
+    case 'invoice.payment_failed': {
+      const invoice = event.data.object;
+      const subscriptionId = invoice.subscription;
+
+      if (subscriptionId) {
+        // Get subscription to find detailer
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const detailerId = subscription.metadata?.detailer_id;
+
+        if (detailerId) {
+          await supabase
+            .from('detailers')
+            .update({
+              subscription_status: 'past_due',
+              subscription_updated_at: new Date().toISOString(),
+            })
+            .eq('id', detailerId);
+
+          console.log(`Marked detailer ${detailerId} subscription as past_due`);
+        }
       }
       break;
     }

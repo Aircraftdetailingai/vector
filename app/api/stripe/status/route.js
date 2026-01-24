@@ -40,11 +40,19 @@ export async function GET(request) {
     // Verify with Stripe API
     const account = await stripe.accounts.retrieve(detailer.stripe_account_id);
 
+    // For Standard accounts, charges_enabled is typically true once connected
     const status = account.charges_enabled && account.payouts_enabled
       ? 'ACTIVE'
       : account.details_submitted
         ? 'PENDING'
         : 'INCOMPLETE';
+
+    // Get bank account info if available
+    let bankAccount = null;
+    if (account.external_accounts?.data?.[0]) {
+      const extAccount = account.external_accounts.data[0];
+      bankAccount = `****${extAccount.last4}`;
+    }
 
     return new Response(JSON.stringify({
       connected: true,
@@ -52,11 +60,9 @@ export async function GET(request) {
       chargesEnabled: account.charges_enabled,
       payoutsEnabled: account.payouts_enabled,
       detailsSubmitted: account.details_submitted,
-      accountType: account.type,
-      // Mask bank account info
-      bankAccount: account.external_accounts?.data?.[0]
-        ? `****${account.external_accounts.data[0].last4}`
-        : null
+      accountType: account.type, // 'standard', 'express', or 'custom'
+      bankAccount,
+      email: account.email,
     }), { status: 200 });
   } catch (err) {
     console.error('Stripe status check error:', err);
