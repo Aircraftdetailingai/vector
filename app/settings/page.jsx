@@ -38,6 +38,8 @@ function SettingsContent() {
     expiration: false,
   });
   const [priceReminder, setPriceReminder] = useState(6);
+  const [stripeStatus, setStripeStatus] = useState({ connected: false, status: 'UNKNOWN' });
+  const [stripeLoading, setStripeLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -74,7 +76,52 @@ function SettingsContent() {
       const el = document.getElementById('smsClients');
       if (el) el.scrollIntoView({ behavior: 'smooth' });
     }
+
+    // Check for Stripe callback
+    const stripeParam = params.get('stripe');
+    if (stripeParam === 'success') {
+      // Refresh Stripe status
+      checkStripeStatus();
+    }
   }, [params]);
+
+  const checkStripeStatus = async () => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/stripe/status', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setStripeStatus(data);
+      }
+    } catch (err) {
+      console.log('Failed to check Stripe status:', err);
+    }
+  };
+
+  useEffect(() => {
+    checkStripeStatus();
+  }, []);
+
+  const handleConnectStripe = async () => {
+    setStripeLoading(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/stripe/connect', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Failed to connect Stripe:', err);
+    } finally {
+      setStripeLoading(false);
+    }
+  };
 
   const saveRates = async () => {
     await fetch('/api/user/update-rates', {
@@ -121,6 +168,62 @@ function SettingsContent() {
             <a href="/settings?upgrade=business" className="inline-block px-4 py-2 rounded bg-gradient-to-r from-amber-500 to-amber-600 text-white">Upgrade</a>
           )}
         </div>
+
+        {/* Stripe Connect */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Stripe Payments</h3>
+          {stripeStatus.connected && stripeStatus.status === 'ACTIVE' ? (
+            <div>
+              <div className="flex items-center mb-2">
+                <span className="text-green-500 mr-2">&#10003;</span>
+                <span className="text-green-700 font-medium">Connected</span>
+              </div>
+              {stripeStatus.bankAccount && (
+                <p className="text-sm text-gray-600 mb-2">Account: {stripeStatus.bankAccount}</p>
+              )}
+              <p className="text-sm text-gray-500 mb-3">Status: Active - You can receive payments</p>
+              <a
+                href="https://dashboard.stripe.com"
+                target="_blank"
+                rel="noreferrer"
+                className="text-blue-600 text-sm underline"
+              >
+                Manage in Stripe Dashboard
+              </a>
+            </div>
+          ) : stripeStatus.connected && stripeStatus.status === 'PENDING' ? (
+            <div>
+              <div className="flex items-center mb-2">
+                <span className="text-amber-500 mr-2">&#9888;</span>
+                <span className="text-amber-700 font-medium">Pending Verification</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">Your Stripe account is being reviewed. This usually takes 1-2 business days.</p>
+              <button
+                onClick={handleConnectStripe}
+                disabled={stripeLoading}
+                className="px-4 py-2 rounded bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50"
+              >
+                {stripeLoading ? 'Loading...' : 'Complete Setup'}
+              </button>
+            </div>
+          ) : (
+            <div>
+              <div className="flex items-center mb-2">
+                <span className="text-red-500 mr-2">&#10007;</span>
+                <span className="text-red-700 font-medium">Not Connected</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">Connect Stripe to receive payments for your quotes.</p>
+              <button
+                onClick={handleConnectStripe}
+                disabled={stripeLoading}
+                className="px-4 py-2 rounded bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:opacity-90 disabled:opacity-50"
+              >
+                {stripeLoading ? 'Connecting...' : 'Connect Stripe'}
+              </button>
+            </div>
+          )}
+        </div>
+
         {/* Hourly rates */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold mb-2">Hourly Rates</h3>

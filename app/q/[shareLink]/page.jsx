@@ -1,0 +1,386 @@
+"use client";
+import { useState, useEffect } from 'react';
+import { useParams } from 'next/navigation';
+
+// Friendly error messages for payment declines
+const PAYMENT_ERROR_MESSAGES = {
+  card_declined: "Your card was declined. Please try a different card.",
+  insufficient_funds: "Insufficient funds. Please try a different card.",
+  expired_card: "Your card has expired. Please use a different card.",
+  incorrect_cvc: "Incorrect security code. Please check and try again.",
+  processing_error: "Processing error. Please try again in a moment.",
+  generic_decline: "Your card was declined. Please try a different card.",
+  default: "Payment could not be processed. Please check your card details and try again."
+};
+
+export default function QuoteViewPage() {
+  const params = useParams();
+  const [quote, setQuote] = useState(null);
+  const [detailer, setDetailer] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [paymentError, setPaymentError] = useState('');
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [requestSent, setRequestSent] = useState(false);
+  const [tipsSent, setTipsSent] = useState(false);
+
+  useEffect(() => {
+    const fetchQuote = async () => {
+      try {
+        const res = await fetch(`/api/quotes/view/${params.shareLink}`);
+        if (!res.ok) {
+          throw new Error('Quote not found');
+        }
+        const data = await res.json();
+        setQuote(data.quote);
+        setDetailer(data.detailer);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+    if (params.shareLink) {
+      fetchQuote();
+    }
+  }, [params.shareLink]);
+
+  const isExpired = quote && new Date() > new Date(quote.valid_until);
+  const isPaid = quote && (quote.status === 'paid' || quote.status === 'approved');
+
+  const handlePayment = async () => {
+    setPaymentError('');
+    setPaymentLoading(true);
+    try {
+      const res = await fetch('/api/payments/create-checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quoteId: quote.id }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        // Handle specific error codes
+        const errorCode = data.code || 'default';
+        const message = PAYMENT_ERROR_MESSAGES[errorCode] || PAYMENT_ERROR_MESSAGES.default;
+        setPaymentError(message);
+        return;
+      }
+      // Redirect to Stripe checkout
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      setPaymentError(PAYMENT_ERROR_MESSAGES.default);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleRequestNewQuote = async () => {
+    setPaymentLoading(true);
+    try {
+      const res = await fetch('/api/quotes/request-new', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ originalQuoteId: quote.id }),
+      });
+      if (res.ok) {
+        setRequestSent(true);
+      }
+    } catch (err) {
+      setError('Failed to request new quote');
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const handleSendTips = async () => {
+    setPaymentLoading(true);
+    try {
+      const res = await fetch('/api/quotes/send-tips', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ quoteId: quote.id }),
+      });
+      if (res.ok) {
+        setTipsSent(true);
+      }
+    } catch (err) {
+      // Silently fail
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const formatServices = (services) => {
+    if (!services) return [];
+    const labels = {
+      exterior: 'Exterior Wash & Detail',
+      interior: 'Interior Detail',
+      brightwork: 'Brightwork Polish',
+      ceramic: 'Ceramic Coating',
+      engine: 'Engine Detail',
+    };
+    return Object.entries(services)
+      .filter(([key, value]) => value === true)
+      .map(([key]) => labels[key] || key);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f]">
+        <div className="text-white text-xl">Loading quote...</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+        <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8 text-center">
+          <div className="text-red-500 text-5xl mb-4">!</div>
+          <h1 className="text-2xl font-bold text-gray-800 mb-2">Quote Not Found</h1>
+          <p className="text-gray-600">This quote link may be invalid or has been removed.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // EXPIRED QUOTE VIEW
+  if (isExpired && !isPaid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+        <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
+          <div className="text-center">
+            <div className="text-amber-500 text-5xl mb-4">&#9200;</div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">This Quote Has Expired</h1>
+            <p className="text-gray-600 mb-6">
+              This quote expired on {formatDate(quote.valid_until)}.
+            </p>
+
+            {!requestSent ? (
+              <>
+                <p className="text-gray-700 mb-4">Would you like to request an updated quote?</p>
+                <button
+                  onClick={handleRequestNewQuote}
+                  disabled={paymentLoading}
+                  className="w-full py-3 rounded-lg text-white font-medium bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 disabled:opacity-50 mb-4"
+                >
+                  {paymentLoading ? 'Requesting...' : 'Request New Quote'}
+                </button>
+              </>
+            ) : (
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+                <p className="text-green-800 font-medium">Quote request sent!</p>
+                <p className="text-green-700 text-sm">{detailer?.company || 'The detailer'} will send you an updated quote soon.</p>
+              </div>
+            )}
+
+            {detailer && (
+              <div className="border-t pt-4 mt-4">
+                <p className="text-gray-600 text-sm mb-2">Or contact {detailer.company} directly:</p>
+                <div className="flex justify-center space-x-4 text-sm">
+                  {detailer.phone && (
+                    <a href={`tel:${detailer.phone}`} className="text-blue-600 hover:underline">
+                      {detailer.phone}
+                    </a>
+                  )}
+                  {detailer.email && (
+                    <a href={`mailto:${detailer.email}`} className="text-blue-600 hover:underline">
+                      {detailer.email}
+                    </a>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // PAID QUOTE VIEW
+  if (isPaid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+        <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
+          <div className="text-center">
+            <div className="text-green-500 text-5xl mb-4">&#10003;</div>
+            <h1 className="text-2xl font-bold text-gray-800 mb-2">Quote Approved & Paid</h1>
+            <p className="text-gray-600 mb-6">
+              Thank you! Your payment was received{quote.paid_at ? ` on ${formatDate(quote.paid_at)}` : ''}.
+            </p>
+          </div>
+
+          <div className="border-t border-b py-4 my-4">
+            <div className="space-y-2 text-sm">
+              <div className="flex justify-between">
+                <span className="text-gray-600">Aircraft:</span>
+                <span className="font-medium">{quote.aircraft_model || quote.aircraft_type}</span>
+              </div>
+              <div>
+                <span className="text-gray-600">Services:</span>
+                <ul className="mt-1 ml-4 list-disc list-inside">
+                  {formatServices(quote.services).map((svc, i) => (
+                    <li key={i} className="text-gray-800">{svc}</li>
+                  ))}
+                </ul>
+              </div>
+              <div className="flex justify-between pt-2 border-t">
+                <span className="text-gray-800 font-semibold">Total Paid:</span>
+                <span className="font-bold text-lg">${(quote.total_price || 0).toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          {!tipsSent ? (
+            <div className="text-center">
+              <p className="text-gray-700 mb-4">Would you like tips to prepare for your detail?</p>
+              <button
+                onClick={handleSendTips}
+                disabled={paymentLoading}
+                className="w-full py-3 rounded-lg text-white font-medium bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 disabled:opacity-50"
+              >
+                {paymentLoading ? 'Sending...' : 'Yes, Send Me Tips'}
+              </button>
+            </div>
+          ) : (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+              <p className="text-green-800 font-medium">Tips sent to your email!</p>
+              <p className="text-green-700 text-sm">Check your inbox for preparation tips.</p>
+            </div>
+          )}
+
+          {detailer && (
+            <div className="border-t pt-4 mt-4 text-center">
+              <p className="text-gray-600 text-sm mb-2">Questions? Contact {detailer.company}:</p>
+              <div className="flex justify-center space-x-4 text-sm">
+                {detailer.phone && (
+                  <a href={`tel:${detailer.phone}`} className="text-blue-600 hover:underline">
+                    {detailer.phone}
+                  </a>
+                )}
+                {detailer.email && (
+                  <a href={`mailto:${detailer.email}`} className="text-blue-600 hover:underline">
+                    {detailer.email}
+                  </a>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // NORMAL QUOTE VIEW (ready to pay)
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+      <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
+        {/* Header */}
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-[#1e3a5f] flex items-center justify-center">
+            <span className="mr-2">&#9992;</span> Your Quote
+          </h1>
+          {detailer && (
+            <p className="text-gray-600 mt-1">from {detailer.company}</p>
+          )}
+        </div>
+
+        {/* Quote Details */}
+        <div className="bg-gray-50 rounded-lg p-4 mb-6">
+          <div className="space-y-3">
+            <div className="flex justify-between">
+              <span className="text-gray-600">Aircraft:</span>
+              <span className="font-medium">{quote.aircraft_model || quote.aircraft_type}</span>
+            </div>
+
+            <div>
+              <span className="text-gray-600">Services:</span>
+              <ul className="mt-2 space-y-1">
+                {formatServices(quote.services).map((svc, i) => (
+                  <li key={i} className="flex items-center text-gray-800">
+                    <span className="text-green-500 mr-2">&#10003;</span>
+                    {svc}
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            {quote.total_hours > 0 && (
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Estimated Hours:</span>
+                <span>{quote.total_hours}</span>
+              </div>
+            )}
+
+            <div className="flex justify-between pt-3 border-t">
+              <span className="text-gray-800 font-semibold">Total:</span>
+              <span className="font-bold text-2xl text-[#1e3a5f]">${(quote.total_price || 0).toFixed(2)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Valid Until Notice */}
+        <p className="text-center text-sm text-gray-500 mb-4">
+          Valid until {formatDate(quote.valid_until)}
+        </p>
+        <p className="text-center text-xs text-gray-400 mb-4">
+          Dates are subject to availability and confirmed upon payment.
+        </p>
+
+        {/* Payment Error */}
+        {paymentError && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
+            <p className="text-red-800 font-medium">{paymentError}</p>
+            {detailer && (
+              <p className="text-red-700 text-sm mt-2">
+                Questions? Contact {detailer.company} at{' '}
+                {detailer.phone && <a href={`tel:${detailer.phone}`} className="underline">{detailer.phone}</a>}
+                {detailer.phone && detailer.email && ' or '}
+                {detailer.email && <a href={`mailto:${detailer.email}`} className="underline">{detailer.email}</a>}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Pay Button */}
+        <button
+          onClick={handlePayment}
+          disabled={paymentLoading}
+          className="w-full py-3 rounded-lg text-white font-medium bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 disabled:opacity-50"
+        >
+          {paymentLoading ? 'Processing...' : 'Approve & Pay'}
+        </button>
+
+        {/* Detailer Contact */}
+        {detailer && (
+          <div className="mt-6 text-center">
+            <p className="text-gray-500 text-sm mb-2">Questions about this quote?</p>
+            <div className="flex justify-center space-x-4 text-sm">
+              {detailer.phone && (
+                <a href={`tel:${detailer.phone}`} className="text-blue-600 hover:underline">
+                  {detailer.phone}
+                </a>
+              )}
+              {detailer.email && (
+                <a href={`mailto:${detailer.email}`} className="text-blue-600 hover:underline">
+                  {detailer.email}
+                </a>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

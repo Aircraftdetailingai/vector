@@ -1,3 +1,5 @@
+import './globals.css'
+
 export const metadata = {
   title: 'Vector - Aircraft Detailing Quotes',
   description: 'Professional quoting software for aircraft detailers',

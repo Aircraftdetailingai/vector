@@ -1,0 +1,112 @@
+import { createClient } from '@supabase/supabase-js';
+
+export const dynamic = 'force-dynamic';
+
+function getSupabase() {
+  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
+}
+
+async function getStripe() {
+  const Stripe = (await import('stripe')).default;
+  return new Stripe(process.env.STRIPE_SECRET_KEY);
+}
+
+export async function POST(request) {
+  const supabase = getSupabase();
+  const stripe = await getStripe();
+
+  try {
+    const { quoteId } = await request.json();
+    if (!quoteId) {
+      return new Response(JSON.stringify({ error: 'Quote ID required' }), { status: 400 });
+    }
+
+    // Fetch quote
+    const { data: quote, error: quoteError } = await supabase
+      .from('quotes')
+      .select('*')
+      .eq('id', quoteId)
+      .single();
+
+    if (quoteError || !quote) {
+      return new Response(JSON.stringify({ error: 'Quote not found' }), { status: 404 });
+    }
+
+    // Check if already paid
+    if (quote.status === 'paid' || quote.status === 'approved') {
+      return new Response(JSON.stringify({ error: 'Quote already paid' }), { status: 400 });
+    }
+
+    // Check if expired
+    if (new Date() > new Date(quote.valid_until)) {
+      return new Response(JSON.stringify({ error: 'Quote has expired', code: 'quote_expired' }), { status: 400 });
+    }
+
+    // Fetch detailer for Stripe Connect account
+    const { data: detailer } = await supabase
+      .from('detailers')
+      .select('stripe_account_id, company, email')
+      .eq('id', quote.detailer_id)
+      .single();
+
+    if (!detailer?.stripe_account_id) {
+      return new Response(JSON.stringify({ error: 'Detailer has not connected Stripe', code: 'stripe_not_connected' }), { status: 400 });
+    }
+
+    // Calculate application fee (e.g., 3%)
+    const totalAmount = Math.round((quote.total_price || 0) * 100); // Convert to cents
+    const applicationFee = Math.round(totalAmount * 0.03); // 3% platform fee
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+
+    // Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      line_items: [
+        {
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `Aircraft Detail - ${quote.aircraft_model || quote.aircraft_type || 'Quote'}`,
+              description: `Quote from ${detailer.company || 'Detailer'}`,
+            },
+            unit_amount: totalAmount,
+          },
+          quantity: 1,
+        },
+      ],
+      payment_intent_data: {
+        application_fee_amount: applicationFee,
+        transfer_data: {
+          destination: detailer.stripe_account_id,
+        },
+      },
+      success_url: `${appUrl}/q/${quote.share_link}?payment=success`,
+      cancel_url: `${appUrl}/q/${quote.share_link}?payment=cancelled`,
+      metadata: {
+        quote_id: quote.id,
+        detailer_id: quote.detailer_id,
+      },
+    });
+
+    return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), { status: 200 });
+  } catch (err) {
+    console.error('Checkout error:', err);
+
+    // Map Stripe error codes to friendly codes
+    let code = 'processing_error';
+    if (err.code) {
+      code = err.code;
+    }
+    if (err.type === 'StripeCardError') {
+      code = err.decline_code || 'card_declined';
+    }
+
+    return new Response(JSON.stringify({
+      error: 'Payment processing failed',
+      code,
+      message: err.message
+    }), { status: 500 });
+  }
+}

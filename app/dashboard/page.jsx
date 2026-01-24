@@ -5,6 +5,28 @@ import SendQuoteModal from '../../components/SendQuoteModal.jsx';
 
 const categories = ['Light Jets','Midsize Jets','Super Midsize','Large Cabin','Turboprops','Pistons','Helicopters'];
 
+// Stripe Connect Warning Banner Component
+function StripeWarningBanner({ onConnect, loading }) {
+  return (
+    <div className="bg-amber-100 border border-amber-300 rounded-lg p-4 mb-4 flex items-center justify-between">
+      <div className="flex items-center">
+        <span className="text-amber-600 text-xl mr-3">&#9888;</span>
+        <div>
+          <p className="text-amber-800 font-medium">Stripe not connected</p>
+          <p className="text-amber-700 text-sm">You cannot receive payments until you connect Stripe.</p>
+        </div>
+      </div>
+      <button
+        onClick={onConnect}
+        disabled={loading}
+        className="px-4 py-2 rounded bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
+      >
+        {loading ? 'Connecting...' : 'Connect Stripe'}
+      </button>
+    </div>
+  );
+}
+
 const aircraftData = {
   'Light Jets': [
     { name: 'Citation CJ2', exterior: 4, interior: 3 },
@@ -82,6 +104,8 @@ export default function DashboardPage() {
     engine: 0,
   });
   const [isModalOpen, setModalOpen] = useState(false);
+  const [stripeStatus, setStripeStatus] = useState({ connected: true, status: 'UNKNOWN' });
+  const [stripeLoading, setStripeLoading] = useState(false);
 
   useEffect(() => {
     console.log('=== DASHBOARD LOAD ===');
@@ -97,7 +121,46 @@ export default function DashboardPage() {
     console.log('User data:', stored);
     setUser(JSON.parse(stored));
     console.log('Dashboard ready');
+
+    // Check Stripe status
+    const checkStripe = async () => {
+      try {
+        const res = await fetch('/api/stripe/status', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setStripeStatus(data);
+        }
+      } catch (err) {
+        console.log('Failed to check Stripe status:', err);
+      }
+    };
+    checkStripe();
   }, [router]);
+
+  const handleConnectStripe = async () => {
+    setStripeLoading(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/stripe/connect', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Failed to connect Stripe:', err);
+    } finally {
+      setStripeLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (selectedAircraft) {
@@ -158,7 +221,7 @@ export default function DashboardPage() {
       {/* Header */}
       <header className="flex justify-between items-center mb-4 text-white">
         <div className="flex items-center space-x-2 text-2xl font-bold">
-          <span>✈️</span>
+          <span>&#9992;</span>
           <span>Vector</span>
           {user && <span className="text-lg font-medium">- {user.company}</span>}
         </div>
@@ -167,6 +230,11 @@ export default function DashboardPage() {
           <button onClick={handleLogout} className="underline">Logout</button>
         </div>
       </header>
+
+      {/* Stripe Warning Banner */}
+      {!stripeStatus.connected && (
+        <StripeWarningBanner onConnect={handleConnectStripe} loading={stripeLoading} />
+      )}
 
       <div className="flex flex-col lg:flex-row gap-4">
         {/* Left column */}
