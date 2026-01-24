@@ -103,21 +103,28 @@ function SettingsContent() {
   }, []);
 
   const handleConnectStripe = async () => {
+    console.log('handleConnectStripe called');
     setStripeLoading(true);
     setStripeError(null);
     try {
       const token = localStorage.getItem('vector_token');
+      console.log('Token exists:', !!token);
+      console.log('Calling /api/stripe/connect...');
       const res = await fetch('/api/stripe/connect', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
       });
+      console.log('Response status:', res.status);
       const data = await res.json();
       console.log('Stripe connect response:', data);
       if (data.url) {
+        console.log('Redirecting to:', data.url);
         window.location.href = data.url;
       } else if (data.error) {
+        console.error('Stripe error:', data.error);
         setStripeError(data.error);
       } else {
+        console.error('No URL in response:', data);
         setStripeError('No redirect URL received from Stripe');
       }
     } catch (err) {
