@@ -23,9 +23,22 @@ export async function POST(request) {
 
   try {
     // Check Stripe configuration
-    if (!process.env.STRIPE_SECRET_KEY) {
+    const stripeKey = process.env.STRIPE_SECRET_KEY;
+    console.log('STRIPE KEY DEBUG:', {
+      exists: !!stripeKey,
+      length: stripeKey?.length || 0,
+      prefix: stripeKey?.substring(0, 8) || 'none',
+      suffix: stripeKey?.substring(stripeKey.length - 4) || 'none',
+    });
+
+    if (!stripeKey) {
       console.error('STRIPE_SECRET_KEY not configured');
       return Response.json({ error: 'Stripe not configured' }, { status: 500 });
+    }
+
+    if (!stripeKey.startsWith('sk_')) {
+      console.error('STRIPE_SECRET_KEY has wrong format, should start with sk_');
+      return Response.json({ error: 'Invalid Stripe key format' }, { status: 500 });
     }
 
     // Check Supabase configuration
@@ -34,8 +47,8 @@ export async function POST(request) {
       return Response.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-    console.log('Stripe initialized');
+    const stripe = new Stripe(stripeKey);
+    console.log('Stripe client initialized successfully');
 
     // Get authenticated user
     let user;
