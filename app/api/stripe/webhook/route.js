@@ -13,7 +13,7 @@ export async function POST(request) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return new Response(JSON.stringify({ error: 'Stripe not configured' }), { status: 500 });
   }
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY?.trim());
 
   const supabase = getSupabase();
 

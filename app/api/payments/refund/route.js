@@ -9,7 +9,7 @@ function getSupabase() {
 
 async function getStripe() {
   const Stripe = (await import('stripe')).default;
-  return new Stripe(process.env.STRIPE_SECRET_KEY);
+  return new Stripe(process.env.STRIPE_SECRET_KEY?.trim());
 }
 
 export async function POST(request) {
