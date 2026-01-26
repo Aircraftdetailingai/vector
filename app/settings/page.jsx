@@ -109,10 +109,17 @@ function SettingsContent() {
     try {
       const token = localStorage.getItem('vector_token');
       console.log('Token exists:', !!token);
+      if (!token) {
+        setStripeError('Not logged in - please refresh and try again');
+        return;
+      }
       console.log('Calling /api/stripe/connect...');
       const res = await fetch('/api/stripe/connect', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
       console.log('Response status:', res.status);
       const data = await res.json();
@@ -121,15 +128,16 @@ function SettingsContent() {
         console.log('Redirecting to:', data.url);
         window.location.href = data.url;
       } else if (data.error) {
-        console.error('Stripe error:', data.error);
-        setStripeError(data.error);
+        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error;
+        console.error('Stripe error:', errorMsg);
+        setStripeError(errorMsg);
       } else {
         console.error('No URL in response:', data);
-        setStripeError('No redirect URL received from Stripe');
+        setStripeError('No redirect URL received - check console for details');
       }
     } catch (err) {
       console.error('Failed to connect Stripe:', err);
-      setStripeError(err.message || 'Failed to connect to Stripe');
+      setStripeError(`Network error: ${err.message}`);
     } finally {
       setStripeLoading(false);
     }
