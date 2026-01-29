@@ -149,11 +149,10 @@ export async function POST(request) {
       }
     }
 
-    // Create account link
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+    // Create account link - hardcode URL to avoid env var issues
+    const appUrl = 'https://app.aircraftdetailing.ai';
 
-    console.log('Creating account link for:', accountId, 'redirect to:', appUrl);
+    console.log('Creating account link for:', accountId);
 
     try {
       const accountLink = await stripe.accountLinks.create({
