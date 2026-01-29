@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import { verifyToken } from '@/lib/auth';
 import Stripe from 'stripe';
+import { sendQuoteSentEmail, sendQuoteViewedEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -191,5 +192,44 @@ export async function GET(request) {
         stack: err.stack?.split('\n').slice(0, 5),
       },
     }, { status: 500 });
+  }
+}
+
+// POST - Test email sending
+export async function POST(request) {
+  try {
+    const { email, type } = await request.json();
+
+    if (!email) {
+      return Response.json({ error: 'Email required' }, { status: 400 });
+    }
+
+    const supabase = createClient(
+      process.env.SUPABASE_URL,
+      process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
+    );
+
+    // Get sample quote and detailer
+    const { data: quote } = await supabase.from('quotes').select('*').limit(1).single();
+    const { data: detailer } = await supabase.from('detailers').select('*').limit(1).single();
+
+    if (!quote || !detailer) {
+      return Response.json({ error: 'No data for testing' }, { status: 400 });
+    }
+
+    // Override for testing
+    const testQuote = { ...quote, client_email: email, client_name: 'Test Customer' };
+    const testDetailer = { ...detailer, email, name: 'Test Detailer', company: 'Test Aviation' };
+
+    let result;
+    if (type === 'viewed') {
+      result = await sendQuoteViewedEmail({ quote: testQuote, detailer: testDetailer, viewedAt: new Date().toISOString() });
+    } else {
+      result = await sendQuoteSentEmail({ quote: testQuote, detailer: testDetailer });
+    }
+
+    return Response.json({ success: true, email, type: type || 'quote_sent', result });
+  } catch (err) {
+    return Response.json({ error: err.message }, { status: 500 });
   }
 }
