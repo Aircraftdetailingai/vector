@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { getAuthUser } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
 import Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
@@ -9,6 +10,25 @@ function getSupabase() {
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
   );
+}
+
+// Get user from either cookie or Authorization header
+async function getUser(request) {
+  // Try cookie first (browser requests)
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.get('auth_token')?.value;
+  if (authCookie) {
+    const user = await verifyToken(authCookie);
+    if (user) return user;
+  }
+
+  // Try Authorization header (API requests)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return await verifyToken(authHeader.slice(7));
+  }
+
+  return null;
 }
 
 export async function POST(request) {
@@ -21,7 +41,8 @@ export async function POST(request) {
     console.log('Key check:', {
       exists: !!stripeKey,
       length: stripeKey?.length || 0,
-      prefix: stripeKey?.substring(0, 10) || 'none',
+      prefix: stripeKey?.substring(0, 15) || 'none',
+      suffix: stripeKey?.substring(stripeKey?.length - 4) || 'none',
     });
 
     if (!stripeKey) {
@@ -39,12 +60,15 @@ export async function POST(request) {
       timeout: 30000,
     });
 
-    // Get authenticated user
-    const user = await getAuthUser(request);
-    console.log('User:', user?.id || 'none');
+    // Get authenticated user from cookie or header
+    const user = await getUser(request);
+    console.log('User:', user ? { id: user.id, email: user.email } : 'none');
 
     if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+      return Response.json({
+        error: 'Unauthorized',
+        hint: 'No valid auth token found in cookie or Authorization header',
+      }, { status: 401 });
     }
 
     // Check Supabase
