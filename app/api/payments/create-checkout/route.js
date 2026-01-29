@@ -50,11 +50,28 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: 'Detailer has not connected Stripe', code: 'stripe_not_connected' }), { status: 400 });
     }
 
-    // Calculate application fee (e.g., 3%)
-    const totalAmount = Math.round((quote.total_price || 0) * 100); // Convert to cents
-    const applicationFee = Math.round(totalAmount * 0.03); // 3% platform fee
+    // Fetch detailer's plan to calculate fee
+    const { data: detailerPlan } = await supabase
+      .from('detailers')
+      .select('plan')
+      .eq('id', quote.detailer_id)
+      .single();
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000';
+    // Calculate application fee based on plan
+    // Free tier: 10% of transaction
+    // Pro tier: flat $10
+    // Business tier: flat $10
+    const totalAmount = Math.round((quote.total_price || 0) * 100); // Convert to cents
+    let applicationFee;
+    const plan = detailerPlan?.plan || 'free';
+    if (plan === 'free' || plan === 'starter') {
+      applicationFee = Math.round(totalAmount * 0.10); // 10% platform fee
+    } else {
+      applicationFee = 1000; // $10 flat fee in cents
+    }
+
+    // Hardcode URL to avoid env var issues
+    const appUrl = 'https://app.aircraftdetailing.ai';
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
