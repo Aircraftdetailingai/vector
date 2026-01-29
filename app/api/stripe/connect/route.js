@@ -106,6 +106,16 @@ export async function POST(request) {
           type: stripeErr.type,
           code: stripeErr.code,
         });
+
+        // Check if Connect is not enabled on the Stripe account
+        if (stripeErr.message?.includes("signed up for Connect")) {
+          return Response.json({
+            error: 'Stripe Connect not enabled',
+            details: 'Please enable Stripe Connect in your Stripe Dashboard at https://dashboard.stripe.com/connect/accounts/overview',
+            action_required: 'stripe_connect_setup',
+          }, { status: 503 });
+        }
+
         return Response.json({
           error: 'Failed to create Stripe account',
           details: stripeErr.message,
