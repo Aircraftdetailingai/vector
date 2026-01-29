@@ -1,5 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
 import { notifyQuoteViewed } from '@/lib/push';
+import { sendQuoteViewedEmail } from '@/lib/email';
+
+export const dynamic = 'force-dynamic';
 
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
@@ -8,45 +11,79 @@ function getSupabase() {
 export async function GET(request, { params }) {
   const supabase = getSupabase();
   const { shareLink } = params;
-  // fetch quote by share link
+
+  // Fetch quote by share link
   const { data: quote, error } = await supabase
     .from('quotes')
     .select('*')
     .eq('share_link', shareLink)
     .single();
+
   if (error || !quote) {
     return new Response(JSON.stringify({ error: 'Quote not found' }), { status: 404 });
   }
 
-  // fetch detailer info including FCM token for push notifications and display preference
+  // Fetch detailer info
   const { data: detailer } = await supabase
     .from('detailers')
     .select('id, name, email, phone, company, stripe_account_id, fcm_token, quote_display_preference')
     .eq('id', quote.detailer_id)
     .single();
 
-  // capture viewer info and update as viewed (only if not already paid)
+  // Track view (only if not already paid)
   if (quote.status !== 'paid' && quote.status !== 'approved') {
-    const isFirstView = quote.status === 'sent';
+    const now = new Date().toISOString();
+    const isFirstView = !quote.viewed_at;
+    const viewCount = (quote.view_count || 0) + 1;
     const viewerIp = request.headers.get('x-forwarded-for') || request.headers.get('x-real-ip') || null;
     const viewerDevice = request.headers.get('user-agent') || null;
+
+    // Update quote with view tracking
+    const updateData = {
+      status: 'viewed',
+      last_viewed_at: now,
+      view_count: viewCount,
+      viewer_ip: viewerIp,
+      viewer_device: viewerDevice,
+    };
+
+    // Only set viewed_at on first view
+    if (isFirstView) {
+      updateData.viewed_at = now;
+    }
+
     await supabase
       .from('quotes')
-      .update({
-        status: 'viewed',
-        viewed_at: new Date().toISOString(),
-        viewer_ip: viewerIp,
-        viewer_device: viewerDevice
-      })
+      .update(updateData)
       .eq('id', quote.id);
 
-    // Send push notification on first view
-    if (isFirstView && detailer?.fcm_token) {
-      notifyQuoteViewed({ fcmToken: detailer.fcm_token, quote }).catch(console.error);
+    // Send notifications on first view only
+    if (isFirstView) {
+      // Send push notification
+      if (detailer?.fcm_token) {
+        notifyQuoteViewed({ fcmToken: detailer.fcm_token, quote }).catch(console.error);
+      }
+
+      // Send email notification to detailer
+      if (detailer?.email) {
+        sendQuoteViewedEmail({
+          quote,
+          detailer,
+          viewedAt: now,
+        }).catch(err => console.error('Failed to send quote viewed email:', err));
+      }
     }
   }
 
   // Remove sensitive data from response
   const { fcm_token, ...detailerPublic } = detailer || {};
-  return new Response(JSON.stringify({ quote, detailer: detailerPublic }), { status: 200 });
+
+  return new Response(JSON.stringify({
+    quote: {
+      ...quote,
+      view_count: (quote.view_count || 0) + 1,
+      last_viewed_at: new Date().toISOString(),
+    },
+    detailer: detailerPublic
+  }), { status: 200 });
 }

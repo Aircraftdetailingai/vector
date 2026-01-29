@@ -5,6 +5,8 @@ import { notifyQuotePaid } from '@/lib/push';
 
 export const dynamic = 'force-dynamic';
 
+export const dynamic = 'force-dynamic';
+
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
@@ -63,11 +65,8 @@ export async function POST(request) {
           // Send payment received notification to detailer (email)
           if (detailer?.email) {
             try {
-              await sendPaymentReceivedEmail({
-                detailerEmail: detailer.email,
-                detailerName: detailer.name,
-                quote,
-              });
+              await sendPaymentReceivedEmail({ quote, detailer });
+              console.log('Payment received email sent to detailer');
             } catch (e) {
               console.error('Failed to send detailer email:', e);
             }
@@ -81,12 +80,8 @@ export async function POST(request) {
           // Send payment confirmation to customer
           if (quote.client_email) {
             try {
-              await sendPaymentConfirmedEmail({
-                customerEmail: quote.client_email,
-                customerName: quote.client_name,
-                quote,
-                detailer,
-              });
+              await sendPaymentConfirmedEmail({ quote, detailer });
+              console.log('Payment confirmed email sent to customer');
             } catch (e) {
               console.error('Failed to send customer confirmation:', e);
             }
