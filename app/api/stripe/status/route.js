@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { getAuthUser } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
 import Stripe from 'stripe';
 
 export const dynamic = 'force-dynamic';
@@ -8,13 +9,32 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
+// Get user from either cookie or Authorization header
+async function getUser(request) {
+  // Try cookie first (browser requests)
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.get('auth_token')?.value;
+  if (authCookie) {
+    const user = await verifyToken(authCookie);
+    if (user) return user;
+  }
+
+  // Try Authorization header (API requests)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return await verifyToken(authHeader.slice(7));
+  }
+
+  return null;
+}
+
 export async function GET(request) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return new Response(JSON.stringify({ connected: false, status: 'NOT_CONFIGURED', message: 'Stripe not configured' }), { status: 200 });
   }
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY?.trim());
 
-  const user = await getAuthUser(request);
+  const user = await getUser(request);
   if (!user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
   }
