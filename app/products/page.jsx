@@ -306,11 +306,15 @@ export default function ProductsPage() {
                   Cost per Ounce ($)
                 </label>
                 <input
-                  type="number"
-                  step="0.01"
-                  min="0"
+                  type="text"
+                  inputMode="decimal"
                   value={formData.costPerOz}
-                  onChange={(e) => setFormData({ ...formData, costPerOz: e.target.value })}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                      setFormData({ ...formData, costPerOz: val });
+                    }
+                  }}
                   placeholder="0.00"
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 />

@@ -317,17 +317,19 @@ function SettingsContent() {
           <div className="flex items-center space-x-2">
             <span className="text-gray-500">$</span>
             <input
-              type="number"
-              step="0.01"
-              min="0"
+              type="text"
+              inputMode="decimal"
               value={laborRate}
               onChange={(e) => {
-                const val = parseFloat(e.target.value) || 0;
-                setLaborRate(val);
+                const val = e.target.value;
+                if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                  setLaborRate(val);
+                }
               }}
               onBlur={(e) => {
-                const val = parseFloat(e.target.value) || 0;
-                saveLaborRate(val);
+                const num = parseFloat(e.target.value) || 0;
+                setLaborRate(num);
+                saveLaborRate(num);
               }}
               className="w-24 border rounded px-3 py-2"
             />

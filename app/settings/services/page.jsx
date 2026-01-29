@@ -219,10 +219,19 @@ export default function ServicesPage() {
                         <div className="flex items-center">
                           <span className="text-gray-500 mr-1">$</span>
                           <input
-                            type="number"
-                            step="0.01"
+                            type="text"
+                            inputMode="decimal"
                             value={editingService.hourly_rate}
-                            onChange={(e) => setEditingService({ ...editingService, hourly_rate: parseFloat(e.target.value) || 0 })}
+                            onChange={(e) => {
+                              const val = e.target.value;
+                              if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                                setEditingService({ ...editingService, hourly_rate: val });
+                              }
+                            }}
+                            onBlur={(e) => {
+                              const num = parseFloat(e.target.value) || 0;
+                              setEditingService({ ...editingService, hourly_rate: num });
+                            }}
                             className="w-24 border rounded-lg px-3 py-2"
                           />
                           <span className="text-gray-500 ml-1">/hr</span>
@@ -231,10 +240,19 @@ export default function ServicesPage() {
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Default Hours</label>
                         <input
-                          type="number"
-                          step="0.25"
+                          type="text"
+                          inputMode="decimal"
                           value={editingService.default_hours}
-                          onChange={(e) => setEditingService({ ...editingService, default_hours: parseFloat(e.target.value) || 0 })}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                              setEditingService({ ...editingService, default_hours: val });
+                            }
+                          }}
+                          onBlur={(e) => {
+                            const num = parseFloat(e.target.value) || 0;
+                            setEditingService({ ...editingService, default_hours: num });
+                          }}
                           className="w-24 border rounded-lg px-3 py-2"
                         />
                       </div>
@@ -354,10 +372,19 @@ export default function ServicesPage() {
                   <div className="flex items-center">
                     <span className="mr-1">$</span>
                     <input
-                      type="number"
-                      step="0.01"
+                      type="text"
+                      inputMode="decimal"
                       value={newService.hourly_rate}
-                      onChange={(e) => setNewService({ ...newService, hourly_rate: parseFloat(e.target.value) || 0 })}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                          setNewService({ ...newService, hourly_rate: val });
+                        }
+                      }}
+                      onBlur={(e) => {
+                        const num = parseFloat(e.target.value) || 0;
+                        setNewService({ ...newService, hourly_rate: num });
+                      }}
                       className="w-full border rounded-lg px-3 py-2"
                     />
                   </div>
@@ -365,10 +392,19 @@ export default function ServicesPage() {
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Default Hours</label>
                   <input
-                    type="number"
-                    step="0.25"
+                    type="text"
+                    inputMode="decimal"
                     value={newService.default_hours}
-                    onChange={(e) => setNewService({ ...newService, default_hours: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                        setNewService({ ...newService, default_hours: val });
+                      }
+                    }}
+                    onBlur={(e) => {
+                      const num = parseFloat(e.target.value) || 0;
+                      setNewService({ ...newService, default_hours: num });
+                    }}
                     className="w-full border rounded-lg px-3 py-2"
                   />
                 </div>
