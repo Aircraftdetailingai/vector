@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SendQuoteModal from '../../components/SendQuoteModal.jsx';
 import PushNotifications from '../../components/PushNotifications.jsx';
+import DashboardStats from '../../components/DashboardStats.jsx';
+import PointsBadge from '../../components/PointsBadge.jsx';
 
 const categoryLabels = {
   piston: 'Pistons',
@@ -322,8 +324,10 @@ export default function DashboardPage() {
           <span>Vector</span>
           {user && <span className="text-lg font-medium">- {user.company}</span>}
         </div>
-        <div className="space-x-4 text-sm">
+        <div className="flex items-center space-x-4 text-sm">
+          <PointsBadge />
           <a href="/quotes" className="underline">Quotes</a>
+          <a href="/products" className="underline">Products</a>
           <a href="/profitability" className="underline">Profitability</a>
           <a href="/growth" className="underline text-amber-400">Growth</a>
           <a href="/settings" className="underline">Settings</a>
@@ -338,6 +342,9 @@ export default function DashboardPage() {
 
       {/* Push Notifications Banner */}
       <PushNotifications />
+
+      {/* Dashboard Stats Widget */}
+      <DashboardStats />
 
       {/* Services Configuration Prompt */}
       {user && enabledServices.length === 0 && (
