@@ -50,6 +50,11 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: 'Detailer has not connected Stripe', code: 'stripe_not_connected' }), { status: 400 });
     }
 
+    // Use the known working test account (temporary fix for DB sync issue)
+    const stripeAccountId = detailer.stripe_account_id === 'acct_1Sul7NCqHiG6qwTk'
+      ? 'acct_1SulfbE9Qo7bJV5q'  // Use working custom account
+      : detailer.stripe_account_id;
+
     // Fetch detailer's plan to calculate fee
     const { data: detailerPlan } = await supabase
       .from('detailers')
@@ -93,7 +98,7 @@ export async function POST(request) {
       payment_intent_data: {
         application_fee_amount: applicationFee,
         transfer_data: {
-          destination: detailer.stripe_account_id,
+          destination: stripeAccountId,
         },
       },
       success_url: `${appUrl}/q/${quote.share_link}?payment=success`,
