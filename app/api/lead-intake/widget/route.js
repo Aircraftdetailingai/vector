@@ -51,7 +51,8 @@ const DEFAULT_QUESTIONS = [
 export async function GET(request) {
   try {
     const { searchParams } = new URL(request.url);
-    const detailerId = searchParams.get('id');
+    // Accept both 'id' and 'detailer_id' parameter names for compatibility
+    const detailerId = searchParams.get('detailer_id') || searchParams.get('id');
 
     if (!detailerId) {
       return Response.json({ error: 'Detailer ID required' }, { status: 400 });

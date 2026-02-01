@@ -2,6 +2,9 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 
+// Helper to get auth token
+const getToken = () => localStorage.getItem('vector_token');
+
 const DEFAULT_QUESTIONS = [
   { key: 'aircraft_type', question: 'What type of aircraft do you have?', placeholder: 'e.g., Cessna 172', required: true },
   { key: 'tail_number', question: 'What is your tail number?', placeholder: 'e.g., N12345', required: false },
@@ -49,7 +52,14 @@ export default function LeadIntakeSettingsPage() {
 
   const fetchQuestions = async () => {
     try {
-      const res = await fetch('/api/lead-intake/questions');
+      const token = getToken();
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+      const res = await fetch('/api/lead-intake/questions', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
       if (!res.ok) {
         if (res.status === 401) {
           router.push('/login');
@@ -72,13 +82,19 @@ export default function LeadIntakeSettingsPage() {
     try {
       const res = await fetch('/api/lead-intake/questions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
         body: JSON.stringify({ action: 'save_all', questions }),
       });
 
       if (res.ok) {
         setIsDefault(false);
         alert('Questions saved!');
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to save');
       }
     } catch (err) {
       alert('Failed to save');
@@ -94,7 +110,10 @@ export default function LeadIntakeSettingsPage() {
     try {
       const res = await fetch('/api/lead-intake/questions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
         body: JSON.stringify({ action: 'reset_defaults' }),
       });
 
@@ -157,7 +176,10 @@ export default function LeadIntakeSettingsPage() {
     try {
       const res = await fetch('/api/lead-intake/analyze-website', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${getToken()}`,
+        },
         body: JSON.stringify({ url: websiteUrl }),
       });
 
@@ -195,6 +217,9 @@ export default function LeadIntakeSettingsPage() {
 
       const res = await fetch('/api/lead-intake/upload-faq', {
         method: 'POST',
+        headers: {
+          Authorization: `Bearer ${getToken()}`,
+        },
         body: formData,
       });
 
