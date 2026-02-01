@@ -66,6 +66,34 @@ CREATE INDEX idx_product_usage_quote ON product_usage(quote_id);
 CREATE INDEX idx_product_usage_product ON product_usage(product_id);
 ```
 
+## 5. Create `service_categories` table
+
+```sql
+CREATE TABLE IF NOT EXISTS service_categories (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  name VARCHAR(100) NOT NULL,
+  key VARCHAR(50) NOT NULL,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_service_categories_detailer ON service_categories(detailer_id);
+CREATE UNIQUE INDEX idx_service_categories_key ON service_categories(detailer_id, key);
+```
+
+## 6. Update `detailer_services` table (if exists)
+
+```sql
+-- Add category column if not exists
+ALTER TABLE detailer_services
+ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'other',
+ADD COLUMN IF NOT EXISTS requires_return_trip BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_detailer_services_category ON detailer_services(category);
+```
+
 ## Point Values
 
 | Action | Points |
