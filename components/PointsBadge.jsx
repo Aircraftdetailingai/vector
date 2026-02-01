@@ -78,12 +78,14 @@ export default function PointsBadge() {
                 </div>
               )}
 
-              <a
-                href="/points"
-                className="block text-center text-sm text-amber-600 hover:text-amber-700 font-medium pt-2"
-              >
-                View All Activity
-              </a>
+              <div className="flex gap-2 pt-2">
+                <a
+                  href="/rewards"
+                  className="flex-1 text-center text-sm bg-amber-500 text-white py-1.5 rounded hover:bg-amber-600 font-medium"
+                >
+                  Redeem Points
+                </a>
+              </div>
             </div>
           </div>
         </>

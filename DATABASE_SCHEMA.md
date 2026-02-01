@@ -94,6 +94,32 @@ ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
 CREATE INDEX IF NOT EXISTS idx_detailer_services_category ON detailer_services(category);
 ```
 
+## 7. Create `reward_redemptions` table
+
+```sql
+CREATE TABLE IF NOT EXISTS reward_redemptions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  reward_id VARCHAR(50) NOT NULL,
+  reward_name VARCHAR(255) NOT NULL,
+  points_spent INTEGER NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending',
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  fulfilled_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_reward_redemptions_detailer ON reward_redemptions(detailer_id);
+CREATE INDEX idx_reward_redemptions_status ON reward_redemptions(status);
+```
+
+## 8. Add currency column to detailers
+
+```sql
+ALTER TABLE detailers
+ADD COLUMN IF NOT EXISTS currency VARCHAR(3) DEFAULT 'USD';
+```
+
 ## Point Values
 
 | Action | Points |

@@ -28,6 +28,9 @@ function SettingsContent() {
   const [efficiencyFactor, setEfficiencyFactor] = useState(1.0);
   const [stripeStatus, setStripeStatus] = useState({ connected: false, status: 'UNKNOWN' });
   const [stripeLoading, setStripeLoading] = useState(false);
+  const [currency, setCurrency] = useState('USD');
+  const [currencies, setCurrencies] = useState([]);
+  const [currencyLoading, setCurrencyLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -100,7 +103,53 @@ function SettingsContent() {
 
   useEffect(() => {
     checkStripeStatus();
+    fetchCurrency();
   }, []);
+
+  const fetchCurrency = async () => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/user/currency', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCurrency(data.currency || 'USD');
+        setCurrencies(data.currencies || []);
+      }
+    } catch (err) {
+      console.log('Failed to fetch currency:', err);
+    }
+  };
+
+  const saveCurrency = async (code) => {
+    setCurrencyLoading(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/user/currency', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ currency: code }),
+      });
+      if (res.ok) {
+        setCurrency(code);
+        // Update local storage
+        const stored = localStorage.getItem('vector_user');
+        if (stored) {
+          const u = JSON.parse(stored);
+          u.currency = code;
+          localStorage.setItem('vector_user', JSON.stringify(u));
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save currency:', err);
+    } finally {
+      setCurrencyLoading(false);
+    }
+  };
 
   const handleConnectStripe = async () => {
     console.log('handleConnectStripe called');
@@ -271,6 +320,33 @@ function SettingsContent() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Currency */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Currency</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Select your preferred currency for quotes and payments.
+          </p>
+          <select
+            value={currency}
+            onChange={(e) => saveCurrency(e.target.value)}
+            disabled={currencyLoading}
+            className="w-full md:w-auto border rounded px-3 py-2 disabled:opacity-50"
+          >
+            {currencies.length > 0 ? (
+              currencies.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.symbol} {c.code} - {c.name}
+                </option>
+              ))
+            ) : (
+              <option value="USD">$ USD - US Dollar</option>
+            )}
+          </select>
+          <p className="text-xs text-gray-400 mt-2">
+            All prices will be displayed in this currency. Stripe handles conversion for international payments.
+          </p>
         </div>
 
         {/* Efficiency Factor */}
