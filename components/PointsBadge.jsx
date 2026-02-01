@@ -7,10 +7,10 @@ export default function PointsBadge() {
 
   useEffect(() => {
     const fetchPoints = async () => {
-      const token = localStorage.getItem('vector_token');
-      if (!token) return;
-
       try {
+        const token = localStorage.getItem('vector_token');
+        if (!token) return;
+
         const res = await fetch('/api/points', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -26,7 +26,8 @@ export default function PointsBadge() {
     fetchPoints();
   }, []);
 
-  if (points === null) return null;
+  // Don't render if no points data or missing required fields
+  if (!points || typeof points.total !== 'number') return null;
 
   return (
     <div className="relative">
@@ -35,7 +36,7 @@ export default function PointsBadge() {
         className="flex items-center space-x-1 bg-amber-500/20 hover:bg-amber-500/30 px-3 py-1 rounded-full transition-colors"
       >
         <span className="text-amber-400">&#9733;</span>
-        <span className="text-amber-300 font-semibold">{points.total.toLocaleString()}</span>
+        <span className="text-amber-300 font-semibold">{(points.total || 0).toLocaleString()}</span>
       </button>
 
       {showDropdown && (
@@ -49,7 +50,7 @@ export default function PointsBadge() {
               <div className="flex justify-between items-start">
                 <div>
                   <p className="text-sm opacity-90">Available Points</p>
-                  <p className="text-3xl font-bold">{points.total.toLocaleString()}</p>
+                  <p className="text-3xl font-bold">{(points.total || 0).toLocaleString()}</p>
                 </div>
                 <span className="text-3xl">&#9733;</span>
               </div>
@@ -58,11 +59,11 @@ export default function PointsBadge() {
             <div className="p-4 space-y-3">
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">This Week</span>
-                <span className="font-medium text-green-600">+{points.thisWeek}</span>
+                <span className="font-medium text-green-600">+{points.thisWeek || 0}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span className="text-gray-600">Lifetime Earned</span>
-                <span className="font-medium text-gray-900">{points.lifetime.toLocaleString()}</span>
+                <span className="font-medium text-gray-900">{(points.lifetime || 0).toLocaleString()}</span>
               </div>
 
               {points.recentActivity && points.recentActivity.length > 0 && (

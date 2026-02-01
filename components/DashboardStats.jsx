@@ -8,10 +8,13 @@ export default function DashboardStats() {
 
   useEffect(() => {
     const fetchStats = async () => {
-      const token = localStorage.getItem('vector_token');
-      if (!token) return;
-
       try {
+        const token = localStorage.getItem('vector_token');
+        if (!token) {
+          setLoading(false);
+          return;
+        }
+
         const res = await fetch('/api/dashboard/stats', {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -32,8 +35,8 @@ export default function DashboardStats() {
   const handleCompleteTip = async () => {
     if (!stats?.todaysTip || tipCompleted) return;
 
-    const token = localStorage.getItem('vector_token');
     try {
+      const token = localStorage.getItem('vector_token');
       const res = await fetch('/api/tips', {
         method: 'POST',
         headers: {
@@ -47,13 +50,12 @@ export default function DashboardStats() {
         const data = await res.json();
         if (data.success) {
           setTipCompleted(true);
-          // Update points display
           setStats(prev => ({
             ...prev,
             points: {
-              ...prev.points,
-              total: prev.points.total + data.points,
-              thisWeek: prev.points.thisWeek + data.points,
+              ...prev?.points,
+              total: (prev?.points?.total || 0) + data.points,
+              thisWeek: (prev?.points?.thisWeek || 0) + data.points,
             },
           }));
         }
@@ -65,9 +67,10 @@ export default function DashboardStats() {
 
   if (loading) {
     return (
-      <div className="bg-white rounded-lg p-4 shadow animate-pulse">
+      <div className="bg-white rounded-lg p-4 shadow animate-pulse mb-4">
         <div className="h-4 bg-gray-200 rounded w-1/3 mb-4"></div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="h-16 bg-gray-200 rounded"></div>
           <div className="h-16 bg-gray-200 rounded"></div>
           <div className="h-16 bg-gray-200 rounded"></div>
           <div className="h-16 bg-gray-200 rounded"></div>
@@ -76,7 +79,13 @@ export default function DashboardStats() {
     );
   }
 
+  // Don't render if no stats data
   if (!stats) return null;
+
+  // Safe access with defaults
+  const points = stats.points || { total: 0, thisWeek: 0, lifetime: 0 };
+  const thisWeek = stats.thisWeek || { jobs: 0, booked: 0, quotes: 0 };
+  const thisMonth = stats.thisMonth || { jobs: 0, booked: 0, quotes: 0 };
 
   return (
     <div className="space-y-4 mb-4">
@@ -87,9 +96,9 @@ export default function DashboardStats() {
           <div className="flex justify-between items-start">
             <div>
               <p className="text-amber-100 text-sm">Points</p>
-              <p className="text-2xl font-bold">{stats.points.total.toLocaleString()}</p>
-              {stats.points.thisWeek > 0 && (
-                <p className="text-amber-200 text-xs">+{stats.points.thisWeek} this week</p>
+              <p className="text-2xl font-bold">{(points.total || 0).toLocaleString()}</p>
+              {(points.thisWeek || 0) > 0 && (
+                <p className="text-amber-200 text-xs">+{points.thisWeek} this week</p>
               )}
             </div>
             <span className="text-2xl opacity-75">&#9733;</span>
@@ -99,22 +108,22 @@ export default function DashboardStats() {
         {/* This Week Jobs */}
         <div className="bg-white rounded-lg p-4 shadow">
           <p className="text-gray-500 text-sm">This Week</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.thisWeek.jobs}</p>
+          <p className="text-2xl font-bold text-gray-900">{thisWeek.jobs || 0}</p>
           <p className="text-gray-400 text-xs">jobs completed</p>
         </div>
 
         {/* This Week Revenue */}
         <div className="bg-white rounded-lg p-4 shadow">
           <p className="text-gray-500 text-sm">Week Revenue</p>
-          <p className="text-2xl font-bold text-green-600">${stats.thisWeek.booked.toLocaleString()}</p>
-          <p className="text-gray-400 text-xs">{stats.thisWeek.quotes} quotes sent</p>
+          <p className="text-2xl font-bold text-green-600">${(thisWeek.booked || 0).toLocaleString()}</p>
+          <p className="text-gray-400 text-xs">{thisWeek.quotes || 0} quotes sent</p>
         </div>
 
         {/* Monthly Revenue */}
         <div className="bg-white rounded-lg p-4 shadow">
           <p className="text-gray-500 text-sm">Monthly Revenue</p>
-          <p className="text-2xl font-bold text-gray-900">${stats.thisMonth.booked.toLocaleString()}</p>
-          <p className="text-gray-400 text-xs">{stats.thisMonth.jobs} jobs</p>
+          <p className="text-2xl font-bold text-gray-900">${(thisMonth.booked || 0).toLocaleString()}</p>
+          <p className="text-gray-400 text-xs">{thisMonth.jobs || 0} jobs</p>
         </div>
       </div>
 
@@ -125,7 +134,7 @@ export default function DashboardStats() {
             <div className="flex items-start space-x-3">
               <span className="text-2xl">&#128161;</span>
               <div>
-                <p className="text-sm text-blue-600 font-medium">Today's Tip</p>
+                <p className="text-sm text-blue-600 font-medium">Today&apos;s Tip</p>
                 <p className="text-blue-900 font-semibold">{stats.todaysTip.title}</p>
                 <p className="text-blue-700 text-sm mt-1">{getCategoryLabel(stats.todaysTip.category)}</p>
               </div>
@@ -179,9 +188,8 @@ function TipsOptIn({ onOptIn }) {
 
   const handleOptIn = async (enabled) => {
     setLoading(true);
-    const token = localStorage.getItem('vector_token');
-
     try {
+      const token = localStorage.getItem('vector_token');
       await fetch('/api/notifications/preferences', {
         method: 'POST',
         headers: {
