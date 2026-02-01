@@ -264,3 +264,113 @@ CREATE INDEX idx_shop_orders_stripe ON shop_orders(stripe_session_id);
 | Basic | 10% | Default tier for new vendors |
 | Pro | 25% | Featured placement, priority support |
 | Partner | 60% | Premium placement, dedicated account manager |
+
+---
+
+# Customer Portal Schema
+
+Run these SQL commands to enable the customer portal.
+
+## 14. Create `customer_login_codes` table
+
+```sql
+CREATE TABLE IF NOT EXISTS customer_login_codes (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  code VARCHAR(6) NOT NULL,
+  expires_at TIMESTAMP WITH TIME ZONE NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_customer_login_codes_email ON customer_login_codes(email);
+```
+
+## 15. Create `customer_messages` table
+
+```sql
+CREATE TABLE IF NOT EXISTS customer_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  customer_email VARCHAR(255) NOT NULL,
+  customer_name VARCHAR(255),
+  quote_id UUID REFERENCES quotes(id) ON DELETE SET NULL,
+  message TEXT NOT NULL,
+  sender VARCHAR(20) NOT NULL DEFAULT 'customer',
+  read BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_customer_messages_detailer ON customer_messages(detailer_id);
+CREATE INDEX idx_customer_messages_email ON customer_messages(customer_email);
+CREATE INDEX idx_customer_messages_quote ON customer_messages(quote_id);
+```
+
+---
+
+# AI Lead Intake Schema
+
+Run these SQL commands to enable AI lead intake.
+
+## 16. Create `intake_questions` table
+
+```sql
+CREATE TABLE IF NOT EXISTS intake_questions (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  question_key VARCHAR(50) NOT NULL,
+  question_text TEXT NOT NULL,
+  placeholder VARCHAR(255),
+  required BOOLEAN DEFAULT false,
+  display_order INTEGER DEFAULT 0,
+  question_type VARCHAR(20) DEFAULT 'text',
+  options JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_intake_questions_detailer ON intake_questions(detailer_id);
+CREATE INDEX idx_intake_questions_order ON intake_questions(display_order);
+```
+
+## 17. Create `intake_faqs` table
+
+```sql
+CREATE TABLE IF NOT EXISTS intake_faqs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID UNIQUE NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  faqs JSONB NOT NULL DEFAULT '[]',
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_intake_faqs_detailer ON intake_faqs(detailer_id);
+```
+
+## 18. Create `intake_leads` table
+
+```sql
+CREATE TABLE IF NOT EXISTS intake_leads (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  customer_name VARCHAR(255),
+  customer_email VARCHAR(255),
+  customer_phone VARCHAR(50),
+  answers JSONB DEFAULT '{}',
+  source VARCHAR(50) DEFAULT 'widget',
+  status VARCHAR(20) DEFAULT 'new',
+  quote_id UUID REFERENCES quotes(id) ON DELETE SET NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_intake_leads_detailer ON intake_leads(detailer_id);
+CREATE INDEX idx_intake_leads_status ON intake_leads(status);
+CREATE INDEX idx_intake_leads_created ON intake_leads(created_at);
+```
+
+## Lead Status Flow
+
+| Status | Description |
+|--------|-------------|
+| new | Just created from widget |
+| contacted | Detailer has reached out |
+| converted | Converted to a quote |
+| closed | Lead closed (not interested) |
