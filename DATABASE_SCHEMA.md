@@ -389,13 +389,14 @@ ADD COLUMN IF NOT EXISTS minimum_callout_fee DECIMAL(10,2) DEFAULT 0,
 ADD COLUMN IF NOT EXISTS minimum_fee_locations JSONB DEFAULT '[]';
 ```
 
-## 20. Add minimum fee columns to `quotes` table
+## 20. Add minimum fee and scheduling columns to `quotes` table
 
 ```sql
 ALTER TABLE quotes
 ADD COLUMN IF NOT EXISTS job_location VARCHAR(255),
 ADD COLUMN IF NOT EXISTS minimum_fee_applied BOOLEAN DEFAULT false,
-ADD COLUMN IF NOT EXISTS calculated_price DECIMAL(10,2);
+ADD COLUMN IF NOT EXISTS calculated_price DECIMAL(10,2),
+ADD COLUMN IF NOT EXISTS scheduled_date TIMESTAMP WITH TIME ZONE;
 ```
 
 ## 21. Create `change_orders` table

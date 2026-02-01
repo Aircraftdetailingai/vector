@@ -371,6 +371,7 @@ export default function DashboardPage() {
         <div className="flex items-center space-x-4 text-sm">
           <PointsBadge />
           <a href="/quotes" className="underline">Quotes</a>
+          <a href="/calendar" className="underline">Calendar</a>
           <a href="/products" className="underline">Products</a>
           <a href="/profitability" className="underline">Profitability</a>
           <a href="/growth" className="underline text-amber-400">Growth</a>

@@ -315,6 +315,30 @@ function SettingsContent() {
           )}
         </div>
 
+        {/* Quick Links */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          <a href="/settings/services" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
+            <div className="text-2xl mb-1">&#9881;</div>
+            <div className="font-medium text-sm">Services</div>
+            <div className="text-xs text-gray-500">Configure rates</div>
+          </a>
+          <a href="/settings/embed" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
+            <div className="text-2xl mb-1">&#128279;</div>
+            <div className="font-medium text-sm">Embed & QR</div>
+            <div className="text-xs text-gray-500">Website widget</div>
+          </a>
+          <a href="/settings/lead-intake" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
+            <div className="text-2xl mb-1">&#129302;</div>
+            <div className="font-medium text-sm">AI Lead Intake</div>
+            <div className="text-xs text-gray-500">Custom questions</div>
+          </a>
+          <a href="/admin/aircraft" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
+            <div className="text-2xl mb-1">&#9992;</div>
+            <div className="font-medium text-sm">Aircraft DB</div>
+            <div className="text-xs text-gray-500">Add/edit models</div>
+          </a>
+        </div>
+
         {/* Stripe Connect */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold mb-2">Stripe Payments</h3>
