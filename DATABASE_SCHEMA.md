@@ -131,3 +131,136 @@ ADD COLUMN IF NOT EXISTS currency VARCHAR(3) DEFAULT 'USD';
 | Log product usage | 10 |
 | Complete tip task | 20 |
 | Daily login | 5 |
+
+---
+
+# Vendor Marketplace Schema
+
+Run these SQL commands to enable the vendor marketplace.
+
+## 9. Create `vendors` table
+
+```sql
+CREATE TABLE IF NOT EXISTS vendors (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  email VARCHAR(255) UNIQUE NOT NULL,
+  password VARCHAR(255) NOT NULL,
+  company_name VARCHAR(255) NOT NULL,
+  contact_name VARCHAR(255),
+  website VARCHAR(500),
+  logo VARCHAR(500),
+  description TEXT,
+  status VARCHAR(20) DEFAULT 'pending',
+  commission_tier VARCHAR(20) DEFAULT 'basic',
+  stripe_account_id VARCHAR(255),
+  stripe_onboarding_complete BOOLEAN DEFAULT false,
+  payout_enabled BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_vendors_email ON vendors(email);
+CREATE INDEX idx_vendors_status ON vendors(status);
+CREATE INDEX idx_vendors_tier ON vendors(commission_tier);
+```
+
+## 10. Create `vendor_products` table
+
+```sql
+CREATE TABLE IF NOT EXISTS vendor_products (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT,
+  category VARCHAR(50) NOT NULL,
+  price DECIMAL(10,2) NOT NULL,
+  compare_price DECIMAL(10,2),
+  images JSONB DEFAULT '[]',
+  sku VARCHAR(100),
+  stock INTEGER,
+  status VARCHAR(20) DEFAULT 'pending',
+  views INTEGER DEFAULT 0,
+  clicks INTEGER DEFAULT 0,
+  sales INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_vendor_products_vendor ON vendor_products(vendor_id);
+CREATE INDEX idx_vendor_products_status ON vendor_products(status);
+CREATE INDEX idx_vendor_products_category ON vendor_products(category);
+```
+
+## 11. Create `vendor_orders` table
+
+```sql
+CREATE TABLE IF NOT EXISTS vendor_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+  product_id UUID NOT NULL REFERENCES vendor_products(id),
+  detailer_id UUID NOT NULL REFERENCES detailers(id),
+  quantity INTEGER NOT NULL DEFAULT 1,
+  unit_price DECIMAL(10,2) NOT NULL,
+  total DECIMAL(10,2) NOT NULL,
+  commission DECIMAL(10,2) NOT NULL,
+  vendor_amount DECIMAL(10,2) NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending',
+  stripe_session_id VARCHAR(255),
+  shipping_address JSONB,
+  tracking_number VARCHAR(255),
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  fulfilled_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_vendor_orders_vendor ON vendor_orders(vendor_id);
+CREATE INDEX idx_vendor_orders_detailer ON vendor_orders(detailer_id);
+CREATE INDEX idx_vendor_orders_status ON vendor_orders(status);
+```
+
+## 12. Create `vendor_payouts` table
+
+```sql
+CREATE TABLE IF NOT EXISTS vendor_payouts (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  vendor_id UUID NOT NULL REFERENCES vendors(id) ON DELETE CASCADE,
+  amount DECIMAL(10,2) NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending',
+  stripe_payout_id VARCHAR(255),
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  completed_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_vendor_payouts_vendor ON vendor_payouts(vendor_id);
+CREATE INDEX idx_vendor_payouts_status ON vendor_payouts(status);
+```
+
+## 13. Create `shop_orders` table (detailer cart orders)
+
+```sql
+CREATE TABLE IF NOT EXISTS shop_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  stripe_session_id VARCHAR(255) UNIQUE,
+  items JSONB NOT NULL DEFAULT '[]',
+  total DECIMAL(10,2) NOT NULL,
+  status VARCHAR(20) DEFAULT 'pending',
+  shipping_address JSONB,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  completed_at TIMESTAMP WITH TIME ZONE
+);
+
+CREATE INDEX idx_shop_orders_detailer ON shop_orders(detailer_id);
+CREATE INDEX idx_shop_orders_status ON shop_orders(status);
+CREATE INDEX idx_shop_orders_stripe ON shop_orders(stripe_session_id);
+```
+
+## Commission Tiers
+
+| Tier | Commission Rate | Description |
+|------|-----------------|-------------|
+| Basic | 10% | Default tier for new vendors |
+| Pro | 25% | Featured placement, priority support |
+| Partner | 60% | Premium placement, dedicated account manager |
