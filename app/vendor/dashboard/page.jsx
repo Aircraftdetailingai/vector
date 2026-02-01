@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import DataTable from '@/components/DataTable';
 
 export default function VendorDashboardPage() {
   const router = useRouter();
@@ -555,6 +556,143 @@ function VendorOrders() {
     }
   };
 
+  const formatDate = (dateStr) => {
+    if (!dateStr) return '-';
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
+  };
+
+  const columns = useMemo(() => [
+    {
+      id: 'product',
+      header: 'Product',
+      accessorFn: (row) => row.vendor_products?.name || 'Unknown',
+      cell: ({ getValue, row }) => (
+        <div>
+          <span className="font-medium">{getValue()}</span>
+          {row.original.vendor_products?.sku && (
+            <span className="text-xs text-gray-500 block">SKU: {row.original.vendor_products.sku}</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'customer',
+      header: 'Customer',
+      accessorFn: (row) => row.detailers?.company_name || row.customer_name || '-',
+      cell: ({ getValue, row }) => (
+        <div>
+          <span>{getValue()}</span>
+          {row.original.detailers?.email && (
+            <span className="text-xs text-gray-500 block">{row.original.detailers.email}</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'quantity',
+      header: 'Qty',
+      accessorKey: 'quantity',
+    },
+    {
+      id: 'total',
+      header: 'Total',
+      accessorKey: 'total',
+      cell: ({ getValue }) => <span className="font-semibold">${(getValue() || 0).toFixed(2)}</span>,
+    },
+    {
+      id: 'commission',
+      header: 'Commission',
+      accessorKey: 'commission',
+      cell: ({ getValue }) => <span className="text-red-600">-${(getValue() || 0).toFixed(2)}</span>,
+    },
+    {
+      id: 'vendor_amount',
+      header: 'Your Earnings',
+      accessorKey: 'vendor_amount',
+      cell: ({ getValue }) => <span className="text-green-600 font-medium">${(getValue() || 0).toFixed(2)}</span>,
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      accessorKey: 'status',
+      cell: ({ getValue }) => {
+        const status = getValue();
+        const colors = {
+          pending: 'bg-yellow-100 text-yellow-800',
+          shipped: 'bg-blue-100 text-blue-800',
+          delivered: 'bg-green-100 text-green-800',
+        };
+        return (
+          <span className={`px-2 py-1 rounded text-xs capitalize ${colors[status] || 'bg-gray-100 text-gray-800'}`}>
+            {status}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'date',
+      header: 'Date',
+      accessorKey: 'created_at',
+      cell: ({ getValue }) => formatDate(getValue()),
+    },
+    {
+      id: 'shipping',
+      header: 'Ship To',
+      accessorFn: (row) => {
+        if (row.shipping_address) {
+          if (typeof row.shipping_address === 'object') {
+            return `${row.shipping_address.city || ''}, ${row.shipping_address.state || ''}`;
+          }
+          return row.shipping_address;
+        }
+        return '-';
+      },
+    },
+    {
+      id: 'tracking',
+      header: 'Tracking',
+      accessorKey: 'tracking_number',
+      cell: ({ getValue }) => getValue() || '-',
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => {
+        const order = row.original;
+        return (
+          <div className="flex gap-2">
+            {order.status === 'pending' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateStatus(order.id, 'shipped');
+                }}
+                className="px-2 py-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-600"
+              >
+                Ship
+              </button>
+            )}
+            {order.status === 'shipped' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  updateStatus(order.id, 'delivered');
+                }}
+                className="px-2 py-1 bg-green-500 text-white text-xs rounded hover:bg-green-600"
+              >
+                Delivered
+              </button>
+            )}
+          </div>
+        );
+      },
+    },
+  ], []);
+
   if (loading) return <div className="text-gray-500">Loading orders...</div>;
 
   return (
@@ -573,58 +711,12 @@ function VendorOrders() {
         </select>
       </div>
 
-      {orders.length === 0 ? (
-        <div className="bg-white rounded-lg p-8 text-center">
-          <p className="text-gray-500">No orders yet</p>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          {orders.map((o) => (
-            <div key={o.id} className="bg-white rounded-lg shadow p-4">
-              <div className="flex justify-between items-start mb-3">
-                <div>
-                  <p className="font-medium">Order #{o.id.slice(0, 8)}</p>
-                  <p className="text-sm text-gray-500">{new Date(o.created_at).toLocaleString()}</p>
-                </div>
-                <span className={`px-2 py-1 rounded text-xs ${
-                  o.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                  o.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                  o.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                  'bg-gray-100 text-gray-800'
-                }`}>
-                  {o.status}
-                </span>
-              </div>
-              <div className="border-t pt-3">
-                <p className="text-sm"><strong>Product:</strong> {o.vendor_products?.name || 'Unknown'}</p>
-                <p className="text-sm"><strong>Quantity:</strong> {o.quantity}</p>
-                <p className="text-sm"><strong>Total:</strong> ${o.total}</p>
-                {o.shipping_address && (
-                  <p className="text-sm"><strong>Ship to:</strong> {o.shipping_address}</p>
-                )}
-              </div>
-              {o.status === 'pending' && (
-                <div className="mt-3 flex gap-2">
-                  <button
-                    onClick={() => updateStatus(o.id, 'shipped')}
-                    className="px-3 py-1 bg-blue-500 text-white text-sm rounded"
-                  >
-                    Mark Shipped
-                  </button>
-                </div>
-              )}
-              {o.status === 'shipped' && (
-                <button
-                  onClick={() => updateStatus(o.id, 'delivered')}
-                  className="mt-3 px-3 py-1 bg-green-500 text-white text-sm rounded"
-                >
-                  Mark Delivered
-                </button>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
+      <DataTable
+        tableId="vendor"
+        data={orders}
+        columns={columns}
+        emptyMessage="No orders yet"
+      />
     </div>
   );
 }

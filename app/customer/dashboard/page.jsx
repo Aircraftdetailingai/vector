@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import DataTable from '@/components/DataTable';
 
 export default function CustomerDashboardPage() {
   const router = useRouter();
@@ -108,9 +109,8 @@ export default function CustomerDashboardPage() {
   };
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return 'Not scheduled';
+    if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('en-US', {
-      weekday: 'short',
       month: 'short',
       day: 'numeric',
       year: 'numeric',
@@ -138,6 +138,136 @@ export default function CustomerDashboardPage() {
     return styles[status] || 'bg-gray-100 text-gray-800';
   };
 
+  // Table columns for quotes
+  const quoteColumns = useMemo(() => [
+    {
+      id: 'make',
+      header: 'Make',
+      accessorFn: (row) => row.aircraft_make || '-',
+    },
+    {
+      id: 'model',
+      header: 'Model',
+      accessorFn: (row) => row.aircraft_model || row.aircraft_type || '-',
+    },
+    {
+      id: 'registration',
+      header: 'Registration',
+      accessorFn: (row) => row.tail_number || '-',
+    },
+    {
+      id: 'company',
+      header: 'Company',
+      accessorFn: (row) => row.detailers?.company_name || '-',
+    },
+    {
+      id: 'services',
+      header: 'Services',
+      accessorFn: (row) => {
+        if (row.services && Array.isArray(row.services)) {
+          return row.services.map(s => s.name || s).join(', ');
+        }
+        return row.services || '-';
+      },
+      cell: ({ getValue }) => (
+        <span className="truncate max-w-[200px] block" title={getValue()}>
+          {getValue()}
+        </span>
+      ),
+    },
+    {
+      id: 'total',
+      header: 'Quote Total',
+      accessorFn: (row) => row.total || 0,
+      cell: ({ getValue }) => (
+        <span className="font-semibold text-amber-600">{formatCurrency(getValue())}</span>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      accessorKey: 'status',
+      cell: ({ getValue }) => (
+        <span className={`px-2 py-1 rounded-full text-xs capitalize ${getStatusBadge(getValue())}`}>
+          {getValue()}
+        </span>
+      ),
+    },
+    {
+      id: 'date',
+      header: 'Date',
+      accessorKey: 'created_at',
+      cell: ({ getValue }) => formatDate(getValue()),
+    },
+    {
+      id: 'location',
+      header: 'Hangar Location',
+      accessorFn: (row) => row.location || row.hangar_location || '-',
+    },
+    {
+      id: 'email',
+      header: 'Customer Email',
+      accessorKey: 'customer_email',
+    },
+    {
+      id: 'phone',
+      header: 'Customer Phone',
+      accessorKey: 'customer_phone',
+    },
+    {
+      id: 'sent_date',
+      header: 'Quote Sent',
+      accessorKey: 'sent_at',
+      cell: ({ getValue }) => formatDate(getValue()),
+    },
+    {
+      id: 'viewed_date',
+      header: 'Quote Viewed',
+      accessorKey: 'viewed_at',
+      cell: ({ getValue }) => formatDate(getValue()),
+    },
+    {
+      id: 'payment_date',
+      header: 'Payment Date',
+      accessorKey: 'paid_at',
+      cell: ({ getValue }) => formatDate(getValue()),
+    },
+    {
+      id: 'notes',
+      header: 'Notes',
+      accessorKey: 'notes',
+      cell: ({ getValue }) => (
+        <span className="truncate max-w-[150px] block" title={getValue()}>
+          {getValue() || '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => {
+        const quote = row.original;
+        if (quote.status === 'sent' || quote.status === 'viewed') {
+          return (
+            <a
+              href={`/q/${quote.share_link}`}
+              onClick={(e) => e.stopPropagation()}
+              className="px-3 py-1 bg-amber-500 text-white rounded text-xs hover:bg-amber-600"
+            >
+              View & Pay
+            </a>
+          );
+        }
+        return null;
+      },
+    },
+  ], []);
+
+  // All quotes for the table
+  const allQuotes = useMemo(() => {
+    return [...(data?.activeQuotes || []), ...(data?.completedJobs || [])];
+  }, [data]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -152,7 +282,7 @@ export default function CustomerDashboardPage() {
   // Get unique detailers from quotes
   const detailers = [];
   const seenIds = new Set();
-  data?.activeQuotes?.concat(data?.completedJobs || []).forEach(q => {
+  allQuotes.forEach(q => {
     if (q.detailers && !seenIds.has(q.detailers.id)) {
       seenIds.add(q.detailers.id);
       detailers.push(q.detailers);
@@ -163,7 +293,7 @@ export default function CustomerDashboardPage() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-gradient-to-r from-[#0f172a] to-[#1e3a5f] text-white">
-        <div className="max-w-6xl mx-auto px-4 py-6">
+        <div className="max-w-7xl mx-auto px-4 py-6">
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -188,7 +318,7 @@ export default function CustomerDashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="max-w-6xl mx-auto px-4 -mt-4">
+      <div className="max-w-7xl mx-auto px-4 -mt-4">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <div className="bg-white rounded-lg shadow p-4">
             <p className="text-sm text-gray-500">Active Quotes</p>
@@ -210,13 +340,13 @@ export default function CustomerDashboardPage() {
       </div>
 
       {/* Tabs */}
-      <div className="max-w-6xl mx-auto px-4 mt-6">
-        <div className="flex border-b bg-white rounded-t-lg">
+      <div className="max-w-7xl mx-auto px-4 mt-6">
+        <div className="flex border-b bg-white rounded-t-lg overflow-x-auto">
           {['overview', 'quotes', 'appointments', 'messages', 'receipts'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-3 font-medium capitalize border-b-2 -mb-px ${
+              className={`px-6 py-3 font-medium capitalize border-b-2 -mb-px whitespace-nowrap ${
                 activeTab === tab
                   ? 'border-amber-500 text-amber-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -229,48 +359,19 @@ export default function CustomerDashboardPage() {
       </div>
 
       {/* Content */}
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="max-w-7xl mx-auto px-4 py-6">
         {activeTab === 'overview' && (
           <div className="space-y-6">
-            {/* Active Quotes */}
+            {/* Quick view table of active quotes */}
             {data?.activeQuotes?.length > 0 && (
-              <div className="bg-white rounded-lg shadow">
-                <div className="p-4 border-b">
-                  <h2 className="font-semibold text-lg">Active Quotes</h2>
-                </div>
-                <div className="divide-y">
-                  {data.activeQuotes.slice(0, 3).map(quote => (
-                    <div key={quote.id} className="p-4 hover:bg-gray-50">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <p className="font-medium">{quote.aircraft_type || 'Aircraft Detail'}</p>
-                          <p className="text-sm text-gray-500">
-                            From: {quote.detailers?.company_name}
-                          </p>
-                          <p className="text-sm text-gray-500">
-                            {formatDate(quote.created_at)}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xl font-bold text-amber-600">
-                            {formatCurrency(quote.total)}
-                          </p>
-                          <span className={`inline-block mt-1 px-2 py-1 rounded-full text-xs ${getStatusBadge(quote.status)}`}>
-                            {quote.status}
-                          </span>
-                        </div>
-                      </div>
-                      {quote.status === 'sent' || quote.status === 'viewed' ? (
-                        <a
-                          href={`/q/${quote.share_link}`}
-                          className="mt-3 inline-block px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-sm"
-                        >
-                          View & Pay Quote
-                        </a>
-                      ) : null}
-                    </div>
-                  ))}
-                </div>
+              <div>
+                <h2 className="text-lg font-semibold mb-4">Active Quotes</h2>
+                <DataTable
+                  tableId="customer"
+                  data={data.activeQuotes}
+                  columns={quoteColumns}
+                  emptyMessage="No active quotes"
+                />
               </div>
             )}
 
@@ -281,19 +382,15 @@ export default function CustomerDashboardPage() {
                   <h2 className="font-semibold text-lg">Upcoming Appointments</h2>
                 </div>
                 <div className="divide-y">
-                  {data.upcomingJobs.slice(0, 3).map(job => (
+                  {data.upcomingJobs.slice(0, 5).map(job => (
                     <div key={job.id} className="p-4">
                       <div className="flex justify-between items-start">
                         <div>
                           <p className="font-medium">{job.aircraft_type || 'Aircraft Detail'}</p>
-                          <p className="text-sm text-gray-500">
-                            {job.detailers?.company_name}
-                          </p>
+                          <p className="text-sm text-gray-500">{job.detailers?.company_name}</p>
                         </div>
                         <div className="text-right">
-                          <p className="font-semibold text-blue-600">
-                            {formatDate(job.scheduled_date)}
-                          </p>
+                          <p className="font-semibold text-blue-600">{formatDate(job.scheduled_date)}</p>
                           <span className={`inline-block mt-1 px-2 py-1 rounded-full text-xs ${getStatusBadge(job.status)}`}>
                             {job.status}
                           </span>
@@ -310,57 +407,19 @@ export default function CustomerDashboardPage() {
               <div className="bg-white rounded-lg shadow p-12 text-center">
                 <div className="text-6xl mb-4">&#9992;</div>
                 <h2 className="text-xl font-semibold text-gray-700">Welcome to Vector</h2>
-                <p className="text-gray-500 mt-2">
-                  Your quotes and appointments will appear here.
-                </p>
+                <p className="text-gray-500 mt-2">Your quotes and appointments will appear here.</p>
               </div>
             )}
           </div>
         )}
 
         {activeTab === 'quotes' && (
-          <div className="bg-white rounded-lg shadow">
-            <div className="p-4 border-b">
-              <h2 className="font-semibold text-lg">All Quotes</h2>
-            </div>
-            {data?.activeQuotes?.length > 0 || data?.completedJobs?.length > 0 ? (
-              <div className="divide-y">
-                {[...(data?.activeQuotes || []), ...(data?.completedJobs || [])].map(quote => (
-                  <div key={quote.id} className="p-4 hover:bg-gray-50">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <p className="font-medium">{quote.aircraft_type || 'Aircraft Detail'}</p>
-                        <p className="text-sm text-gray-500">
-                          {quote.detailers?.company_name} &bull; {formatDate(quote.created_at)}
-                        </p>
-                        {quote.tail_number && (
-                          <p className="text-sm text-gray-400">Tail: {quote.tail_number}</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <p className="text-xl font-bold">{formatCurrency(quote.total)}</p>
-                        <span className={`inline-block mt-1 px-2 py-1 rounded-full text-xs ${getStatusBadge(quote.status)}`}>
-                          {quote.status}
-                        </span>
-                      </div>
-                    </div>
-                    {(quote.status === 'sent' || quote.status === 'viewed') && (
-                      <a
-                        href={`/q/${quote.share_link}`}
-                        className="mt-3 inline-block px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-sm"
-                      >
-                        View & Pay
-                      </a>
-                    )}
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div className="p-12 text-center text-gray-500">
-                No quotes yet
-              </div>
-            )}
-          </div>
+          <DataTable
+            tableId="customer"
+            data={allQuotes}
+            columns={quoteColumns}
+            emptyMessage="No quotes yet"
+          />
         )}
 
         {activeTab === 'appointments' && (
@@ -379,9 +438,7 @@ export default function CustomerDashboardPage() {
                         {job.location && <p className="text-sm text-gray-400">{job.location}</p>}
                       </div>
                       <div className="text-right">
-                        <p className="font-semibold text-lg text-blue-600">
-                          {formatDate(job.scheduled_date)}
-                        </p>
+                        <p className="font-semibold text-lg text-blue-600">{formatDate(job.scheduled_date)}</p>
                         <span className={`inline-block mt-1 px-2 py-1 rounded-full text-xs ${getStatusBadge(job.status)}`}>
                           {job.status}
                         </span>
@@ -391,9 +448,7 @@ export default function CustomerDashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="p-12 text-center text-gray-500">
-                No upcoming appointments
-              </div>
+              <div className="p-12 text-center text-gray-500">No upcoming appointments</div>
             )}
           </div>
         )}
@@ -423,9 +478,7 @@ export default function CustomerDashboardPage() {
                     </button>
                   ))
                 ) : (
-                  <div className="p-4 text-gray-500 text-sm">
-                    No conversations yet
-                  </div>
+                  <div className="p-4 text-gray-500 text-sm">No conversations yet</div>
                 )}
               </div>
             </div>
@@ -446,15 +499,11 @@ export default function CustomerDashboardPage() {
                         >
                           <div
                             className={`max-w-[70%] p-3 rounded-lg ${
-                              msg.sender === 'customer'
-                                ? 'bg-amber-500 text-white'
-                                : 'bg-gray-100'
+                              msg.sender === 'customer' ? 'bg-amber-500 text-white' : 'bg-gray-100'
                             }`}
                           >
                             <p>{msg.message}</p>
-                            <p className={`text-xs mt-1 ${
-                              msg.sender === 'customer' ? 'text-amber-100' : 'text-gray-400'
-                            }`}>
+                            <p className={`text-xs mt-1 ${msg.sender === 'customer' ? 'text-amber-100' : 'text-gray-400'}`}>
                               {new Date(msg.created_at).toLocaleString()}
                             </p>
                           </div>
@@ -507,19 +556,13 @@ export default function CustomerDashboardPage() {
                     <div className="flex justify-between items-center">
                       <div>
                         <p className="font-medium">Payment Receipt</p>
-                        <p className="text-sm text-gray-500">
-                          {formatDate(receipt.created_at)}
-                        </p>
+                        <p className="text-sm text-gray-500">{formatDate(receipt.created_at)}</p>
                         {receipt.stripe_payment_id && (
-                          <p className="text-xs text-gray-400 font-mono">
-                            {receipt.stripe_payment_id}
-                          </p>
+                          <p className="text-xs text-gray-400 font-mono">{receipt.stripe_payment_id}</p>
                         )}
                       </div>
                       <div className="text-right">
-                        <p className="text-xl font-bold text-green-600">
-                          {formatCurrency(receipt.amount)}
-                        </p>
+                        <p className="text-xl font-bold text-green-600">{formatCurrency(receipt.amount)}</p>
                         <span className="inline-block mt-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
                           Paid
                         </span>
@@ -529,9 +572,7 @@ export default function CustomerDashboardPage() {
                 ))}
               </div>
             ) : (
-              <div className="p-12 text-center text-gray-500">
-                No receipts yet
-              </div>
+              <div className="p-12 text-center text-gray-500">No receipts yet</div>
             )}
           </div>
         )}

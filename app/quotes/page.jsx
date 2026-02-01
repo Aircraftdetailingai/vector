@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import DataTable from '@/components/DataTable';
 
 const statusColors = {
   draft: 'bg-gray-100 text-gray-700',
@@ -10,6 +11,8 @@ const statusColors = {
   approved: 'bg-green-100 text-green-700',
   completed: 'bg-purple-100 text-purple-700',
   expired: 'bg-red-100 text-red-700',
+  scheduled: 'bg-indigo-100 text-indigo-700',
+  in_progress: 'bg-cyan-100 text-cyan-700',
 };
 
 const statusLabels = {
@@ -20,6 +23,8 @@ const statusLabels = {
   approved: 'Approved',
   completed: 'Completed',
   expired: 'Expired',
+  scheduled: 'Scheduled',
+  in_progress: 'In Progress',
 };
 
 export default function QuotesPage() {
@@ -62,7 +67,7 @@ export default function QuotesPage() {
   }, [router]);
 
   const formatDate = (dateStr) => {
-    if (!dateStr) return '';
+    if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
@@ -73,7 +78,7 @@ export default function QuotesPage() {
   const getStatus = (quote) => {
     if (quote.status === 'completed') return 'completed';
     if (quote.status === 'paid' || quote.status === 'approved') return 'paid';
-    if (new Date() > new Date(quote.valid_until)) return 'expired';
+    if (quote.valid_until && new Date() > new Date(quote.valid_until)) return 'expired';
     return quote.status || 'draft';
   };
 
@@ -107,7 +112,6 @@ export default function QuotesPage() {
       });
 
       if (res.ok) {
-        // Update quote status locally
         setQuotes(quotes.map(q =>
           q.id === completeModal.id ? { ...q, status: 'completed' } : q
         ));
@@ -122,6 +126,173 @@ export default function QuotesPage() {
       setCompleting(false);
     }
   };
+
+  // Table columns
+  const columns = useMemo(() => [
+    {
+      id: 'customer',
+      header: 'Customer',
+      accessorKey: 'client_name',
+      cell: ({ getValue, row }) => (
+        <div>
+          <span className="font-medium">{getValue() || 'No name'}</span>
+          {row.original.client_email && (
+            <span className="text-xs text-gray-500 block">{row.original.client_email}</span>
+          )}
+        </div>
+      ),
+    },
+    {
+      id: 'aircraft',
+      header: 'Aircraft',
+      accessorFn: (row) => row.aircraft_model || row.aircraft_type || '-',
+    },
+    {
+      id: 'registration',
+      header: 'Registration',
+      accessorKey: 'tail_number',
+      cell: ({ getValue }) => getValue() || '-',
+    },
+    {
+      id: 'services',
+      header: 'Services',
+      accessorFn: (row) => {
+        if (row.line_items && Array.isArray(row.line_items)) {
+          return row.line_items.map(item => item.description || item.service).join(', ');
+        }
+        return '-';
+      },
+      cell: ({ getValue }) => (
+        <span className="truncate max-w-[200px] block" title={getValue()}>
+          {getValue()}
+        </span>
+      ),
+    },
+    {
+      id: 'total',
+      header: 'Quote Total',
+      accessorKey: 'total_price',
+      cell: ({ getValue }) => (
+        <span className="font-semibold">${(getValue() || 0).toFixed(2)}</span>
+      ),
+    },
+    {
+      id: 'status',
+      header: 'Status',
+      accessorFn: (row) => getStatus(row),
+      cell: ({ getValue }) => {
+        const status = getValue();
+        return (
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100'}`}>
+            {statusLabels[status] || status}
+          </span>
+        );
+      },
+    },
+    {
+      id: 'date',
+      header: 'Date',
+      accessorKey: 'created_at',
+      cell: ({ getValue }) => formatDate(getValue()),
+    },
+    {
+      id: 'location',
+      header: 'Hangar Location',
+      accessorKey: 'location',
+      cell: ({ getValue }) => getValue() || '-',
+    },
+    {
+      id: 'email',
+      header: 'Customer Email',
+      accessorKey: 'client_email',
+      cell: ({ getValue }) => getValue() || '-',
+    },
+    {
+      id: 'phone',
+      header: 'Customer Phone',
+      accessorKey: 'client_phone',
+      cell: ({ getValue }) => getValue() || '-',
+    },
+    {
+      id: 'sent_date',
+      header: 'Quote Sent',
+      accessorKey: 'sent_at',
+      cell: ({ getValue }) => formatDate(getValue()),
+    },
+    {
+      id: 'viewed_date',
+      header: 'Quote Viewed',
+      accessorKey: 'viewed_at',
+      cell: ({ getValue }) => formatDate(getValue()),
+    },
+    {
+      id: 'payment_date',
+      header: 'Payment Date',
+      accessorKey: 'paid_at',
+      cell: ({ getValue }) => formatDate(getValue()),
+    },
+    {
+      id: 'hours',
+      header: 'Hours',
+      accessorKey: 'total_hours',
+      cell: ({ getValue }) => getValue()?.toFixed(1) || '-',
+    },
+    {
+      id: 'notes',
+      header: 'Notes',
+      accessorKey: 'notes',
+      cell: ({ getValue }) => (
+        <span className="truncate max-w-[150px] block" title={getValue()}>
+          {getValue() || '-'}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => {
+        const quote = row.original;
+        const status = getStatus(quote);
+        return (
+          <div className="flex gap-2">
+            {quote.share_link && (
+              <>
+                <a
+                  href={`/q/${quote.share_link}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="text-blue-600 hover:underline text-xs"
+                >
+                  View
+                </a>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    navigator.clipboard.writeText(`${window.location.origin}/q/${quote.share_link}`);
+                  }}
+                  className="text-gray-600 hover:text-gray-900 text-xs"
+                >
+                  Copy
+                </button>
+              </>
+            )}
+            {status === 'paid' && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  openCompleteModal(quote);
+                }}
+                className="text-purple-600 hover:text-purple-800 text-xs font-medium"
+              >
+                Complete
+              </button>
+            )}
+          </div>
+        );
+      },
+    },
+  ], []);
 
   const filteredQuotes = quotes.filter((q) => {
     const status = getStatus(q);
@@ -206,79 +377,13 @@ export default function QuotesPage() {
         ))}
       </div>
 
-      {/* Quotes List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        {filteredQuotes.length === 0 ? (
-          <div className="p-8 text-center text-gray-500">
-            <p>No quotes found</p>
-          </div>
-        ) : (
-          <div className="divide-y">
-            {filteredQuotes.map((quote) => {
-              const status = getStatus(quote);
-              return (
-                <div key={quote.id} className="p-4 hover:bg-gray-50">
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2 mb-1">
-                        <p className="font-semibold text-gray-900">
-                          {quote.aircraft_model || quote.aircraft_type}
-                        </p>
-                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[status]}`}>
-                          {statusLabels[status]}
-                        </span>
-                      </div>
-                      <p className="text-sm text-gray-500">
-                        {quote.client_name && `${quote.client_name} • `}
-                        Created {formatDate(quote.created_at)}
-                        {quote.valid_until && ` • Valid until ${formatDate(quote.valid_until)}`}
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-gray-900">
-                        ${(quote.total_price || 0).toFixed(2)}
-                      </p>
-                      <p className="text-sm text-gray-500">
-                        {quote.total_hours?.toFixed(1)} hrs
-                      </p>
-                    </div>
-                  </div>
-                  <div className="mt-2 flex space-x-3 text-sm">
-                    {quote.share_link && (
-                      <>
-                        <a
-                          href={`/q/${quote.share_link}`}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="text-blue-600 hover:underline"
-                        >
-                          View Quote
-                        </a>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(`${window.location.origin}/q/${quote.share_link}`);
-                          }}
-                          className="text-gray-600 hover:text-gray-900"
-                        >
-                          Copy Link
-                        </button>
-                      </>
-                    )}
-                    {status === 'paid' && (
-                      <button
-                        onClick={() => openCompleteModal(quote)}
-                        className="text-purple-600 hover:text-purple-800 font-medium"
-                      >
-                        Complete Job
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </div>
+      {/* Data Table */}
+      <DataTable
+        tableId="detailer"
+        data={filteredQuotes}
+        columns={columns}
+        emptyMessage="No quotes found"
+      />
 
       {/* Complete Job Modal */}
       {completeModal && (
