@@ -39,6 +39,12 @@ export default function QuotesPage() {
     notes: '',
   });
   const [completing, setCompleting] = useState(false);
+  const [changeOrderModal, setChangeOrderModal] = useState(null);
+  const [changeOrderData, setChangeOrderData] = useState({
+    services: [{ name: '', amount: '' }],
+    reason: '',
+  });
+  const [submittingChangeOrder, setSubmittingChangeOrder] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -89,6 +95,76 @@ export default function QuotesPage() {
       product_cost: '',
       notes: '',
     });
+  };
+
+  const openChangeOrderModal = (quote) => {
+    setChangeOrderModal(quote);
+    setChangeOrderData({
+      services: [{ name: '', amount: '' }],
+      reason: '',
+    });
+  };
+
+  const addChangeOrderService = () => {
+    setChangeOrderData({
+      ...changeOrderData,
+      services: [...changeOrderData.services, { name: '', amount: '' }],
+    });
+  };
+
+  const updateChangeOrderService = (index, field, value) => {
+    const updated = [...changeOrderData.services];
+    updated[index][field] = value;
+    setChangeOrderData({ ...changeOrderData, services: updated });
+  };
+
+  const removeChangeOrderService = (index) => {
+    if (changeOrderData.services.length === 1) return;
+    const updated = changeOrderData.services.filter((_, i) => i !== index);
+    setChangeOrderData({ ...changeOrderData, services: updated });
+  };
+
+  const submitChangeOrder = async () => {
+    const validServices = changeOrderData.services.filter(s => s.name && s.amount);
+    if (validServices.length === 0) {
+      alert('Please add at least one service');
+      return;
+    }
+
+    setSubmittingChangeOrder(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const amount = validServices.reduce((sum, s) => sum + parseFloat(s.amount || 0), 0);
+
+      const res = await fetch('/api/change-orders', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          quote_id: changeOrderModal.id,
+          services: validServices.map(s => ({
+            name: s.name,
+            amount: parseFloat(s.amount),
+          })),
+          amount,
+          reason: changeOrderData.reason,
+        }),
+      });
+
+      if (res.ok) {
+        alert('Change order sent to customer!');
+        setChangeOrderModal(null);
+      } else {
+        const data = await res.json();
+        alert(data.error || 'Failed to create change order');
+      }
+    } catch (err) {
+      alert('Failed to create change order');
+    } finally {
+      setSubmittingChangeOrder(false);
+    }
   };
 
   const completeJob = async () => {
@@ -278,15 +354,26 @@ export default function QuotesPage() {
               </>
             )}
             {status === 'paid' && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  openCompleteModal(quote);
-                }}
-                className="text-purple-600 hover:text-purple-800 text-xs font-medium"
-              >
-                Complete
-              </button>
+              <>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openChangeOrderModal(quote);
+                  }}
+                  className="text-amber-600 hover:text-amber-800 text-xs font-medium"
+                >
+                  +Change
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openCompleteModal(quote);
+                  }}
+                  className="text-purple-600 hover:text-purple-800 text-xs font-medium"
+                >
+                  Complete
+                </button>
+              </>
             )}
           </div>
         );
@@ -451,6 +538,118 @@ export default function QuotesPage() {
                 className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
               >
                 {completing ? 'Saving...' : 'Complete Job'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Change Order Modal */}
+      {changeOrderModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-2">Create Change Order</h3>
+            <p className="text-gray-600 mb-4">
+              {changeOrderModal.aircraft_model || changeOrderModal.aircraft_type}
+              {changeOrderModal.client_name && ` - ${changeOrderModal.client_name}`}
+            </p>
+
+            <div className="bg-gray-50 p-3 rounded mb-4">
+              <p className="text-sm text-gray-600">
+                <strong>Current Quote Total:</strong> ${(changeOrderModal.total_price || 0).toFixed(2)}
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <label className="block text-sm font-medium">Additional Services</label>
+                  <button
+                    type="button"
+                    onClick={addChangeOrderService}
+                    className="text-amber-600 hover:text-amber-700 text-sm font-medium"
+                  >
+                    + Add Service
+                  </button>
+                </div>
+                {changeOrderData.services.map((service, idx) => (
+                  <div key={idx} className="flex gap-2 mb-2">
+                    <input
+                      type="text"
+                      value={service.name}
+                      onChange={(e) => updateChangeOrderService(idx, 'name', e.target.value)}
+                      placeholder="Service name"
+                      className="flex-1 border rounded px-3 py-2"
+                    />
+                    <div className="flex items-center">
+                      <span className="mr-1">$</span>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={service.amount}
+                        onChange={(e) => updateChangeOrderService(idx, 'amount', e.target.value)}
+                        placeholder="0.00"
+                        className="w-24 border rounded px-3 py-2"
+                      />
+                    </div>
+                    {changeOrderData.services.length > 1 && (
+                      <button
+                        type="button"
+                        onClick={() => removeChangeOrderService(idx)}
+                        className="text-red-500 hover:text-red-700 px-2"
+                      >
+                        &times;
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium mb-1">Reason / Note for Customer</label>
+                <textarea
+                  value={changeOrderData.reason}
+                  onChange={(e) => setChangeOrderData({ ...changeOrderData, reason: e.target.value })}
+                  placeholder="Explain why these additional services are needed..."
+                  className="w-full border rounded px-3 py-2"
+                  rows={3}
+                />
+              </div>
+
+              {/* Summary */}
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded">
+                <div className="flex justify-between text-sm mb-1">
+                  <span>Additional Amount:</span>
+                  <span className="font-semibold">
+                    ${changeOrderData.services
+                      .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+                      .toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm font-bold">
+                  <span>New Total:</span>
+                  <span>
+                    ${((changeOrderModal.total_price || 0) +
+                      changeOrderData.services.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
+                    ).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => setChangeOrderModal(null)}
+                className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitChangeOrder}
+                disabled={submittingChangeOrder}
+                className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50"
+              >
+                {submittingChangeOrder ? 'Sending...' : 'Send to Customer'}
               </button>
             </div>
           </div>

@@ -374,3 +374,77 @@ CREATE INDEX idx_intake_leads_created ON intake_leads(created_at);
 | contacted | Detailer has reached out |
 | converted | Converted to a quote |
 | closed | Lead closed (not interested) |
+
+---
+
+# Minimum Fee & Change Orders Schema
+
+Run these SQL commands to enable minimum fees and change orders.
+
+## 19. Add minimum fee columns to `detailers` table
+
+```sql
+ALTER TABLE detailers
+ADD COLUMN IF NOT EXISTS minimum_callout_fee DECIMAL(10,2) DEFAULT 0,
+ADD COLUMN IF NOT EXISTS minimum_fee_locations JSONB DEFAULT '[]';
+```
+
+## 20. Add minimum fee columns to `quotes` table
+
+```sql
+ALTER TABLE quotes
+ADD COLUMN IF NOT EXISTS job_location VARCHAR(255),
+ADD COLUMN IF NOT EXISTS minimum_fee_applied BOOLEAN DEFAULT false,
+ADD COLUMN IF NOT EXISTS calculated_price DECIMAL(10,2);
+```
+
+## 21. Create `change_orders` table
+
+```sql
+CREATE TABLE IF NOT EXISTS change_orders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  quote_id UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  services JSONB NOT NULL DEFAULT '[]',
+  amount DECIMAL(10,2) NOT NULL,
+  reason TEXT,
+  status VARCHAR(20) DEFAULT 'pending',
+  approval_token VARCHAR(255) UNIQUE,
+  stripe_session_id VARCHAR(255),
+  payment_intent_id VARCHAR(255),
+  processed_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_change_orders_quote ON change_orders(quote_id);
+CREATE INDEX idx_change_orders_detailer ON change_orders(detailer_id);
+CREATE INDEX idx_change_orders_status ON change_orders(status);
+CREATE INDEX idx_change_orders_token ON change_orders(approval_token);
+```
+
+## Change Order Status Flow
+
+| Status | Description |
+|--------|-------------|
+| pending | Sent to customer, awaiting response |
+| approved | Customer approved and paid |
+| declined | Customer declined |
+
+## Change Order Services Format
+
+The `services` JSONB column stores an array of additional services:
+
+```json
+[
+  {
+    "name": "Carpet Shampoo",
+    "description": "Deep carpet cleaning",
+    "amount": 150.00
+  },
+  {
+    "name": "Engine Detail",
+    "amount": 200.00
+  }
+]
+```

@@ -37,7 +37,79 @@ export async function POST(request) {
     case 'checkout.session.completed': {
       const session = event.data.object;
       const quoteId = session.metadata?.quote_id;
+      const isChangeOrder = session.metadata?.type === 'change_order';
 
+      // Handle change order payment
+      if (isChangeOrder && session.metadata?.change_order_id) {
+        const changeOrderId = session.metadata.change_order_id;
+        const approvalToken = session.metadata.approval_token;
+
+        // Get change order with quote details
+        const { data: changeOrder, error: coError } = await supabase
+          .from('change_orders')
+          .select('*, quotes (*, detailers (company_name, email))')
+          .eq('id', changeOrderId)
+          .single();
+
+        if (changeOrder && changeOrder.status === 'pending') {
+          // Update change order as approved
+          await supabase
+            .from('change_orders')
+            .update({
+              status: 'approved',
+              payment_intent_id: session.payment_intent,
+              processed_at: new Date().toISOString(),
+            })
+            .eq('id', changeOrderId);
+
+          // Update quote total and line items
+          const newTotal = (changeOrder.quotes.total_price || 0) + changeOrder.amount;
+          const existingItems = changeOrder.quotes.line_items || [];
+          const newItems = changeOrder.services.map(s => ({
+            service: s.name || s.description,
+            description: s.description || s.name,
+            amount: s.amount || s.price || 0,
+            isChangeOrder: true,
+            changeOrderId: changeOrder.id,
+          }));
+
+          await supabase
+            .from('quotes')
+            .update({
+              total_price: newTotal,
+              line_items: [...existingItems, ...newItems],
+            })
+            .eq('id', changeOrder.quote_id);
+
+          // Notify detailer
+          if (changeOrder.quotes?.detailers?.email && process.env.RESEND_API_KEY) {
+            const { Resend } = await import('resend');
+            const resend = new Resend(process.env.RESEND_API_KEY);
+
+            await resend.emails.send({
+              from: 'Vector <noreply@aircraftdetailing.ai>',
+              to: changeOrder.quotes.detailers.email,
+              subject: `Change Order Approved! - ${changeOrder.quotes.client_name || 'Customer'}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+                  <h2 style="color: #22c55e;">Change Order Approved & Paid!</h2>
+                  <p><strong>Customer:</strong> ${changeOrder.quotes.client_name || 'Unknown'}</p>
+                  <p><strong>Aircraft:</strong> ${changeOrder.quotes.aircraft_model || changeOrder.quotes.aircraft_type}</p>
+                  <p><strong>Additional Amount:</strong> $${changeOrder.amount.toFixed(2)}</p>
+                  <p><strong>New Total:</strong> $${newTotal.toFixed(2)}</p>
+                  <p style="color: #22c55e; font-weight: bold;">
+                    The customer has approved and paid for the additional services. You can proceed with the work!
+                  </p>
+                </div>
+              `,
+            });
+            console.log('Change order approval email sent to detailer');
+          }
+        }
+        break;
+      }
+
+      // Handle regular quote payment
       if (quoteId) {
         // Update quote as paid
         await supabase

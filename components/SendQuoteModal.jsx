@@ -42,6 +42,9 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       products_total: quote?.productsTotal || 0,
       efficiency_factor: quote?.efficiencyFactor || 1.0,
       access_difficulty: quote?.accessDifficulty || 1.0,
+      job_location: quote?.jobLocation || null,
+      minimum_fee_applied: quote?.isMinimumApplied || false,
+      calculated_price: quote?.calculatedPrice || quote?.totalPrice || 0,
     };
     const res = await fetch("/api/quotes", {
       method: "POST",

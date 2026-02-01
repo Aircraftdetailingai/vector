@@ -59,6 +59,9 @@ export default function DashboardPage() {
   const [stripeStatus, setStripeStatus] = useState({ connected: true, status: 'UNKNOWN' });
   const [stripeLoading, setStripeLoading] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [minimumFee, setMinimumFee] = useState(0);
+  const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
+  const [jobLocation, setJobLocation] = useState('');
 
   // Get enabled services only
   const enabledServices = detailerServices.filter(s => s.enabled);
@@ -142,6 +145,23 @@ export default function DashboardPage() {
       }
     };
     fetchServices();
+
+    // Fetch minimum fee settings
+    const fetchMinimumFee = async () => {
+      try {
+        const res = await fetch('/api/user/minimum-fee', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setMinimumFee(data.minimum_callout_fee || 0);
+          setMinimumFeeLocations(data.minimum_fee_locations || []);
+        }
+      } catch (err) {
+        console.log('Failed to fetch minimum fee:', err);
+      }
+    };
+    fetchMinimumFee();
   }, [router]);
 
   const handleConnectStripe = async () => {
@@ -199,6 +219,7 @@ export default function DashboardPage() {
         setHours(newHours);
         setAccessDifficulty(1.0); // Reset difficulty for new aircraft
         setQuoteNotes(''); // Reset notes for new aircraft
+        setJobLocation(''); // Reset job location for new aircraft
       }
     } catch (err) {
       console.error('Failed to fetch aircraft details:', err);
@@ -253,9 +274,28 @@ export default function DashboardPage() {
     return sum + getAdjustedHours(svc.service_key);
   }, 0);
 
-  const totalPrice = enabledServices.reduce((sum, svc) => {
+  const calculatedPrice = enabledServices.reduce((sum, svc) => {
     return sum + computePrice(svc.service_key);
   }, 0);
+
+  // Check if minimum fee applies
+  const minimumFeeApplies = () => {
+    if (minimumFee <= 0) return false;
+    if (calculatedPrice >= minimumFee) return false;
+    // If specific locations are set, check if job location matches
+    if (minimumFeeLocations.length > 0) {
+      if (!jobLocation) return false; // No location set, don't apply
+      const normalizedJob = jobLocation.toUpperCase().trim();
+      return minimumFeeLocations.some(loc =>
+        normalizedJob.includes(loc.toUpperCase().trim())
+      );
+    }
+    // No specific locations = applies to all
+    return true;
+  };
+
+  const isMinimumApplied = minimumFeeApplies();
+  const totalPrice = isMinimumApplied ? minimumFee : calculatedPrice;
 
   const handleLogout = () => {
     localStorage.removeItem('vector_token');
@@ -299,6 +339,10 @@ export default function DashboardPage() {
         baseHours,
         totalHours,
         totalPrice,
+        calculatedPrice,
+        isMinimumApplied,
+        minimumFee: isMinimumApplied ? minimumFee : null,
+        jobLocation,
         lineItems,
         laborTotal,
         productsTotal,
@@ -581,6 +625,28 @@ export default function DashboardPage() {
             </div>
           )}
 
+          {/* Job Location */}
+          {selectedAircraft && (
+            <div className="bg-white rounded-lg p-4 mt-4 shadow">
+              <h3 className="font-semibold mb-2">Job Location</h3>
+              <input
+                type="text"
+                value={jobLocation}
+                onChange={(e) => setJobLocation(e.target.value)}
+                placeholder="Enter airport code or location (e.g., KJFK)"
+                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+              />
+              {minimumFee > 0 && (
+                <p className="text-xs text-gray-500 mt-1">
+                  {minimumFeeLocations.length > 0
+                    ? `Minimum fee of $${minimumFee.toFixed(2)} applies at: ${minimumFeeLocations.join(', ')}`
+                    : `Minimum call out fee: $${minimumFee.toFixed(2)}`
+                  }
+                </p>
+              )}
+            </div>
+          )}
+
           {/* Quote Notes */}
           {selectedAircraft && (
             <div className="bg-white rounded-lg p-4 mt-4 shadow">
@@ -635,6 +701,18 @@ export default function DashboardPage() {
                       {accessDifficulty !== 1.0 && <span>Difficulty: {accessDifficulty.toFixed(2)}x</span>}
                     </div>
                   )}
+                  {isMinimumApplied && (
+                    <>
+                      <div className="flex justify-between text-sm text-gray-500 line-through">
+                        <span>Subtotal</span>
+                        <span>${calculatedPrice.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm text-amber-400">
+                        <span>Minimum Fee Applied</span>
+                        <span>+${(minimumFee - calculatedPrice).toFixed(2)}</span>
+                      </div>
+                    </>
+                  )}
                   <div className="flex justify-between text-xl font-bold pt-1">
                     <span>Total</span>
                     <span>${totalPrice.toFixed(2)}</span>
@@ -658,6 +736,7 @@ export default function DashboardPage() {
                     setHours({});
                     setAccessDifficulty(1.0);
                     setQuoteNotes('');
+                    setJobLocation('');
                     setModelSearch('');
                   }}
                   className="w-full mt-2 px-4 py-2 rounded-lg border border-gray-500 text-gray-300 hover:bg-gray-800 text-sm"
@@ -685,6 +764,10 @@ export default function DashboardPage() {
             baseHours: baseHours,
             totalHours: totalHours,
             totalPrice: totalPrice,
+            calculatedPrice: calculatedPrice,
+            isMinimumApplied: isMinimumApplied,
+            minimumFee: isMinimumApplied ? minimumFee : null,
+            jobLocation: jobLocation,
             lineItems: lineItems,
             laborTotal: laborTotal,
             productsTotal: productsTotal,

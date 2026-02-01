@@ -44,7 +44,10 @@ export async function POST(request) {
     labor_total,
     products_total,
     efficiency_factor,
-    access_difficulty
+    access_difficulty,
+    job_location,
+    minimum_fee_applied,
+    calculated_price
   } = body;
   if (!aircraft_type || !services) {
     return new Response(JSON.stringify({ error: 'Missing fields' }), { status: 400 });
@@ -71,6 +74,9 @@ export async function POST(request) {
       products_total: products_total || 0,
       efficiency_factor: efficiency_factor || 1.0,
       access_difficulty: access_difficulty || 1.0,
+      job_location: job_location || null,
+      minimum_fee_applied: minimum_fee_applied || false,
+      calculated_price: calculated_price || total_price,
     })
     .select()
     .single();

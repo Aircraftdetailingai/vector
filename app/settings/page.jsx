@@ -31,6 +31,9 @@ function SettingsContent() {
   const [currency, setCurrency] = useState('USD');
   const [currencies, setCurrencies] = useState([]);
   const [currencyLoading, setCurrencyLoading] = useState(false);
+  const [minimumFee, setMinimumFee] = useState(0);
+  const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
+  const [newLocation, setNewLocation] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -104,7 +107,58 @@ function SettingsContent() {
   useEffect(() => {
     checkStripeStatus();
     fetchCurrency();
+    fetchMinimumFee();
   }, []);
+
+  const fetchMinimumFee = async () => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/user/minimum-fee', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMinimumFee(data.minimum_callout_fee || 0);
+        setMinimumFeeLocations(data.minimum_fee_locations || []);
+      }
+    } catch (err) {
+      console.log('Failed to fetch minimum fee:', err);
+    }
+  };
+
+  const saveMinimumFee = async (fee, locations) => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      await fetch('/api/user/minimum-fee', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          minimum_callout_fee: fee,
+          minimum_fee_locations: locations,
+        }),
+      });
+    } catch (err) {
+      console.error('Failed to save minimum fee:', err);
+    }
+  };
+
+  const addLocation = () => {
+    if (newLocation.trim() && !minimumFeeLocations.includes(newLocation.trim())) {
+      const updated = [...minimumFeeLocations, newLocation.trim()];
+      setMinimumFeeLocations(updated);
+      saveMinimumFee(minimumFee, updated);
+      setNewLocation('');
+    }
+  };
+
+  const removeLocation = (loc) => {
+    const updated = minimumFeeLocations.filter(l => l !== loc);
+    setMinimumFeeLocations(updated);
+    saveMinimumFee(minimumFee, updated);
+  };
 
   const fetchCurrency = async () => {
     try {
@@ -414,6 +468,80 @@ function SettingsContent() {
           <p className="text-xs text-gray-400 mt-2">
             This is your cost (wages, overhead), not what you charge customers.
           </p>
+        </div>
+
+        {/* Minimum Call Out Fee */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Minimum Call Out Fee</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Set a minimum charge for jobs. If the quote total is less than this amount, the minimum fee will be applied instead.
+          </p>
+          <div className="flex items-center space-x-2 mb-4">
+            <span className="text-gray-500">$</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={minimumFee}
+              onChange={(e) => {
+                const val = e.target.value;
+                if (val === '' || /^\d*\.?\d*$/.test(val)) {
+                  setMinimumFee(val);
+                }
+              }}
+              onBlur={(e) => {
+                const num = parseFloat(e.target.value) || 0;
+                setMinimumFee(num);
+                saveMinimumFee(num, minimumFeeLocations);
+              }}
+              className="w-28 border rounded px-3 py-2"
+              placeholder="0.00"
+            />
+            <span className="text-gray-500">minimum</span>
+          </div>
+
+          <div className="border-t pt-4">
+            <h4 className="font-medium mb-2">Apply to Specific Locations (Optional)</h4>
+            <p className="text-sm text-gray-500 mb-3">
+              Leave empty to apply to all jobs, or add specific airports/locations where this minimum applies.
+            </p>
+            <div className="flex space-x-2 mb-3">
+              <input
+                type="text"
+                value={newLocation}
+                onChange={(e) => setNewLocation(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && addLocation()}
+                placeholder="e.g., KJFK, KLAX"
+                className="flex-1 border rounded px-3 py-2"
+              />
+              <button
+                onClick={addLocation}
+                className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
+              >
+                Add
+              </button>
+            </div>
+            {minimumFeeLocations.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {minimumFeeLocations.map((loc) => (
+                  <span
+                    key={loc}
+                    className="inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm"
+                  >
+                    {loc}
+                    <button
+                      onClick={() => removeLocation(loc)}
+                      className="ml-2 text-gray-400 hover:text-red-500"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            {minimumFeeLocations.length === 0 && (
+              <p className="text-xs text-gray-400 italic">Minimum fee will apply to all locations</p>
+            )}
+          </div>
         </div>
 
         {/* Quote Display Preference */}
