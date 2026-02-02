@@ -1,0 +1,195 @@
+"use client";
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import ROIDashboard from '@/components/ROIDashboard';
+
+export default function ROIPage() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [showTestimonial, setShowTestimonial] = useState(false);
+  const [testimonialData, setTestimonialData] = useState(null);
+  const [rating, setRating] = useState(0);
+  const [testimonialText, setTestimonialText] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('vector_token');
+    const stored = localStorage.getItem('vector_user');
+    if (!token || !stored) {
+      router.push('/');
+      return;
+    }
+    setUser(JSON.parse(stored));
+    setLoading(false);
+
+    // Check for testimonial prompt
+    checkTestimonial(token);
+  }, [router]);
+
+  const checkTestimonial = async (token) => {
+    try {
+      const res = await fetch('/api/testimonials', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setTestimonialData(data);
+        if (data.showPrompt) {
+          setShowTestimonial(true);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to check testimonial:', err);
+    }
+  };
+
+  const submitTestimonial = async () => {
+    if (rating === 0) return;
+    setSubmitting(true);
+
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/testimonials', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          rating,
+          text: testimonialText,
+          milestone: testimonialData?.currentMilestone,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        alert(`Thank you! You earned ${data.pointsAwarded} bonus points!`);
+        setShowTestimonial(false);
+      }
+    } catch (err) {
+      alert('Failed to submit testimonial');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const dismissTestimonial = async () => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      await fetch('/api/testimonials', {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+    } catch (err) {
+      // Ignore
+    }
+    setShowTestimonial(false);
+  };
+
+  const getMilestoneText = (milestone) => {
+    const texts = {
+      first_10k: "You've booked $10K through Vector!",
+      first_25k: "You've booked $25K through Vector!",
+      first_50k: "You've hit $50K booked through Vector!",
+      first_100k: "Amazing! $100K booked through Vector!",
+      time_saved_100h: "You've saved 100+ hours with Vector!",
+      one_year: "Happy 1 year anniversary with Vector!",
+    };
+    return texts[milestone] || "You're crushing it with Vector!";
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] flex items-center justify-center">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+      {/* Header */}
+      <header className="flex justify-between items-center mb-6 text-white">
+        <div className="flex items-center space-x-4">
+          <a href="/dashboard" className="text-2xl hover:text-amber-400">←</a>
+          <h1 className="text-2xl font-bold">ROI Dashboard</h1>
+        </div>
+        <div className="flex items-center space-x-4 text-sm">
+          <a href="/dashboard" className="underline">Dashboard</a>
+          <a href="/quotes" className="underline">Quotes</a>
+          <a href="/settings" className="underline">Settings</a>
+        </div>
+      </header>
+
+      {/* Testimonial Prompt Modal */}
+      {showTestimonial && testimonialData && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl p-6 max-w-md w-full">
+            <div className="text-center mb-4">
+              <span className="text-5xl">🎉</span>
+              <h2 className="text-xl font-bold text-gray-900 mt-2">
+                {getMilestoneText(testimonialData.currentMilestone)}
+              </h2>
+              <p className="text-gray-600 mt-1">
+                Would you share a quick testimonial?
+              </p>
+            </div>
+
+            {/* Star Rating */}
+            <div className="flex justify-center gap-2 mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setRating(star)}
+                  className={`text-3xl transition-transform hover:scale-110 ${
+                    star <= rating ? 'text-amber-400' : 'text-gray-300'
+                  }`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+
+            {/* Optional Text */}
+            <textarea
+              value={testimonialText}
+              onChange={(e) => setTestimonialText(e.target.value)}
+              placeholder="Tell us what you love about Vector... (optional)"
+              className="w-full border rounded-lg px-3 py-2 mb-4"
+              rows={3}
+            />
+
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-center">
+              <p className="text-amber-800 text-sm">
+                <strong>+{testimonialText ? 200 : 100} bonus points</strong> for sharing!
+              </p>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={dismissTestimonial}
+                className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
+              >
+                Maybe Later
+              </button>
+              <button
+                onClick={submitTestimonial}
+                disabled={rating === 0 || submitting}
+                className="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50"
+              >
+                {submitting ? 'Submitting...' : 'Submit'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Content */}
+      <div className="max-w-4xl mx-auto">
+        <ROIDashboard compact={false} />
+      </div>
+    </div>
+  );
+}

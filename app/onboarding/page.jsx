@@ -20,6 +20,12 @@ export default function OnboardingPage() {
     ceramicCoating: '',
     engineDetail: '',
   });
+  const [baseline, setBaseline] = useState({
+    annual_revenue: '',
+    quote_time: '',
+    conversion_rate: '',
+    admin_hours: '',
+  });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -49,6 +55,8 @@ export default function OnboardingPage() {
       setPasswordError('');
       setStep(3);
     } else if (step === 3) {
+      setStep(4);
+    } else if (step === 4) {
       if (!user) {
         setError('User not found');
         return;
@@ -79,6 +87,25 @@ export default function OnboardingPage() {
         }
         const data = await res.json();
         localStorage.setItem('vector_user', JSON.stringify(data.user || data));
+
+        // Save baseline data
+        const token = localStorage.getItem('vector_token');
+        if (baseline.annual_revenue || baseline.quote_time || baseline.conversion_rate || baseline.admin_hours) {
+          await fetch('/api/roi/baseline', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${token}`,
+            },
+            body: JSON.stringify({
+              annual_revenue_estimate: baseline.annual_revenue,
+              quote_creation_time_minutes: baseline.quote_time,
+              quote_conversion_rate: baseline.conversion_rate,
+              admin_hours_per_week: baseline.admin_hours,
+            }),
+          });
+        }
+
         router.push('/dashboard');
       } catch (err) {
         setError(err.message);
@@ -200,6 +227,77 @@ export default function OnboardingPage() {
         </>
       );
     }
+    if (step === 4) {
+      return (
+        <>
+          <div className="text-center mb-4">
+            <span className="text-4xl">📊</span>
+            <h2 className="text-lg font-semibold mt-2">Track Your ROI</h2>
+            <p className="text-sm text-gray-600">
+              Help us show you how much value Vector provides. These are estimates - we'll track the real numbers going forward.
+            </p>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Current Annual Revenue (estimate)</label>
+            <div className="flex items-center">
+              <span className="mr-2">$</span>
+              <input
+                type="number"
+                className="flex-1 border rounded p-2"
+                placeholder="e.g., 150000"
+                value={baseline.annual_revenue}
+                onChange={(e) => setBaseline({ ...baseline, annual_revenue: e.target.value })}
+              />
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">How long to create a quote? (minutes)</label>
+            <input
+              type="number"
+              className="w-full border rounded p-2"
+              placeholder="e.g., 15"
+              value={baseline.quote_time}
+              onChange={(e) => setBaseline({ ...baseline, quote_time: e.target.value })}
+            />
+            <p className="text-xs text-gray-500 mt-1">Including looking up pricing, writing emails, etc.</p>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">What % of quotes become jobs?</label>
+            <div className="flex items-center">
+              <input
+                type="number"
+                className="flex-1 border rounded p-2"
+                placeholder="e.g., 40"
+                value={baseline.conversion_rate}
+                onChange={(e) => setBaseline({ ...baseline, conversion_rate: e.target.value })}
+              />
+              <span className="ml-2">%</span>
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <label className="block text-sm font-medium mb-1">Hours/week on admin tasks?</label>
+            <input
+              type="number"
+              className="w-full border rounded p-2"
+              placeholder="e.g., 8"
+              value={baseline.admin_hours}
+              onChange={(e) => setBaseline({ ...baseline, admin_hours: e.target.value })}
+            />
+            <p className="text-xs text-gray-500 mt-1">Quotes, invoicing, scheduling, follow-ups, etc.</p>
+          </div>
+
+          <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+            <p className="text-sm text-emerald-700">
+              <strong>Why we ask:</strong> We'll track your actual metrics and show you the ROI - time saved, extra revenue, and more. Most detailers see <strong>10-15x return</strong> on their Vector subscription.
+            </p>
+          </div>
+        </>
+      );
+    }
   };
 
   return (
@@ -207,7 +305,7 @@ export default function OnboardingPage() {
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-6">
         {/* Progress bar */}
         <div className="flex justify-between mb-6">
-          {[1, 2, 3].map((num) => (
+          {[1, 2, 3, 4].map((num) => (
             <div key={num} className="flex-1 mx-1">
               <div
                 className={`h-2 rounded ${step >= num ? 'bg-amber-500' : 'bg-gray-200'}`}
@@ -234,7 +332,7 @@ export default function OnboardingPage() {
             disabled={loading}
             className="ml-auto px-4 py-2 rounded-md text-white bg-gradient-to-r from-amber-500 to-amber-600 disabled:opacity-50"
           >
-            {loading ? 'Loading...' : step === 3 ? 'Start Quoting!' : 'Continue'}
+            {loading ? 'Loading...' : step === 4 ? 'Start Quoting!' : 'Continue'}
           </button>
         </div>
       </div>

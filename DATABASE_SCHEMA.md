@@ -564,3 +564,104 @@ CREATE INDEX idx_recommendations_active ON smart_recommendations(detailer_id, ac
 | Log repositioning | 10 |
 | Complete post-job survey | 20 |
 | Act on recommendation | 50 |
+
+---
+
+# ROI Tracking Schema
+
+Run these SQL commands to enable ROI tracking and testimonials.
+
+## 25. Create `detailer_baselines` table
+
+```sql
+CREATE TABLE IF NOT EXISTS detailer_baselines (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID UNIQUE NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  annual_revenue_estimate DECIMAL(12,2),
+  quote_creation_time_minutes INTEGER,
+  quote_conversion_rate INTEGER,
+  admin_hours_per_week DECIMAL(5,2),
+  hourly_rate_at_signup DECIMAL(10,2),
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE UNIQUE INDEX idx_detailer_baselines_detailer ON detailer_baselines(detailer_id);
+```
+
+## 26. Create `roi_metrics` table (cached daily calculations)
+
+```sql
+CREATE TABLE IF NOT EXISTS roi_metrics (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  period VARCHAR(20) NOT NULL DEFAULT 'all_time',
+  period_start DATE,
+  period_end DATE,
+  quotes_created INTEGER DEFAULT 0,
+  quotes_sent INTEGER DEFAULT 0,
+  quotes_paid INTEGER DEFAULT 0,
+  total_revenue DECIMAL(12,2) DEFAULT 0,
+  avg_quote_creation_seconds INTEGER,
+  conversion_rate DECIMAL(5,2),
+  upsells_count INTEGER DEFAULT 0,
+  upsells_revenue DECIMAL(12,2) DEFAULT 0,
+  wait_fees_recovered DECIMAL(12,2) DEFAULT 0,
+  rate_increases_revenue DECIMAL(12,2) DEFAULT 0,
+  time_saved_hours DECIMAL(10,2) DEFAULT 0,
+  calculated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(detailer_id, period, period_start)
+);
+
+CREATE INDEX idx_roi_metrics_detailer ON roi_metrics(detailer_id);
+CREATE INDEX idx_roi_metrics_period ON roi_metrics(period);
+```
+
+## 27. Create `testimonials` table
+
+```sql
+CREATE TABLE IF NOT EXISTS testimonials (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  rating INTEGER NOT NULL CHECK (rating >= 1 AND rating <= 5),
+  text TEXT,
+  milestone VARCHAR(50),
+  revenue_at_time DECIMAL(12,2),
+  approved BOOLEAN DEFAULT false,
+  featured BOOLEAN DEFAULT false,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_testimonials_detailer ON testimonials(detailer_id);
+CREATE INDEX idx_testimonials_approved ON testimonials(approved);
+CREATE INDEX idx_testimonials_featured ON testimonials(featured);
+```
+
+## 28. Add ROI tracking columns to `detailers` table
+
+```sql
+ALTER TABLE detailers
+ADD COLUMN IF NOT EXISTS roi_email_enabled BOOLEAN DEFAULT true,
+ADD COLUMN IF NOT EXISTS last_roi_email_sent TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS last_testimonial_prompt TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS testimonial_given BOOLEAN DEFAULT false;
+```
+
+## 29. Add quote timing tracking to `quotes` table
+
+```sql
+ALTER TABLE quotes
+ADD COLUMN IF NOT EXISTS creation_started_at TIMESTAMP WITH TIME ZONE,
+ADD COLUMN IF NOT EXISTS creation_seconds INTEGER;
+```
+
+## ROI Milestones for Testimonial Prompts
+
+| Milestone | Trigger |
+|-----------|---------|
+| first_10k | $10,000 booked through Vector |
+| first_25k | $25,000 booked through Vector |
+| first_50k | $50,000 booked through Vector |
+| first_100k | $100,000 booked through Vector |
+| time_saved_100h | 100+ hours saved |
+| one_year | 1 year anniversary |

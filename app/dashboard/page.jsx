@@ -6,6 +6,7 @@ import PushNotifications from '../../components/PushNotifications.jsx';
 import DashboardStats from '../../components/DashboardStats.jsx';
 import PointsBadge from '../../components/PointsBadge.jsx';
 import SmartRecommendations from '../../components/SmartRecommendations.jsx';
+import ROIDashboard from '../../components/ROIDashboard.jsx';
 
 const categoryLabels = {
   piston: 'Pistons',
@@ -393,6 +394,7 @@ export default function DashboardPage() {
           <a href="/calendar" className="underline">Calendar</a>
           <a href="/products" className="underline">Products</a>
           <a href="/profitability" className="underline">Profitability</a>
+          <a href="/roi" className="underline text-emerald-400">ROI</a>
           <a href="/growth" className="underline text-amber-400">Growth</a>
           <a href="/settings" className="underline">Settings</a>
           <button onClick={handleLogout} className="underline">Logout</button>
@@ -412,6 +414,9 @@ export default function DashboardPage() {
 
       {/* Smart Recommendations Widget */}
       <SmartRecommendations />
+
+      {/* ROI Dashboard Widget */}
+      <ROIDashboard compact={true} />
 
       {/* Daily Business Tip */}
       {dailyTip && !tipDismissed && (
