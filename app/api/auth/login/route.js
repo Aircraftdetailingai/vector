@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { comparePassword, createToken } from '../../../../lib/auth';
+import { cookies } from 'next/headers';
 
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
@@ -26,6 +27,21 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: 'Invalid email or password' }), { status: 401 });
     }
     const token = await createToken({ id: data.id, email: data.email });
+
+    // Set auth cookie for server-side auth
+    try {
+      const cookieStore = await cookies();
+      cookieStore.set('auth_token', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 60 * 60 * 24 * 7, // 7 days
+        path: '/',
+      });
+    } catch (e) {
+      // Cookie setting might fail in some contexts, continue anyway
+    }
+
     const user = {
       id: data.id,
       email: data.email,
