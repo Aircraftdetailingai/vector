@@ -79,27 +79,22 @@ export async function GET(request) {
       .order('display_order', { ascending: true });
 
     if (error) {
-      // If table doesn't exist, return defaults
+      // If table doesn't exist, return empty with defaults available
       if (error.code === '42P01' || error.message?.includes('does not exist')) {
         return Response.json({
-          categories: DEFAULT_CATEGORIES.map(c => ({ id: c.key, name: c.name, key: c.key, display_order: c.order })),
+          categories: [],
           defaults: DEFAULT_CATEGORIES,
-          usingDefaults: true
+          tableNotCreated: true
         });
       }
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    // If no categories, return defaults
-    if (!categories || categories.length === 0) {
-      return Response.json({
-        categories: DEFAULT_CATEGORIES.map(c => ({ id: c.key, name: c.name, key: c.key, display_order: c.order })),
-        defaults: DEFAULT_CATEGORIES,
-        usingDefaults: true
-      });
-    }
-
-    return Response.json({ categories, defaults: DEFAULT_CATEGORIES });
+    // Return actual categories (empty array if none), plus defaults for importing
+    return Response.json({
+      categories: categories || [],
+      defaults: DEFAULT_CATEGORIES
+    });
 
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });

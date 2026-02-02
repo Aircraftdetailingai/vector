@@ -69,14 +69,17 @@ export default function ServicesPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({ name: newCategoryName }),
       });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setCategories([...categories, data.category]);
         setNewCategoryName('');
         setShowCategoryModal(false);
+      } else {
+        alert('Failed to add category: ' + (data.error || 'Unknown error'));
       }
     } catch (err) {
       console.error('Failed to add category:', err);
+      alert('Failed to add category: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -147,14 +150,17 @@ export default function ServicesPage() {
           default_hours: parseFloat(newService.default_hours) || 1,
         }),
       });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
         setServices([...services, data.service]);
         setNewService({ service_name: '', category: selectedCategory || '', hourly_rate: '75', default_hours: '1', requires_return_trip: false });
         setShowServiceModal(false);
+      } else {
+        alert('Failed to add service: ' + (data.error || 'Unknown error'));
       }
     } catch (err) {
       console.error('Failed to add service:', err);
+      alert('Failed to add service: ' + err.message);
     } finally {
       setSaving(false);
     }
@@ -217,16 +223,23 @@ export default function ServicesPage() {
     try {
       // First create the category if it doesn't exist
       let cat = categories.find(c => c.key === defaultCat.key);
+      let updatedCategories = [...categories];
+
       if (!cat) {
         const catRes = await fetch('/api/user/categories', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
           body: JSON.stringify({ name: defaultCat.name }),
         });
+        const catData = await catRes.json();
         if (catRes.ok) {
-          const catData = await catRes.json();
           cat = catData.category;
-          setCategories([...categories, cat]);
+          updatedCategories = [...updatedCategories, cat];
+          setCategories(updatedCategories);
+        } else {
+          alert('Failed to create category: ' + (catData.error || 'Unknown error'));
+          setSaving(false);
+          return;
         }
       }
 
@@ -236,19 +249,22 @@ export default function ServicesPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
         body: JSON.stringify({
           services: defaultCat.services,
-          categoryKey: defaultCat.key,
+          categoryKey: cat?.key || defaultCat.key,
           clearExisting: false,
         }),
       });
+      const data = await res.json();
       if (res.ok) {
-        const data = await res.json();
-        setServices([...services, ...data.services]);
+        setServices([...services, ...(data.services || [])]);
+        setShowDefaultsModal(false);
+      } else {
+        alert('Failed to import services: ' + (data.error || 'Unknown error'));
       }
     } catch (err) {
       console.error('Failed to import defaults:', err);
+      alert('Failed to import: ' + err.message);
     } finally {
       setSaving(false);
-      setShowDefaultsModal(false);
     }
   };
 
@@ -428,6 +444,11 @@ export default function ServicesPage() {
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && newCategoryName.trim() && !saving) {
+                addCategory();
+              }
+            }}
             placeholder="e.g., Paint Correction"
             className="w-full border rounded-lg px-3 py-2 mb-4"
             autoFocus
@@ -453,6 +474,11 @@ export default function ServicesPage() {
             type="text"
             value={editingCategory.name}
             onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && editingCategory.name?.trim() && !saving) {
+                updateCategory();
+              }
+            }}
             className="w-full border rounded-lg px-3 py-2 mb-4"
             autoFocus
           />

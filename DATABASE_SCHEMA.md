@@ -82,15 +82,25 @@ CREATE INDEX idx_service_categories_detailer ON service_categories(detailer_id);
 CREATE UNIQUE INDEX idx_service_categories_key ON service_categories(detailer_id, key);
 ```
 
-## 6. Update `detailer_services` table (if exists)
+## 6. Create `detailer_services` table
 
 ```sql
--- Add category column if not exists
-ALTER TABLE detailer_services
-ADD COLUMN IF NOT EXISTS category VARCHAR(50) DEFAULT 'other',
-ADD COLUMN IF NOT EXISTS requires_return_trip BOOLEAN DEFAULT false,
-ADD COLUMN IF NOT EXISTS display_order INTEGER DEFAULT 0;
+CREATE TABLE IF NOT EXISTS detailer_services (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  service_key VARCHAR(100) NOT NULL,
+  service_name VARCHAR(255) NOT NULL,
+  category VARCHAR(50) DEFAULT 'other',
+  hourly_rate DECIMAL(10,2) DEFAULT 75,
+  default_hours DECIMAL(10,2) DEFAULT 1,
+  requires_return_trip BOOLEAN DEFAULT false,
+  is_custom BOOLEAN DEFAULT true,
+  enabled BOOLEAN DEFAULT true,
+  display_order INTEGER DEFAULT 0,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
 
+CREATE INDEX IF NOT EXISTS idx_detailer_services_detailer ON detailer_services(detailer_id);
 CREATE INDEX IF NOT EXISTS idx_detailer_services_category ON detailer_services(category);
 ```
 
