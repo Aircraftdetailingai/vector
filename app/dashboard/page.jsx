@@ -62,6 +62,8 @@ export default function DashboardPage() {
   const [minimumFee, setMinimumFee] = useState(0);
   const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
   const [jobLocation, setJobLocation] = useState('');
+  const [dailyTip, setDailyTip] = useState(null);
+  const [tipDismissed, setTipDismissed] = useState(false);
 
   // Get enabled services only
   const enabledServices = detailerServices.filter(s => s.enabled);
@@ -162,6 +164,22 @@ export default function DashboardPage() {
       }
     };
     fetchMinimumFee();
+
+    // Fetch daily business tip
+    const fetchDailyTip = async () => {
+      try {
+        const res = await fetch('/api/tips', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setDailyTip(data.todaysTip);
+        }
+      } catch (err) {
+        console.log('Failed to fetch tip:', err);
+      }
+    };
+    fetchDailyTip();
   }, [router]);
 
   const handleConnectStripe = async () => {
@@ -390,6 +408,41 @@ export default function DashboardPage() {
 
       {/* Dashboard Stats Widget */}
       <DashboardStats />
+
+      {/* Daily Business Tip */}
+      {dailyTip && !tipDismissed && (
+        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-4 mb-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">{dailyTip.proTip ? '💰' : '💡'}</span>
+              <div>
+                <div className="flex items-center gap-2">
+                  <p className="font-semibold text-amber-800">{dailyTip.title}</p>
+                  {dailyTip.proTip && (
+                    <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">Money Tip</span>
+                  )}
+                </div>
+                <p className="text-sm text-amber-700 mt-1">{dailyTip.content}</p>
+                {dailyTip.actionable && dailyTip.actionLink && (
+                  <a
+                    href={dailyTip.actionLink}
+                    className="inline-block mt-2 text-sm text-amber-600 font-medium hover:underline"
+                  >
+                    {dailyTip.action} &rarr;
+                  </a>
+                )}
+              </div>
+            </div>
+            <button
+              onClick={() => setTipDismissed(true)}
+              className="text-amber-400 hover:text-amber-600 text-xl leading-none"
+              title="Dismiss"
+            >
+              &times;
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Services Configuration Prompt */}
       {user && enabledServices.length === 0 && (

@@ -182,6 +182,21 @@ export default function OnboardingPage() {
               </div>
             </div>
           ))}
+
+          {/* Pro Tip Card */}
+          <div className="mt-6 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">💰</span>
+              <div>
+                <p className="font-semibold text-amber-800 text-sm">Money Tip</p>
+                <p className="text-sm text-amber-700 mt-1">
+                  For recurring customers, bill every <strong>4 weeks</strong> instead of monthly.
+                  4 weeks = 13 billing cycles/year vs 12 months = <strong>8% more annual revenue</strong>.
+                  Most customers won't notice the difference!
+                </p>
+              </div>
+            </div>
+          </div>
         </>
       );
     }

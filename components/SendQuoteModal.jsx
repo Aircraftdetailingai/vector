@@ -10,6 +10,8 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const [quoteLink, setQuoteLink] = useState("");
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurringInterval, setRecurringInterval] = useState("4_weeks"); // '4_weeks', 'monthly', 'quarterly'
 
   // Close when not open
   if (!isOpen) return null;
@@ -209,6 +211,48 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
                 />
               </div>
             )}
+
+            {/* Recurring Service Option */}
+            <div className="mb-3 border-t pt-3">
+              <label className="flex items-center cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isRecurring}
+                  onChange={(e) => setIsRecurring(e.target.checked)}
+                  className="mr-2 w-4 h-4 text-amber-500"
+                />
+                <span className="text-sm font-medium">Set up as recurring service</span>
+              </label>
+
+              {isRecurring && (
+                <div className="mt-3 pl-6">
+                  <label className="block mb-2 text-sm font-medium">Billing Frequency</label>
+                  <select
+                    value={recurringInterval}
+                    onChange={(e) => setRecurringInterval(e.target.value)}
+                    className="w-full border rounded px-3 py-2 mb-2"
+                  >
+                    <option value="4_weeks">Every 4 weeks (Recommended)</option>
+                    <option value="monthly">Monthly</option>
+                    <option value="6_weeks">Every 6 weeks</option>
+                    <option value="quarterly">Quarterly</option>
+                  </select>
+
+                  {/* Pro Tip for 4-week billing */}
+                  {recurringInterval === "4_weeks" && (
+                    <div className="bg-amber-50 border border-amber-200 rounded p-2 text-xs text-amber-800">
+                      <span className="font-semibold">💡 Smart choice!</span> Billing every 4 weeks = 13 cycles/year vs 12 months = 8% more annual revenue.
+                    </div>
+                  )}
+                  {recurringInterval === "monthly" && (
+                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-700">
+                      <span className="font-semibold">💡 Tip:</span> Consider 4-week billing for 8% more annual revenue. Most customers won't notice the difference!
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             <div className="flex justify-end space-x-2 mt-4">
               <button
                 type="button"

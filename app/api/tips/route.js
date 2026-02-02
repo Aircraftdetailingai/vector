@@ -111,6 +111,39 @@ const BUSINESS_TIPS = [
     actionable: false,
     points: 20,
   },
+  {
+    id: 11,
+    category: 'pricing',
+    title: '4-Week Billing = 8% More Revenue',
+    content: 'Bill monthly customers every 4 weeks instead of monthly. 4 weeks = 13 billing cycles/year vs 12 months = 8% more annual revenue. Most customers won\'t notice the difference.',
+    actionable: false,
+    points: 20,
+    proTip: true,
+  },
+  {
+    id: 12,
+    category: 'growth',
+    title: 'Offer Maintenance Plans',
+    content: 'Recurring customers are the foundation of a stable business. Offer a monthly or 4-week maintenance wash plan at a slight discount. Predictable income beats one-off jobs.',
+    actionable: false,
+    points: 20,
+  },
+  {
+    id: 13,
+    category: 'profitability',
+    title: 'Upsell Ceramic Coating',
+    content: 'Ceramic coating has the highest profit margin of any service. After every exterior detail, mention how ceramic coating can protect their investment for 2+ years.',
+    actionable: false,
+    points: 20,
+  },
+  {
+    id: 14,
+    category: 'operations',
+    title: 'Document Everything',
+    content: 'Take photos before you start every job. This protects you from false damage claims and helps you show customers exactly what you fixed.',
+    actionable: false,
+    points: 20,
+  },
 ];
 
 // GET - Get today's tip or a specific tip
