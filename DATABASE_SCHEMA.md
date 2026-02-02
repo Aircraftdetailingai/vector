@@ -90,6 +90,7 @@ CREATE TABLE IF NOT EXISTS detailer_services (
   detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
   service_key VARCHAR(100) NOT NULL,
   service_name VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT '',
   category VARCHAR(50) DEFAULT 'other',
   hourly_rate DECIMAL(10,2) DEFAULT 75,
   default_hours DECIMAL(10,2) DEFAULT 1,

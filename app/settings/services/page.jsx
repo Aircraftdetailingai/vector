@@ -18,6 +18,7 @@ export default function ServicesPage() {
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newService, setNewService] = useState({
     service_name: '',
+    description: '',
     category: '',
     hourly_rate: '75',
     default_hours: '1',
@@ -153,7 +154,7 @@ export default function ServicesPage() {
       const data = await res.json();
       if (res.ok) {
         setServices([...services, data.service]);
-        setNewService({ service_name: '', category: selectedCategory || '', hourly_rate: '75', default_hours: '1', requires_return_trip: false });
+        setNewService({ service_name: '', description: '', category: selectedCategory || '', hourly_rate: '75', default_hours: '1', requires_return_trip: false });
         setShowServiceModal(false);
       } else {
         alert('Failed to add service: ' + (data.error || 'Unknown error'));
@@ -396,17 +397,20 @@ export default function ServicesPage() {
                 ) : (
                   (servicesByCategory[cat.key] || []).map((svc) => (
                     <div key={svc.id} className={`p-4 ${svc.enabled ? '' : 'bg-gray-50 opacity-60'}`}>
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-4">
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-4">
                           <input
                             type="checkbox"
                             checked={svc.enabled}
                             onChange={() => toggleService(svc)}
-                            className="w-5 h-5 rounded border-gray-300 text-amber-500"
+                            className="w-5 h-5 rounded border-gray-300 text-amber-500 mt-1"
                           />
                           <div>
                             <p className="font-medium text-gray-900">{svc.service_name}</p>
-                            <p className="text-sm text-gray-500">
+                            {svc.description && (
+                              <p className="text-sm text-gray-600 mt-0.5">{svc.description}</p>
+                            )}
+                            <p className="text-xs text-gray-400 mt-1">
                               ${svc.hourly_rate}/hr &bull; {svc.default_hours}h default
                               {svc.requires_return_trip && ' &bull; Return trip'}
                             </p>
@@ -439,7 +443,10 @@ export default function ServicesPage() {
       {/* Add Category Modal */}
       {showCategoryModal && (
         <Modal onClose={() => setShowCategoryModal(false)}>
-          <h3 className="text-lg font-semibold mb-4">Add Category</h3>
+          <h3 className="text-lg font-semibold mb-2">Add Category</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Categories group your services (e.g., Exterior, Interior, Packages). You'll add individual services under each category.
+          </p>
           <input
             type="text"
             value={newCategoryName}
@@ -508,6 +515,16 @@ export default function ServicesPage() {
                 onChange={(e) => setNewService({ ...newService, service_name: e.target.value })}
                 placeholder="e.g., Full Interior Detail"
                 className="w-full border rounded-lg px-3 py-2"
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                value={newService.description}
+                onChange={(e) => setNewService({ ...newService, description: e.target.value })}
+                placeholder="What's included in this service? Shows on quote."
+                className="w-full border rounded-lg px-3 py-2"
+                rows={2}
               />
             </div>
             <div>
@@ -591,6 +608,16 @@ export default function ServicesPage() {
               />
             </div>
             <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea
+                value={editingService.description || ''}
+                onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
+                placeholder="What's included in this service? Shows on quote."
+                className="w-full border rounded-lg px-3 py-2"
+                rows={2}
+              />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
               <select
                 value={editingService.category}
@@ -659,25 +686,32 @@ export default function ServicesPage() {
       {showDefaultsModal && (
         <Modal onClose={() => setShowDefaultsModal(false)} wide>
           <h3 className="text-lg font-semibold mb-2">Import Suggested Services</h3>
-          <p className="text-gray-500 text-sm mb-4">Click a category to import its services. You can edit them after.</p>
-          <div className="space-y-4 max-h-96 overflow-y-auto">
+          <p className="text-gray-500 text-sm mb-4">Click Import to add a category with its services. You can edit them after.</p>
+          <div className="space-y-4 max-h-[60vh] overflow-y-auto">
             {defaults.map((cat) => (
               <div key={cat.key} className="border rounded-lg p-4 hover:border-amber-400 transition-colors">
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start mb-3">
                   <div>
-                    <h4 className="font-semibold">{cat.name}</h4>
+                    <h4 className="font-semibold text-lg">{cat.name}</h4>
                     <p className="text-sm text-gray-500">{cat.services.length} services</p>
                   </div>
                   <button
                     onClick={() => importDefaults(cat)}
                     disabled={saving}
-                    className="px-3 py-1 bg-amber-500 text-white text-sm rounded hover:bg-amber-600 disabled:opacity-50"
+                    className="px-4 py-2 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600 disabled:opacity-50"
                   >
                     {saving ? 'Importing...' : 'Import'}
                   </button>
                 </div>
-                <div className="text-sm text-gray-600">
-                  {cat.services.map(s => s.name).join(' • ')}
+                <div className="space-y-2">
+                  {cat.services.map((s, i) => (
+                    <div key={i} className="text-sm bg-gray-50 rounded p-2">
+                      <span className="font-medium text-gray-800">{s.name}</span>
+                      {s.description && (
+                        <span className="text-gray-500"> - {s.description}</span>
+                      )}
+                    </div>
+                  ))}
                 </div>
               </div>
             ))}

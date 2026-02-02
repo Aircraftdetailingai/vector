@@ -42,8 +42,8 @@ export async function PUT(request, { params }) {
 
   const supabase = getSupabase();
 
-  // Valid categories
-  const SERVICE_CATEGORIES = ['exterior', 'interior', 'carpet', 'leather', 'engine', 'specialty', 'general', 'other'];
+  // Valid categories - allow any category key (user-defined)
+  const isValidCategory = (cat) => typeof cat === 'string' && cat.length > 0;
 
   // Verify ownership
   const { data: existing } = await supabase
@@ -60,7 +60,7 @@ export async function PUT(request, { params }) {
   // Build update object
   const updates = { updated_at: new Date().toISOString() };
   if (service_name !== undefined) updates.service_name = service_name;
-  if (category !== undefined && SERVICE_CATEGORIES.includes(category)) updates.category = category;
+  if (category !== undefined && isValidCategory(category)) updates.category = category;
   if (hourly_rate !== undefined) updates.hourly_rate = parseFloat(hourly_rate);
   if (default_hours !== undefined) updates.default_hours = parseFloat(default_hours);
   if (description !== undefined) updates.description = description;

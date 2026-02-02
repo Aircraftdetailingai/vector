@@ -81,7 +81,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { service_name, category, hourly_rate, default_hours, requires_return_trip } = body;
+    const { service_name, category, hourly_rate, default_hours, requires_return_trip, description } = body;
 
     if (!service_name) {
       return Response.json({ error: 'Service name required' }, { status: 400 });
@@ -106,6 +106,7 @@ export async function POST(request) {
         detailer_id: user.id,
         service_key,
         service_name,
+        description: description || '',
         category: category || 'other',
         hourly_rate: parseFloat(hourly_rate) || 75,
         default_hours: parseFloat(default_hours) || 1,
@@ -161,6 +162,7 @@ export async function PUT(request) {
       detailer_id: user.id,
       service_key: `${categoryKey}_${Date.now()}_${i}`,
       service_name: s.name,
+      description: s.description || '',
       category: categoryKey || 'other',
       hourly_rate: parseFloat(s.rate) || 75,
       default_hours: parseFloat(s.hours) || 1,

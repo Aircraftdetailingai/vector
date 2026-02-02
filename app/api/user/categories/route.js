@@ -34,18 +34,19 @@ async function getUser(request) {
   return null;
 }
 
-// Default categories with suggested services
+// Default categories with suggested services for aircraft detailing
 const DEFAULT_CATEGORIES = [
   {
     name: 'Exterior',
     key: 'exterior',
     order: 1,
     services: [
-      { name: 'Exterior Wash', hours: 2, rate: 75 },
-      { name: 'Decontamination', hours: 1.5, rate: 85 },
-      { name: 'Polish', hours: 4, rate: 95 },
-      { name: 'Wax & Seal', hours: 2, rate: 85 },
-      { name: 'Ceramic Coating', hours: 6, rate: 125 },
+      { name: 'Maintenance Wash', hours: 2, rate: 75, description: 'Clean landing gear, remove engine oil/exhaust soot/bugs, dry wash all exterior painted surfaces' },
+      { name: 'Decontamination Wash', hours: 2.5, rate: 85, description: 'Clay bar treatment to remove embedded contaminants' },
+      { name: 'One-Step Polish', hours: 4, rate: 95, description: 'Machine polish to remove light scratches and oxidation' },
+      { name: 'Wax', hours: 2, rate: 85, description: 'Hand-applied carnauba wax protection' },
+      { name: 'Spray Ceramic', hours: 1.5, rate: 90, description: 'Sprayable ceramic coating for 3-6 month protection' },
+      { name: 'Ceramic Coating', hours: 8, rate: 125, description: 'Professional ceramic coating for 2+ year protection' },
     ],
   },
   {
@@ -53,11 +54,10 @@ const DEFAULT_CATEGORIES = [
     key: 'interior',
     order: 2,
     services: [
-      { name: 'Vacuum & Wipe Down', hours: 1.5, rate: 75 },
-      { name: 'Full Interior Detail', hours: 3, rate: 85 },
-      { name: 'Leather Conditioning', hours: 1, rate: 85 },
-      { name: 'Carpet Shampoo', hours: 1.5, rate: 80 },
-      { name: 'Windows (Interior)', hours: 0.5, rate: 75 },
+      { name: 'Vacuum & Wipe Down', hours: 1.5, rate: 75, description: 'Vacuum all carpets, wipe down hard surfaces' },
+      { name: 'Carpet Extraction', hours: 2, rate: 85, description: 'Deep clean and extract carpets' },
+      { name: 'Leather Clean & Condition', hours: 1.5, rate: 85, description: 'Clean and condition all leather surfaces' },
+      { name: 'Windows', hours: 0.5, rate: 75, description: 'Clean all interior windows and glass' },
     ],
   },
   {
@@ -65,8 +65,8 @@ const DEFAULT_CATEGORIES = [
     key: 'brightwork',
     order: 3,
     services: [
-      { name: 'Brightwork Polish', hours: 3, rate: 95 },
-      { name: 'Brightwork Protection', hours: 1, rate: 85 },
+      { name: 'Polish Brightwork', hours: 3, rate: 95, description: 'Polish all chrome and metal trim' },
+      { name: 'Protect Brightwork', hours: 1, rate: 85, description: 'Apply protective coating to brightwork' },
     ],
   },
   {
@@ -74,10 +74,11 @@ const DEFAULT_CATEGORIES = [
     key: 'packages',
     order: 4,
     services: [
-      { name: 'Bronze Package', hours: 3, rate: 75 },
-      { name: 'Silver Package', hours: 5, rate: 80 },
-      { name: 'Gold Package', hours: 8, rate: 85 },
-      { name: 'Platinum Package', hours: 12, rate: 90 },
+      { name: 'Bronze', hours: 3, rate: 75, description: 'Exterior wash + interior vacuum & wipe down' },
+      { name: 'Silver', hours: 5, rate: 80, description: 'Bronze + carpet extraction + leather conditioning' },
+      { name: 'Gold', hours: 7, rate: 85, description: 'Silver + wax' },
+      { name: 'Platinum', hours: 10, rate: 90, description: 'Silver + decon + polish + spray ceramic' },
+      { name: 'Shiny Jet', hours: 14, rate: 100, description: 'Silver + decon + polish + pro ceramic coating' },
     ],
   },
 ];
