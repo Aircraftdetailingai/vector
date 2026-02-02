@@ -5,6 +5,7 @@ import SendQuoteModal from '../../components/SendQuoteModal.jsx';
 import PushNotifications from '../../components/PushNotifications.jsx';
 import DashboardStats from '../../components/DashboardStats.jsx';
 import PointsBadge from '../../components/PointsBadge.jsx';
+import SmartRecommendations from '../../components/SmartRecommendations.jsx';
 
 const categoryLabels = {
   piston: 'Pistons',
@@ -408,6 +409,9 @@ export default function DashboardPage() {
 
       {/* Dashboard Stats Widget */}
       <DashboardStats />
+
+      {/* Smart Recommendations Widget */}
+      <SmartRecommendations />
 
       {/* Daily Business Tip */}
       {dailyTip && !tipDismissed && (

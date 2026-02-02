@@ -37,6 +37,10 @@ export default function QuotesPage() {
     actual_hours: '',
     product_cost: '',
     notes: '',
+    wait_time_minutes: '',
+    repositioning_needed: false,
+    customer_late: false,
+    issues: '',
   });
   const [completing, setCompleting] = useState(false);
   const [changeOrderModal, setChangeOrderModal] = useState(null);
@@ -94,6 +98,10 @@ export default function QuotesPage() {
       actual_hours: quote.total_hours?.toString() || '',
       product_cost: '',
       notes: '',
+      wait_time_minutes: '',
+      repositioning_needed: false,
+      customer_late: false,
+      issues: '',
     });
   };
 
@@ -173,7 +181,7 @@ export default function QuotesPage() {
 
     try {
       const token = localStorage.getItem('vector_token');
-      const res = await fetch('/api/jobs', {
+      const res = await fetch('/api/jobs/complete', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -184,6 +192,10 @@ export default function QuotesPage() {
           actual_hours: parseFloat(completionData.actual_hours),
           product_cost: parseFloat(completionData.product_cost) || 0,
           notes: completionData.notes,
+          wait_time_minutes: parseInt(completionData.wait_time_minutes) || 0,
+          repositioning_needed: completionData.repositioning_needed,
+          customer_late: completionData.customer_late,
+          issues: completionData.issues,
         }),
       });
 
@@ -522,6 +534,69 @@ export default function QuotesPage() {
                   className="w-full border rounded px-3 py-2"
                   rows={2}
                 />
+              </div>
+
+              {/* Smart Tracking Section */}
+              <div className="border-t pt-4 mt-4">
+                <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  <span>Track Hidden Costs</span>
+                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">+Points</span>
+                </p>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-600 mb-1">Wait Time</label>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        value={completionData.wait_time_minutes}
+                        onChange={(e) => setCompletionData({ ...completionData, wait_time_minutes: e.target.value })}
+                        placeholder="0"
+                        className="w-20 border rounded px-2 py-1.5 text-sm"
+                      />
+                      <span className="text-xs text-gray-500">mins</span>
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col justify-end">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={completionData.repositioning_needed}
+                        onChange={(e) => setCompletionData({ ...completionData, repositioning_needed: e.target.checked })}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="text-sm text-gray-600">Repositioning needed</span>
+                    </label>
+                  </div>
+
+                  <div className="flex flex-col justify-end">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={completionData.customer_late}
+                        onChange={(e) => setCompletionData({ ...completionData, customer_late: e.target.checked })}
+                        className="rounded border-gray-300"
+                      />
+                      <span className="text-sm text-gray-600">Customer late</span>
+                    </label>
+                  </div>
+                </div>
+
+                <div className="mt-3">
+                  <label className="block text-sm text-gray-600 mb-1">Any issues? (optional)</label>
+                  <textarea
+                    value={completionData.issues}
+                    onChange={(e) => setCompletionData({ ...completionData, issues: e.target.value })}
+                    placeholder="Access problems, condition notes, etc..."
+                    className="w-full border rounded px-3 py-2 text-sm"
+                    rows={2}
+                  />
+                </div>
+
+                <p className="text-xs text-gray-400 mt-2">
+                  Tracking this data earns points and helps identify problem customers.
+                </p>
               </div>
             </div>
 

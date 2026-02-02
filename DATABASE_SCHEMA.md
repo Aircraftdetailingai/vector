@@ -460,3 +460,107 @@ The `services` JSONB column stores an array of additional services:
   }
 ]
 ```
+
+---
+
+# Smart Business Intelligence Schema
+
+Run these SQL commands to enable the smart recommendations system.
+
+## 22. Create `job_completion_logs` table
+
+```sql
+CREATE TABLE IF NOT EXISTS job_completion_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  quote_id UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  customer_email VARCHAR(255),
+  actual_hours DECIMAL(10,2),
+  quoted_hours DECIMAL(10,2),
+  wait_time_minutes INTEGER DEFAULT 0,
+  repositioning_needed BOOLEAN DEFAULT false,
+  customer_late BOOLEAN DEFAULT false,
+  products_used JSONB DEFAULT '[]',
+  product_cost DECIMAL(10,2) DEFAULT 0,
+  notes TEXT DEFAULT '',
+  issues TEXT DEFAULT '',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_job_completion_logs_quote ON job_completion_logs(quote_id);
+CREATE INDEX idx_job_completion_logs_detailer ON job_completion_logs(detailer_id);
+CREATE INDEX idx_job_completion_logs_customer ON job_completion_logs(customer_email);
+CREATE INDEX idx_job_completion_logs_created ON job_completion_logs(created_at);
+```
+
+## 23. Create `customer_stats` table
+
+```sql
+CREATE TABLE IF NOT EXISTS customer_stats (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  customer_email VARCHAR(255) NOT NULL,
+  customer_name VARCHAR(255),
+  total_jobs INTEGER DEFAULT 0,
+  total_revenue DECIMAL(10,2) DEFAULT 0,
+  total_wait_time_minutes INTEGER DEFAULT 0,
+  total_repositioning_events INTEGER DEFAULT 0,
+  total_late_arrivals INTEGER DEFAULT 0,
+  avg_days_to_pay DECIMAL(10,2) DEFAULT 0,
+  last_rate_increase_date DATE,
+  last_job_date DATE,
+  first_job_date DATE,
+  notes TEXT DEFAULT '',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(detailer_id, customer_email)
+);
+
+CREATE INDEX idx_customer_stats_detailer ON customer_stats(detailer_id);
+CREATE INDEX idx_customer_stats_email ON customer_stats(customer_email);
+```
+
+## 24. Create `smart_recommendations` table
+
+```sql
+CREATE TABLE IF NOT EXISTS smart_recommendations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  type VARCHAR(50) NOT NULL,
+  priority INTEGER DEFAULT 5,
+  title VARCHAR(255) NOT NULL,
+  message TEXT NOT NULL,
+  data JSONB DEFAULT '{}',
+  acted_on BOOLEAN DEFAULT false,
+  dismissed BOOLEAN DEFAULT false,
+  acted_on_at TIMESTAMP WITH TIME ZONE,
+  dismissed_at TIMESTAMP WITH TIME ZONE,
+  expires_at TIMESTAMP WITH TIME ZONE,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_recommendations_detailer ON smart_recommendations(detailer_id);
+CREATE INDEX idx_recommendations_type ON smart_recommendations(type);
+CREATE INDEX idx_recommendations_active ON smart_recommendations(detailer_id, acted_on, dismissed);
+```
+
+## Recommendation Types
+
+| Type | Description |
+|------|-------------|
+| rate_increase | Customer hasn't had rate increase in X months |
+| problem_customer | Customer has high wait time or other issues |
+| profitability | Service or customer profitability insights |
+| upsell | Opportunity to upsell services |
+| market_rate | Detailer rates vs market average |
+| time_accuracy | Quoted time vs actual time drift |
+| payment_terms | Customers with slow payment patterns |
+
+## Points for Business Intelligence
+
+| Action | Points |
+|--------|--------|
+| Log wait time | 10 |
+| Log repositioning | 10 |
+| Complete post-job survey | 20 |
+| Act on recommendation | 50 |
