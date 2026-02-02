@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
-import { getAuthUser } from '@/lib/auth';
+import { verifyToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,6 +9,29 @@ function getSupabase() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) return null;
   return createClient(url, key);
+}
+
+// Get user from either cookie or Authorization header
+async function getUser(request) {
+  // Try cookie first (browser requests)
+  try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('auth_token')?.value;
+    if (authCookie) {
+      const user = await verifyToken(authCookie);
+      if (user) return user;
+    }
+  } catch (e) {
+    // cookies() might fail in some contexts
+  }
+
+  // Try Authorization header (API requests)
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return await verifyToken(authHeader.slice(7));
+  }
+
+  return null;
 }
 
 // Default categories with suggested services
@@ -61,7 +85,7 @@ const DEFAULT_CATEGORIES = [
 // GET - Get user's categories
 export async function GET(request) {
   try {
-    const user = await getAuthUser(request);
+    const user = await getUser(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -104,7 +128,7 @@ export async function GET(request) {
 // POST - Create a new category
 export async function POST(request) {
   try {
-    const user = await getAuthUser(request);
+    const user = await getUser(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -156,7 +180,7 @@ export async function POST(request) {
 // PUT - Update a category
 export async function PUT(request) {
   try {
-    const user = await getAuthUser(request);
+    const user = await getUser(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -197,7 +221,7 @@ export async function PUT(request) {
 // DELETE - Delete a category
 export async function DELETE(request) {
   try {
-    const user = await getAuthUser(request);
+    const user = await getUser(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
