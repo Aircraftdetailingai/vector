@@ -392,7 +392,8 @@ export default function DashboardPage() {
           <PointsBadge />
           <a href="/quotes" className="underline">Quotes</a>
           <a href="/calendar" className="underline">Calendar</a>
-          <a href="/products" className="underline">Products</a>
+          <a href="/products" className="underline">Inventory</a>
+          <a href="/equipment" className="underline">Equipment</a>
           <a href="/profitability" className="underline">Profitability</a>
           <a href="/roi" className="underline text-emerald-400">ROI</a>
           <a href="/growth" className="underline text-amber-400">Growth</a>

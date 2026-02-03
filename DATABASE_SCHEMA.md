@@ -31,7 +31,7 @@ CREATE INDEX idx_points_history_created ON points_history(created_at);
 CREATE INDEX idx_points_history_reason ON points_history(reason);
 ```
 
-## 3. Create `products` table
+## 3. Create `products` table (Inventory Tracking)
 
 ```sql
 CREATE TABLE IF NOT EXISTS products (
@@ -39,7 +39,11 @@ CREATE TABLE IF NOT EXISTS products (
   detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   category VARCHAR(50) DEFAULT 'other',
-  cost_per_oz DECIMAL(10,2) DEFAULT 0,
+  unit VARCHAR(20) DEFAULT 'oz',
+  cost_per_unit DECIMAL(10,2) DEFAULT 0,
+  current_quantity DECIMAL(10,2) DEFAULT 0,
+  reorder_threshold DECIMAL(10,2) DEFAULT 0,
+  supplier VARCHAR(255) DEFAULT '',
   notes TEXT DEFAULT '',
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
@@ -47,6 +51,27 @@ CREATE TABLE IF NOT EXISTS products (
 
 CREATE INDEX idx_products_detailer ON products(detailer_id);
 CREATE INDEX idx_products_category ON products(category);
+```
+
+## 3b. Create `equipment` table (Tool/Equipment Tracking)
+
+```sql
+CREATE TABLE IF NOT EXISTS equipment (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  category VARCHAR(50) DEFAULT 'other',
+  purchase_price DECIMAL(10,2) DEFAULT 0,
+  purchase_date DATE,
+  jobs_completed INTEGER DEFAULT 0,
+  maintenance_notes TEXT DEFAULT '',
+  status VARCHAR(20) DEFAULT 'active',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_equipment_detailer ON equipment(detailer_id);
+CREATE INDEX idx_equipment_category ON equipment(category);
 ```
 
 ## 4. Create `product_usage` table

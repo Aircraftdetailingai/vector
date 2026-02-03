@@ -115,6 +115,57 @@ export async function POST(request) {
       });
     }
 
+    // Deduct products from inventory
+    if (products_used && products_used.length > 0) {
+      for (const usage of products_used) {
+        if (usage.product_id && usage.amount) {
+          // Get current quantity
+          const { data: product } = await supabase
+            .from('products')
+            .select('current_quantity')
+            .eq('id', usage.product_id)
+            .eq('detailer_id', user.id)
+            .single();
+
+          if (product) {
+            const newQuantity = Math.max(0, (product.current_quantity || 0) - parseFloat(usage.amount));
+            await supabase
+              .from('products')
+              .update({
+                current_quantity: newQuantity,
+                updated_at: new Date().toISOString(),
+              })
+              .eq('id', usage.product_id)
+              .eq('detailer_id', user.id);
+          }
+        }
+      }
+    }
+
+    // Increment equipment job counts if equipment_used is provided
+    const { equipment_used = [] } = body;
+    if (equipment_used && equipment_used.length > 0) {
+      for (const equipmentId of equipment_used) {
+        const { data: equipment } = await supabase
+          .from('equipment')
+          .select('jobs_completed')
+          .eq('id', equipmentId)
+          .eq('detailer_id', user.id)
+          .single();
+
+        if (equipment) {
+          await supabase
+            .from('equipment')
+            .update({
+              jobs_completed: (equipment.jobs_completed || 0) + 1,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', equipmentId)
+            .eq('detailer_id', user.id);
+        }
+      }
+    }
+
     // Award points for tracking data
     let totalPoints = 0;
     const pointReasons = [];
