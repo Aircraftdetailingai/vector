@@ -3,10 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SendQuoteModal from '../../components/SendQuoteModal.jsx';
 import PushNotifications from '../../components/PushNotifications.jsx';
-import DashboardStats from '../../components/DashboardStats.jsx';
 import PointsBadge from '../../components/PointsBadge.jsx';
-import SmartRecommendations from '../../components/SmartRecommendations.jsx';
-import ROIDashboard from '../../components/ROIDashboard.jsx';
 
 const categoryLabels = {
   piston: 'Pistons',
@@ -42,10 +39,125 @@ function StripeWarningBanner({ onConnect, loading }) {
   );
 }
 
+// Quick Stats Bar Component (inline, fast loading)
+function QuickStats({ stats }) {
+  if (!stats) return null;
+
+  return (
+    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+      <div className="bg-white rounded-lg p-3 shadow">
+        <p className="text-gray-500 text-xs">This Month</p>
+        <p className="text-xl font-bold text-gray-900">${(stats.monthRevenue || 0).toLocaleString()}</p>
+      </div>
+      <div className="bg-white rounded-lg p-3 shadow">
+        <p className="text-gray-500 text-xs">Jobs Done</p>
+        <p className="text-xl font-bold text-blue-600">{stats.monthJobs || 0}</p>
+      </div>
+      <div className="bg-white rounded-lg p-3 shadow">
+        <p className="text-gray-500 text-xs">Pending Quotes</p>
+        <p className="text-xl font-bold text-amber-600">{stats.pendingQuotes || 0}</p>
+      </div>
+      <div className="bg-white rounded-lg p-3 shadow">
+        <p className="text-gray-500 text-xs">Avg Job Value</p>
+        <p className="text-xl font-bold text-green-600">${(stats.avgJobValue || 0).toFixed(0)}</p>
+      </div>
+    </div>
+  );
+}
+
+// Recent Quotes Component
+function RecentQuotes({ quotes, onViewQuote }) {
+  if (!quotes || quotes.length === 0) {
+    return (
+      <div className="bg-white rounded-lg p-4 mb-4 shadow">
+        <div className="flex justify-between items-center mb-3">
+          <h3 className="font-semibold">Recent Quotes</h3>
+          <a href="/quotes" className="text-sm text-amber-600 hover:underline">View All</a>
+        </div>
+        <p className="text-gray-500 text-sm">No quotes yet. Create your first quote below.</p>
+      </div>
+    );
+  }
+
+  const statusColors = {
+    sent: 'bg-blue-100 text-blue-700',
+    viewed: 'bg-purple-100 text-purple-700',
+    accepted: 'bg-green-100 text-green-700',
+    completed: 'bg-emerald-100 text-emerald-700',
+    declined: 'bg-red-100 text-red-700',
+    expired: 'bg-gray-100 text-gray-500',
+  };
+
+  return (
+    <div className="bg-white rounded-lg p-4 mb-4 shadow">
+      <div className="flex justify-between items-center mb-3">
+        <h3 className="font-semibold">Recent Quotes</h3>
+        <a href="/quotes" className="text-sm text-amber-600 hover:underline">View All</a>
+      </div>
+      <div className="space-y-2">
+        {quotes.map((quote) => (
+          <a
+            key={quote.id}
+            href={`/quotes/${quote.id}`}
+            className="flex items-center justify-between p-3 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+          >
+            <div className="flex-1">
+              <p className="font-medium text-gray-900">
+                {quote.aircraft_name || 'Unknown Aircraft'}
+              </p>
+              <p className="text-sm text-gray-500">
+                {quote.customer_name || quote.customer_email || 'No customer'}
+                {quote.created_at && (
+                  <span className="ml-2">
+                    {new Date(quote.created_at).toLocaleDateString()}
+                  </span>
+                )}
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className={`text-xs px-2 py-1 rounded-full ${statusColors[quote.status] || 'bg-gray-100 text-gray-600'}`}>
+                {quote.status || 'draft'}
+              </span>
+              <span className="font-bold text-gray-900">${(quote.total_price || 0).toFixed(0)}</span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// Quick Actions Component
+function QuickActions() {
+  return (
+    <div className="bg-white rounded-lg p-4 mb-4 shadow">
+      <h3 className="font-semibold mb-3">Quick Actions</h3>
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+        <a href="/products" className="flex flex-col items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
+          <span className="text-2xl mb-1">&#128230;</span>
+          <span className="text-sm font-medium text-blue-900">Inventory</span>
+        </a>
+        <a href="/equipment" className="flex flex-col items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
+          <span className="text-2xl mb-1">&#128295;</span>
+          <span className="text-sm font-medium text-green-900">Equipment</span>
+        </a>
+        <a href="/growth" className="flex flex-col items-center p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors">
+          <span className="text-2xl mb-1">&#128200;</span>
+          <span className="text-sm font-medium text-amber-900">Growth</span>
+        </a>
+        <a href="/settings/services" className="flex flex-col items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
+          <span className="text-2xl mb-1">&#9881;</span>
+          <span className="text-sm font-medium text-purple-900">Services</span>
+        </a>
+      </div>
+    </div>
+  );
+}
+
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [detailerServices, setDetailerServices] = useState([]); // Services from API
+  const [detailerServices, setDetailerServices] = useState([]);
   const [manufacturers, setManufacturers] = useState([]);
   const [models, setModels] = useState([]);
   const [selectedManufacturer, setSelectedManufacturer] = useState('');
@@ -54,7 +166,7 @@ export default function DashboardPage() {
   const [selectedAircraft, setSelectedAircraft] = useState(null);
   const [services, setServices] = useState({});
   const [hours, setHours] = useState({});
-  const [suggestedHours, setSuggestedHours] = useState({}); // Store aircraft's suggested hours
+  const [suggestedHours, setSuggestedHours] = useState({});
   const [accessDifficulty, setAccessDifficulty] = useState(1.0);
   const [quoteNotes, setQuoteNotes] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
@@ -66,8 +178,9 @@ export default function DashboardPage() {
   const [jobLocation, setJobLocation] = useState('');
   const [dailyTip, setDailyTip] = useState(null);
   const [tipDismissed, setTipDismissed] = useState(false);
+  const [quickStats, setQuickStats] = useState(null);
+  const [recentQuotes, setRecentQuotes] = useState([]);
 
-  // Get enabled services only
   const enabledServices = detailerServices.filter(s => s.enabled);
 
   // Fetch manufacturers on mount
@@ -118,70 +231,59 @@ export default function DashboardPage() {
     setUser(JSON.parse(stored));
     setLoading(false);
 
-    // Check Stripe status
-    const checkStripe = async () => {
-      try {
-        const res = await fetch('/api/stripe/status', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setStripeStatus(data);
-        }
-      } catch (err) {
-        console.log('Failed to check Stripe status:', err);
-      }
-    };
-    checkStripe();
+    // Fetch all dashboard data in parallel
+    const fetchDashboardData = async () => {
+      const headers = { Authorization: `Bearer ${token}` };
 
-    // Fetch detailer's services
-    const fetchServices = async () => {
-      try {
-        const res = await fetch('/api/user/services', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setDetailerServices(data.services || []);
-        }
-      } catch (err) {
-        console.log('Failed to fetch services:', err);
-      }
-    };
-    fetchServices();
+      // All fetches in parallel for speed
+      const [stripeRes, servicesRes, minFeeRes, tipRes, statsRes, quotesRes] = await Promise.allSettled([
+        fetch('/api/stripe/status', { headers }),
+        fetch('/api/user/services', { headers }),
+        fetch('/api/user/minimum-fee', { headers }),
+        fetch('/api/tips', { headers }),
+        fetch('/api/dashboard/stats', { headers }),
+        fetch('/api/quotes?limit=5&sort=created_at&order=desc', { headers }),
+      ]);
 
-    // Fetch minimum fee settings
-    const fetchMinimumFee = async () => {
-      try {
-        const res = await fetch('/api/user/minimum-fee', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setMinimumFee(data.minimum_callout_fee || 0);
-          setMinimumFeeLocations(data.minimum_fee_locations || []);
-        }
-      } catch (err) {
-        console.log('Failed to fetch minimum fee:', err);
+      // Process Stripe status
+      if (stripeRes.status === 'fulfilled' && stripeRes.value.ok) {
+        const data = await stripeRes.value.json();
+        setStripeStatus(data);
       }
-    };
-    fetchMinimumFee();
 
-    // Fetch daily business tip
-    const fetchDailyTip = async () => {
-      try {
-        const res = await fetch('/api/tips', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setDailyTip(data.todaysTip);
-        }
-      } catch (err) {
-        console.log('Failed to fetch tip:', err);
+      // Process services
+      if (servicesRes.status === 'fulfilled' && servicesRes.value.ok) {
+        const data = await servicesRes.value.json();
+        setDetailerServices(data.services || []);
+      }
+
+      // Process minimum fee
+      if (minFeeRes.status === 'fulfilled' && minFeeRes.value.ok) {
+        const data = await minFeeRes.value.json();
+        setMinimumFee(data.minimum_callout_fee || 0);
+        setMinimumFeeLocations(data.minimum_fee_locations || []);
+      }
+
+      // Process daily tip
+      if (tipRes.status === 'fulfilled' && tipRes.value.ok) {
+        const data = await tipRes.value.json();
+        setDailyTip(data.todaysTip);
+      }
+
+      // Process quick stats
+      if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
+        const data = await statsRes.value.json();
+        setQuickStats(data);
+      }
+
+      // Process recent quotes
+      if (quotesRes.status === 'fulfilled' && quotesRes.value.ok) {
+        const data = await quotesRes.value.json();
+        setRecentQuotes(data.quotes || []);
       }
     };
-    fetchDailyTip();
+
+    fetchDashboardData().catch(err => console.error('Dashboard fetch error:', err));
   }, [router]);
 
   const handleConnectStripe = async () => {
@@ -203,13 +305,11 @@ export default function DashboardPage() {
     }
   };
 
-  // Map service keys to aircraft table columns
   const SERVICE_TO_AIRCRAFT_FIELD = {
     ext_wash: 'exterior_hours',
     int_detail: 'interior_hours',
   };
 
-  // Load aircraft details and pre-fill hours
   const handleSelectAircraft = async (aircraft) => {
     try {
       const res = await fetch(`/api/aircraft/${aircraft.id}`);
@@ -218,28 +318,24 @@ export default function DashboardPage() {
         const fullAircraft = data.aircraft;
         setSelectedAircraft(fullAircraft);
 
-        // Store suggested hours from aircraft database or use service defaults
         const suggested = {};
         const newServices = {};
         const newHours = {};
         enabledServices.forEach(svc => {
-          // Use mapped field name, or fall back to db_field from service config
           const fieldName = SERVICE_TO_AIRCRAFT_FIELD[svc.service_key] || svc.db_field;
           const dbHours = fieldName ? (fullAircraft[fieldName] || 0) : 0;
           const effectiveHours = dbHours > 0 ? dbHours : svc.default_hours;
           suggested[svc.service_key] = effectiveHours;
-          // Pre-select exterior wash and interior detail
           const isPreselected = svc.service_key === 'ext_wash' || svc.service_key === 'int_detail';
           newServices[svc.service_key] = isPreselected;
-          // Only set hours for pre-selected services
           newHours[svc.service_key] = isPreselected ? effectiveHours : 0;
         });
         setSuggestedHours(suggested);
         setServices(newServices);
         setHours(newHours);
-        setAccessDifficulty(1.0); // Reset difficulty for new aircraft
-        setQuoteNotes(''); // Reset notes for new aircraft
-        setJobLocation(''); // Reset job location for new aircraft
+        setAccessDifficulty(1.0);
+        setQuoteNotes('');
+        setJobLocation('');
       }
     } catch (err) {
       console.error('Failed to fetch aircraft details:', err);
@@ -250,9 +346,7 @@ export default function DashboardPage() {
     const isCurrentlyChecked = services[key];
     setServices((prev) => ({ ...prev, [key]: !prev[key] }));
 
-    // When checking a service, auto-fill with suggested hours
     if (!isCurrentlyChecked && suggestedHours[key]) {
-      // Only auto-fill if hours is 0 or empty
       if (!hours[key] || hours[key] === 0) {
         setHours((prev) => ({ ...prev, [key]: suggestedHours[key] }));
       }
@@ -263,19 +357,16 @@ export default function DashboardPage() {
     setHours((prev) => ({ ...prev, [key]: parseFloat(value) || 0 }));
   };
 
-  // Get efficiency factor from user settings (default 1.0)
   const efficiencyFactor = user?.efficiency_factor || 1.0;
 
-  // Compute adjusted hours for a service (base hours * efficiency * difficulty)
   const getAdjustedHours = (key) => {
     const baseHours = services[key] ? (hours[key] || 0) : 0;
     return baseHours * efficiencyFactor * accessDifficulty;
   };
 
-  // Get rate for a service from detailer's service config
   const getServiceRate = (serviceKey) => {
     const svc = enabledServices.find(s => s.service_key === serviceKey);
-    return svc?.hourly_rate || 75; // Default $75/hr if not found
+    return svc?.hourly_rate || 75;
   };
 
   const computePrice = (key) => {
@@ -284,12 +375,10 @@ export default function DashboardPage() {
     return getAdjustedHours(key) * rate;
   };
 
-  // Base hours (before adjustments) for display
   const baseHours = enabledServices.reduce((sum, svc) => {
     return sum + (services[svc.service_key] ? (hours[svc.service_key] || 0) : 0);
   }, 0);
 
-  // Adjusted total hours (with efficiency and difficulty)
   const totalHours = enabledServices.reduce((sum, svc) => {
     return sum + getAdjustedHours(svc.service_key);
   }, 0);
@@ -298,19 +387,16 @@ export default function DashboardPage() {
     return sum + computePrice(svc.service_key);
   }, 0);
 
-  // Check if minimum fee applies
   const minimumFeeApplies = () => {
     if (minimumFee <= 0) return false;
     if (calculatedPrice >= minimumFee) return false;
-    // If specific locations are set, check if job location matches
     if (minimumFeeLocations.length > 0) {
-      if (!jobLocation) return false; // No location set, don't apply
+      if (!jobLocation) return false;
       const normalizedJob = jobLocation.toUpperCase().trim();
       return minimumFeeLocations.some(loc =>
         normalizedJob.includes(loc.toUpperCase().trim())
       );
     }
-    // No specific locations = applies to all
     return true;
   };
 
@@ -331,7 +417,6 @@ export default function DashboardPage() {
     setModalOpen(false);
   };
 
-  // Build line items for full breakdown display (using adjusted hours)
   const lineItems = enabledServices
     .filter(svc => services[svc.service_key])
     .map(svc => ({
@@ -342,7 +427,6 @@ export default function DashboardPage() {
       amount: computePrice(svc.service_key),
     }));
 
-  // Calculate labor vs products split (70/30 default)
   const laborTotal = totalPrice * 0.7;
   const productsTotal = totalPrice * 0.3;
 
@@ -394,8 +478,6 @@ export default function DashboardPage() {
           <a href="/calendar" className="underline">Calendar</a>
           <a href="/products" className="underline">Inventory</a>
           <a href="/equipment" className="underline">Equipment</a>
-          <a href="/profitability" className="underline">Profitability</a>
-          <a href="/roi" className="underline text-emerald-400">ROI</a>
           <a href="/growth" className="underline text-amber-400">Growth</a>
           <a href="/settings" className="underline">Settings</a>
           <button onClick={handleLogout} className="underline">Logout</button>
@@ -410,47 +492,36 @@ export default function DashboardPage() {
       {/* Push Notifications Banner */}
       <PushNotifications />
 
-      {/* Dashboard Stats Widget */}
-      <DashboardStats />
+      {/* Quick Stats Bar */}
+      <QuickStats stats={quickStats} />
 
-      {/* Smart Recommendations Widget */}
-      <SmartRecommendations />
+      {/* Recent Quotes */}
+      <RecentQuotes quotes={recentQuotes} />
 
-      {/* ROI Dashboard Widget */}
-      <ROIDashboard compact={true} />
+      {/* Quick Actions */}
+      <QuickActions />
 
-      {/* Daily Business Tip */}
+      {/* Daily Tip - Small and dismissible */}
       {dailyTip && !tipDismissed && (
-        <div className="bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg p-4 mb-4">
-          <div className="flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              <span className="text-2xl">{dailyTip.proTip ? '💰' : '💡'}</span>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="font-semibold text-amber-800">{dailyTip.title}</p>
-                  {dailyTip.proTip && (
-                    <span className="text-xs bg-amber-500 text-white px-2 py-0.5 rounded-full">Money Tip</span>
-                  )}
-                </div>
-                <p className="text-sm text-amber-700 mt-1">{dailyTip.content}</p>
-                {dailyTip.actionable && dailyTip.actionLink && (
-                  <a
-                    href={dailyTip.actionLink}
-                    className="inline-block mt-2 text-sm text-amber-600 font-medium hover:underline"
-                  >
-                    {dailyTip.action} &rarr;
-                  </a>
-                )}
-              </div>
-            </div>
-            <button
-              onClick={() => setTipDismissed(true)}
-              className="text-amber-400 hover:text-amber-600 text-xl leading-none"
-              title="Dismiss"
-            >
-              &times;
-            </button>
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span>&#128161;</span>
+            <span className="text-sm text-amber-800">
+              <strong>{dailyTip.title}:</strong> {dailyTip.content}
+            </span>
+            {dailyTip.actionLink && (
+              <a href={dailyTip.actionLink} className="text-sm text-amber-600 font-medium hover:underline ml-2">
+                {dailyTip.action || 'Learn more'} &#8594;
+              </a>
+            )}
           </div>
+          <button
+            onClick={() => setTipDismissed(true)}
+            className="text-amber-400 hover:text-amber-600 text-lg leading-none ml-2"
+            title="Dismiss"
+          >
+            &#10005;
+          </button>
         </div>
       )}
 
@@ -566,7 +637,7 @@ export default function DashboardPage() {
             })()}
           </div>
 
-          {/* Aircraft Details & Surface Area (Detailer only) */}
+          {/* Aircraft Details & Surface Area */}
           {selectedAircraft && (
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
               <div className="flex justify-between items-start">
@@ -633,7 +704,6 @@ export default function DashboardPage() {
                 <button
                   type="button"
                   onClick={() => {
-                    // Apply suggested hours to all checked services
                     const newHours = { ...hours };
                     enabledServices.forEach(svc => {
                       if (services[svc.service_key] && suggestedHours[svc.service_key]) {
