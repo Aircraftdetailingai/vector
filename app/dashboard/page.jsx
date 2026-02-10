@@ -18,23 +18,31 @@ const categoryLabels = {
 const categoryOrder = ['piston', 'turboprop', 'light_jet', 'midsize_jet', 'super_midsize_jet', 'large_jet', 'helicopter'];
 
 // Stripe Connect Warning Banner Component
-function StripeWarningBanner({ onConnect, loading }) {
+function StripeWarningBanner({ onConnect, loading, error, onClearError }) {
   return (
-    <div className="bg-amber-100 border border-amber-300 rounded-lg p-4 mb-4 flex items-center justify-between">
-      <div className="flex items-center">
-        <span className="text-amber-600 text-xl mr-3">&#9888;</span>
-        <div>
-          <p className="text-amber-800 font-medium">Stripe not connected</p>
-          <p className="text-amber-700 text-sm">You cannot receive payments until you connect Stripe.</p>
+    <div className="bg-amber-100 border border-amber-300 rounded-lg p-4 mb-4">
+      {error && (
+        <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm flex justify-between items-start">
+          <span>{error}</span>
+          <button onClick={onClearError} className="ml-2 text-red-500 hover:text-red-700">&times;</button>
         </div>
+      )}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center">
+          <span className="text-amber-600 text-xl mr-3">&#9888;</span>
+          <div>
+            <p className="text-amber-800 font-medium">Stripe not connected</p>
+            <p className="text-amber-700 text-sm">You cannot receive payments until you connect Stripe.</p>
+          </div>
+        </div>
+        <button
+          onClick={onConnect}
+          disabled={loading}
+          className="px-4 py-2 rounded bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
+        >
+          {loading ? 'Connecting...' : 'Connect Stripe'}
+        </button>
       </div>
-      <button
-        onClick={onConnect}
-        disabled={loading}
-        className="px-4 py-2 rounded bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
-      >
-        {loading ? 'Connecting...' : 'Connect Stripe'}
-      </button>
     </div>
   );
 }
@@ -170,8 +178,9 @@ export default function DashboardPage() {
   const [accessDifficulty, setAccessDifficulty] = useState(1.0);
   const [quoteNotes, setQuoteNotes] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
-  const [stripeStatus, setStripeStatus] = useState({ connected: true, status: 'UNKNOWN' });
+  const [stripeStatus, setStripeStatus] = useState({ connected: false, status: 'CHECKING' });
   const [stripeLoading, setStripeLoading] = useState(false);
+  const [stripeError, setStripeError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [minimumFee, setMinimumFee] = useState(0);
   const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
@@ -249,6 +258,9 @@ export default function DashboardPage() {
       if (stripeRes.status === 'fulfilled' && stripeRes.value.ok) {
         const data = await stripeRes.value.json();
         setStripeStatus(data);
+      } else {
+        // Fetch failed or returned error - assume not connected
+        setStripeStatus({ connected: false, status: 'UNKNOWN' });
       }
 
       // Process services
@@ -288,18 +300,33 @@ export default function DashboardPage() {
 
   const handleConnectStripe = async () => {
     setStripeLoading(true);
+    setStripeError(null);
     try {
       const token = localStorage.getItem('vector_token');
+      if (!token) {
+        setStripeError('Not logged in - please refresh and try again');
+        return;
+      }
       const res = await fetch('/api/stripe/connect', {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.error) {
+        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error;
+        console.error('Stripe error:', errorMsg);
+        setStripeError(errorMsg);
+      } else {
+        setStripeError('No redirect URL received - please try again');
       }
     } catch (err) {
       console.error('Failed to connect Stripe:', err);
+      setStripeError(`Network error: ${err.message}`);
     } finally {
       setStripeLoading(false);
     }
@@ -485,8 +512,13 @@ export default function DashboardPage() {
       </header>
 
       {/* Stripe Warning Banner */}
-      {!stripeStatus.connected && (
-        <StripeWarningBanner onConnect={handleConnectStripe} loading={stripeLoading} />
+      {!stripeStatus.connected && stripeStatus.status !== 'CHECKING' && (
+        <StripeWarningBanner
+          onConnect={handleConnectStripe}
+          loading={stripeLoading}
+          error={stripeError}
+          onClearError={() => setStripeError(null)}
+        />
       )}
 
       {/* Push Notifications Banner */}
