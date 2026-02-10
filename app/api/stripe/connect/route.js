@@ -15,17 +15,29 @@ function getSupabase() {
 // Get user from either cookie or Authorization header
 async function getUser(request) {
   // Try cookie first (browser requests)
-  const cookieStore = await cookies();
-  const authCookie = cookieStore.get('auth_token')?.value;
-  if (authCookie) {
-    const user = await verifyToken(authCookie);
-    if (user) return user;
+  try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('auth_token')?.value;
+    console.log('Cookie auth_token exists:', !!authCookie);
+    if (authCookie) {
+      const user = await verifyToken(authCookie);
+      console.log('Cookie user verified:', !!user);
+      if (user) return user;
+    }
+  } catch (cookieErr) {
+    console.log('Cookie access error:', cookieErr.message);
   }
 
   // Try Authorization header (API requests)
   const authHeader = request.headers.get('authorization');
+  console.log('Auth header exists:', !!authHeader);
+  console.log('Auth header starts with Bearer:', authHeader?.startsWith('Bearer '));
   if (authHeader?.startsWith('Bearer ')) {
-    return await verifyToken(authHeader.slice(7));
+    const token = authHeader.slice(7);
+    console.log('Token length:', token?.length);
+    const user = await verifyToken(token);
+    console.log('Header user verified:', !!user);
+    return user;
   }
 
   return null;
@@ -33,6 +45,13 @@ async function getUser(request) {
 
 export async function POST(request) {
   console.log('=== Stripe Connect Route ===');
+
+  // Debug: log all headers
+  const allHeaders = {};
+  request.headers.forEach((value, key) => {
+    allHeaders[key] = key.toLowerCase() === 'authorization' ? 'Bearer [REDACTED]' : value;
+  });
+  console.log('Request headers:', allHeaders);
 
   try {
     // Get and validate Stripe key
