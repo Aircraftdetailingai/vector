@@ -12,15 +12,11 @@ function getSupabase() {
 // Get user from either cookie or Authorization header
 async function getUser(request) {
   // Try cookie first (browser requests)
-  try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('auth_token')?.value;
-    if (authCookie) {
-      const user = await verifyToken(authCookie);
-      if (user) return user;
-    }
-  } catch (e) {
-    // Cookie access failed, try header
+  const cookieStore = await cookies();
+  const authCookie = cookieStore.get('auth_token')?.value;
+  if (authCookie) {
+    const user = await verifyToken(authCookie);
+    if (user) return user;
   }
 
   // Try Authorization header (API requests)
