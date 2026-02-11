@@ -749,3 +749,52 @@ CREATE INDEX idx_dismissed_reminders_quote ON dismissed_reminders(quote_id);
 | Upload before photo | 10 |
 | Upload after photo | 10 |
 | Complete full documentation | 25 (bonus) |
+
+---
+
+# Simple Services & Packages Schema
+
+Run these SQL commands to enable the simplified service menu.
+
+## 32. Create `services` table (flat list, no categories)
+
+```sql
+CREATE TABLE IF NOT EXISTS services (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT '',
+  price DECIMAL(10,2) DEFAULT 0,
+  hours DECIMAL(10,2) DEFAULT 1,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_services_detailer ON services(detailer_id);
+```
+
+## 33. Create `packages` table (bundles of services)
+
+```sql
+CREATE TABLE IF NOT EXISTS packages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  name VARCHAR(255) NOT NULL,
+  description TEXT DEFAULT '',
+  price DECIMAL(10,2) DEFAULT 0,
+  service_ids UUID[] DEFAULT '{}',
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_packages_detailer ON packages(detailer_id);
+```
+
+## Service vs Package
+
+| Type | Description |
+|------|-------------|
+| Service | Individual service (e.g., "Ceramic Coating" - $3,500) |
+| Package | Bundle of services at a package price (e.g., "Gold Package" includes Wash + Interior + Wax = $2,500) |
+
+Packages reference services by their IDs in the `service_ids` array. The package price can be less than the sum of services to offer a discount.
