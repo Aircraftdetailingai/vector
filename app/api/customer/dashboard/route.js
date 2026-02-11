@@ -95,6 +95,24 @@ export async function GET(request) {
       .eq('status', 'succeeded')
       .order('created_at', { ascending: false });
 
+    // Get job media for completed jobs
+    const completedJobIds = completedQuotes.map(q => q.id);
+    let jobMedia = [];
+    if (completedJobIds.length > 0) {
+      const { data: media } = await supabase
+        .from('job_media')
+        .select('*')
+        .in('quote_id', completedJobIds)
+        .order('created_at', { ascending: true });
+      jobMedia = media || [];
+    }
+
+    // Attach media to completed jobs
+    const completedJobsWithMedia = completedQuotes.map(job => ({
+      ...job,
+      media: jobMedia.filter(m => m.quote_id === job.id),
+    }));
+
     return Response.json({
       customer: {
         email: customer.email,
@@ -108,7 +126,7 @@ export async function GET(request) {
       },
       activeQuotes,
       upcomingJobs,
-      completedJobs: completedQuotes,
+      completedJobs: completedJobsWithMedia,
       recentMessages: messages || [],
       receipts: payments || [],
     });

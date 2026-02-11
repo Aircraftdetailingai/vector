@@ -364,23 +364,31 @@ export default function CalendarPage() {
               </div>
             </div>
 
-            <div className="flex gap-2 mt-6">
-              <button
-                onClick={() => {
-                  setScheduleModal(selectedJob);
-                  setSelectedJob(null);
-                }}
-                className="flex-1 py-2 border border-amber-500 text-amber-500 rounded hover:bg-amber-50"
-              >
-                Reschedule
-              </button>
+            <div className="flex flex-col gap-2 mt-6">
               <a
-                href={`/q/${selectedJob.share_link}`}
-                target="_blank"
-                className="flex-1 py-2 bg-amber-500 text-white rounded text-center hover:bg-amber-600"
+                href={`/jobs/${selectedJob.id}/photos`}
+                className="w-full py-2 bg-blue-500 text-white rounded text-center hover:bg-blue-600 flex items-center justify-center gap-2"
               >
-                View Quote
+                <span>&#128247;</span> Document Job
               </a>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    setScheduleModal(selectedJob);
+                    setSelectedJob(null);
+                  }}
+                  className="flex-1 py-2 border border-amber-500 text-amber-500 rounded hover:bg-amber-50"
+                >
+                  Reschedule
+                </button>
+                <a
+                  href={`/q/${selectedJob.share_link}`}
+                  target="_blank"
+                  className="flex-1 py-2 bg-amber-500 text-white rounded text-center hover:bg-amber-600"
+                >
+                  View Quote
+                </a>
+              </div>
             </div>
           </div>
         </div>

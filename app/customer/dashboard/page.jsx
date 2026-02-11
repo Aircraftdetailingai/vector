@@ -342,7 +342,7 @@ export default function CustomerDashboardPage() {
       {/* Tabs */}
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="flex border-b bg-white rounded-t-lg overflow-x-auto">
-          {['overview', 'quotes', 'appointments', 'messages', 'receipts'].map(tab => (
+          {['overview', 'quotes', 'appointments', 'photos', 'messages', 'receipts'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
@@ -450,6 +450,68 @@ export default function CustomerDashboardPage() {
             ) : (
               <div className="p-12 text-center text-gray-500">No upcoming appointments</div>
             )}
+          </div>
+        )}
+
+        {activeTab === 'photos' && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-lg shadow">
+              <div className="p-4 border-b">
+                <h2 className="font-semibold text-lg">Job Photos</h2>
+                <p className="text-sm text-gray-500">Before and after photos from your completed jobs</p>
+              </div>
+              {data?.completedJobs?.length > 0 ? (
+                <div className="divide-y">
+                  {data.completedJobs.map(job => (
+                    <div key={job.id} className="p-4">
+                      <div className="flex justify-between items-start mb-4">
+                        <div>
+                          <p className="font-medium">{job.aircraft_type} {job.aircraft_model}</p>
+                          <p className="text-sm text-gray-500">{job.detailers?.company_name}</p>
+                          <p className="text-xs text-gray-400">{formatDate(job.completed_at || job.scheduled_date)}</p>
+                        </div>
+                        <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs">
+                          Completed
+                        </span>
+                      </div>
+                      {job.media && job.media.length > 0 ? (
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {job.media.map((m, idx) => (
+                            <div key={idx} className="relative">
+                              {m.media_type?.includes('video') ? (
+                                <video
+                                  src={m.url}
+                                  controls
+                                  className="w-full h-32 object-cover rounded-lg"
+                                />
+                              ) : (
+                                <img
+                                  src={m.url}
+                                  alt={m.media_type}
+                                  className="w-full h-32 object-cover rounded-lg"
+                                />
+                              )}
+                              <span className={`absolute bottom-1 left-1 px-2 py-0.5 rounded text-xs ${
+                                m.media_type?.startsWith('before') ? 'bg-blue-500 text-white' : 'bg-green-500 text-white'
+                              }`}>
+                                {m.media_type?.startsWith('before') ? 'Before' : 'After'}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-400 text-sm italic">No photos uploaded for this job</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-12 text-center text-gray-500">
+                  <div className="text-4xl mb-2">&#128247;</div>
+                  <p>No completed jobs with photos yet</p>
+                </div>
+              )}
+            </div>
           </div>
         )}
 

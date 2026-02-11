@@ -1,0 +1,192 @@
+import { createClient } from '@supabase/supabase-js';
+import { verifyToken } from '@/lib/auth';
+import { cookies } from 'next/headers';
+
+export const dynamic = 'force-dynamic';
+
+function getSupabase() {
+  const url = process.env.SUPABASE_URL;
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
+}
+
+async function getUser(request) {
+  try {
+    const cookieStore = await cookies();
+    const authCookie = cookieStore.get('auth_token')?.value;
+    if (authCookie) {
+      const user = await verifyToken(authCookie);
+      if (user) return user;
+    }
+  } catch (e) {}
+  const authHeader = request.headers.get('authorization');
+  if (authHeader?.startsWith('Bearer ')) {
+    return await verifyToken(authHeader.slice(7));
+  }
+  return null;
+}
+
+// GET - Get media for a job/quote
+export async function GET(request) {
+  try {
+    const user = await getUser(request);
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      return Response.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const quoteId = searchParams.get('quote_id');
+
+    if (!quoteId) {
+      return Response.json({ error: 'quote_id required' }, { status: 400 });
+    }
+
+    // Verify user owns this quote
+    const { data: quote } = await supabase
+      .from('quotes')
+      .select('id')
+      .eq('id', quoteId)
+      .eq('detailer_id', user.id)
+      .single();
+
+    if (!quote) {
+      return Response.json({ error: 'Quote not found' }, { status: 404 });
+    }
+
+    const { data: media, error } = await supabase
+      .from('job_media')
+      .select('*')
+      .eq('quote_id', quoteId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('Failed to fetch media:', error);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    // Separate by type
+    const beforeMedia = media?.filter(m => m.media_type.startsWith('before_')) || [];
+    const afterMedia = media?.filter(m => m.media_type.startsWith('after_')) || [];
+
+    return Response.json({
+      media: media || [],
+      beforeMedia,
+      afterMedia,
+      hasBeforeMedia: beforeMedia.length > 0,
+      hasAfterMedia: afterMedia.length > 0,
+    });
+
+  } catch (err) {
+    console.error('Job media GET error:', err);
+    return Response.json({ error: 'Failed to fetch media' }, { status: 500 });
+  }
+}
+
+// POST - Add media to a job
+export async function POST(request) {
+  try {
+    const user = await getUser(request);
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      return Response.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
+    const body = await request.json();
+    const { quote_id, media_type, url, notes } = body;
+
+    if (!quote_id || !media_type || !url) {
+      return Response.json({ error: 'quote_id, media_type, and url required' }, { status: 400 });
+    }
+
+    // Validate media_type
+    const validTypes = ['before_video', 'before_photo', 'after_photo', 'after_video'];
+    if (!validTypes.includes(media_type)) {
+      return Response.json({ error: 'Invalid media_type' }, { status: 400 });
+    }
+
+    // Verify user owns this quote
+    const { data: quote } = await supabase
+      .from('quotes')
+      .select('id')
+      .eq('id', quote_id)
+      .eq('detailer_id', user.id)
+      .single();
+
+    if (!quote) {
+      return Response.json({ error: 'Quote not found' }, { status: 404 });
+    }
+
+    const { data: media, error } = await supabase
+      .from('job_media')
+      .insert({
+        quote_id,
+        media_type,
+        url,
+        notes: notes || null,
+        detailer_id: user.id,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.error('Failed to create media:', error);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    return Response.json({ media }, { status: 201 });
+
+  } catch (err) {
+    console.error('Job media POST error:', err);
+    return Response.json({ error: 'Failed to create media' }, { status: 500 });
+  }
+}
+
+// DELETE - Remove media
+export async function DELETE(request) {
+  try {
+    const user = await getUser(request);
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      return Response.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
+    const { searchParams } = new URL(request.url);
+    const mediaId = searchParams.get('id');
+
+    if (!mediaId) {
+      return Response.json({ error: 'id required' }, { status: 400 });
+    }
+
+    // Delete only if user owns it
+    const { error } = await supabase
+      .from('job_media')
+      .delete()
+      .eq('id', mediaId)
+      .eq('detailer_id', user.id);
+
+    if (error) {
+      console.error('Failed to delete media:', error);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    return Response.json({ success: true });
+
+  } catch (err) {
+    console.error('Job media DELETE error:', err);
+    return Response.json({ error: 'Failed to delete media' }, { status: 500 });
+  }
+}

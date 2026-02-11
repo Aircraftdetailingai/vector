@@ -690,3 +690,62 @@ ADD COLUMN IF NOT EXISTS creation_seconds INTEGER;
 | first_100k | $100,000 booked through Vector |
 | time_saved_100h | 100+ hours saved |
 | one_year | 1 year anniversary |
+
+---
+
+# Job Documentation System
+
+Run these SQL commands to enable job photo/video documentation.
+
+## 30. Create `job_media` table
+
+```sql
+CREATE TABLE IF NOT EXISTS job_media (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  quote_id UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  media_type VARCHAR(20) NOT NULL,
+  url TEXT NOT NULL,
+  notes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE INDEX idx_job_media_quote ON job_media(quote_id);
+CREATE INDEX idx_job_media_detailer ON job_media(detailer_id);
+CREATE INDEX idx_job_media_type ON job_media(media_type);
+```
+
+## Media Types
+
+| Type | Description |
+|------|-------------|
+| before_video | Walk-around video before starting |
+| before_photo | Photo of condition before starting |
+| after_photo | Photo of completed work |
+| after_video | Walk-around video of completed work |
+
+## 31. Create `dismissed_reminders` table
+
+```sql
+CREATE TABLE IF NOT EXISTS dismissed_reminders (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
+  quote_id UUID NOT NULL REFERENCES quotes(id) ON DELETE CASCADE,
+  reminder_type VARCHAR(50) NOT NULL,
+  action VARCHAR(20) DEFAULT 'dismissed',
+  dismissed_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+  UNIQUE(detailer_id, quote_id, reminder_type)
+);
+
+CREATE INDEX idx_dismissed_reminders_detailer ON dismissed_reminders(detailer_id);
+CREATE INDEX idx_dismissed_reminders_quote ON dismissed_reminders(quote_id);
+```
+
+## Documentation Points
+
+| Action | Points |
+|--------|--------|
+| Upload before video | 15 |
+| Upload before photo | 10 |
+| Upload after photo | 10 |
+| Complete full documentation | 25 (bonus) |
