@@ -42,12 +42,11 @@ export async function PUT(request, { params }) {
 
     const { id } = params;
     const body = await request.json();
-    const { name, description, service_type, hourly_rate } = body;
+    const { name, description, hourly_rate } = body;
 
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
-    if (service_type !== undefined) updates.service_type = service_type;
     if (hourly_rate !== undefined) updates.hourly_rate = parseFloat(hourly_rate) || 0;
     updates.updated_at = new Date().toISOString();
 

@@ -377,29 +377,21 @@ export default function DashboardPage() {
     }
   };
 
-  // Service type to aircraft hours field mapping
-  const getAircraftHours = (serviceType) => {
+  // Get aircraft hours (uses exterior_hours as base)
+  const getAircraftHours = () => {
     if (!selectedAircraft) return 0;
-    switch (serviceType) {
-      case 'interior':
-        return selectedAircraft.interior_hours || 0;
-      case 'exterior':
-      case 'brightwork':
-      case 'coating':
-      default:
-        return selectedAircraft.exterior_hours || 0;
-    }
+    return selectedAircraft.exterior_hours || 0;
   };
 
   // Calculate price for a single service: aircraft hours × hourly rate
   const getServicePrice = (svc) => {
-    const hours = getAircraftHours(svc.service_type);
+    const hours = getAircraftHours();
     return hours * (svc.hourly_rate || 0);
   };
 
-  // Get hours for a service based on its type
-  const getServiceHours = (svc) => {
-    return getAircraftHours(svc.service_type);
+  // Get hours for a service
+  const getServiceHours = () => {
+    return getAircraftHours();
   };
 
   // Calculate totals based on selected services or package
@@ -407,7 +399,7 @@ export default function DashboardPage() {
     return availableServices.filter(svc => selectedServices[svc.id]);
   };
 
-  const totalHours = getSelectedServicesList().reduce((sum, svc) => sum + getServiceHours(svc), 0);
+  const totalHours = getSelectedServicesList().length * getAircraftHours();
 
   const calculatedPrice = selectedPackage
     ? selectedPackage.price * accessDifficulty
@@ -439,7 +431,7 @@ export default function DashboardPage() {
   const lineItems = getSelectedServicesList().map(svc => ({
     service_id: svc.id,
     description: svc.name,
-    hours: getServiceHours(svc),
+    hours: getAircraftHours(),
     rate: svc.hourly_rate || 0,
     amount: selectedPackage ? 0 : getServicePrice(svc) * accessDifficulty,
   }));
@@ -741,7 +733,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-2">
                   {availableServices.map((svc) => {
-                    const hours = getServiceHours(svc);
+                    const hours = getAircraftHours();
                     const price = getServicePrice(svc);
                     return (
                       <div

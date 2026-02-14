@@ -2,24 +2,17 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-const SERVICE_TYPES = [
-  { value: 'exterior', label: 'Exterior', hoursField: 'exterior_hours' },
-  { value: 'interior', label: 'Interior', hoursField: 'interior_hours' },
-  { value: 'brightwork', label: 'Brightwork', hoursField: 'exterior_hours' },
-  { value: 'coating', label: 'Coating', hoursField: 'exterior_hours' },
-];
-
 const DEFAULT_SERVICES = [
-  { name: 'Maintenance Wash', description: 'Regular exterior wash', service_type: 'exterior', hourly_rate: 120 },
-  { name: 'Decon Wash', description: 'Deep clean with iron remover and clay bar', service_type: 'exterior', hourly_rate: 130 },
-  { name: 'One-Step Polish', description: 'Light polish to remove minor swirls', service_type: 'exterior', hourly_rate: 140 },
-  { name: 'Wax Application', description: 'Protective wax coating', service_type: 'exterior', hourly_rate: 100 },
-  { name: 'Spray Ceramic', description: 'Ceramic spray sealant', service_type: 'coating', hourly_rate: 120 },
-  { name: 'Ceramic Coating', description: 'Professional ceramic coating, 2+ year protection', service_type: 'coating', hourly_rate: 175 },
-  { name: 'Vacuum & Wipe Down', description: 'Interior vacuum and surface wipe', service_type: 'interior', hourly_rate: 100 },
-  { name: 'Carpet Extraction', description: 'Deep carpet and upholstery cleaning', service_type: 'interior', hourly_rate: 110 },
-  { name: 'Leather Clean & Condition', description: 'Full leather treatment', service_type: 'interior', hourly_rate: 115 },
-  { name: 'Polish Brightwork', description: 'Metal and chrome polishing', service_type: 'brightwork', hourly_rate: 130 },
+  { name: 'Maintenance Wash', description: 'Regular exterior wash', hourly_rate: 120 },
+  { name: 'Decon Wash', description: 'Deep clean with iron remover and clay bar', hourly_rate: 130 },
+  { name: 'One-Step Polish', description: 'Light polish to remove minor swirls', hourly_rate: 140 },
+  { name: 'Wax Application', description: 'Protective wax coating', hourly_rate: 100 },
+  { name: 'Spray Ceramic', description: 'Ceramic spray sealant', hourly_rate: 120 },
+  { name: 'Ceramic Coating', description: 'Professional ceramic coating, 2+ year protection', hourly_rate: 175 },
+  { name: 'Vacuum & Wipe Down', description: 'Interior vacuum and surface wipe', hourly_rate: 100 },
+  { name: 'Carpet Extraction', description: 'Deep carpet and upholstery cleaning', hourly_rate: 110 },
+  { name: 'Leather Clean & Condition', description: 'Full leather treatment', hourly_rate: 115 },
+  { name: 'Polish Brightwork', description: 'Metal and chrome polishing', hourly_rate: 130 },
 ];
 
 export default function ServicesPage() {
@@ -32,7 +25,7 @@ export default function ServicesPage() {
   // Service form
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  const [newService, setNewService] = useState({ name: '', description: '', service_type: 'exterior', hourly_rate: '' });
+  const [newService, setNewService] = useState({ name: '', description: '', hourly_rate: '' });
 
   // Package form
   const [showPackageBuilder, setShowPackageBuilder] = useState(false);
@@ -88,14 +81,13 @@ export default function ServicesPage() {
         body: JSON.stringify({
           name: newService.name,
           description: newService.description,
-          service_type: newService.service_type,
           hourly_rate: parseFloat(newService.hourly_rate) || 0,
         }),
       });
       if (res.ok) {
         const data = await res.json();
         setServices([...services, data.service]);
-        setNewService({ name: '', description: '', service_type: 'exterior', hourly_rate: '' });
+        setNewService({ name: '', description: '', hourly_rate: '' });
         setShowServiceModal(false);
       }
     } catch (err) {
@@ -115,7 +107,6 @@ export default function ServicesPage() {
         body: JSON.stringify({
           name: editingService.name,
           description: editingService.description,
-          service_type: editingService.service_type,
           hourly_rate: parseFloat(editingService.hourly_rate) || 0,
         }),
       });
@@ -337,9 +328,9 @@ export default function ServicesPage() {
                       <span className="text-gray-300 group-hover:text-amber-400">&#9776;</span>
                       <div>
                         <p className="font-medium">{svc.name}</p>
-                        <p className="text-xs text-gray-500">
-                          {SERVICE_TYPES.find(t => t.value === svc.service_type)?.label || 'Exterior'}
-                        </p>
+                        {svc.description && (
+                          <p className="text-xs text-gray-500">{svc.description}</p>
+                        )}
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -544,37 +535,20 @@ export default function ServicesPage() {
                 className="w-full border rounded-lg px-3 py-2"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select
-                  value={newService.service_type}
-                  onChange={(e) => setNewService({ ...newService, service_type: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
-                >
-                  {SERVICE_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate *</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400">$</span>
-                  <input
-                    type="number"
-                    value={newService.hourly_rate}
-                    onChange={(e) => setNewService({ ...newService, hourly_rate: e.target.value })}
-                    placeholder="120"
-                    className="w-full border rounded-lg pl-7 pr-12 py-2"
-                  />
-                  <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate *</label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                <input
+                  type="number"
+                  value={newService.hourly_rate}
+                  onChange={(e) => setNewService({ ...newService, hourly_rate: e.target.value })}
+                  placeholder="120"
+                  className="w-full border rounded-lg pl-7 pr-12 py-2"
+                />
+                <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
               </div>
             </div>
-            <p className="text-xs text-gray-500">
-              Hours come from the aircraft database. Price = hours x rate.
-            </p>
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <button onClick={() => setShowServiceModal(false)} className="px-4 py-2 border rounded-lg">Cancel</button>
@@ -612,31 +586,17 @@ export default function ServicesPage() {
                 className="w-full border rounded-lg px-3 py-2"
               />
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
-                <select
-                  value={editingService.service_type || 'exterior'}
-                  onChange={(e) => setEditingService({ ...editingService, service_type: e.target.value })}
-                  className="w-full border rounded-lg px-3 py-2"
-                >
-                  {SERVICE_TYPES.map(t => (
-                    <option key={t.value} value={t.value}>{t.label}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate</label>
-                <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400">$</span>
-                  <input
-                    type="number"
-                    value={editingService.hourly_rate || ''}
-                    onChange={(e) => setEditingService({ ...editingService, hourly_rate: e.target.value })}
-                    className="w-full border rounded-lg pl-7 pr-12 py-2"
-                  />
-                  <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate</label>
+              <div className="relative">
+                <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                <input
+                  type="number"
+                  value={editingService.hourly_rate || ''}
+                  onChange={(e) => setEditingService({ ...editingService, hourly_rate: e.target.value })}
+                  className="w-full border rounded-lg pl-7 pr-12 py-2"
+                />
+                <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
               </div>
             </div>
           </div>

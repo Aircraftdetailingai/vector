@@ -52,7 +52,6 @@ export async function POST(request) {
       detailer_id: user.id,
       name: svc.name,
       description: svc.description || '',
-      service_type: svc.service_type || 'exterior',
       hourly_rate: parseFloat(svc.hourly_rate) || 0,
     }));
 
