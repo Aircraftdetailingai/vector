@@ -84,7 +84,10 @@ export async function POST(request) {
       aircraft_model,
       aircraft_id,
       surface_area_sqft,
-      services,
+      services, // Legacy: old key-based object
+      selected_services, // New: array of service IDs
+      selected_package_id,
+      selected_package_name,
       base_hours,
       total_hours,
       total_price,
@@ -96,10 +99,13 @@ export async function POST(request) {
       access_difficulty,
       job_location,
       minimum_fee_applied,
-      calculated_price
+      calculated_price,
+      package_savings
     } = body;
 
-    if (!aircraft_type || !services) {
+    // Support both old and new format
+    const hasServices = services || (selected_services && selected_services.length > 0);
+    if (!aircraft_type || !hasServices) {
       return Response.json({ error: 'Missing fields' }, { status: 400 });
     }
 
@@ -114,7 +120,10 @@ export async function POST(request) {
         aircraft_model,
         aircraft_id: aircraft_id || null,
         surface_area_sqft: surface_area_sqft || null,
-        services,
+        services: services || null, // Legacy field
+        selected_services: selected_services || null,
+        selected_package_id: selected_package_id || null,
+        selected_package_name: selected_package_name || null,
         base_hours: base_hours || 0,
         total_hours,
         total_price,
@@ -129,6 +138,7 @@ export async function POST(request) {
         job_location: job_location || null,
         minimum_fee_applied: minimum_fee_applied || false,
         calculated_price: calculated_price || total_price,
+        package_savings: package_savings || 0,
       })
       .select()
       .single();

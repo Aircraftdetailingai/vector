@@ -165,16 +165,16 @@ function QuickActions() {
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [detailerServices, setDetailerServices] = useState([]);
+  const [availableServices, setAvailableServices] = useState([]);
+  const [availablePackages, setAvailablePackages] = useState([]);
   const [manufacturers, setManufacturers] = useState([]);
   const [models, setModels] = useState([]);
   const [selectedManufacturer, setSelectedManufacturer] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
   const [modelSearch, setModelSearch] = useState('');
   const [selectedAircraft, setSelectedAircraft] = useState(null);
-  const [services, setServices] = useState({});
-  const [hours, setHours] = useState({});
-  const [suggestedHours, setSuggestedHours] = useState({});
+  const [selectedServices, setSelectedServices] = useState({});
+  const [selectedPackage, setSelectedPackage] = useState(null);
   const [accessDifficulty, setAccessDifficulty] = useState(1.0);
   const [quoteNotes, setQuoteNotes] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
@@ -189,8 +189,6 @@ export default function DashboardPage() {
   const [tipDismissed, setTipDismissed] = useState(false);
   const [quickStats, setQuickStats] = useState(null);
   const [recentQuotes, setRecentQuotes] = useState([]);
-
-  const enabledServices = detailerServices.filter(s => s.enabled);
 
   // Fetch manufacturers on mount
   useEffect(() => {
@@ -245,9 +243,10 @@ export default function DashboardPage() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // All fetches in parallel for speed
-      const [stripeRes, servicesRes, minFeeRes, tipRes, statsRes, quotesRes] = await Promise.allSettled([
+      const [stripeRes, servicesRes, packagesRes, minFeeRes, tipRes, statsRes, quotesRes] = await Promise.allSettled([
         fetch('/api/stripe/status', { headers }),
-        fetch('/api/user/services', { headers }),
+        fetch('/api/services', { headers }),
+        fetch('/api/packages', { headers }),
         fetch('/api/user/minimum-fee', { headers }),
         fetch('/api/tips', { headers }),
         fetch('/api/dashboard/stats', { headers }),
@@ -263,10 +262,16 @@ export default function DashboardPage() {
         setStripeStatus({ connected: false, status: 'UNKNOWN' });
       }
 
-      // Process services
+      // Process services (new flat list)
       if (servicesRes.status === 'fulfilled' && servicesRes.value.ok) {
         const data = await servicesRes.value.json();
-        setDetailerServices(data.services || []);
+        setAvailableServices(data.services || []);
+      }
+
+      // Process packages
+      if (packagesRes.status === 'fulfilled' && packagesRes.value.ok) {
+        const data = await packagesRes.value.json();
+        setAvailablePackages(data.packages || []);
       }
 
       // Process minimum fee
@@ -332,11 +337,6 @@ export default function DashboardPage() {
     }
   };
 
-  const SERVICE_TO_AIRCRAFT_FIELD = {
-    ext_wash: 'exterior_hours',
-    int_detail: 'interior_hours',
-  };
-
   const handleSelectAircraft = async (aircraft) => {
     try {
       const res = await fetch(`/api/aircraft/${aircraft.id}`);
@@ -344,22 +344,8 @@ export default function DashboardPage() {
         const data = await res.json();
         const fullAircraft = data.aircraft;
         setSelectedAircraft(fullAircraft);
-
-        const suggested = {};
-        const newServices = {};
-        const newHours = {};
-        enabledServices.forEach(svc => {
-          const fieldName = SERVICE_TO_AIRCRAFT_FIELD[svc.service_key] || svc.db_field;
-          const dbHours = fieldName ? (fullAircraft[fieldName] || 0) : 0;
-          const effectiveHours = dbHours > 0 ? dbHours : svc.default_hours;
-          suggested[svc.service_key] = effectiveHours;
-          const isPreselected = svc.service_key === 'ext_wash' || svc.service_key === 'int_detail';
-          newServices[svc.service_key] = isPreselected;
-          newHours[svc.service_key] = isPreselected ? effectiveHours : 0;
-        });
-        setSuggestedHours(suggested);
-        setServices(newServices);
-        setHours(newHours);
+        setSelectedServices({});
+        setSelectedPackage(null);
         setAccessDifficulty(1.0);
         setQuoteNotes('');
         setJobLocation('');
@@ -369,50 +355,69 @@ export default function DashboardPage() {
     }
   };
 
-  const toggleService = (key) => {
-    const isCurrentlyChecked = services[key];
-    setServices((prev) => ({ ...prev, [key]: !prev[key] }));
+  const toggleService = (serviceId) => {
+    // Deselect any package when manually selecting services
+    setSelectedPackage(null);
+    setSelectedServices((prev) => ({ ...prev, [serviceId]: !prev[serviceId] }));
+  };
 
-    if (!isCurrentlyChecked && suggestedHours[key]) {
-      if (!hours[key] || hours[key] === 0) {
-        setHours((prev) => ({ ...prev, [key]: suggestedHours[key] }));
-      }
+  const selectPackage = (pkg) => {
+    if (selectedPackage?.id === pkg.id) {
+      // Deselect package
+      setSelectedPackage(null);
+      setSelectedServices({});
+    } else {
+      // Select package - auto-select its services
+      setSelectedPackage(pkg);
+      const newSelected = {};
+      (pkg.service_ids || []).forEach(id => {
+        newSelected[id] = true;
+      });
+      setSelectedServices(newSelected);
     }
   };
 
-  const updateHours = (key, value) => {
-    setHours((prev) => ({ ...prev, [key]: parseFloat(value) || 0 }));
+  // Service type to aircraft hours field mapping
+  const getAircraftHours = (serviceType) => {
+    if (!selectedAircraft) return 0;
+    switch (serviceType) {
+      case 'interior':
+        return selectedAircraft.interior_hours || 0;
+      case 'exterior':
+      case 'brightwork':
+      case 'coating':
+      default:
+        return selectedAircraft.exterior_hours || 0;
+    }
   };
 
-  const efficiencyFactor = user?.efficiency_factor || 1.0;
-
-  const getAdjustedHours = (key) => {
-    const baseHours = services[key] ? (hours[key] || 0) : 0;
-    return baseHours * efficiencyFactor * accessDifficulty;
+  // Calculate price for a single service: aircraft hours × hourly rate
+  const getServicePrice = (svc) => {
+    const hours = getAircraftHours(svc.service_type);
+    return hours * (svc.hourly_rate || 0);
   };
 
-  const getServiceRate = (serviceKey) => {
-    const svc = enabledServices.find(s => s.service_key === serviceKey);
-    return svc?.hourly_rate || 75;
+  // Get hours for a service based on its type
+  const getServiceHours = (svc) => {
+    return getAircraftHours(svc.service_type);
   };
 
-  const computePrice = (key) => {
-    if (!user) return 0;
-    const rate = getServiceRate(key);
-    return getAdjustedHours(key) * rate;
+  // Calculate totals based on selected services or package
+  const getSelectedServicesList = () => {
+    return availableServices.filter(svc => selectedServices[svc.id]);
   };
 
-  const baseHours = enabledServices.reduce((sum, svc) => {
-    return sum + (services[svc.service_key] ? (hours[svc.service_key] || 0) : 0);
-  }, 0);
+  const totalHours = getSelectedServicesList().reduce((sum, svc) => sum + getServiceHours(svc), 0);
 
-  const totalHours = enabledServices.reduce((sum, svc) => {
-    return sum + getAdjustedHours(svc.service_key);
-  }, 0);
+  const calculatedPrice = selectedPackage
+    ? selectedPackage.price * accessDifficulty
+    : getSelectedServicesList().reduce((sum, svc) => sum + getServicePrice(svc), 0) * accessDifficulty;
 
-  const calculatedPrice = enabledServices.reduce((sum, svc) => {
-    return sum + computePrice(svc.service_key);
-  }, 0);
+  // Calculate savings if using package
+  const servicesTotal = selectedPackage
+    ? getSelectedServicesList().reduce((sum, svc) => sum + getServicePrice(svc), 0)
+    : 0;
+  const packageSavings = selectedPackage ? Math.max(0, servicesTotal - selectedPackage.price) : 0;
 
   const minimumFeeApplies = () => {
     if (minimumFee <= 0) return false;
@@ -430,6 +435,15 @@ export default function DashboardPage() {
   const isMinimumApplied = minimumFeeApplies();
   const totalPrice = isMinimumApplied ? minimumFee : calculatedPrice;
 
+  // Build line items for quote
+  const lineItems = getSelectedServicesList().map(svc => ({
+    service_id: svc.id,
+    description: svc.name,
+    hours: getServiceHours(svc),
+    rate: svc.hourly_rate || 0,
+    amount: selectedPackage ? 0 : getServicePrice(svc) * accessDifficulty,
+  }));
+
   const handleLogout = () => {
     localStorage.removeItem('vector_token');
     localStorage.removeItem('vector_user');
@@ -444,16 +458,6 @@ export default function DashboardPage() {
     setModalOpen(false);
   };
 
-  const lineItems = enabledServices
-    .filter(svc => services[svc.service_key])
-    .map(svc => ({
-      service: svc.service_key,
-      description: svc.service_name,
-      hours: getAdjustedHours(svc.service_key),
-      rate: svc.hourly_rate,
-      amount: computePrice(svc.service_key),
-    }));
-
   const laborTotal = totalPrice * 0.7;
   const productsTotal = totalPrice * 0.3;
 
@@ -465,9 +469,8 @@ export default function DashboardPage() {
           category: selectedAircraft.category,
           surface_area_sqft: selectedAircraft.surface_area_sqft,
         },
-        services,
-        hours,
-        baseHours,
+        selectedServices: getSelectedServicesList(),
+        selectedPackage,
         totalHours,
         totalPrice,
         calculatedPrice,
@@ -477,8 +480,8 @@ export default function DashboardPage() {
         lineItems,
         laborTotal,
         productsTotal,
-        efficiencyFactor,
         accessDifficulty,
+        packageSavings,
       }
     : null;
 
@@ -558,20 +561,20 @@ export default function DashboardPage() {
       )}
 
       {/* Services Configuration Prompt */}
-      {user && enabledServices.length === 0 && (
+      {user && availableServices.length === 0 && (
         <div className="bg-blue-100 border border-blue-300 rounded-lg p-4 mb-4 flex items-center justify-between">
           <div className="flex items-center">
             <span className="text-blue-600 text-xl mr-3">&#9432;</span>
             <div>
               <p className="text-blue-800 font-medium">Set up your service menu</p>
-              <p className="text-blue-700 text-sm">Configure the services you offer with custom rates in Settings.</p>
+              <p className="text-blue-700 text-sm">Add services you offer to start building quotes.</p>
             </div>
           </div>
           <a
-            href="/settings"
+            href="/settings/services"
             className="px-4 py-2 rounded bg-blue-500 text-white font-medium hover:bg-blue-600"
           >
-            Configure Services
+            Add Services
           </a>
         </div>
       )}
@@ -720,74 +723,113 @@ export default function DashboardPage() {
                   </button>
                 ))}
               </div>
-              {efficiencyFactor !== 1.0 && (
-                <p className="mt-2 text-xs text-gray-500">
-                  Your efficiency factor ({efficiencyFactor.toFixed(2)}x) is also applied.
-                </p>
-              )}
             </div>
           )}
 
           {/* Services section */}
           {selectedAircraft && (
             <div className="bg-white rounded-lg p-4 shadow">
-              <div className="flex justify-between items-center mb-3">
-                <h3 className="font-semibold text-lg">Services</h3>
-                <button
-                  type="button"
-                  onClick={() => {
-                    const newHours = { ...hours };
-                    enabledServices.forEach(svc => {
-                      if (services[svc.service_key] && suggestedHours[svc.service_key]) {
-                        newHours[svc.service_key] = suggestedHours[svc.service_key];
-                      }
-                    });
-                    setHours(newHours);
-                  }}
-                  className="text-sm text-amber-600 hover:text-amber-700 font-medium"
-                >
-                  Apply Suggested Hours
-                </button>
-              </div>
-              <div className="space-y-2">
-                {enabledServices.map((svc) => (
-                  <div key={svc.service_key} className="flex items-center py-2 border-b last:border-0">
-                    <input
-                      type="checkbox"
-                      id={svc.service_key}
-                      checked={services[svc.service_key] || false}
-                      onChange={() => toggleService(svc.service_key)}
-                      className="w-5 h-5 rounded border-gray-300 text-amber-500 focus:ring-amber-500 mr-3"
-                    />
-                    <label htmlFor={svc.service_key} className="flex-1 cursor-pointer">
-                      <div>
-                        <span className="font-medium">{svc.service_name}</span>
-                        <span className="text-xs text-gray-400 ml-2">${svc.hourly_rate}/hr</span>
+              <h3 className="font-semibold text-lg mb-3">Services</h3>
+
+              {availableServices.length === 0 ? (
+                <div className="text-center py-4">
+                  <p className="text-gray-500 mb-2">No services configured yet.</p>
+                  <a href="/settings/services" className="text-amber-600 hover:underline text-sm">
+                    Add services to get started
+                  </a>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {availableServices.map((svc) => {
+                    const hours = getServiceHours(svc);
+                    const price = getServicePrice(svc);
+                    return (
+                      <div
+                        key={svc.id}
+                        className={`flex items-center py-3 px-3 border rounded-lg cursor-pointer transition-colors ${
+                          selectedServices[svc.id]
+                            ? 'bg-amber-50 border-amber-300'
+                            : 'hover:bg-gray-50 border-gray-200'
+                        }`}
+                        onClick={() => toggleService(svc.id)}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedServices[svc.id] || false}
+                          onChange={() => toggleService(svc.id)}
+                          className="w-5 h-5 rounded border-gray-300 text-amber-500 focus:ring-amber-500 mr-3"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div className="flex-1">
+                          <span className="font-medium">{svc.name}</span>
+                          {svc.description && (
+                            <span className="text-xs text-gray-500 block">{svc.description}</span>
+                          )}
+                          <span className="text-xs text-gray-400">
+                            {hours.toFixed(1)}h @ ${svc.hourly_rate}/hr
+                          </span>
+                        </div>
+                        <span className="font-bold text-lg">${price.toFixed(0)}</span>
                       </div>
-                      {suggestedHours[svc.service_key] > 0 && (
-                        <span className="text-xs text-gray-400 block">
-                          Suggested: {suggestedHours[svc.service_key]}h
-                        </span>
-                      )}
-                    </label>
-                    <div className="flex items-center space-x-3">
-                      <input
-                        type="number"
-                        step="0.25"
-                        value={hours[svc.service_key] || ''}
-                        placeholder={suggestedHours[svc.service_key] || svc.default_hours || '0'}
-                        onChange={(e) => updateHours(svc.service_key, e.target.value)}
-                        disabled={!services[svc.service_key]}
-                        className="w-20 border rounded px-2 py-1 text-right disabled:bg-gray-100"
-                      />
-                      <span className="text-sm text-gray-500 w-8">hrs</span>
-                      <span className="w-24 text-right font-medium">
-                        ${computePrice(svc.service_key).toFixed(2)}
-                      </span>
-                    </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Packages section */}
+              {availablePackages.length > 0 && (
+                <div className="mt-6">
+                  <h4 className="font-semibold mb-3 flex items-center gap-2">
+                    <span>&#127873;</span> Or select a package
+                  </h4>
+                  <div className="space-y-2">
+                    {availablePackages.map((pkg) => {
+                      const pkgServices = availableServices.filter(s => (pkg.service_ids || []).includes(s.id));
+                      const servicesValue = pkgServices.reduce((sum, s) => sum + getServicePrice(s), 0);
+                      const savings = Math.max(0, servicesValue - pkg.price);
+
+                      return (
+                        <div
+                          key={pkg.id}
+                          className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                            selectedPackage?.id === pkg.id
+                              ? 'bg-green-50 border-green-400'
+                              : 'hover:bg-gray-50 border-gray-200'
+                          }`}
+                          onClick={() => selectPackage(pkg)}
+                        >
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-semibold">{pkg.name}</span>
+                                {savings > 0 && (
+                                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                                    Save ${savings.toFixed(0)}
+                                  </span>
+                                )}
+                              </div>
+                              {pkg.description && (
+                                <p className="text-sm text-gray-500 mt-1">{pkg.description}</p>
+                              )}
+                              <p className="text-xs text-gray-400 mt-2">
+                                Includes: {pkgServices.map(s => s.name).join(', ') || 'No services'}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              {savings > 0 && (
+                                <span className="text-sm text-gray-400 line-through block">
+                                  ${servicesValue.toFixed(0)}
+                                </span>
+                              )}
+                              <span className="font-bold text-xl text-green-600">${pkg.price.toFixed(0)}</span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
-              </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -837,34 +879,45 @@ export default function DashboardPage() {
                 <p className="mb-1 font-medium">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
                 <p className="text-sm text-gray-400 mb-3">{categoryLabels[selectedAircraft.category]}</p>
 
-                <ul className="mb-3 space-y-1">
-                  {enabledServices.map((svc) => (
-                    services[svc.service_key] && (
-                      <li key={svc.service_key} className="flex justify-between text-sm">
-                        <span className="text-gray-300">{svc.service_name}</span>
-                        <span>${computePrice(svc.service_key).toFixed(2)}</span>
+                {selectedPackage ? (
+                  <div className="mb-3">
+                    <div className="flex justify-between text-sm mb-1">
+                      <span className="text-amber-400 font-medium">{selectedPackage.name}</span>
+                      <span>${selectedPackage.price.toFixed(0)}</span>
+                    </div>
+                    <ul className="space-y-1">
+                      {getSelectedServicesList().map((svc) => (
+                        <li key={svc.id} className="flex justify-between text-xs text-gray-400">
+                          <span>{svc.name}</span>
+                          <span className="text-gray-500">included</span>
+                        </li>
+                      ))}
+                    </ul>
+                    {packageSavings > 0 && (
+                      <p className="text-xs text-green-400 mt-2">
+                        You save ${packageSavings.toFixed(0)} with this package
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <ul className="mb-3 space-y-1">
+                    {getSelectedServicesList().map((svc) => (
+                      <li key={svc.id} className="flex justify-between text-sm">
+                        <span className="text-gray-300">{svc.name}</span>
+                        <span>${(getServicePrice(svc) * accessDifficulty).toFixed(0)}</span>
                       </li>
-                    )
-                  ))}
-                </ul>
+                    ))}
+                  </ul>
+                )}
 
                 <div className="border-t border-gray-600 pt-3 space-y-1">
-                  {(efficiencyFactor !== 1.0 || accessDifficulty !== 1.0) && (
-                    <div className="flex justify-between text-xs text-gray-500 mb-1">
-                      <span>Base Hours</span>
-                      <span>{baseHours.toFixed(2)}</span>
-                    </div>
-                  )}
                   <div className="flex justify-between text-sm text-gray-400">
-                    <span>
-                      {efficiencyFactor !== 1.0 || accessDifficulty !== 1.0 ? 'Adjusted Hours' : 'Total Hours'}
-                    </span>
-                    <span>{totalHours.toFixed(2)}</span>
+                    <span>Est. Hours</span>
+                    <span>{totalHours.toFixed(1)}h</span>
                   </div>
-                  {(efficiencyFactor !== 1.0 || accessDifficulty !== 1.0) && (
+                  {accessDifficulty !== 1.0 && (
                     <div className="text-xs text-gray-500">
-                      {efficiencyFactor !== 1.0 && <span>Efficiency: {efficiencyFactor.toFixed(2)}x </span>}
-                      {accessDifficulty !== 1.0 && <span>Difficulty: {accessDifficulty.toFixed(2)}x</span>}
+                      <span>Difficulty: {accessDifficulty.toFixed(2)}x</span>
                     </div>
                   )}
                   {isMinimumApplied && (
@@ -898,8 +951,8 @@ export default function DashboardPage() {
                   type="button"
                   onClick={() => {
                     setSelectedAircraft(null);
-                    setServices({});
-                    setHours({});
+                    setSelectedServices({});
+                    setSelectedPackage(null);
                     setAccessDifficulty(1.0);
                     setQuoteNotes('');
                     setJobLocation('');
@@ -925,9 +978,8 @@ export default function DashboardPage() {
           onClose={closeSendModal}
           quote={{
             aircraft: quoteData.aircraft,
-            services: services,
-            hours: hours,
-            baseHours: baseHours,
+            selectedServices: quoteData.selectedServices,
+            selectedPackage: quoteData.selectedPackage,
             totalHours: totalHours,
             totalPrice: totalPrice,
             calculatedPrice: calculatedPrice,
@@ -937,8 +989,8 @@ export default function DashboardPage() {
             lineItems: lineItems,
             laborTotal: laborTotal,
             productsTotal: productsTotal,
-            efficiencyFactor: efficiencyFactor,
             accessDifficulty: accessDifficulty,
+            packageSavings: packageSavings,
             notes: quoteNotes,
           }}
           user={user}

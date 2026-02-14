@@ -73,7 +73,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, price, hours } = body;
+    const { name, description, service_type, hourly_rate } = body;
 
     if (!name) {
       return Response.json({ error: 'Name is required' }, { status: 400 });
@@ -85,8 +85,8 @@ export async function POST(request) {
         detailer_id: user.id,
         name,
         description: description || '',
-        price: parseFloat(price) || 0,
-        hours: parseFloat(hours) || 1,
+        service_type: service_type || 'exterior',
+        hourly_rate: parseFloat(hourly_rate) || 0,
       })
       .select()
       .single();

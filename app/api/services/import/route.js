@@ -52,8 +52,8 @@ export async function POST(request) {
       detailer_id: user.id,
       name: svc.name,
       description: svc.description || '',
-      price: parseFloat(svc.price) || 0,
-      hours: parseFloat(svc.hours) || 1,
+      service_type: svc.service_type || 'exterior',
+      hourly_rate: parseFloat(svc.hourly_rate) || 0,
     }));
 
     const { data: insertedServices, error } = await supabase

@@ -28,25 +28,35 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
     if (quote?.id && quote?.share_link) {
       return { id: quote.id, share_link: quote.share_link };
     }
+
+    // Build line items from selected services
+    const lineItems = (quote?.selectedServices || []).map(svc => ({
+      service_id: svc.id,
+      description: svc.name,
+      hours: svc.hours || 0,
+      amount: quote?.selectedPackage ? 0 : (svc.price || 0) * (quote?.accessDifficulty || 1),
+    }));
+
     // Build payload from quote prop
     const payload = {
       aircraft_type: quote?.aircraft?.category || "",
       aircraft_model: quote?.aircraft?.name || "",
       aircraft_id: quote?.aircraft?.id || null,
       surface_area_sqft: quote?.aircraft?.surface_area_sqft || null,
-      services: quote?.services || {},
-      base_hours: quote?.baseHours || 0,
+      selected_services: (quote?.selectedServices || []).map(s => s.id),
+      selected_package_id: quote?.selectedPackage?.id || null,
+      selected_package_name: quote?.selectedPackage?.name || null,
       total_hours: quote?.totalHours || 0,
       total_price: quote?.totalPrice || 0,
       notes: quote?.notes || "",
-      line_items: quote?.lineItems || [],
+      line_items: lineItems,
       labor_total: quote?.laborTotal || 0,
       products_total: quote?.productsTotal || 0,
-      efficiency_factor: quote?.efficiencyFactor || 1.0,
       access_difficulty: quote?.accessDifficulty || 1.0,
       job_location: quote?.jobLocation || null,
       minimum_fee_applied: quote?.isMinimumApplied || false,
       calculated_price: quote?.calculatedPrice || quote?.totalPrice || 0,
+      package_savings: quote?.packageSavings || 0,
     };
     const res = await fetch("/api/quotes", {
       method: "POST",

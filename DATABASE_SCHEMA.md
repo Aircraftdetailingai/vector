@@ -756,7 +756,9 @@ CREATE INDEX idx_dismissed_reminders_quote ON dismissed_reminders(quote_id);
 
 Run these SQL commands to enable the simplified service menu.
 
-## 32. Create `services` table (flat list, no categories)
+## 32. Create `services` table (hourly rate based)
+
+Services use hourly rates. Price is calculated at quote time: aircraft_hours × hourly_rate.
 
 ```sql
 CREATE TABLE IF NOT EXISTS services (
@@ -764,14 +766,20 @@ CREATE TABLE IF NOT EXISTS services (
   detailer_id UUID NOT NULL REFERENCES detailers(id) ON DELETE CASCADE,
   name VARCHAR(255) NOT NULL,
   description TEXT DEFAULT '',
-  price DECIMAL(10,2) DEFAULT 0,
-  hours DECIMAL(10,2) DEFAULT 1,
+  service_type VARCHAR(50) DEFAULT 'exterior',
+  hourly_rate DECIMAL(10,2) DEFAULT 0,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
-CREATE INDEX idx_services_detailer ON services(detailer_id);
+CREATE INDEX IF NOT EXISTS idx_services_detailer ON services(detailer_id);
 ```
+
+Service types map to aircraft hour fields:
+- `exterior` → aircraft.exterior_hours
+- `interior` → aircraft.interior_hours
+- `brightwork` → aircraft.exterior_hours
+- `coating` → aircraft.exterior_hours
 
 ## 33. Create `packages` table (bundles of services)
 
@@ -794,7 +802,17 @@ CREATE INDEX idx_packages_detailer ON packages(detailer_id);
 
 | Type | Description |
 |------|-------------|
-| Service | Individual service (e.g., "Ceramic Coating" - $3,500) |
-| Package | Bundle of services at a package price (e.g., "Gold Package" includes Wash + Interior + Wax = $2,500) |
+| Service | Individual service with hourly rate (e.g., "Ceramic Coating" - $175/hr). Price = aircraft_hours × hourly_rate |
+| Package | Bundle of services at a fixed package price (e.g., "Gold Package" = $2,500 flat) |
 
-Packages reference services by their IDs in the `service_ids` array. The package price can be less than the sum of services to offer a discount.
+Packages reference services by their IDs in the `service_ids` array. The package price is a fixed amount, typically less than the sum of individual service prices to offer a discount.
+
+## 34. Add columns to `quotes` table for new services system
+
+```sql
+ALTER TABLE quotes
+ADD COLUMN IF NOT EXISTS selected_services UUID[] DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS selected_package_id UUID DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS selected_package_name VARCHAR(255) DEFAULT NULL,
+ADD COLUMN IF NOT EXISTS package_savings DECIMAL(10,2) DEFAULT 0;
+```
