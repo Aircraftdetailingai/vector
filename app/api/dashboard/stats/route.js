@@ -101,9 +101,9 @@ export async function GET(request) {
     const monthCompletedQuotes = monthQuotes.filter(q => q.status === 'completed');
     const allPaidQuotes = allQuotes.filter(q => q.status === 'paid' || q.status === 'completed');
 
-    const weekBooked = weekPaidQuotes.reduce((sum, q) => sum + (q.total_price || 0), 0);
-    const monthBooked = monthPaidQuotes.reduce((sum, q) => sum + (q.total_price || 0), 0);
-    const allTimeBooked = allPaidQuotes.reduce((sum, q) => sum + (q.total_price || 0), 0);
+    const weekBooked = weekPaidQuotes.reduce((sum, q) => sum + (parseFloat(q.total_price) || 0), 0);
+    const monthBooked = monthPaidQuotes.reduce((sum, q) => sum + (parseFloat(q.total_price) || 0), 0);
+    const allTimeBooked = allPaidQuotes.reduce((sum, q) => sum + (parseFloat(q.total_price) || 0), 0);
 
     const weekPointsTotal = weekPoints.reduce((sum, p) => sum + (p.points || 0), 0);
 

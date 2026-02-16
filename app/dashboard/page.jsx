@@ -1,9 +1,40 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Component } from 'react';
 import { useRouter } from 'next/navigation';
 import SendQuoteModal from '../../components/SendQuoteModal.jsx';
 import PushNotifications from '../../components/PushNotifications.jsx';
 import PointsBadge from '../../components/PointsBadge.jsx';
+
+// Error boundary to catch render crashes and show a message instead of blank page
+class DashboardErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, info) {
+    console.error('Dashboard crash:', error, info);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full text-center">
+            <p className="text-red-600 text-xl font-bold mb-2">Something went wrong</p>
+            <p className="text-gray-600 mb-4 text-sm">{this.state.error?.message}</p>
+            <button onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
+              className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600">
+              Reload Page
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 const categoryLabels = {
   piston: 'Pistons',
@@ -67,7 +98,7 @@ function QuickStats({ stats }) {
       </div>
       <div className="bg-white rounded-lg p-3 shadow">
         <p className="text-gray-500 text-xs">Avg Job Value</p>
-        <p className="text-xl font-bold text-green-600">${(stats.avgJobValue || 0).toFixed(0)}</p>
+        <p className="text-xl font-bold text-green-600">${(parseFloat(stats.avgJobValue) || 0).toFixed(0)}</p>
       </div>
     </div>
   );
@@ -126,7 +157,7 @@ function RecentQuotes({ quotes, onViewQuote }) {
               <span className={`text-xs px-2 py-1 rounded-full ${statusColors[quote.status] || 'bg-gray-100 text-gray-600'}`}>
                 {quote.status || 'draft'}
               </span>
-              <span className="font-bold text-gray-900">${(quote.total_price || 0).toFixed(0)}</span>
+              <span className="font-bold text-gray-900">${(parseFloat(quote.total_price) || 0).toFixed(0)}</span>
             </div>
           </a>
         ))}
@@ -162,7 +193,7 @@ function QuickActions() {
   );
 }
 
-export default function DashboardPage() {
+function DashboardContent() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [availableServices, setAvailableServices] = useState([]);
@@ -1103,5 +1134,13 @@ export default function DashboardPage() {
         />
       )}
     </div>
+  );
+}
+
+export default function DashboardPage() {
+  return (
+    <DashboardErrorBoundary>
+      <DashboardContent />
+    </DashboardErrorBoundary>
   );
 }
