@@ -27,8 +27,8 @@ async function getUser(request) {
   return null;
 }
 
-// GET - Get all packages for a detailer
-export async function GET(request) {
+// PUT - Update an add-on fee
+export async function PUT(request, { params }) {
   try {
     const user = await getUser(request);
     if (!user) {
@@ -40,77 +40,67 @@ export async function GET(request) {
       return Response.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    const { data: packages, error } = await supabase
-      .from('packages')
-      .select('*')
-      .eq('detailer_id', user.id)
-      .order('created_at', { ascending: true });
-
-    if (error) {
-      console.error('Failed to fetch packages:', error);
-      return Response.json({ error: error.message }, { status: 500 });
-    }
-
-    return Response.json({ packages: packages || [] });
-
-  } catch (err) {
-    console.error('Packages GET error:', err);
-    return Response.json({ error: 'Failed to fetch packages' }, { status: 500 });
-  }
-}
-
-// POST - Create a new package
-export async function POST(request) {
-  try {
-    const user = await getUser(request);
-    if (!user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 });
-    }
-
-    const supabase = getSupabase();
-    if (!supabase) {
-      return Response.json({ error: 'Database not configured' }, { status: 500 });
-    }
-
+    const { id } = params;
     const body = await request.json();
-    const { name, description, discount_percent, service_ids } = body;
+    const { name, description, fee_type, amount } = body;
 
-    if (!name) {
-      return Response.json({ error: 'Name is required' }, { status: 400 });
-    }
+    const updates = {};
+    if (name !== undefined) updates.name = name;
+    if (description !== undefined) updates.description = description;
+    if (fee_type !== undefined) updates.fee_type = fee_type;
+    if (amount !== undefined) updates.amount = parseFloat(amount) || 0;
 
-    const row = {
-      detailer_id: user.id,
-      name,
-      description: description || '',
-      service_ids: service_ids || [],
-    };
-
-    // Try with discount_percent; fall back without if column doesn't exist
-    row.discount_percent = parseFloat(discount_percent) || 0;
-
-    let { data: pkg, error } = await supabase
-      .from('packages')
-      .insert(row)
+    const { data: fee, error } = await supabase
+      .from('addon_fees')
+      .update(updates)
+      .eq('id', id)
+      .eq('detailer_id', user.id)
       .select()
       .single();
 
-    if (error && error.message?.includes('discount_percent')) {
-      delete row.discount_percent;
-      const retry = await supabase.from('packages').insert(row).select().single();
-      pkg = retry.data;
-      error = retry.error;
-    }
-
     if (error) {
-      console.error('Failed to create package:', error);
+      console.error('Failed to update addon fee:', error);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ package: pkg }, { status: 201 });
+    return Response.json({ fee });
 
   } catch (err) {
-    console.error('Packages POST error:', err);
-    return Response.json({ error: 'Failed to create package' }, { status: 500 });
+    console.error('Addon fee PUT error:', err);
+    return Response.json({ error: 'Failed to update addon fee' }, { status: 500 });
+  }
+}
+
+// DELETE - Delete an add-on fee
+export async function DELETE(request, { params }) {
+  try {
+    const user = await getUser(request);
+    if (!user) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const supabase = getSupabase();
+    if (!supabase) {
+      return Response.json({ error: 'Database not configured' }, { status: 500 });
+    }
+
+    const { id } = params;
+
+    const { error } = await supabase
+      .from('addon_fees')
+      .delete()
+      .eq('id', id)
+      .eq('detailer_id', user.id);
+
+    if (error) {
+      console.error('Failed to delete addon fee:', error);
+      return Response.json({ error: error.message }, { status: 500 });
+    }
+
+    return Response.json({ success: true });
+
+  } catch (err) {
+    console.error('Addon fee DELETE error:', err);
+    return Response.json({ error: 'Failed to delete addon fee' }, { status: 500 });
   }
 }

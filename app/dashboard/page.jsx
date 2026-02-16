@@ -189,6 +189,8 @@ export default function DashboardPage() {
   const [tipDismissed, setTipDismissed] = useState(false);
   const [quickStats, setQuickStats] = useState(null);
   const [recentQuotes, setRecentQuotes] = useState([]);
+  const [availableAddons, setAvailableAddons] = useState([]);
+  const [selectedAddons, setSelectedAddons] = useState({});
 
   // Fetch manufacturers on mount
   useEffect(() => {
@@ -243,7 +245,7 @@ export default function DashboardPage() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // All fetches in parallel for speed
-      const [stripeRes, servicesRes, packagesRes, minFeeRes, tipRes, statsRes, quotesRes] = await Promise.allSettled([
+      const [stripeRes, servicesRes, packagesRes, minFeeRes, tipRes, statsRes, quotesRes, addonsRes] = await Promise.allSettled([
         fetch('/api/stripe/status', { headers }),
         fetch('/api/services', { headers }),
         fetch('/api/packages', { headers }),
@@ -251,6 +253,7 @@ export default function DashboardPage() {
         fetch('/api/tips', { headers }),
         fetch('/api/dashboard/stats', { headers }),
         fetch('/api/quotes?limit=5&sort=created_at&order=desc', { headers }),
+        fetch('/api/addon-fees', { headers }),
       ]);
 
       // Process Stripe status
@@ -297,6 +300,12 @@ export default function DashboardPage() {
       if (quotesRes.status === 'fulfilled' && quotesRes.value.ok) {
         const data = await quotesRes.value.json();
         setRecentQuotes(data.quotes || []);
+      }
+
+      // Process addon fees
+      if (addonsRes.status === 'fulfilled' && addonsRes.value.ok) {
+        const data = await addonsRes.value.json();
+        setAvailableAddons(data.fees || []);
       }
     };
 
@@ -346,6 +355,7 @@ export default function DashboardPage() {
         setSelectedAircraft(fullAircraft);
         setSelectedServices({});
         setSelectedPackage(null);
+        setSelectedAddons({});
         setAccessDifficulty(1.0);
         setQuoteNotes('');
         setJobLocation('');
@@ -397,27 +407,38 @@ export default function DashboardPage() {
     return availableServices.filter(svc => selectedServices[svc.id]);
   };
 
-  const totalHours = getSelectedServicesList().reduce((sum, svc) => sum + getHoursForService(svc), 0);
+  const selectedServicesList = getSelectedServicesList();
+  const totalHours = selectedServicesList.reduce((sum, svc) => sum + getHoursForService(svc), 0);
 
-  const calculatedPrice = selectedPackage
-    ? selectedPackage.price * accessDifficulty
-    : getSelectedServicesList().reduce((sum, svc) => sum + getServicePrice(svc), 0) * accessDifficulty;
+  // Step 1: Sum of service prices (hours × rate)
+  const servicesSubtotal = selectedServicesList.reduce((sum, svc) => sum + getServicePrice(svc), 0);
 
-  // Calculate savings if using package
-  const servicesTotal = selectedPackage
-    ? getSelectedServicesList().reduce((sum, svc) => sum + getServicePrice(svc), 0)
-    : 0;
-  const packageSavings = selectedPackage ? Math.max(0, servicesTotal - selectedPackage.price) : 0;
+  // Step 2: Package discount
+  const discountPercent = selectedPackage ? (selectedPackage.discount_percent || 0) : 0;
+  const discountAmount = servicesSubtotal * (discountPercent / 100);
+  const afterDiscount = servicesSubtotal - discountAmount;
 
+  // Step 3: Access difficulty
+  const afterDifficulty = afterDiscount * accessDifficulty;
+
+  // Step 4: Add-on fees
+  const getSelectedAddonsList = () => availableAddons.filter(a => selectedAddons[a.id]);
+  const selectedAddonsList = getSelectedAddonsList();
+  const flatAddonsTotal = selectedAddonsList.filter(a => a.fee_type === 'flat').reduce((sum, a) => sum + (a.amount || 0), 0);
+  const percentAddonsTotal = selectedAddonsList.filter(a => a.fee_type === 'percent').reduce((sum, a) => sum + (afterDifficulty * (a.amount || 0) / 100), 0);
+  const addonsTotal = flatAddonsTotal + percentAddonsTotal;
+
+  // Step 5: Total before minimum
+  const calculatedPrice = afterDifficulty + addonsTotal;
+
+  // Step 6: Minimum fee check
   const minimumFeeApplies = () => {
     if (minimumFee <= 0) return false;
     if (calculatedPrice >= minimumFee) return false;
     if (minimumFeeLocations.length > 0) {
       if (!jobLocation) return false;
       const normalizedJob = jobLocation.toUpperCase().trim();
-      return minimumFeeLocations.some(loc =>
-        normalizedJob.includes(loc.toUpperCase().trim())
-      );
+      return minimumFeeLocations.some(loc => normalizedJob.includes(loc.toUpperCase().trim()));
     }
     return true;
   };
@@ -426,19 +447,32 @@ export default function DashboardPage() {
   const totalPrice = isMinimumApplied ? minimumFee : calculatedPrice;
 
   // Build line items for quote
-  const lineItems = getSelectedServicesList().map(svc => ({
+  const lineItems = selectedServicesList.map(svc => ({
     service_id: svc.id,
     description: svc.name,
     service_type: svc.service_type || 'exterior',
     hours: getHoursForService(svc),
     rate: svc.hourly_rate || 0,
-    amount: selectedPackage ? 0 : getServicePrice(svc) * accessDifficulty,
+    amount: getServicePrice(svc) * accessDifficulty * (1 - discountPercent / 100),
+  }));
+
+  // Build addon fee items for storage
+  const addonFeeItems = selectedAddonsList.map(a => ({
+    id: a.id,
+    name: a.name,
+    fee_type: a.fee_type,
+    amount: a.amount,
+    calculated: a.fee_type === 'percent' ? afterDifficulty * (a.amount || 0) / 100 : (a.amount || 0),
   }));
 
   const handleLogout = () => {
     localStorage.removeItem('vector_token');
     localStorage.removeItem('vector_user');
     router.push('/');
+  };
+
+  const toggleAddon = (addonId) => {
+    setSelectedAddons(prev => ({ ...prev, [addonId]: !prev[addonId] }));
   };
 
   const openSendModal = () => {
@@ -460,7 +494,7 @@ export default function DashboardPage() {
           category: selectedAircraft.category,
           surface_area_sqft: selectedAircraft.surface_area_sqft,
         },
-        selectedServices: getSelectedServicesList(),
+        selectedServices: selectedServicesList,
         selectedPackage,
         totalHours,
         totalPrice,
@@ -472,7 +506,10 @@ export default function DashboardPage() {
         laborTotal,
         productsTotal,
         accessDifficulty,
-        packageSavings,
+        discountPercent,
+        discountAmount,
+        addonFees: addonFeeItems,
+        addonsTotal,
       }
     : null;
 
@@ -785,7 +822,8 @@ export default function DashboardPage() {
                     {availablePackages.map((pkg) => {
                       const pkgServices = availableServices.filter(s => (pkg.service_ids || []).includes(s.id));
                       const servicesValue = pkgServices.reduce((sum, s) => sum + getServicePrice(s), 0);
-                      const savings = Math.max(0, servicesValue - pkg.price);
+                      const disc = pkg.discount_percent || 0;
+                      const packagePrice = servicesValue * (1 - disc / 100);
 
                       return (
                         <div
@@ -801,9 +839,9 @@ export default function DashboardPage() {
                             <div className="flex-1">
                               <div className="flex items-center gap-2">
                                 <span className="font-semibold">{pkg.name}</span>
-                                {savings > 0 && (
+                                {disc > 0 && (
                                   <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
-                                    Save ${savings.toFixed(0)}
+                                    {disc}% off
                                   </span>
                                 )}
                               </div>
@@ -815,12 +853,12 @@ export default function DashboardPage() {
                               </p>
                             </div>
                             <div className="text-right">
-                              {savings > 0 && (
+                              {disc > 0 && (
                                 <span className="text-sm text-gray-400 line-through block">
                                   ${servicesValue.toFixed(0)}
                                 </span>
                               )}
-                              <span className="font-bold text-xl text-green-600">${pkg.price.toFixed(0)}</span>
+                              <span className="font-bold text-xl text-green-600">${packagePrice.toFixed(0)}</span>
                             </div>
                           </div>
                         </div>
@@ -829,6 +867,45 @@ export default function DashboardPage() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Add-on Fees */}
+          {selectedAircraft && availableAddons.length > 0 && (
+            <div className="bg-white rounded-lg p-4 mt-4 shadow">
+              <h3 className="font-semibold mb-3">Add-on Fees</h3>
+              <div className="space-y-2">
+                {availableAddons.map((addon) => {
+                  const isChecked = selectedAddons[addon.id] || false;
+                  const displayAmount = addon.fee_type === 'percent'
+                    ? `+${addon.amount}%`
+                    : `+$${addon.amount}`;
+                  return (
+                    <div
+                      key={addon.id}
+                      className={`flex items-center py-2 px-3 border rounded-lg cursor-pointer transition-colors ${
+                        isChecked ? 'bg-orange-50 border-orange-300' : 'hover:bg-gray-50 border-gray-200'
+                      }`}
+                      onClick={() => toggleAddon(addon.id)}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => toggleAddon(addon.id)}
+                        className="w-5 h-5 rounded border-gray-300 text-orange-500 focus:ring-orange-500 mr-3"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <div className="flex-1">
+                        <span className="font-medium">{addon.name}</span>
+                        {addon.description && (
+                          <span className="text-xs text-gray-500 block">{addon.description}</span>
+                        )}
+                      </div>
+                      <span className="font-bold text-orange-600">{displayAmount}</span>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
 
@@ -878,35 +955,34 @@ export default function DashboardPage() {
                 <p className="mb-1 font-medium">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
                 <p className="text-sm text-gray-400 mb-3">{categoryLabels[selectedAircraft.category]}</p>
 
-                {selectedPackage ? (
-                  <div className="mb-3">
-                    <div className="flex justify-between text-sm mb-1">
-                      <span className="text-amber-400 font-medium">{selectedPackage.name}</span>
-                      <span>${selectedPackage.price.toFixed(0)}</span>
-                    </div>
-                    <ul className="space-y-1">
-                      {getSelectedServicesList().map((svc) => (
-                        <li key={svc.id} className="flex justify-between text-xs text-gray-400">
-                          <span>{svc.name}</span>
-                          <span className="text-gray-500">included</span>
-                        </li>
-                      ))}
-                    </ul>
-                    {packageSavings > 0 && (
-                      <p className="text-xs text-green-400 mt-2">
-                        You save ${packageSavings.toFixed(0)} with this package
-                      </p>
-                    )}
-                  </div>
-                ) : (
-                  <ul className="mb-3 space-y-1">
-                    {getSelectedServicesList().map((svc) => (
+                {/* Service line items */}
+                <ul className="mb-3 space-y-1">
+                  {selectedServicesList.map((svc) => {
+                    const hours = getHoursForService(svc);
+                    const price = getServicePrice(svc);
+                    return (
                       <li key={svc.id} className="flex justify-between text-sm">
-                        <span className="text-gray-300">{svc.name}</span>
-                        <span>${(getServicePrice(svc) * accessDifficulty).toFixed(0)}</span>
+                        <div>
+                          <span className="text-gray-300">{svc.name}</span>
+                          <span className="text-xs text-gray-500 block">{hours.toFixed(1)}h x ${svc.hourly_rate}/hr</span>
+                        </div>
+                        <span>${price.toFixed(0)}</span>
                       </li>
-                    ))}
-                  </ul>
+                    );
+                  })}
+                </ul>
+
+                {/* Package discount */}
+                {selectedPackage && discountPercent > 0 && (
+                  <div className="flex justify-between text-sm text-green-400 mb-1">
+                    <span>{selectedPackage.name} ({discountPercent}% off)</span>
+                    <span>-${discountAmount.toFixed(0)}</span>
+                  </div>
+                )}
+                {selectedPackage && discountPercent === 0 && (
+                  <div className="text-xs text-gray-500 mb-1">
+                    Package: {selectedPackage.name}
+                  </div>
                 )}
 
                 <div className="border-t border-gray-600 pt-3 space-y-1">
@@ -915,22 +991,49 @@ export default function DashboardPage() {
                     <span>{totalHours.toFixed(1)}h</span>
                   </div>
                   {accessDifficulty !== 1.0 && (
-                    <div className="text-xs text-gray-500">
-                      <span>Difficulty: {accessDifficulty.toFixed(2)}x</span>
+                    <div className="flex justify-between text-xs text-gray-500">
+                      <span>Difficulty multiplier</span>
+                      <span>{accessDifficulty.toFixed(2)}x</span>
                     </div>
                   )}
+
+                  {/* Subtotal before addons */}
+                  {addonsTotal > 0 && (
+                    <div className="flex justify-between text-sm text-gray-400">
+                      <span>Subtotal</span>
+                      <span>${afterDifficulty.toFixed(0)}</span>
+                    </div>
+                  )}
+
+                  {/* Addon fee lines */}
+                  {addonFeeItems.map((a) => (
+                    <div key={a.id} className="flex justify-between text-sm text-orange-400">
+                      <span>{a.name} {a.fee_type === 'percent' ? `(${a.amount}%)` : ''}</span>
+                      <span>+${a.calculated.toFixed(0)}</span>
+                    </div>
+                  ))}
+
+                  {/* Minimum fee */}
                   {isMinimumApplied && (
                     <>
                       <div className="flex justify-between text-sm text-gray-500 line-through">
-                        <span>Subtotal</span>
+                        <span>Calculated</span>
                         <span>${calculatedPrice.toFixed(2)}</span>
                       </div>
                       <div className="flex justify-between text-sm text-amber-400">
                         <span>Minimum Fee Applied</span>
-                        <span>+${(minimumFee - calculatedPrice).toFixed(2)}</span>
+                        <span>${minimumFee.toFixed(2)}</span>
                       </div>
                     </>
                   )}
+
+                  {/* Minimum check indicator */}
+                  {minimumFee > 0 && !isMinimumApplied && calculatedPrice > 0 && (
+                    <div className="text-xs text-green-400">
+                      Minimum (${minimumFee}): &#10003; Met
+                    </div>
+                  )}
+
                   <div className="flex justify-between text-xl font-bold pt-1">
                     <span>Total</span>
                     <span>${totalPrice.toFixed(2)}</span>
@@ -952,6 +1055,7 @@ export default function DashboardPage() {
                     setSelectedAircraft(null);
                     setSelectedServices({});
                     setSelectedPackage(null);
+                    setSelectedAddons({});
                     setAccessDifficulty(1.0);
                     setQuoteNotes('');
                     setJobLocation('');
@@ -989,7 +1093,10 @@ export default function DashboardPage() {
             laborTotal: laborTotal,
             productsTotal: productsTotal,
             accessDifficulty: accessDifficulty,
-            packageSavings: packageSavings,
+            discountPercent: discountPercent,
+            discountAmount: discountAmount,
+            addonFees: addonFeeItems,
+            addonsTotal: addonsTotal,
             notes: quoteNotes,
           }}
           user={user}

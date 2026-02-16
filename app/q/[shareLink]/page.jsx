@@ -341,6 +341,28 @@ export default function QuoteViewPage() {
               </div>
             )}
 
+            {/* Package discount */}
+            {quote.discount_percent > 0 && (
+              <div className="flex justify-between text-sm text-green-600 pt-2">
+                <span>Package Discount ({quote.discount_percent}%)</span>
+                <span>Included</span>
+              </div>
+            )}
+
+            {/* Add-on Fees */}
+            {quote.addon_fees && quote.addon_fees.length > 0 && (
+              <div className="pt-3 border-t space-y-2">
+                {quote.addon_fees.map((fee, i) => (
+                  <div key={i} className="flex justify-between text-sm">
+                    <span className="text-gray-700">
+                      {fee.name} {fee.fee_type === 'percent' ? `(${fee.amount}%)` : ''}
+                    </span>
+                    <span className="text-gray-900">+${(fee.calculated || 0).toFixed(2)}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <div className="flex justify-between pt-3 border-t">
               <span className="text-gray-800 font-semibold">Total:</span>
               <span className="font-bold text-2xl text-[#1e3a5f]">${(quote.total_price || 0).toFixed(2)}</span>

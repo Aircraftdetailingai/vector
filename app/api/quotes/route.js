@@ -100,7 +100,10 @@ export async function POST(request) {
       job_location,
       minimum_fee_applied,
       calculated_price,
-      package_savings
+      package_savings,
+      discount_percent,
+      addon_fees,
+      addon_total,
     } = body;
 
     // Support both old and new format
@@ -139,6 +142,9 @@ export async function POST(request) {
         minimum_fee_applied: minimum_fee_applied || false,
         calculated_price: calculated_price || total_price,
         package_savings: package_savings || 0,
+        discount_percent: discount_percent || 0,
+        addon_fees: addon_fees || [],
+        addon_total: addon_total || 0,
       })
       .select()
       .single();

@@ -27,7 +27,7 @@ async function getUser(request) {
   return null;
 }
 
-// GET - Get all packages for a detailer
+// GET - Get all add-on fees for a detailer
 export async function GET(request) {
   try {
     const user = await getUser(request);
@@ -40,26 +40,30 @@ export async function GET(request) {
       return Response.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    const { data: packages, error } = await supabase
-      .from('packages')
+    const { data: fees, error } = await supabase
+      .from('addon_fees')
       .select('*')
       .eq('detailer_id', user.id)
       .order('created_at', { ascending: true });
 
     if (error) {
-      console.error('Failed to fetch packages:', error);
+      // Table might not exist yet — return empty
+      if (error.code === '42P01' || error.message?.includes('does not exist')) {
+        return Response.json({ fees: [] });
+      }
+      console.error('Failed to fetch addon fees:', error);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ packages: packages || [] });
+    return Response.json({ fees: fees || [] });
 
   } catch (err) {
-    console.error('Packages GET error:', err);
-    return Response.json({ error: 'Failed to fetch packages' }, { status: 500 });
+    console.error('Addon fees GET error:', err);
+    return Response.json({ error: 'Failed to fetch addon fees' }, { status: 500 });
   }
 }
 
-// POST - Create a new package
+// POST - Create a new add-on fee
 export async function POST(request) {
   try {
     const user = await getUser(request);
@@ -73,44 +77,33 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, discount_percent, service_ids } = body;
+    const { name, description, fee_type, amount } = body;
 
     if (!name) {
       return Response.json({ error: 'Name is required' }, { status: 400 });
     }
 
-    const row = {
-      detailer_id: user.id,
-      name,
-      description: description || '',
-      service_ids: service_ids || [],
-    };
-
-    // Try with discount_percent; fall back without if column doesn't exist
-    row.discount_percent = parseFloat(discount_percent) || 0;
-
-    let { data: pkg, error } = await supabase
-      .from('packages')
-      .insert(row)
+    const { data: fee, error } = await supabase
+      .from('addon_fees')
+      .insert({
+        detailer_id: user.id,
+        name,
+        description: description || '',
+        fee_type: fee_type || 'flat',
+        amount: parseFloat(amount) || 0,
+      })
       .select()
       .single();
 
-    if (error && error.message?.includes('discount_percent')) {
-      delete row.discount_percent;
-      const retry = await supabase.from('packages').insert(row).select().single();
-      pkg = retry.data;
-      error = retry.error;
-    }
-
     if (error) {
-      console.error('Failed to create package:', error);
+      console.error('Failed to create addon fee:', error);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ package: pkg }, { status: 201 });
+    return Response.json({ fee }, { status: 201 });
 
   } catch (err) {
-    console.error('Packages POST error:', err);
-    return Response.json({ error: 'Failed to create package' }, { status: 500 });
+    console.error('Addon fees POST error:', err);
+    return Response.json({ error: 'Failed to create addon fee' }, { status: 500 });
   }
 }

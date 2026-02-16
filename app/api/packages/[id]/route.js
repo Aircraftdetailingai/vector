@@ -42,22 +42,29 @@ export async function PUT(request, { params }) {
 
     const { id } = params;
     const body = await request.json();
-    const { name, description, price, service_ids } = body;
+    const { name, description, discount_percent, service_ids } = body;
 
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
-    if (price !== undefined) updates.price = parseFloat(price) || 0;
+    if (discount_percent !== undefined) updates.discount_percent = parseFloat(discount_percent) || 0;
     if (service_ids !== undefined) updates.service_ids = service_ids;
     updates.updated_at = new Date().toISOString();
 
-    const { data: pkg, error } = await supabase
+    let { data: pkg, error } = await supabase
       .from('packages')
       .update(updates)
       .eq('id', id)
       .eq('detailer_id', user.id)
       .select()
       .single();
+
+    if (error && error.message?.includes('discount_percent')) {
+      delete updates.discount_percent;
+      const retry = await supabase.from('packages').update(updates).eq('id', id).eq('detailer_id', user.id).select().single();
+      pkg = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error('Failed to update package:', error);
