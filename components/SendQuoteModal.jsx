@@ -29,17 +29,17 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       return { id: quote.id, share_link: quote.share_link };
     }
 
-    // Build line items from selected services
-    const lineItems = (quote?.selectedServices || []).map(svc => ({
+    // Use line items already computed by dashboard (not rebuilt from scratch)
+    const lineItems = quote?.lineItems || (quote?.selectedServices || []).map(svc => ({
       service_id: svc.id,
       description: svc.name,
-      hours: svc.hours || 0,
-      amount: quote?.selectedPackage ? 0 : (svc.price || 0) * (quote?.accessDifficulty || 1),
+      hours: 0,
+      amount: 0,
     }));
 
     // Build payload from quote prop
     const payload = {
-      aircraft_type: quote?.aircraft?.category || "",
+      aircraft_type: quote?.aircraft?.category || quote?.aircraft?.name || "unknown",
       aircraft_model: quote?.aircraft?.name || "",
       aircraft_id: quote?.aircraft?.id || null,
       surface_area_sqft: quote?.aircraft?.surface_area_sqft || null,
@@ -60,6 +60,15 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       addon_fees: quote?.addonFees || [],
       addon_total: quote?.addonsTotal || 0,
     };
+
+    console.log('Creating quote with payload:', JSON.stringify({
+      aircraft_type: payload.aircraft_type,
+      aircraft_model: payload.aircraft_model,
+      total_price: payload.total_price,
+      selected_services_count: payload.selected_services.length,
+      line_items_count: payload.line_items.length,
+    }));
+
     const res = await fetch("/api/quotes", {
       method: "POST",
       headers: {
@@ -70,6 +79,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
     });
     if (!res.ok) {
       const errData = await res.json().catch(() => null);
+      console.error('Quote create failed:', res.status, errData);
       throw new Error(errData?.error || "Failed to create quote");
     }
     const data = await res.json();

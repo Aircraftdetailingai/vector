@@ -79,7 +79,15 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    console.log('Quote POST body keys:', Object.keys(body));
+    console.log('Quote POST body:', JSON.stringify({
+      aircraft_type: body.aircraft_type,
+      aircraft_model: body.aircraft_model,
+      total_price: body.total_price,
+      selected_services_count: body.selected_services?.length,
+      services_keys: body.services ? Object.keys(body.services) : null,
+      line_items_count: body.line_items?.length,
+      keys: Object.keys(body),
+    }));
 
     const {
       aircraft_type,
@@ -108,11 +116,12 @@ export async function POST(request) {
       addon_total,
     } = body;
 
-    // Support both old and new format
-    const hasServices = services || (selected_services && selected_services.length > 0);
-    if (!aircraft_type || !hasServices) {
-      console.error('Quote missing fields - aircraft_type:', aircraft_type, 'hasServices:', hasServices);
-      return Response.json({ error: 'Missing fields' }, { status: 400 });
+    // Validate: need at minimum an aircraft type or model, and some price
+    const hasAircraft = aircraft_type || aircraft_model;
+    const hasServices = services || (selected_services && selected_services.length > 0) || (line_items && line_items.length > 0);
+    if (!hasAircraft && !hasServices && !total_price) {
+      console.error('Quote truly empty - no aircraft, services, or price');
+      return Response.json({ error: 'Please select an aircraft and services before sending' }, { status: 400 });
     }
 
     const shareLink = nanoid(8);
