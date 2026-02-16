@@ -69,7 +69,8 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       body: JSON.stringify(payload),
     });
     if (!res.ok) {
-      throw new Error("Failed to create quote");
+      const errData = await res.json().catch(() => null);
+      throw new Error(errData?.error || "Failed to create quote");
     }
     const data = await res.json();
     return { id: data.id, share_link: data.share_link };

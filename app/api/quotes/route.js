@@ -79,13 +79,15 @@ export async function POST(request) {
     }
 
     const body = await request.json();
+    console.log('Quote POST body keys:', Object.keys(body));
+
     const {
       aircraft_type,
       aircraft_model,
       aircraft_id,
       surface_area_sqft,
-      services, // Legacy: old key-based object
-      selected_services, // New: array of service IDs
+      services,
+      selected_services,
       selected_package_id,
       selected_package_name,
       base_hours,
@@ -109,48 +111,94 @@ export async function POST(request) {
     // Support both old and new format
     const hasServices = services || (selected_services && selected_services.length > 0);
     if (!aircraft_type || !hasServices) {
+      console.error('Quote missing fields - aircraft_type:', aircraft_type, 'hasServices:', hasServices);
       return Response.json({ error: 'Missing fields' }, { status: 400 });
     }
 
     const shareLink = nanoid(8);
     const validUntil = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-    const { data, error } = await supabase
-      .from('quotes')
-      .insert({
-        detailer_id: user.id,
-        aircraft_type,
-        aircraft_model,
-        aircraft_id: aircraft_id || null,
-        surface_area_sqft: surface_area_sqft || null,
-        services: services || null, // Legacy field
-        selected_services: selected_services || null,
-        selected_package_id: selected_package_id || null,
-        selected_package_name: selected_package_name || null,
-        base_hours: base_hours || 0,
-        total_hours,
-        total_price,
-        notes,
-        share_link: shareLink,
-        valid_until: validUntil,
-        line_items: line_items || [],
-        labor_total: labor_total || 0,
-        products_total: products_total || 0,
-        efficiency_factor: efficiency_factor || 1.0,
-        access_difficulty: access_difficulty || 1.0,
-        job_location: job_location || null,
-        minimum_fee_applied: minimum_fee_applied || false,
-        calculated_price: calculated_price || total_price,
-        package_savings: package_savings || 0,
-        discount_percent: discount_percent || 0,
-        addon_fees: addon_fees || [],
-        addon_total: addon_total || 0,
-      })
-      .select()
-      .single();
+    // Store all extra pricing data as JSON metadata for columns that may not exist yet
+    const quoteMetadata = {
+      line_items: line_items || [],
+      selected_services: selected_services || [],
+      selected_package_id: selected_package_id || null,
+      selected_package_name: selected_package_name || null,
+      labor_total: labor_total || 0,
+      products_total: products_total || 0,
+      access_difficulty: access_difficulty || 1.0,
+      job_location: job_location || null,
+      minimum_fee_applied: minimum_fee_applied || false,
+      calculated_price: calculated_price || total_price,
+      discount_percent: discount_percent || 0,
+      addon_fees: addon_fees || [],
+      addon_total: addon_total || 0,
+    };
+
+    // Build insert row - start with core columns that definitely exist
+    const insertRow = {
+      detailer_id: user.id,
+      aircraft_type,
+      aircraft_model: aircraft_model || '',
+      total_price: parseFloat(total_price) || 0,
+      total_hours: parseFloat(total_hours) || 0,
+      notes: notes || '',
+      share_link: shareLink,
+      valid_until: validUntil,
+      status: 'draft',
+    };
+
+    // Try adding optional columns - these may or may not exist in the DB
+    const optionalColumns = {
+      aircraft_id: aircraft_id || null,
+      surface_area_sqft: surface_area_sqft ? parseFloat(surface_area_sqft) : null,
+      services: services || null,
+      selected_services: selected_services || null,
+      selected_package_id: selected_package_id || null,
+      selected_package_name: selected_package_name || null,
+      base_hours: parseFloat(base_hours) || 0,
+      line_items: line_items || [],
+      labor_total: parseFloat(labor_total) || 0,
+      products_total: parseFloat(products_total) || 0,
+      efficiency_factor: parseFloat(efficiency_factor) || 1.0,
+      access_difficulty: parseFloat(access_difficulty) || 1.0,
+      job_location: job_location || null,
+      minimum_fee_applied: minimum_fee_applied || false,
+      calculated_price: parseFloat(calculated_price) || parseFloat(total_price) || 0,
+      package_savings: parseFloat(package_savings) || 0,
+      discount_percent: parseFloat(discount_percent) || 0,
+      addon_fees: addon_fees || [],
+      addon_total: parseFloat(addon_total) || 0,
+      metadata: quoteMetadata,
+    };
+
+    // Try full insert first, then strip failing columns
+    let row = { ...insertRow, ...optionalColumns };
+    let data, error;
+
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const result = await supabase.from('quotes').insert(row).select().single();
+      data = result.data;
+      error = result.error;
+
+      if (!error) break;
+
+      // If error is about a missing column, strip it and retry
+      const colMatch = error.message?.match(/column "([^"]+)" of relation "quotes" does not exist/);
+      if (colMatch) {
+        const badCol = colMatch[1];
+        console.log(`Quote insert: stripping unknown column "${badCol}", retrying...`);
+        delete row[badCol];
+        continue;
+      }
+
+      // Some other error - log and break
+      console.error('Quote create error:', JSON.stringify(error));
+      break;
+    }
 
     if (error) {
-      console.error('Quote create error:', error);
+      console.error('Quote create final error:', JSON.stringify(error));
       return Response.json({ error: error.message }, { status: 500 });
     }
 
