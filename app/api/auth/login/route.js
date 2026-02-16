@@ -1,9 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
-import { comparePassword, createToken } from '../../../../lib/auth';
+import { comparePassword, hashPassword, createToken } from '../../../../lib/auth';
 import { cookies } from 'next/headers';
 
 function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY);
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
+  );
 }
 
 export async function POST(request) {
@@ -14,18 +17,51 @@ export async function POST(request) {
     if (!email || !password) {
       return new Response(JSON.stringify({ error: 'Email and password are required' }), { status: 400 });
     }
+
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Look up the detailer
     const { data, error } = await supabase
       .from('detailers')
       .select('*')
-      .eq('email', email)
+      .eq('email', normalizedEmail)
       .single();
     if (error || !data) {
       return new Response(JSON.stringify({ error: 'Invalid email or password' }), { status: 401 });
     }
-    const valid = await comparePassword(password, data.password_hash);
+
+    // Try bcrypt comparison first (passwords hashed by our app)
+    let valid = false;
+    if (data.password_hash) {
+      try {
+        valid = await comparePassword(password, data.password_hash);
+      } catch (e) {
+        // Hash format might be incompatible (e.g., copied from Supabase Auth)
+      }
+    }
+
+    // If bcrypt didn't match, try Supabase Auth
+    if (!valid) {
+      try {
+        const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+          email: normalizedEmail,
+          password,
+        });
+        if (!authError && authData?.user) {
+          valid = true;
+          // Re-hash with bcryptjs so future logins work directly
+          const newHash = await hashPassword(password);
+          await supabase.from('detailers').update({ password_hash: newHash }).eq('id', data.id);
+        }
+      } catch (e) {
+        // Supabase Auth might not be configured, continue
+      }
+    }
+
     if (!valid) {
       return new Response(JSON.stringify({ error: 'Invalid email or password' }), { status: 401 });
     }
+
     const token = await createToken({ id: data.id, email: data.email });
 
     // Set auth cookie for server-side auth
