@@ -44,7 +44,7 @@ export async function GET(request) {
       const { data, error } = await query;
       if (error) {
         // Table doesn't exist yet - fall back to quotes-based customer list
-        if (error.code === '42P01') {
+        if (error.code === '42P01' || error.code === 'PGRST205') {
           customers = await getCustomersFromQuotes(supabase, user.id, q, limit);
         } else {
           console.error('Customers fetch error:', error);
@@ -198,15 +198,16 @@ export async function POST(request) {
         return Response.json({ customer: data, created: true }, { status: 201 });
       }
 
-      const colMatch = error.message?.match(/column "([^"]+)" of relation "customers" does not exist/);
+      const colMatch = error.message?.match(/column "([^"]+)" of relation "customers" does not exist/)
+        || error.message?.match(/Could not find the '([^']+)' column of 'customers'/);
       if (colMatch) {
         delete row[colMatch[1]];
         continue;
       }
 
       // Table doesn't exist
-      if (error.code === '42P01') {
-        console.error('Customers table does not exist. Run the migration.');
+      if (error.code === '42P01' || error.code === 'PGRST205') {
+        console.log('Customers table does not exist yet - skipping create.');
         return Response.json({ error: 'Customers table not set up yet', customer: null, created: false }, { status: 200 });
       }
 

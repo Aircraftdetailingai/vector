@@ -33,7 +33,7 @@ export async function GET(request) {
     // Build query
     let query = supabase
       .from('quotes')
-      .select('id, aircraft_type, aircraft_model, customer_name, customer_email, total_price, status, created_at, valid_until, share_link')
+      .select('*')
       .eq('detailer_id', user.id)
       .order(sortField, { ascending: order === 'asc' })
       .limit(limit);
@@ -192,7 +192,7 @@ export async function POST(request) {
     let row = { ...insertRow, ...optionalColumns };
     let data, error;
 
-    for (let attempt = 0; attempt < 5; attempt++) {
+    for (let attempt = 0; attempt < 10; attempt++) {
       const result = await supabase.from('quotes').insert(row).select().single();
       data = result.data;
       error = result.error;
@@ -200,7 +200,9 @@ export async function POST(request) {
       if (!error) break;
 
       // If error is about a missing column, strip it and retry
-      const colMatch = error.message?.match(/column "([^"]+)" of relation "quotes" does not exist/);
+      // Matches both PostgreSQL and PostgREST error formats
+      const colMatch = error.message?.match(/column "([^"]+)" of relation "quotes" does not exist/)
+        || error.message?.match(/Could not find the '([^']+)' column of 'quotes'/);
       if (colMatch) {
         const badCol = colMatch[1];
         console.log(`Quote insert: stripping unknown column "${badCol}", retrying...`);

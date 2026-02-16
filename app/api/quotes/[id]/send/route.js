@@ -117,7 +117,7 @@ export async function POST(request, { params }) {
 
   let updated = null;
   let updErr = null;
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 10; attempt++) {
     const result = await supabase
       .from('quotes')
       .update(updateFields)
@@ -129,7 +129,8 @@ export async function POST(request, { params }) {
 
     if (!updErr) break;
 
-    const colMatch = updErr.message?.match(/column "([^"]+)" of relation "quotes" does not exist/);
+    const colMatch = updErr.message?.match(/column "([^"]+)" of relation "quotes" does not exist/)
+      || updErr.message?.match(/Could not find the '([^']+)' column of 'quotes'/);
     if (colMatch) {
       console.log(`Quote send: stripping unknown column "${colMatch[1]}", retrying...`);
       delete updateFields[colMatch[1]];
