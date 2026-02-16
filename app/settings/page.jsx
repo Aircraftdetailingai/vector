@@ -135,7 +135,7 @@ function SettingsContent() {
       });
       if (res.ok) {
         const data = await res.json();
-        setMinimumFee(data.minimum_callout_fee || 0);
+        setMinimumFee(parseFloat(data.minimum_callout_fee) || 0);
         setMinimumFeeLocations(data.minimum_fee_locations || []);
       }
     } catch (err) {

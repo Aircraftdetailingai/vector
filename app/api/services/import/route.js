@@ -47,12 +47,16 @@ export async function POST(request) {
       return Response.json({ error: 'No services provided' }, { status: 400 });
     }
 
-    const toInsert = services.map(svc => ({
-      detailer_id: user.id,
-      name: svc.name,
-      description: svc.description || '',
-      hourly_rate: parseFloat(svc.hourly_rate) || 0,
-    }));
+    const toInsert = services.map(svc => {
+      const row = {
+        detailer_id: user.id,
+        name: svc.name,
+        description: svc.description || '',
+        hourly_rate: parseFloat(svc.hourly_rate) || 0,
+      };
+      if (svc.hours_field) row.hours_field = svc.hours_field;
+      return row;
+    });
 
     const { data: insertedServices, error } = await supabase
       .from('services')

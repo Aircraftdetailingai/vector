@@ -42,12 +42,13 @@ export async function PUT(request, { params }) {
 
     const { id } = params;
     const body = await request.json();
-    const { name, description, hourly_rate } = body;
+    const { name, description, hourly_rate, hours_field } = body;
 
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
     if (hourly_rate !== undefined) updates.hourly_rate = parseFloat(hourly_rate) || 0;
+    if (hours_field !== undefined) updates.hours_field = hours_field;
     updates.updated_at = new Date().toISOString();
 
     const { data: service, error } = await supabase

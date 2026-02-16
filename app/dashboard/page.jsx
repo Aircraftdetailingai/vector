@@ -48,6 +48,18 @@ const categoryLabels = {
 
 const categoryOrder = ['piston', 'turboprop', 'light_jet', 'midsize_jet', 'super_midsize_jet', 'large_jet', 'helicopter'];
 
+// Mapping of hours_field values to their aircraft column names and display labels
+const HOURS_FIELD_OPTIONS = {
+  ext_wash_hours: 'Exterior Wash',
+  int_detail_hours: 'Interior Detail',
+  leather_hours: 'Leather Treatment',
+  carpet_hours: 'Carpet Cleaning',
+  wax_hours: 'Wax Application',
+  polish_hours: 'Polish',
+  ceramic_hours: 'Ceramic Coating',
+  brightwork_hours: 'Brightwork',
+};
+
 // Stripe Connect Warning Banner Component
 function StripeWarningBanner({ onConnect, loading, error, onClearError }) {
   return (
@@ -392,13 +404,27 @@ function DashboardContent() {
     }
   };
 
-  // Get aircraft hours based on service type (interior vs exterior)
+  // Get aircraft hours for a service based on its hours_field mapping
   const getHoursForService = (svc) => {
     if (!selectedAircraft) return 0;
-    if (svc?.service_type === 'interior') {
-      return parseFloat(selectedAircraft.interior_hours) || 0;
+
+    // Use explicit hours_field if set on the service
+    if (svc.hours_field && selectedAircraft[svc.hours_field] !== undefined) {
+      return parseFloat(selectedAircraft[svc.hours_field]) || 0;
     }
-    return parseFloat(selectedAircraft.exterior_hours) || 0;
+
+    // Fallback: guess from service name
+    const name = (svc.name || '').toLowerCase();
+    if (name.includes('leather')) return parseFloat(selectedAircraft.leather_hours) || 0;
+    if (name.includes('carpet') || name.includes('upholster')) return parseFloat(selectedAircraft.carpet_hours) || 0;
+    if (name.includes('ceramic')) return parseFloat(selectedAircraft.ceramic_hours) || 0;
+    if (name.includes('wax')) return parseFloat(selectedAircraft.wax_hours) || 0;
+    if (name.includes('brightwork') || name.includes('bright') || name.includes('chrome')) return parseFloat(selectedAircraft.brightwork_hours) || 0;
+    if (name.includes('polish')) return parseFloat(selectedAircraft.polish_hours) || 0;
+    if (name.includes('interior') || name.includes('vacuum') || name.includes('wipe') || name.includes('cabin')) return parseFloat(selectedAircraft.int_detail_hours) || 0;
+
+    // Default: exterior wash hours
+    return parseFloat(selectedAircraft.ext_wash_hours) || 0;
   };
 
   // Calculate price for a single service: aircraft hours × hourly rate
@@ -685,8 +711,14 @@ function DashboardContent() {
               <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-blue-700">
                 <div>Wingspan: {selectedAircraft.wingspan_ft} ft</div>
                 <div>Length: {selectedAircraft.length_ft} ft</div>
-                <div>Ext Hours: {selectedAircraft.exterior_hours || 0}h</div>
-                <div>Int Hours: {selectedAircraft.interior_hours || 0}h</div>
+                <div>Ext Wash: {selectedAircraft.ext_wash_hours || 0}h</div>
+                <div>Int Detail: {selectedAircraft.int_detail_hours || 0}h</div>
+              </div>
+              <div className="mt-1 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-blue-600">
+                <div>Wax: {selectedAircraft.wax_hours || 0}h</div>
+                <div>Polish: {selectedAircraft.polish_hours || 0}h</div>
+                <div>Ceramic: {selectedAircraft.ceramic_hours || 0}h</div>
+                <div>Leather: {selectedAircraft.leather_hours || 0}h</div>
               </div>
             </div>
           )}
@@ -760,13 +792,6 @@ function DashboardContent() {
                         />
                         <div className="flex-1">
                           <span className="font-medium">{svc.name}</span>
-                          <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded font-medium ${
-                            svc.service_type === 'interior'
-                              ? 'bg-purple-100 text-purple-700'
-                              : 'bg-blue-100 text-blue-700'
-                          }`}>
-                            {svc.service_type === 'interior' ? 'INT' : 'EXT'}
-                          </span>
                           {svc.description && (
                             <span className="text-xs text-gray-500 block">{svc.description}</span>
                           )}

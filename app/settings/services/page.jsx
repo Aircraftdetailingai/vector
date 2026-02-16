@@ -2,17 +2,28 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
+const HOURS_FIELD_OPTIONS = {
+  ext_wash_hours: 'Exterior Wash Time',
+  int_detail_hours: 'Interior Detail Time',
+  leather_hours: 'Leather Treatment Time',
+  carpet_hours: 'Carpet Cleaning Time',
+  wax_hours: 'Wax Application Time',
+  polish_hours: 'Polish Time',
+  ceramic_hours: 'Ceramic Coating Time',
+  brightwork_hours: 'Brightwork Time',
+};
+
 const DEFAULT_SERVICES = [
-  { name: 'Maintenance Wash', description: 'Regular exterior wash', hourly_rate: 120 },
-  { name: 'Decon Wash', description: 'Deep clean with iron remover and clay bar', hourly_rate: 130 },
-  { name: 'One-Step Polish', description: 'Light polish to remove minor swirls', hourly_rate: 140 },
-  { name: 'Wax Application', description: 'Protective wax coating', hourly_rate: 100 },
-  { name: 'Spray Ceramic', description: 'Ceramic spray sealant', hourly_rate: 120 },
-  { name: 'Ceramic Coating', description: 'Professional ceramic coating, 2+ year protection', hourly_rate: 175 },
-  { name: 'Vacuum & Wipe Down', description: 'Interior vacuum and surface wipe', hourly_rate: 100 },
-  { name: 'Carpet Extraction', description: 'Deep carpet and upholstery cleaning', hourly_rate: 110 },
-  { name: 'Leather Clean & Condition', description: 'Full leather treatment', hourly_rate: 115 },
-  { name: 'Polish Brightwork', description: 'Metal and chrome polishing', hourly_rate: 130 },
+  { name: 'Maintenance Wash', description: 'Regular exterior wash', hourly_rate: 120, hours_field: 'ext_wash_hours' },
+  { name: 'Decon Wash', description: 'Deep clean with iron remover and clay bar', hourly_rate: 130, hours_field: 'ext_wash_hours' },
+  { name: 'One-Step Polish', description: 'Light polish to remove minor swirls', hourly_rate: 140, hours_field: 'polish_hours' },
+  { name: 'Wax Application', description: 'Protective wax coating', hourly_rate: 100, hours_field: 'wax_hours' },
+  { name: 'Spray Ceramic', description: 'Ceramic spray sealant', hourly_rate: 120, hours_field: 'ceramic_hours' },
+  { name: 'Ceramic Coating', description: 'Professional ceramic coating, 2+ year protection', hourly_rate: 175, hours_field: 'ceramic_hours' },
+  { name: 'Vacuum & Wipe Down', description: 'Interior vacuum and surface wipe', hourly_rate: 100, hours_field: 'int_detail_hours' },
+  { name: 'Carpet Extraction', description: 'Deep carpet and upholstery cleaning', hourly_rate: 110, hours_field: 'carpet_hours' },
+  { name: 'Leather Clean & Condition', description: 'Full leather treatment', hourly_rate: 115, hours_field: 'leather_hours' },
+  { name: 'Polish Brightwork', description: 'Metal and chrome polishing', hourly_rate: 130, hours_field: 'brightwork_hours' },
 ];
 
 const DEFAULT_ADDON_FEES = [
@@ -34,7 +45,7 @@ export default function ServicesPage() {
   // Service form
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  const [newService, setNewService] = useState({ name: '', description: '', hourly_rate: '' });
+  const [newService, setNewService] = useState({ name: '', description: '', hourly_rate: '', hours_field: 'ext_wash_hours' });
 
   // Package form
   const [showPackageBuilder, setShowPackageBuilder] = useState(false);
@@ -107,12 +118,13 @@ export default function ServicesPage() {
           name: newService.name,
           description: newService.description,
           hourly_rate: parseFloat(newService.hourly_rate) || 0,
+          hours_field: newService.hours_field || 'ext_wash_hours',
         }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to add service'); return; }
       setServices([...services, data.service]);
-      setNewService({ name: '', description: '', hourly_rate: '' });
+      setNewService({ name: '', description: '', hourly_rate: '', hours_field: 'ext_wash_hours' });
       setShowServiceModal(false);
       setError('');
     } catch (err) {
@@ -134,6 +146,7 @@ export default function ServicesPage() {
           name: editingService.name,
           description: editingService.description,
           hourly_rate: parseFloat(editingService.hourly_rate) || 0,
+          hours_field: editingService.hours_field || 'ext_wash_hours',
         }),
       });
       const data = await res.json();
@@ -425,6 +438,7 @@ export default function ServicesPage() {
                       <div>
                         <p className="font-medium">{svc.name}</p>
                         {svc.description && <p className="text-xs text-gray-500">{svc.description}</p>}
+                        <p className="text-[10px] text-gray-400">{HOURS_FIELD_OPTIONS[svc.hours_field] || 'Ext Wash (default)'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -639,6 +653,17 @@ export default function ServicesPage() {
                 <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
               </div>
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Aircraft Hours Field</label>
+              <select value={newService.hours_field || 'ext_wash_hours'}
+                onChange={(e) => setNewService({ ...newService, hours_field: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2">
+                {Object.entries(HOURS_FIELD_OPTIONS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Which aircraft time estimate to use for this service</p>
+            </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <button onClick={() => setShowServiceModal(false)} className="px-4 py-2 border rounded-lg">Cancel</button>
@@ -672,6 +697,17 @@ export default function ServicesPage() {
                   className="w-full border rounded-lg pl-7 pr-12 py-2" />
                 <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
               </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Aircraft Hours Field</label>
+              <select value={editingService.hours_field || 'ext_wash_hours'}
+                onChange={(e) => setEditingService({ ...editingService, hours_field: e.target.value })}
+                className="w-full border rounded-lg px-3 py-2">
+                {Object.entries(HOURS_FIELD_OPTIONS).map(([value, label]) => (
+                  <option key={value} value={value}>{label}</option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">Which aircraft time estimate to use for this service</p>
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
