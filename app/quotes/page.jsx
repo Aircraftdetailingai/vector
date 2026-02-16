@@ -261,7 +261,7 @@ export default function QuotesPage() {
       header: 'Quote Total',
       accessorKey: 'total_price',
       cell: ({ getValue }) => (
-        <span className="font-semibold">${(getValue() || 0).toFixed(2)}</span>
+        <span className="font-semibold">${(parseFloat(getValue()) || 0).toFixed(2)}</span>
       ),
     },
     {
@@ -323,7 +323,7 @@ export default function QuotesPage() {
       id: 'hours',
       header: 'Hours',
       accessorKey: 'total_hours',
-      cell: ({ getValue }) => getValue()?.toFixed(1) || '-',
+      cell: ({ getValue }) => { const v = parseFloat(getValue()); return isNaN(v) ? '-' : v.toFixed(1); },
     },
     {
       id: 'notes',
@@ -631,7 +631,7 @@ export default function QuotesPage() {
 
             <div className="bg-gray-50 p-3 rounded mb-4">
               <p className="text-sm text-gray-600">
-                <strong>Current Quote Total:</strong> ${(changeOrderModal.total_price || 0).toFixed(2)}
+                <strong>Current Quote Total:</strong> ${(parseFloat(changeOrderModal.total_price) || 0).toFixed(2)}
               </p>
             </div>
 
@@ -704,7 +704,7 @@ export default function QuotesPage() {
                 <div className="flex justify-between text-sm font-bold">
                   <span>New Total:</span>
                   <span>
-                    ${((changeOrderModal.total_price || 0) +
+                    ${((parseFloat(changeOrderModal.total_price) || 0) +
                       changeOrderData.services.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
                     ).toFixed(2)}
                   </span>

@@ -280,7 +280,7 @@ export default function DashboardPage() {
       // Process minimum fee
       if (minFeeRes.status === 'fulfilled' && minFeeRes.value.ok) {
         const data = await minFeeRes.value.json();
-        setMinimumFee(data.minimum_callout_fee || 0);
+        setMinimumFee(parseFloat(data.minimum_callout_fee) || 0);
         setMinimumFeeLocations(data.minimum_fee_locations || []);
       }
 
@@ -391,15 +391,15 @@ export default function DashboardPage() {
   const getHoursForService = (svc) => {
     if (!selectedAircraft) return 0;
     if (svc?.service_type === 'interior') {
-      return selectedAircraft.interior_hours || 0;
+      return parseFloat(selectedAircraft.interior_hours) || 0;
     }
-    return selectedAircraft.exterior_hours || 0;
+    return parseFloat(selectedAircraft.exterior_hours) || 0;
   };
 
   // Calculate price for a single service: aircraft hours × hourly rate
   const getServicePrice = (svc) => {
     const hours = getHoursForService(svc);
-    return hours * (svc.hourly_rate || 0);
+    return hours * (parseFloat(svc.hourly_rate) || 0);
   };
 
   // Calculate totals based on selected services or package
@@ -414,7 +414,7 @@ export default function DashboardPage() {
   const servicesSubtotal = selectedServicesList.reduce((sum, svc) => sum + getServicePrice(svc), 0);
 
   // Step 2: Package discount
-  const discountPercent = selectedPackage ? (selectedPackage.discount_percent || 0) : 0;
+  const discountPercent = selectedPackage ? (parseFloat(selectedPackage.discount_percent) || 0) : 0;
   const discountAmount = servicesSubtotal * (discountPercent / 100);
   const afterDiscount = servicesSubtotal - discountAmount;
 
@@ -424,8 +424,8 @@ export default function DashboardPage() {
   // Step 4: Add-on fees
   const getSelectedAddonsList = () => availableAddons.filter(a => selectedAddons[a.id]);
   const selectedAddonsList = getSelectedAddonsList();
-  const flatAddonsTotal = selectedAddonsList.filter(a => a.fee_type === 'flat').reduce((sum, a) => sum + (a.amount || 0), 0);
-  const percentAddonsTotal = selectedAddonsList.filter(a => a.fee_type === 'percent').reduce((sum, a) => sum + (afterDifficulty * (a.amount || 0) / 100), 0);
+  const flatAddonsTotal = selectedAddonsList.filter(a => a.fee_type === 'flat').reduce((sum, a) => sum + (parseFloat(a.amount) || 0), 0);
+  const percentAddonsTotal = selectedAddonsList.filter(a => a.fee_type === 'percent').reduce((sum, a) => sum + (afterDifficulty * (parseFloat(a.amount) || 0) / 100), 0);
   const addonsTotal = flatAddonsTotal + percentAddonsTotal;
 
   // Step 5: Total before minimum
@@ -452,7 +452,7 @@ export default function DashboardPage() {
     description: svc.name,
     service_type: svc.service_type || 'exterior',
     hours: getHoursForService(svc),
-    rate: svc.hourly_rate || 0,
+    rate: parseFloat(svc.hourly_rate) || 0,
     amount: getServicePrice(svc) * accessDifficulty * (1 - discountPercent / 100),
   }));
 
@@ -461,8 +461,8 @@ export default function DashboardPage() {
     id: a.id,
     name: a.name,
     fee_type: a.fee_type,
-    amount: a.amount,
-    calculated: a.fee_type === 'percent' ? afterDifficulty * (a.amount || 0) / 100 : (a.amount || 0),
+    amount: parseFloat(a.amount) || 0,
+    calculated: a.fee_type === 'percent' ? afterDifficulty * (parseFloat(a.amount) || 0) / 100 : (parseFloat(a.amount) || 0),
   }));
 
   const handleLogout = () => {
@@ -822,7 +822,7 @@ export default function DashboardPage() {
                     {availablePackages.map((pkg) => {
                       const pkgServices = availableServices.filter(s => (pkg.service_ids || []).includes(s.id));
                       const servicesValue = pkgServices.reduce((sum, s) => sum + getServicePrice(s), 0);
-                      const disc = pkg.discount_percent || 0;
+                      const disc = parseFloat(pkg.discount_percent) || 0;
                       const packagePrice = servicesValue * (1 - disc / 100);
 
                       return (

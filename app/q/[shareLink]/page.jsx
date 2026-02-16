@@ -237,7 +237,7 @@ export default function QuoteViewPage() {
               </div>
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-gray-800 font-semibold">Total Paid:</span>
-                <span className="font-bold text-lg">${(quote.total_price || 0).toFixed(2)}</span>
+                <span className="font-bold text-lg">${(parseFloat(quote.total_price) || 0).toFixed(2)}</span>
               </div>
             </div>
           </div>
@@ -322,7 +322,7 @@ export default function QuoteViewPage() {
                 {quote.line_items.map((item, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-gray-700">{item.description}</span>
-                    <span className="text-gray-900">${(item.amount || 0).toFixed(2)}</span>
+                    <span className="text-gray-900">${(parseFloat(item.amount) || 0).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -332,11 +332,11 @@ export default function QuoteViewPage() {
               <div className="pt-3 border-t space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">Labor</span>
-                  <span className="text-gray-900">${(quote.labor_total || quote.total_price * 0.7 || 0).toFixed(2)}</span>
+                  <span className="text-gray-900">${(parseFloat(quote.labor_total) || parseFloat(quote.total_price) * 0.7 || 0).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">Products & Materials</span>
-                  <span className="text-gray-900">${(quote.products_total || quote.total_price * 0.3 || 0).toFixed(2)}</span>
+                  <span className="text-gray-900">${(parseFloat(quote.products_total) || parseFloat(quote.total_price) * 0.3 || 0).toFixed(2)}</span>
                 </div>
               </div>
             )}
@@ -357,7 +357,7 @@ export default function QuoteViewPage() {
                     <span className="text-gray-700">
                       {fee.name} {fee.fee_type === 'percent' ? `(${fee.amount}%)` : ''}
                     </span>
-                    <span className="text-gray-900">+${(fee.calculated || 0).toFixed(2)}</span>
+                    <span className="text-gray-900">+${(parseFloat(fee.calculated) || 0).toFixed(2)}</span>
                   </div>
                 ))}
               </div>
@@ -365,7 +365,7 @@ export default function QuoteViewPage() {
 
             <div className="flex justify-between pt-3 border-t">
               <span className="text-gray-800 font-semibold">Total:</span>
-              <span className="font-bold text-2xl text-[#1e3a5f]">${(quote.total_price || 0).toFixed(2)}</span>
+              <span className="font-bold text-2xl text-[#1e3a5f]">${(parseFloat(quote.total_price) || 0).toFixed(2)}</span>
             </div>
           </div>
         </div>

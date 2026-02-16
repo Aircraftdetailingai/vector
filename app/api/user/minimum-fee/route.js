@@ -34,7 +34,7 @@ export async function GET(request) {
     }
 
     return Response.json({
-      minimum_callout_fee: detailer?.minimum_callout_fee || 0,
+      minimum_callout_fee: parseFloat(detailer?.minimum_callout_fee) || 0,
       minimum_fee_locations: detailer?.minimum_fee_locations || [],
     });
 

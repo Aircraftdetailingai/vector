@@ -20,7 +20,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
   const requiresSms = method === "sms" || method === "both";
   const requiresEmail = method === "email" || method === "both";
 
-  const totalPrice = quote?.totalPrice || 0;
+  const totalPrice = parseFloat(quote?.totalPrice) || 0;
   const aircraftName = quote?.aircraft?.name || "";
 
   const createQuoteIfNeeded = async () => {
