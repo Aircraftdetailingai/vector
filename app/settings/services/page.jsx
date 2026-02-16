@@ -3,16 +3,16 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const DEFAULT_SERVICES = [
-  { name: 'Maintenance Wash', description: 'Regular exterior wash', hourly_rate: 120 },
-  { name: 'Decon Wash', description: 'Deep clean with iron remover and clay bar', hourly_rate: 130 },
-  { name: 'One-Step Polish', description: 'Light polish to remove minor swirls', hourly_rate: 140 },
-  { name: 'Wax Application', description: 'Protective wax coating', hourly_rate: 100 },
-  { name: 'Spray Ceramic', description: 'Ceramic spray sealant', hourly_rate: 120 },
-  { name: 'Ceramic Coating', description: 'Professional ceramic coating, 2+ year protection', hourly_rate: 175 },
-  { name: 'Vacuum & Wipe Down', description: 'Interior vacuum and surface wipe', hourly_rate: 100 },
-  { name: 'Carpet Extraction', description: 'Deep carpet and upholstery cleaning', hourly_rate: 110 },
-  { name: 'Leather Clean & Condition', description: 'Full leather treatment', hourly_rate: 115 },
-  { name: 'Polish Brightwork', description: 'Metal and chrome polishing', hourly_rate: 130 },
+  { name: 'Maintenance Wash', description: 'Regular exterior wash', hourly_rate: 120, service_type: 'exterior' },
+  { name: 'Decon Wash', description: 'Deep clean with iron remover and clay bar', hourly_rate: 130, service_type: 'exterior' },
+  { name: 'One-Step Polish', description: 'Light polish to remove minor swirls', hourly_rate: 140, service_type: 'exterior' },
+  { name: 'Wax Application', description: 'Protective wax coating', hourly_rate: 100, service_type: 'exterior' },
+  { name: 'Spray Ceramic', description: 'Ceramic spray sealant', hourly_rate: 120, service_type: 'exterior' },
+  { name: 'Ceramic Coating', description: 'Professional ceramic coating, 2+ year protection', hourly_rate: 175, service_type: 'exterior' },
+  { name: 'Vacuum & Wipe Down', description: 'Interior vacuum and surface wipe', hourly_rate: 100, service_type: 'interior' },
+  { name: 'Carpet Extraction', description: 'Deep carpet and upholstery cleaning', hourly_rate: 110, service_type: 'interior' },
+  { name: 'Leather Clean & Condition', description: 'Full leather treatment', hourly_rate: 115, service_type: 'interior' },
+  { name: 'Polish Brightwork', description: 'Metal and chrome polishing', hourly_rate: 130, service_type: 'exterior' },
 ];
 
 export default function ServicesPage() {
@@ -25,16 +25,19 @@ export default function ServicesPage() {
   // Service form
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  const [newService, setNewService] = useState({ name: '', description: '', hourly_rate: '' });
+  const [newService, setNewService] = useState({ name: '', description: '', hourly_rate: '', service_type: 'exterior' });
 
   // Package form
   const [showPackageBuilder, setShowPackageBuilder] = useState(false);
   const [editingPackage, setEditingPackage] = useState(null);
   const [newPackage, setNewPackage] = useState({ name: '', description: '', price: '', service_ids: [] });
 
+  // Error state
+  const [error, setError] = useState('');
+
   // Drag state
   const [draggedService, setDraggedService] = useState(null);
-  const [dragOver, setDragOver] = useState(false);
+  const [dragOver, setDragOver] = useState(null); // null, 'new', or package id
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -74,24 +77,35 @@ export default function ServicesPage() {
   const addService = async () => {
     if (!newService.name.trim() || !newService.hourly_rate) return;
     setSaving(true);
+    setError('');
     try {
+      const token = getToken();
+      if (!token) {
+        setError('Not logged in. Please refresh and sign in again.');
+        return;
+      }
       const res = await fetch('/api/services', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           name: newService.name,
           description: newService.description,
           hourly_rate: parseFloat(newService.hourly_rate) || 0,
+          service_type: newService.service_type || 'exterior',
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setServices([...services, data.service]);
-        setNewService({ name: '', description: '', hourly_rate: '' });
-        setShowServiceModal(false);
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to add service');
+        return;
       }
+      setServices([...services, data.service]);
+      setNewService({ name: '', description: '', hourly_rate: '', service_type: 'exterior' });
+      setShowServiceModal(false);
+      setError('');
     } catch (err) {
       console.error('Failed to add:', err);
+      setError('Network error. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -100,6 +114,7 @@ export default function ServicesPage() {
   const updateService = async () => {
     if (!editingService) return;
     setSaving(true);
+    setError('');
     try {
       const res = await fetch(`/api/services/${editingService.id}`, {
         method: 'PUT',
@@ -108,15 +123,20 @@ export default function ServicesPage() {
           name: editingService.name,
           description: editingService.description,
           hourly_rate: parseFloat(editingService.hourly_rate) || 0,
+          service_type: editingService.service_type || 'exterior',
         }),
       });
-      if (res.ok) {
-        const data = await res.json();
-        setServices(services.map(s => s.id === data.service.id ? data.service : s));
-        setEditingService(null);
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || 'Failed to update service');
+        return;
       }
+      setServices(services.map(s => s.id === data.service.id ? data.service : s));
+      setEditingService(null);
+      setError('');
     } catch (err) {
       console.error('Failed to update:', err);
+      setError('Network error. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -225,23 +245,95 @@ export default function ServicesPage() {
   const handleDragStart = (e, svc) => {
     setDraggedService(svc);
     e.dataTransfer.effectAllowed = 'copy';
+    e.dataTransfer.setData('text/plain', svc.id);
   };
 
-  const handleDragOver = (e) => {
-    e.preventDefault();
-    setDragOver(true);
+  const handleDragEnd = () => {
+    setDraggedService(null);
+    setDragOver(null);
   };
 
-  const handleDragLeave = () => setDragOver(false);
-
-  const handleDrop = (e) => {
+  const handleDragOverNew = (e) => {
     e.preventDefault();
-    setDragOver(false);
+    e.dataTransfer.dropEffect = 'copy';
+    setDragOver('new');
+  };
+
+  const handleDragLeaveNew = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOver(null);
+    }
+  };
+
+  const handleDropNew = (e) => {
+    e.preventDefault();
+    setDragOver(null);
     if (draggedService && !newPackage.service_ids.includes(draggedService.id)) {
       setNewPackage(prev => ({
         ...prev,
         service_ids: [...prev.service_ids, draggedService.id],
       }));
+    }
+    setDraggedService(null);
+  };
+
+  // Drop onto existing package - auto-save
+  const handleDragOverPkg = (e, pkgId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+    setDragOver(pkgId);
+  };
+
+  const handleDragLeavePkg = (e) => {
+    if (!e.currentTarget.contains(e.relatedTarget)) {
+      setDragOver(null);
+    }
+  };
+
+  const handleDropOnPackage = async (e, pkg) => {
+    e.preventDefault();
+    setDragOver(null);
+    if (!draggedService) return;
+    if ((pkg.service_ids || []).includes(draggedService.id)) {
+      setDraggedService(null);
+      return;
+    }
+
+    const updatedIds = [...(pkg.service_ids || []), draggedService.id];
+    setDraggedService(null);
+
+    // Optimistic update
+    setPackages(prev => prev.map(p => p.id === pkg.id ? { ...p, service_ids: updatedIds } : p));
+
+    try {
+      const res = await fetch(`/api/packages/${pkg.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({
+          name: pkg.name,
+          description: pkg.description,
+          price: pkg.price,
+          service_ids: updatedIds,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPackages(prev => prev.map(p => p.id === data.package.id ? data.package : p));
+      }
+    } catch (err) {
+      console.error('Failed to add service to package:', err);
+      setPackages(prev => prev.map(p => p.id === pkg.id ? pkg : p)); // revert
+    }
+  };
+
+  // Drop on packages area when builder is closed - auto-open it
+  const handleDropOnArea = (e) => {
+    e.preventDefault();
+    setDragOver(null);
+    if (!draggedService) return;
+    if (!showPackageBuilder) {
+      setNewPackage({ name: '', description: '', price: '', service_ids: [draggedService.id] });
+      setShowPackageBuilder(true);
     }
     setDraggedService(null);
   };
@@ -322,12 +414,24 @@ export default function ServicesPage() {
                     key={svc.id}
                     draggable
                     onDragStart={(e) => handleDragStart(e, svc)}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border cursor-grab hover:border-amber-400 hover:bg-amber-50 transition-all group"
+                    onDragEnd={handleDragEnd}
+                    className={`flex items-center justify-between p-3 bg-gray-50 rounded-lg border cursor-grab hover:border-amber-400 hover:bg-amber-50 transition-all group ${
+                      draggedService?.id === svc.id ? 'opacity-50 border-amber-400' : ''
+                    }`}
                   >
                     <div className="flex items-center gap-3">
                       <span className="text-gray-300 group-hover:text-amber-400">&#9776;</span>
                       <div>
-                        <p className="font-medium">{svc.name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium">{svc.name}</p>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                            svc.service_type === 'interior'
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {svc.service_type === 'interior' ? 'INT' : 'EXT'}
+                          </span>
+                        </div>
                         {svc.description && (
                           <p className="text-xs text-gray-500">{svc.description}</p>
                         )}
@@ -359,11 +463,17 @@ export default function ServicesPage() {
         </div>
 
         {/* Right: Packages */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div
+          className="bg-white rounded-lg shadow-lg overflow-hidden"
+          onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
+          onDrop={handleDropOnArea}
+        >
           <div className="p-4 border-b flex justify-between items-center">
             <div>
               <h2 className="text-lg font-semibold">Packages</h2>
-              <p className="text-sm text-gray-500">Bundle services at a discount</p>
+              <p className="text-sm text-gray-500">
+                {draggedService ? 'Drop service here!' : 'Bundle services at a discount'}
+              </p>
             </div>
             <button
               onClick={() => {
@@ -392,11 +502,11 @@ export default function ServicesPage() {
 
                 {/* Drop Zone */}
                 <div
-                  onDragOver={handleDragOver}
-                  onDragLeave={handleDragLeave}
-                  onDrop={handleDrop}
+                  onDragOver={handleDragOverNew}
+                  onDragLeave={handleDragLeaveNew}
+                  onDrop={(e) => { e.stopPropagation(); handleDropNew(e); }}
                   className={`min-h-[100px] border-2 border-dashed rounded-lg p-3 mb-3 transition-colors ${
-                    dragOver ? 'border-amber-500 bg-amber-50' : 'border-gray-300'
+                    dragOver === 'new' ? 'border-amber-500 bg-amber-50 scale-[1.02]' : 'border-gray-300'
                   }`}
                 >
                   {newPackage.service_ids.length === 0 ? (
@@ -421,12 +531,12 @@ export default function ServicesPage() {
                 </div>
 
                 <div className="flex gap-3 mb-3">
-                  <input
-                    type="text"
+                  <textarea
                     placeholder="Description (optional)"
                     value={newPackage.description}
                     onChange={(e) => setNewPackage({ ...newPackage, description: e.target.value })}
-                    className="flex-1 border rounded px-3 py-2"
+                    rows={2}
+                    className="flex-1 border rounded px-3 py-2 resize-y min-h-[40px]"
                   />
                   <div className="relative w-32">
                     <span className="absolute left-3 top-2 text-gray-400">$</span>
@@ -467,7 +577,22 @@ export default function ServicesPage() {
             ) : (
               <div className="space-y-3">
                 {packages.map((pkg) => (
-                  <div key={pkg.id} className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
+                  <div
+                    key={pkg.id}
+                    onDragOver={(e) => handleDragOverPkg(e, pkg.id)}
+                    onDragLeave={handleDragLeavePkg}
+                    onDrop={(e) => { e.stopPropagation(); handleDropOnPackage(e, pkg); }}
+                    className={`p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border transition-all ${
+                      dragOver === pkg.id
+                        ? 'border-amber-500 ring-2 ring-amber-300 scale-[1.02]'
+                        : 'border-green-200'
+                    }`}
+                  >
+                    {dragOver === pkg.id && (
+                      <div className="text-xs text-amber-600 font-medium mb-2">
+                        Drop to add "{draggedService?.name}" to this package
+                      </div>
+                    )}
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold text-green-800">{pkg.name}</h4>
@@ -511,8 +636,13 @@ export default function ServicesPage() {
 
       {/* Add Service Modal */}
       {showServiceModal && (
-        <Modal onClose={() => setShowServiceModal(false)}>
+        <Modal onClose={() => { setShowServiceModal(false); setError(''); }}>
           <h3 className="text-lg font-semibold mb-4">Add Service</h3>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Service Name *</label>
@@ -527,13 +657,32 @@ export default function ServicesPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <input
-                type="text"
+              <textarea
                 value={newService.description}
                 onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                 placeholder="What's included?"
-                className="w-full border rounded-lg px-3 py-2"
+                rows={2}
+                className="w-full border rounded-lg px-3 py-2 resize-y min-h-[60px]"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+              <div className="flex gap-2">
+                {['exterior', 'interior'].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setNewService({ ...newService, service_type: t })}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      newService.service_type === t
+                        ? t === 'exterior' ? 'bg-blue-500 text-white border-blue-500' : 'bg-purple-500 text-white border-purple-500'
+                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t === 'exterior' ? 'Exterior' : 'Interior'}
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate *</label>
@@ -565,8 +714,13 @@ export default function ServicesPage() {
 
       {/* Edit Service Modal */}
       {editingService && (
-        <Modal onClose={() => setEditingService(null)}>
+        <Modal onClose={() => { setEditingService(null); setError(''); }}>
           <h3 className="text-lg font-semibold mb-4">Edit Service</h3>
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {error}
+            </div>
+          )}
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
@@ -579,12 +733,31 @@ export default function ServicesPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-              <input
-                type="text"
+              <textarea
                 value={editingService.description || ''}
                 onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
-                className="w-full border rounded-lg px-3 py-2"
+                rows={2}
+                className="w-full border rounded-lg px-3 py-2 resize-y min-h-[60px]"
               />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Type</label>
+              <div className="flex gap-2">
+                {['exterior', 'interior'].map(t => (
+                  <button
+                    key={t}
+                    type="button"
+                    onClick={() => setEditingService({ ...editingService, service_type: t })}
+                    className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
+                      editingService.service_type === t
+                        ? t === 'exterior' ? 'bg-blue-500 text-white border-blue-500' : 'bg-purple-500 text-white border-purple-500'
+                        : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    {t === 'exterior' ? 'Exterior' : 'Interior'}
+                  </button>
+                ))}
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate</label>
@@ -621,12 +794,12 @@ export default function ServicesPage() {
               onChange={(e) => setEditingPackage({ ...editingPackage, name: e.target.value })}
               className="w-full border rounded-lg px-3 py-2"
             />
-            <input
-              type="text"
+            <textarea
               placeholder="Description"
               value={editingPackage.description || ''}
               onChange={(e) => setEditingPackage({ ...editingPackage, description: e.target.value })}
-              className="w-full border rounded-lg px-3 py-2"
+              rows={2}
+              className="w-full border rounded-lg px-3 py-2 resize-y min-h-[60px]"
             />
             <div>
               <p className="text-sm font-medium mb-2">Services:</p>

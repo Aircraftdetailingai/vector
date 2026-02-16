@@ -377,21 +377,19 @@ export default function DashboardPage() {
     }
   };
 
-  // Get aircraft hours (uses exterior_hours as base)
-  const getAircraftHours = () => {
+  // Get aircraft hours based on service type (interior vs exterior)
+  const getHoursForService = (svc) => {
     if (!selectedAircraft) return 0;
+    if (svc?.service_type === 'interior') {
+      return selectedAircraft.interior_hours || 0;
+    }
     return selectedAircraft.exterior_hours || 0;
   };
 
   // Calculate price for a single service: aircraft hours × hourly rate
   const getServicePrice = (svc) => {
-    const hours = getAircraftHours();
+    const hours = getHoursForService(svc);
     return hours * (svc.hourly_rate || 0);
-  };
-
-  // Get hours for a service
-  const getServiceHours = () => {
-    return getAircraftHours();
   };
 
   // Calculate totals based on selected services or package
@@ -399,7 +397,7 @@ export default function DashboardPage() {
     return availableServices.filter(svc => selectedServices[svc.id]);
   };
 
-  const totalHours = getSelectedServicesList().length * getAircraftHours();
+  const totalHours = getSelectedServicesList().reduce((sum, svc) => sum + getHoursForService(svc), 0);
 
   const calculatedPrice = selectedPackage
     ? selectedPackage.price * accessDifficulty
@@ -431,7 +429,8 @@ export default function DashboardPage() {
   const lineItems = getSelectedServicesList().map(svc => ({
     service_id: svc.id,
     description: svc.name,
-    hours: getAircraftHours(),
+    service_type: svc.service_type || 'exterior',
+    hours: getHoursForService(svc),
     rate: svc.hourly_rate || 0,
     amount: selectedPackage ? 0 : getServicePrice(svc) * accessDifficulty,
   }));
@@ -677,10 +676,11 @@ export default function DashboardPage() {
                   <p className="text-2xl font-bold text-blue-900">{selectedAircraft.surface_area_sqft?.toLocaleString()} sq ft</p>
                 </div>
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-4 text-sm text-blue-700">
+              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-blue-700">
                 <div>Wingspan: {selectedAircraft.wingspan_ft} ft</div>
                 <div>Length: {selectedAircraft.length_ft} ft</div>
-                <div>Seats: {selectedAircraft.seats}</div>
+                <div>Ext Hours: {selectedAircraft.exterior_hours || 0}h</div>
+                <div>Int Hours: {selectedAircraft.interior_hours || 0}h</div>
               </div>
             </div>
           )}
@@ -733,7 +733,7 @@ export default function DashboardPage() {
               ) : (
                 <div className="space-y-2">
                   {availableServices.map((svc) => {
-                    const hours = getAircraftHours();
+                    const hours = getHoursForService(svc);
                     const price = getServicePrice(svc);
                     return (
                       <div
@@ -754,6 +754,13 @@ export default function DashboardPage() {
                         />
                         <div className="flex-1">
                           <span className="font-medium">{svc.name}</span>
+                          <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded font-medium ${
+                            svc.service_type === 'interior'
+                              ? 'bg-purple-100 text-purple-700'
+                              : 'bg-blue-100 text-blue-700'
+                          }`}>
+                            {svc.service_type === 'interior' ? 'INT' : 'EXT'}
+                          </span>
                           {svc.description && (
                             <span className="text-xs text-gray-500 block">{svc.description}</span>
                           )}

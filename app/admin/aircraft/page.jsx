@@ -24,6 +24,7 @@ export default function AdminAircraftPage() {
   const [bulkImport, setBulkImport] = useState('');
   const [showBulkModal, setShowBulkModal] = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const [seeding, setSeeding] = useState(false);
 
   const [formData, setFormData] = useState({
     manufacturer: '',
@@ -247,6 +248,35 @@ export default function AdminAircraftPage() {
             <h1 className="text-2xl font-bold">Aircraft Database</h1>
           </div>
           <div className="flex gap-2">
+            <button
+              onClick={async () => {
+                if (!confirm('This will seed the database with 220+ aircraft (civilian + military). Existing aircraft with the same manufacturer/model will be updated. Continue?')) return;
+                setSeeding(true);
+                try {
+                  const token = localStorage.getItem('vector_token');
+                  const res = await fetch('/api/admin/aircraft/seed', {
+                    method: 'POST',
+                    headers: { Authorization: `Bearer ${token}` },
+                  });
+                  const data = await res.json();
+                  if (res.ok) {
+                    alert(`Successfully seeded ${data.count} aircraft!`);
+                    fetchAircraft();
+                    fetchManufacturers();
+                  } else {
+                    alert(`Error: ${data.error}`);
+                  }
+                } catch (err) {
+                  alert(`Failed: ${err.message}`);
+                } finally {
+                  setSeeding(false);
+                }
+              }}
+              disabled={seeding}
+              className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            >
+              {seeding ? 'Seeding...' : 'Seed All Aircraft (220+)'}
+            </button>
             <button
               onClick={() => setShowBulkModal(true)}
               className="px-4 py-2 border rounded hover:bg-gray-50"

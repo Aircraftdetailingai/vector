@@ -119,10 +119,10 @@ export default function Page() {
           <div className="flex-grow border-t border-gray-300"></div>
         </div>
         <a
-          href="https://aircraftdetailing101.com/products/vector"
+          href="/landing"
           className="block w-full text-center bg-[#1e3a5f] text-white py-2 rounded-md font-medium hover:opacity-90"
         >
-          Get Vector - $29.95/mo
+          See Plans & Pricing
         </a>
         <p className="mt-4 text-xs text-gray-400 text-center">By Aircraft Detailing 101</p>
       </div>
