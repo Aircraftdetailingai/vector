@@ -52,26 +52,47 @@ export async function POST(request, { params }) {
     return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
   }
 
-  // Update quote with client info and status
+  // Update quote with client info and status - retry stripping unknown columns
   const now = new Date().toISOString();
-  const { data: updated, error: updErr } = await supabase
-    .from('quotes')
-    .update({
-      client_name: clientName,
-      client_phone: clientPhone,
-      client_email: clientEmail,
-      status: 'sent',
-      sent_at: now,
-      // Reset view tracking for resends
-      viewed_at: null,
-      view_count: 0,
-      last_viewed_at: null,
-    })
-    .eq('id', id)
-    .select()
-    .single();
+  let updateFields = {
+    customer_name: clientName,
+    customer_email: clientEmail,
+    customer_phone: clientPhone,
+    client_name: clientName,
+    client_phone: clientPhone,
+    client_email: clientEmail,
+    status: 'sent',
+    sent_at: now,
+    viewed_at: null,
+    view_count: 0,
+    last_viewed_at: null,
+  };
+
+  let updated = null;
+  let updErr = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const result = await supabase
+      .from('quotes')
+      .update(updateFields)
+      .eq('id', id)
+      .select()
+      .single();
+    updated = result.data;
+    updErr = result.error;
+
+    if (!updErr) break;
+
+    const colMatch = updErr.message?.match(/column "([^"]+)" of relation "quotes" does not exist/);
+    if (colMatch) {
+      console.log(`Quote send: stripping unknown column "${colMatch[1]}", retrying...`);
+      delete updateFields[colMatch[1]];
+      continue;
+    }
+    break;
+  }
 
   if (updErr) {
+    console.error('Quote send update error:', updErr);
     return new Response(JSON.stringify({ error: updErr.message }), { status: 500 });
   }
 
@@ -82,21 +103,31 @@ export async function POST(request, { params }) {
     .eq('id', user.id)
     .single();
 
-  const quoteLink = `https://app.aircraftdetailing.ai/q/${quote.share_link}`;
+  // Use request origin for the quote link (works in both dev and prod)
+  const origin = request.headers.get('origin') || request.headers.get('referer')?.replace(/\/[^/]*$/, '') || 'https://app.vectorav.ai';
+  const quoteLink = `${origin}/q/${quote.share_link}`;
   let emailSent = false;
+  let emailError = null;
   let smsSent = false;
 
   // Send email to customer
   if (clientEmail) {
-    try {
-      const result = await sendQuoteSentEmail({
-        quote: { ...updated, share_link: quote.share_link },
-        detailer,
-      });
-      emailSent = result.success;
-      console.log('Quote sent email result:', result);
-    } catch (e) {
-      console.error('Failed to send quote email:', e);
+    if (!process.env.RESEND_API_KEY || process.env.RESEND_API_KEY.includes('placeholder')) {
+      console.error('RESEND_API_KEY not configured - cannot send email');
+      emailError = 'Email service not configured (RESEND_API_KEY missing)';
+    } else {
+      try {
+        const result = await sendQuoteSentEmail({
+          quote: { ...updated, share_link: quote.share_link, client_email: clientEmail },
+          detailer,
+        });
+        emailSent = result.success;
+        if (!result.success) emailError = result.error;
+        console.log('Quote sent email result:', JSON.stringify(result));
+      } catch (e) {
+        console.error('Failed to send quote email:', e);
+        emailError = e.message;
+      }
     }
   }
 
@@ -147,6 +178,7 @@ export async function POST(request, { params }) {
     success: true,
     quoteLink,
     emailSent,
+    emailError: emailError || undefined,
     smsSent,
   }), { status: 200 });
 }
