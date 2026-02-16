@@ -42,36 +42,21 @@ export async function PUT(request, { params }) {
 
     const { id } = params;
     const body = await request.json();
-    const { name, description, hourly_rate, service_type } = body;
+    const { name, description, hourly_rate } = body;
 
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
     if (hourly_rate !== undefined) updates.hourly_rate = parseFloat(hourly_rate) || 0;
-    if (service_type !== undefined) updates.service_type = service_type;
     updates.updated_at = new Date().toISOString();
 
-    let { data: service, error } = await supabase
+    const { data: service, error } = await supabase
       .from('services')
       .update(updates)
       .eq('id', id)
       .eq('detailer_id', user.id)
       .select()
       .single();
-
-    // If service_type column doesn't exist yet, retry without it
-    if (error && error.message && error.message.includes('service_type')) {
-      delete updates.service_type;
-      const retry = await supabase
-        .from('services')
-        .update(updates)
-        .eq('id', id)
-        .eq('detailer_id', user.id)
-        .select()
-        .single();
-      service = retry.data;
-      error = retry.error;
-    }
 
     if (error) {
       console.error('Failed to update service:', error);

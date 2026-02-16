@@ -47,35 +47,17 @@ export async function POST(request) {
       return Response.json({ error: 'No services provided' }, { status: 400 });
     }
 
-    // Prepare services for insertion (with service_type)
-    let toInsert = services.map(svc => ({
+    const toInsert = services.map(svc => ({
       detailer_id: user.id,
       name: svc.name,
       description: svc.description || '',
       hourly_rate: parseFloat(svc.hourly_rate) || 0,
-      service_type: svc.service_type || 'exterior',
     }));
 
-    let { data: insertedServices, error } = await supabase
+    const { data: insertedServices, error } = await supabase
       .from('services')
       .insert(toInsert)
       .select();
-
-    // If service_type column doesn't exist yet, retry without it
-    if (error && error.message && error.message.includes('service_type')) {
-      toInsert = services.map(svc => ({
-        detailer_id: user.id,
-        name: svc.name,
-        description: svc.description || '',
-        hourly_rate: parseFloat(svc.hourly_rate) || 0,
-      }));
-      const retry = await supabase
-        .from('services')
-        .insert(toInsert)
-        .select();
-      insertedServices = retry.data;
-      error = retry.error;
-    }
 
     if (error) {
       console.error('Failed to import services:', error);

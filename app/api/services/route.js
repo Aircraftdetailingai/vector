@@ -73,7 +73,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, hourly_rate, service_type } = body;
+    const { name, description, hourly_rate } = body;
 
     if (!name) {
       return Response.json({ error: 'Name is required' }, { status: 400 });
@@ -85,25 +85,12 @@ export async function POST(request) {
       description: description || '',
       hourly_rate: parseFloat(hourly_rate) || 0,
     };
-    if (service_type) row.service_type = service_type;
 
-    let { data: service, error } = await supabase
+    const { data: service, error } = await supabase
       .from('services')
       .insert(row)
       .select()
       .single();
-
-    // If service_type column doesn't exist yet, retry without it
-    if (error && error.message && error.message.includes('service_type')) {
-      delete row.service_type;
-      const retry = await supabase
-        .from('services')
-        .insert(row)
-        .select()
-        .single();
-      service = retry.data;
-      error = retry.error;
-    }
 
     if (error) {
       console.error('Failed to create service:', error);
