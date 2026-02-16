@@ -155,13 +155,14 @@ export async function POST(request) {
       share_link: shareLink,
       valid_until: validUntil,
       status: 'draft',
+      services: services || {},
     };
 
     // Try adding optional columns - these may or may not exist in the DB
     const optionalColumns = {
       aircraft_id: aircraft_id || null,
       surface_area_sqft: surface_area_sqft ? parseFloat(surface_area_sqft) : null,
-      services: services || null,
+      services: services || {},
       selected_services: selected_services || null,
       selected_package_id: selected_package_id || null,
       selected_package_name: selected_package_name || null,
