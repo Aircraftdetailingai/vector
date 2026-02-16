@@ -39,8 +39,9 @@ export default function CalendarPage() {
       });
       if (res.ok) {
         const data = await res.json();
+        const allQuotes = data.quotes || data || [];
         // Filter to paid/scheduled/in_progress jobs
-        const scheduledJobs = (data || []).filter(q =>
+        const scheduledJobs = allQuotes.filter(q =>
           ['paid', 'scheduled', 'in_progress', 'completed'].includes(q.status)
         );
         setJobs(scheduledJobs);

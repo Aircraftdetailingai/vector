@@ -64,7 +64,7 @@ export default function QuotesPage() {
         });
         if (res.ok) {
           const data = await res.json();
-          setQuotes(data || []);
+          setQuotes(data.quotes || data || []);
         }
       } catch (err) {
         console.error('Failed to fetch quotes:', err);
