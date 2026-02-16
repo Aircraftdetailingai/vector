@@ -166,32 +166,6 @@ function RecentQuotes({ quotes, onViewQuote }) {
   );
 }
 
-// Quick Actions Component
-function QuickActions() {
-  return (
-    <div className="bg-white rounded-lg p-4 mb-4 shadow">
-      <h3 className="font-semibold mb-3">Quick Actions</h3>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-        <a href="/products" className="flex flex-col items-center p-3 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors">
-          <span className="text-2xl mb-1">&#128230;</span>
-          <span className="text-sm font-medium text-blue-900">Inventory</span>
-        </a>
-        <a href="/equipment" className="flex flex-col items-center p-3 bg-green-50 rounded-lg hover:bg-green-100 transition-colors">
-          <span className="text-2xl mb-1">&#128295;</span>
-          <span className="text-sm font-medium text-green-900">Equipment</span>
-        </a>
-        <a href="/growth" className="flex flex-col items-center p-3 bg-amber-50 rounded-lg hover:bg-amber-100 transition-colors">
-          <span className="text-2xl mb-1">&#128200;</span>
-          <span className="text-sm font-medium text-amber-900">Growth</span>
-        </a>
-        <a href="/settings/services" className="flex flex-col items-center p-3 bg-purple-50 rounded-lg hover:bg-purple-100 transition-colors">
-          <span className="text-2xl mb-1">&#9881;</span>
-          <span className="text-sm font-medium text-purple-900">Services</span>
-        </a>
-      </div>
-    </div>
-  );
-}
 
 function DashboardContent() {
   const router = useRouter();
@@ -567,7 +541,7 @@ function DashboardContent() {
           <a href="/calendar" className="underline">Calendar</a>
           <a href="/products" className="underline">Inventory</a>
           <a href="/equipment" className="underline">Equipment</a>
-          <a href="/growth" className="underline text-amber-400">Growth</a>
+          <a href="/growth" className="underline">Growth</a>
           <a href="/settings" className="underline">Settings</a>
           <button onClick={handleLogout} className="underline">Logout</button>
         </div>
@@ -581,42 +555,6 @@ function DashboardContent() {
           error={stripeError}
           onClearError={() => setStripeError(null)}
         />
-      )}
-
-      {/* Push Notifications Banner */}
-      <PushNotifications />
-
-      {/* Quick Stats Bar */}
-      <QuickStats stats={quickStats} />
-
-      {/* Recent Quotes */}
-      <RecentQuotes quotes={recentQuotes} />
-
-      {/* Quick Actions */}
-      <QuickActions />
-
-      {/* Daily Tip - Small and dismissible */}
-      {dailyTip && !tipDismissed && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span>&#128161;</span>
-            <span className="text-sm text-amber-800">
-              <strong>{dailyTip.title}:</strong> {dailyTip.content}
-            </span>
-            {dailyTip.actionLink && (
-              <a href={dailyTip.actionLink} className="text-sm text-amber-600 font-medium hover:underline ml-2">
-                {dailyTip.action || 'Learn more'} &#8594;
-              </a>
-            )}
-          </div>
-          <button
-            onClick={() => setTipDismissed(true)}
-            className="text-amber-400 hover:text-amber-600 text-lg leading-none ml-2"
-            title="Dismiss"
-          >
-            &#10005;
-          </button>
-        </div>
       )}
 
       {/* Services Configuration Prompt */}
@@ -1133,6 +1071,59 @@ function DashboardContent() {
           user={user}
         />
       )}
+
+      {/* Dashboard info sections - below quote builder */}
+      <div className="mt-6 space-y-4">
+        <QuickStats stats={quickStats} />
+        <RecentQuotes quotes={recentQuotes} />
+
+        {/* Daily Tip */}
+        {dailyTip && !tipDismissed && (
+          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span>&#128161;</span>
+              <span className="text-sm text-amber-800">
+                <strong>{dailyTip.title}:</strong> {dailyTip.content}
+              </span>
+              {dailyTip.actionLink && (
+                <a href={dailyTip.actionLink} className="text-sm text-amber-600 font-medium hover:underline ml-2">
+                  {dailyTip.action || 'Learn more'} &#8594;
+                </a>
+              )}
+            </div>
+            <button
+              onClick={() => setTipDismissed(true)}
+              className="text-amber-400 hover:text-amber-600 text-lg leading-none ml-2"
+              title="Dismiss"
+            >
+              &#10005;
+            </button>
+          </div>
+        )}
+
+        {/* Push Notifications Banner */}
+        <PushNotifications />
+
+        {/* Quick Links */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+          <a href="/products" className="flex flex-col items-center p-3 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white">
+            <span className="text-2xl mb-1">&#128230;</span>
+            <span className="text-sm font-medium">Inventory</span>
+          </a>
+          <a href="/equipment" className="flex flex-col items-center p-3 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white">
+            <span className="text-2xl mb-1">&#128295;</span>
+            <span className="text-sm font-medium">Equipment</span>
+          </a>
+          <a href="/growth" className="flex flex-col items-center p-3 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white">
+            <span className="text-2xl mb-1">&#128200;</span>
+            <span className="text-sm font-medium">Growth</span>
+          </a>
+          <a href="/settings/services" className="flex flex-col items-center p-3 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white">
+            <span className="text-2xl mb-1">&#9881;</span>
+            <span className="text-sm font-medium">Services</span>
+          </a>
+        </div>
+      </div>
     </div>
   );
 }
