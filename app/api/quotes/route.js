@@ -114,6 +114,9 @@ export async function POST(request) {
       discount_percent,
       addon_fees,
       addon_total,
+      customer_id,
+      customer_phone,
+      customer_company,
     } = body;
 
     // Validate: need at minimum an aircraft type or model, and some price
@@ -179,6 +182,9 @@ export async function POST(request) {
       discount_percent: parseFloat(discount_percent) || 0,
       addon_fees: addon_fees || [],
       addon_total: parseFloat(addon_total) || 0,
+      customer_id: customer_id || null,
+      customer_phone: customer_phone || null,
+      customer_company: customer_company || null,
       metadata: quoteMetadata,
     };
 

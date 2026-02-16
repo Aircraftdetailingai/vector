@@ -35,7 +35,7 @@ export async function POST(request, { params }) {
   }
 
   const { id } = params;
-  const { clientName, clientPhone, clientEmail } = await request.json();
+  const { clientName, clientPhone, clientEmail, clientCompany, customerId } = await request.json();
 
   // Fetch the quote
   const { data: quote, error: qErr } = await supabase
@@ -52,12 +52,59 @@ export async function POST(request, { params }) {
     return new Response(JSON.stringify({ error: 'Forbidden' }), { status: 403 });
   }
 
+  // Upsert customer record (graceful - skip if table doesn't exist)
+  let resolvedCustomerId = customerId || null;
+  if (clientEmail) {
+    try {
+      const { data: existingCustomer } = await supabase
+        .from('customers')
+        .select('id')
+        .eq('detailer_id', user.id)
+        .eq('email', clientEmail.toLowerCase().trim())
+        .single();
+
+      if (existingCustomer) {
+        resolvedCustomerId = existingCustomer.id;
+        // Update existing customer with latest info
+        const custUpdates = { updated_at: new Date().toISOString() };
+        if (clientName) custUpdates.name = clientName;
+        if (clientPhone) custUpdates.phone = clientPhone;
+        if (clientCompany !== undefined) custUpdates.company_name = clientCompany || null;
+        await supabase
+          .from('customers')
+          .update(custUpdates)
+          .eq('id', existingCustomer.id);
+      } else {
+        // Create new customer
+        const custRow = {
+          detailer_id: user.id,
+          name: clientName || '',
+          email: clientEmail.toLowerCase().trim(),
+          phone: clientPhone || null,
+          company_name: clientCompany || null,
+          notes: '',
+        };
+        const { data: newCust } = await supabase
+          .from('customers')
+          .insert(custRow)
+          .select('id')
+          .single();
+        if (newCust) resolvedCustomerId = newCust.id;
+      }
+    } catch (e) {
+      // Table may not exist yet - that's fine, continue without customer record
+      console.log('Customer upsert skipped:', e.message || e);
+    }
+  }
+
   // Update quote with client info and status - retry stripping unknown columns
   const now = new Date().toISOString();
   let updateFields = {
     customer_name: clientName,
     customer_email: clientEmail,
     customer_phone: clientPhone,
+    customer_company: clientCompany || null,
+    customer_id: resolvedCustomerId,
     client_name: clientName,
     client_phone: clientPhone,
     client_email: clientEmail,

@@ -1,10 +1,20 @@
 "use client";
 import { useState, useEffect } from "react";
+import CustomerSelector from "./CustomerSelector";
 
 export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
+  const [clientCompany, setClientCompany] = useState("");
+  const [customerMode, setCustomerMode] = useState("existing");
+  const [selectedCustomer, setSelectedCustomer] = useState(null);
+  const [newCustomerFields, setNewCustomerFields] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    companyName: "",
+  });
   const [method, setMethod] = useState("link"); // 'link', 'sms', 'email', 'both'
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -22,6 +32,39 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
 
   const totalPrice = parseFloat(quote?.totalPrice) || 0;
   const aircraftName = quote?.aircraft?.name || "";
+
+  // Derive client fields from customer selection or new customer form
+  const effectiveName = selectedCustomer?.name || newCustomerFields.name || clientName;
+  const effectiveEmail = selectedCustomer?.email || newCustomerFields.email || clientEmail;
+  const effectivePhone = selectedCustomer?.phone || newCustomerFields.phone || clientPhone;
+  const effectiveCompany = selectedCustomer?.company_name || newCustomerFields.companyName || clientCompany;
+  const effectiveCustomerId = selectedCustomer?.id || null;
+
+  const handleCustomerSelect = (customer) => {
+    setSelectedCustomer(customer);
+    setClientName(customer.name || "");
+    setClientEmail(customer.email || "");
+    setClientPhone(customer.phone || "");
+    setClientCompany(customer.company_name || "");
+  };
+
+  const handleCustomerClear = () => {
+    setSelectedCustomer(null);
+    setClientName("");
+    setClientEmail("");
+    setClientPhone("");
+    setClientCompany("");
+    setNewCustomerFields({ name: "", email: "", phone: "", companyName: "" });
+  };
+
+  const handleNewCustomerFieldChange = (updates) => {
+    setNewCustomerFields((prev) => ({ ...prev, ...updates }));
+    // Sync to clientName/Email/Phone for backward compat
+    if (updates.name !== undefined) setClientName(updates.name);
+    if (updates.email !== undefined) setClientEmail(updates.email);
+    if (updates.phone !== undefined) setClientPhone(updates.phone);
+    if (updates.companyName !== undefined) setClientCompany(updates.companyName);
+  };
 
   const createQuoteIfNeeded = async () => {
     // If quote already has id and share_link, return
@@ -59,6 +102,9 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       discount_percent: quote?.discountPercent || 0,
       addon_fees: quote?.addonFees || [],
       addon_total: quote?.addonsTotal || 0,
+      customer_id: effectiveCustomerId,
+      customer_phone: effectivePhone || null,
+      customer_company: effectiveCompany || null,
     };
 
     console.log('Creating quote with payload:', JSON.stringify({
@@ -91,26 +137,26 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
     setLoading(true);
     try {
       // Validate fields
-      if (!clientName) {
-        throw new Error("Client name is required");
+      if (!effectiveName) {
+        throw new Error("Customer name is required");
       }
-      if (requiresSms && isBusiness && !clientPhone) {
-        throw new Error("Client phone is required for SMS");
+      if (!effectiveEmail) {
+        throw new Error("Customer email is required");
       }
-      if (requiresEmail && !clientEmail) {
-        throw new Error("Client email is required for email");
+      if (requiresSms && isBusiness && !effectivePhone) {
+        throw new Error("Customer phone is required for SMS");
       }
       // Create quote if needed
       const { id, share_link } = await createQuoteIfNeeded();
       // Build send payload
       const sendPayload = {
-        clientName,
+        clientName: effectiveName,
+        clientEmail: effectiveEmail,
+        clientCompany: effectiveCompany || null,
+        customerId: effectiveCustomerId,
       };
-      if (requiresSms && isBusiness) {
-        sendPayload.clientPhone = clientPhone;
-      }
-      if (requiresEmail) {
-        sendPayload.clientEmail = clientEmail;
+      if (effectivePhone) {
+        sendPayload.clientPhone = effectivePhone;
       }
       const res = await fetch(`/api/quotes/${id}/send`, {
         method: "POST",
@@ -172,25 +218,31 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
               {aircraftName && `Aircraft: ${aircraftName}`} • Total: ${totalPrice.toFixed(2)}
             </p>
             {error && <p className="text-red-600 mb-2">{error}</p>}
-            <label className="block mb-2 text-sm font-medium">Client Name</label>
-            <input
-              type="text"
-              value={clientName}
-              onChange={(e) => setClientName(e.target.value)}
-              className="w-full border rounded px-3 py-2 mb-3"
+
+            {/* Customer Selection */}
+            <label className="block mb-2 text-sm font-medium">Customer</label>
+            <CustomerSelector
+              customerMode={customerMode}
+              onModeChange={setCustomerMode}
+              selectedCustomer={selectedCustomer}
+              onSelect={handleCustomerSelect}
+              onClear={handleCustomerClear}
+              newCustomerFields={newCustomerFields}
+              onFieldChange={handleNewCustomerFieldChange}
             />
+
             {/* Method selection */}
             <div className="mb-3">
-              {renderMethodOption("link", "🔗 Copy link only", false)}
+              {renderMethodOption("link", "Copy link only", false)}
               {renderMethodOption(
                 "sms",
-                "📱 Send via SMS",
+                "Send via SMS",
                 !isBusiness
               )}
-              {renderMethodOption("email", "📧 Send via Email", false)}
+              {renderMethodOption("email", "Send via Email", false)}
               {renderMethodOption(
                 "both",
-                "📱📧 Send SMS + Email",
+                "Send SMS + Email",
                 !isBusiness
               )}
             </div>
@@ -206,32 +258,16 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
                 </a>
               </div>
             )}
-            {requiresSms && isBusiness && (
-              <div className="mb-3">
-                <label className="block mb-2 text-sm font-medium">Client Phone</label>
-                <input
-                  type="tel"
-                  value={clientPhone}
-                  onChange={(e) => setClientPhone(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
-                />
-                {/* Preview message */}
-                {clientName && (
-                  <div className="bg-green-100 text-green-800 p-3 rounded mt-2 text-sm whitespace-pre-line">
-                    {`Hi ${clientName}, here's your quote for the ${aircraftName} detail:\n${quoteLink || '[link will appear after sending]'}\nTotal: $${totalPrice.toFixed(2)}\n- ${user?.name || ''}, ${user?.company || ''}`}
-                  </div>
-                )}
+            {requiresSms && isBusiness && !effectivePhone && (
+              <div className="bg-yellow-50 border border-yellow-200 p-3 rounded mb-3 text-sm text-yellow-800">
+                Add a phone number above to send via SMS.
               </div>
             )}
-            {requiresEmail && (
+            {requiresSms && isBusiness && effectiveName && effectivePhone && (
               <div className="mb-3">
-                <label className="block mb-2 text-sm font-medium">Client Email</label>
-                <input
-                  type="email"
-                  value={clientEmail}
-                  onChange={(e) => setClientEmail(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
-                />
+                <div className="bg-green-100 text-green-800 p-3 rounded text-sm whitespace-pre-line">
+                  {`Hi ${effectiveName}, here's your quote for the ${aircraftName} detail:\n${quoteLink || '[link will appear after sending]'}\nTotal: $${totalPrice.toFixed(2)}\n- ${user?.name || ''}, ${user?.company || ''}`}
+                </div>
               </div>
             )}
 
@@ -261,15 +297,14 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
                     <option value="quarterly">Quarterly</option>
                   </select>
 
-                  {/* Pro Tip for 4-week billing */}
                   {recurringInterval === "4_weeks" && (
                     <div className="bg-amber-50 border border-amber-200 rounded p-2 text-xs text-amber-800">
-                      <span className="font-semibold">💡 Smart choice!</span> Billing every 4 weeks = 13 cycles/year vs 12 months = 8% more annual revenue.
+                      <span className="font-semibold">Smart choice!</span> Billing every 4 weeks = 13 cycles/year vs 12 months = 8% more annual revenue.
                     </div>
                   )}
                   {recurringInterval === "monthly" && (
                     <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-700">
-                      <span className="font-semibold">💡 Tip:</span> Consider 4-week billing for 8% more annual revenue. Most customers won't notice the difference!
+                      <span className="font-semibold">Tip:</span> Consider 4-week billing for 8% more annual revenue. Most customers won't notice the difference!
                     </div>
                   )}
                 </div>
