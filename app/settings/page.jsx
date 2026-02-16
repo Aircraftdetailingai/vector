@@ -2,6 +2,14 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
+const DEFAULT_ADDON_FEES = [
+  { name: 'Hazmat Fee', description: 'Hazardous material handling surcharge', fee_type: 'flat', amount: 250 },
+  { name: 'After Hours', description: 'Work performed outside business hours', fee_type: 'flat', amount: 150 },
+  { name: 'Weekend', description: 'Weekend service surcharge', fee_type: 'flat', amount: 100 },
+  { name: 'Rush / Emergency', description: 'Expedited service premium', fee_type: 'percent', amount: 25 },
+  { name: 'Travel Fee', description: 'Per-job travel surcharge', fee_type: 'flat', amount: 50 },
+];
+
 function SettingsContent() {
   const router = useRouter();
   const params = useSearchParams();
@@ -34,6 +42,14 @@ function SettingsContent() {
   const [minimumFee, setMinimumFee] = useState(0);
   const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
   const [newLocation, setNewLocation] = useState('');
+
+  // Add-on Fees state
+  const [addonFees, setAddonFees] = useState([]);
+  const [addonLoading, setAddonLoading] = useState(false);
+  const [showAddonModal, setShowAddonModal] = useState(false);
+  const [editingAddon, setEditingAddon] = useState(null);
+  const [newAddon, setNewAddon] = useState({ name: '', description: '', fee_type: 'flat', amount: '' });
+  const [addonError, setAddonError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -108,6 +124,7 @@ function SettingsContent() {
     checkStripeStatus();
     fetchCurrency();
     fetchMinimumFee();
+    fetchAddonFees();
   }, []);
 
   const fetchMinimumFee = async () => {
@@ -300,6 +317,100 @@ function SettingsContent() {
     const newUser = { ...user, notification_settings: settings, price_reminder_months: priceReminder };
     localStorage.setItem('vector_user', JSON.stringify(newUser));
     setUser(newUser);
+  };
+
+  // ---- Add-on Fees CRUD ----
+  const getToken = () => localStorage.getItem('vector_token');
+
+  const fetchAddonFees = async () => {
+    try {
+      const res = await fetch('/api/addon-fees', {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAddonFees(data.fees || []);
+      }
+    } catch (err) {
+      console.log('Failed to fetch addon fees:', err);
+    }
+  };
+
+  const addAddonFee = async () => {
+    if (!newAddon.name.trim()) return;
+    setAddonLoading(true);
+    setAddonError('');
+    try {
+      const res = await fetch('/api/addon-fees', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({
+          name: newAddon.name,
+          description: newAddon.description,
+          fee_type: newAddon.fee_type,
+          amount: parseFloat(newAddon.amount) || 0,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAddonError(data.error || 'Failed to add fee'); return; }
+      setAddonFees([...addonFees, data.fee]);
+      setNewAddon({ name: '', description: '', fee_type: 'flat', amount: '' });
+      setShowAddonModal(false);
+      setAddonError('');
+    } catch (err) {
+      setAddonError('Network error. Please try again.');
+    } finally { setAddonLoading(false); }
+  };
+
+  const updateAddonFee = async () => {
+    if (!editingAddon) return;
+    setAddonLoading(true);
+    setAddonError('');
+    try {
+      const res = await fetch(`/api/addon-fees/${editingAddon.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({
+          name: editingAddon.name,
+          description: editingAddon.description,
+          fee_type: editingAddon.fee_type,
+          amount: parseFloat(editingAddon.amount) || 0,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) { setAddonError(data.error || 'Failed to update fee'); return; }
+      setAddonFees(addonFees.map(f => f.id === data.fee.id ? data.fee : f));
+      setEditingAddon(null);
+      setAddonError('');
+    } catch (err) {
+      setAddonError('Network error. Please try again.');
+    } finally { setAddonLoading(false); }
+  };
+
+  const deleteAddonFee = async (fee) => {
+    if (!confirm(`Delete "${fee.name}"?`)) return;
+    try {
+      await fetch(`/api/addon-fees/${fee.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${getToken()}` } });
+      setAddonFees(addonFees.filter(f => f.id !== fee.id));
+    } catch (err) { console.error('Failed to delete:', err); }
+  };
+
+  const importDefaultAddons = async () => {
+    setAddonLoading(true);
+    try {
+      for (const fee of DEFAULT_ADDON_FEES) {
+        const res = await fetch('/api/addon-fees', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+          body: JSON.stringify(fee),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setAddonFees(prev => [...prev, data.fee]);
+        }
+      }
+    } catch (err) { console.error('Failed to import:', err); }
+    finally { setAddonLoading(false); }
   };
 
   const planPrice = user?.plan === 'starter' ? '29.95' : user?.plan === 'pro' ? '49.95' : '79.95';
@@ -568,6 +679,59 @@ function SettingsContent() {
           </div>
         </div>
 
+        {/* Add-on Fees */}
+        <div className="bg-white p-4 rounded shadow">
+          <div className="flex justify-between items-start mb-3">
+            <div>
+              <h3 className="font-semibold">Add-on Fees</h3>
+              <p className="text-sm text-gray-500">Flat or percentage surcharges (hazmat, after-hours, rush, etc.) added on top of service pricing.</p>
+            </div>
+            <div className="flex gap-2 flex-shrink-0">
+              {addonFees.length === 0 && (
+                <button onClick={importDefaultAddons} disabled={addonLoading} className="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-50 disabled:opacity-50">
+                  Import Defaults
+                </button>
+              )}
+              <button onClick={() => { setNewAddon({ name: '', description: '', fee_type: 'flat', amount: '' }); setShowAddonModal(true); }} className="px-3 py-1.5 text-sm bg-amber-500 text-white rounded hover:bg-amber-600">
+                + Add Fee
+              </button>
+            </div>
+          </div>
+          {addonFees.length === 0 ? (
+            <div className="text-center py-8 border-2 border-dashed rounded-lg">
+              <p className="text-gray-500 mb-2">No add-on fees yet</p>
+              <button onClick={importDefaultAddons} disabled={addonLoading} className="text-amber-600 hover:underline">
+                Import suggested defaults
+              </button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+              {addonFees.map((fee) => (
+                <div key={fee.id} className="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h4 className="font-semibold text-amber-800">{fee.name}</h4>
+                      {fee.description && <p className="text-xs text-gray-600 mt-0.5">{fee.description}</p>}
+                    </div>
+                    <div className="flex gap-1">
+                      <button onClick={() => { setAddonError(''); setEditingAddon({ ...fee }); }} className="p-1 text-gray-400 hover:text-blue-600 text-sm">&#9998;</button>
+                      <button onClick={() => deleteAddonFee(fee)} className="p-1 text-gray-400 hover:text-red-600 text-sm">&#128465;</button>
+                    </div>
+                  </div>
+                  <div className="mt-2">
+                    <span className="text-xl font-bold text-amber-600">
+                      {fee.fee_type === 'percent' ? `${fee.amount}%` : `$${fee.amount}`}
+                    </span>
+                    <span className="text-xs text-gray-500 ml-2">
+                      {fee.fee_type === 'percent' ? 'of subtotal' : 'flat fee'}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {/* Quote Display Preference */}
         <div className="bg-white p-4 rounded shadow">
           <h3 className="font-semibold mb-2">Quote Display for Customers</h3>
@@ -707,6 +871,105 @@ function SettingsContent() {
             </select>
           </div>
         </div>
+
+        {/* Add Addon Fee Modal */}
+        {showAddonModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Add Fee</h3>
+              {addonError && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{addonError}</div>}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fee Name *</label>
+                  <input type="text" value={newAddon.name} onChange={(e) => setNewAddon({ ...newAddon, name: e.target.value })}
+                    placeholder="e.g., After Hours" className="w-full border rounded px-3 py-2" autoFocus />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <input type="text" value={newAddon.description} onChange={(e) => setNewAddon({ ...newAddon, description: e.target.value })}
+                    placeholder="Optional description" className="w-full border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fee Type</label>
+                  <div className="flex gap-2">
+                    {['flat', 'percent'].map(t => (
+                      <button key={t} type="button" onClick={() => setNewAddon({ ...newAddon, fee_type: t })}
+                        className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
+                          newAddon.fee_type === t ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                        }`}>
+                        {t === 'flat' ? 'Flat $' : 'Percent %'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                  <div className="relative">
+                    {newAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-gray-400">$</span>}
+                    <input type="number" value={newAddon.amount} onChange={(e) => setNewAddon({ ...newAddon, amount: e.target.value })}
+                      placeholder={newAddon.fee_type === 'flat' ? '150' : '25'}
+                      className={`w-full border rounded py-2 ${newAddon.fee_type === 'flat' ? 'pl-7 pr-3' : 'pl-3 pr-8'}`} />
+                    {newAddon.fee_type === 'percent' && <span className="absolute right-3 top-2.5 text-gray-400">%</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button onClick={() => { setShowAddonModal(false); setAddonError(''); }} className="px-4 py-2 border rounded">Cancel</button>
+                <button onClick={addAddonFee} disabled={addonLoading || !newAddon.name}
+                  className="px-4 py-2 bg-amber-500 text-white rounded disabled:opacity-50">{addonLoading ? 'Saving...' : 'Add Fee'}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Addon Fee Modal */}
+        {editingAddon && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+              <h3 className="text-lg font-semibold mb-4">Edit Fee</h3>
+              {addonError && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{addonError}</div>}
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fee Name</label>
+                  <input type="text" value={editingAddon.name} onChange={(e) => setEditingAddon({ ...editingAddon, name: e.target.value })}
+                    className="w-full border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <input type="text" value={editingAddon.description || ''} onChange={(e) => setEditingAddon({ ...editingAddon, description: e.target.value })}
+                    className="w-full border rounded px-3 py-2" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Fee Type</label>
+                  <div className="flex gap-2">
+                    {['flat', 'percent'].map(t => (
+                      <button key={t} type="button" onClick={() => setEditingAddon({ ...editingAddon, fee_type: t })}
+                        className={`flex-1 py-2 rounded text-sm font-medium border transition-colors ${
+                          editingAddon.fee_type === t ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                        }`}>
+                        {t === 'flat' ? 'Flat $' : 'Percent %'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <div className="relative">
+                    {editingAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-gray-400">$</span>}
+                    <input type="number" value={editingAddon.amount || ''} onChange={(e) => setEditingAddon({ ...editingAddon, amount: e.target.value })}
+                      className={`w-full border rounded py-2 ${editingAddon.fee_type === 'flat' ? 'pl-7 pr-3' : 'pl-3 pr-8'}`} />
+                    {editingAddon.fee_type === 'percent' && <span className="absolute right-3 top-2.5 text-gray-400">%</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-6">
+                <button onClick={() => { setEditingAddon(null); setAddonError(''); }} className="px-4 py-2 border rounded">Cancel</button>
+                <button onClick={updateAddonFee} disabled={addonLoading}
+                  className="px-4 py-2 bg-amber-500 text-white rounded disabled:opacity-50">{addonLoading ? 'Saving...' : 'Save'}</button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
   );
 }

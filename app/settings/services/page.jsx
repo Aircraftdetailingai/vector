@@ -20,7 +20,7 @@ const DEFAULT_ADDON_FEES = [
   { name: 'After Hours', description: 'Work performed outside business hours', fee_type: 'flat', amount: 150 },
   { name: 'Weekend', description: 'Weekend service surcharge', fee_type: 'flat', amount: 100 },
   { name: 'Rush / Emergency', description: 'Expedited service premium', fee_type: 'percent', amount: 25 },
-  { name: 'Travel Fee', description: 'Per-job travel surcharge', fee_type: 'flat', amount: 0 },
+  { name: 'Travel Fee', description: 'Per-job travel surcharge', fee_type: 'flat', amount: 50 },
 ];
 
 export default function ServicesPage() {
