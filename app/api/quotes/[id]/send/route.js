@@ -187,18 +187,24 @@ export async function POST(request, { params }) {
       emailError = 'Email service not configured (RESEND_API_KEY missing)';
     } else {
       try {
-        console.log(`Attempting email: to=${clientEmail}, from=${process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev'}, key=${process.env.RESEND_API_KEY?.substring(0, 8)}...`);
+        const fromAddr = process.env.RESEND_FROM_EMAIL || 'Vector <onboarding@resend.dev>';
+        console.log(`Email: to=${clientEmail}, from=${fromAddr}`);
         const emailQuote = { ...updated, share_link: quote.share_link, client_email: clientEmail };
-        console.log(`Email quote data: model=${emailQuote.aircraft_model}, total=${emailQuote.total_price}, line_items=${JSON.stringify(emailQuote.line_items)?.substring(0, 200)}`);
         const result = await sendQuoteSentEmail({
           quote: emailQuote,
           detailer,
         });
         emailSent = result.success;
-        if (!result.success) emailError = result.error;
+        if (!result.success) {
+          emailError = result.error;
+          // Surface Resend domain restriction clearly
+          if (result.error?.includes('only send testing emails')) {
+            emailError = 'Resend test domain can only send to account owner. Verify your domain at resend.com/domains to send to customers.';
+          }
+        }
         console.log('Email result:', JSON.stringify(result));
       } catch (e) {
-        console.error('Email exception:', e.message, e.stack);
+        console.error('Email exception:', e.message);
         emailError = e.message;
       }
     }
