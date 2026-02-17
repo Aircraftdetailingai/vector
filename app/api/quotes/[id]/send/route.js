@@ -35,7 +35,7 @@ export async function POST(request, { params }) {
   }
 
   const { id } = params;
-  const { clientName, clientPhone, clientEmail, clientCompany, customerId } = await request.json();
+  const { clientName, clientPhone, clientEmail, clientCompany, customerId, airport } = await request.json();
 
   // Fetch the quote
   const { data: quote, error: qErr } = await supabase
@@ -122,14 +122,11 @@ export async function POST(request, { params }) {
   // Update quote with client info and status - retry stripping unknown columns
   const now = new Date().toISOString();
   let updateFields = {
-    customer_name: clientName,
-    customer_email: clientEmail,
-    customer_phone: clientPhone,
-    customer_company: clientCompany || null,
-    customer_id: resolvedCustomerId,
     client_name: clientName,
-    client_phone: clientPhone,
+    client_phone: clientPhone || null,
     client_email: clientEmail,
+    customer_id: resolvedCustomerId,
+    airport: airport || null,
     status: 'sent',
     sent_at: now,
     viewed_at: null,

@@ -117,6 +117,7 @@ export async function POST(request) {
       customer_id,
       customer_phone,
       customer_company,
+      airport,
     } = body;
 
     // Validate: need at minimum an aircraft type or model, and some price
@@ -185,6 +186,7 @@ export async function POST(request) {
       customer_id: customer_id || null,
       customer_phone: customer_phone || null,
       customer_company: customer_company || null,
+      airport: airport || null,
       metadata: quoteMetadata,
     };
 

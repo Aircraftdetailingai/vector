@@ -105,6 +105,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       customer_id: effectiveCustomerId,
       customer_phone: effectivePhone || null,
       customer_company: effectiveCompany || null,
+      airport: quote?.airport || null,
     };
 
     console.log('Creating quote with payload:', JSON.stringify({
@@ -154,6 +155,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
         clientEmail: effectiveEmail,
         clientCompany: effectiveCompany || null,
         customerId: effectiveCustomerId,
+        airport: quote?.airport || null,
       };
       if (effectivePhone) {
         sendPayload.clientPhone = effectivePhone;
@@ -223,7 +225,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
           <div>
             <h2 className="text-xl font-semibold mb-2">Send Quote to Client</h2>
             <p className="mb-4 text-gray-600">
-              {aircraftName && `Aircraft: ${aircraftName}`} • Total: ${totalPrice.toFixed(2)}
+              {aircraftName && `Aircraft: ${aircraftName}`}{quote?.airport ? ` • ${quote.airport}` : ''} • Total: ${totalPrice.toFixed(2)}
             </p>
             {error && <p className="text-red-600 mb-2">{error}</p>}
 

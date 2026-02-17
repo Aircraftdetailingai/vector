@@ -208,6 +208,7 @@ function DashboardContent() {
   const [recentQuotes, setRecentQuotes] = useState([]);
   const [availableAddons, setAvailableAddons] = useState([]);
   const [selectedAddons, setSelectedAddons] = useState({});
+  const [airport, setAirport] = useState('');
 
   // Fetch manufacturers on mount
   useEffect(() => {
@@ -541,6 +542,7 @@ function DashboardContent() {
         discountAmount,
         addonFees: addonFeeItems,
         addonsTotal,
+        airport,
       }
     : null;
 
@@ -720,6 +722,24 @@ function DashboardContent() {
                 <div>Ceramic: {selectedAircraft.ceramic_hours || 0}h</div>
                 <div>Leather: {selectedAircraft.leather_hours || 0}h</div>
               </div>
+            </div>
+          )}
+
+          {/* Airport */}
+          {selectedAircraft && (
+            <div className="bg-white rounded-lg p-4 mb-4 shadow">
+              <h3 className="font-semibold mb-2">Airport <span className="text-red-500">*</span></h3>
+              <input
+                type="text"
+                value={airport}
+                onChange={(e) => setAirport(e.target.value.toUpperCase())}
+                placeholder="ICAO code (e.g., KJFK, KLAX, KSDL)"
+                maxLength={6}
+                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 uppercase font-mono tracking-wider"
+              />
+              {airport && airport.length < 3 && (
+                <p className="text-xs text-red-500 mt-1">Enter a valid airport code</p>
+              )}
             </div>
           )}
 
@@ -947,7 +967,8 @@ function DashboardContent() {
             {selectedAircraft ? (
               <>
                 <p className="mb-1 font-medium">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
-                <p className="text-sm text-gray-400 mb-3">{categoryLabels[selectedAircraft.category]}</p>
+                <p className="text-sm text-gray-400 mb-1">{categoryLabels[selectedAircraft.category]}</p>
+                {airport && <p className="text-sm text-amber-400 mb-3">{airport}</p>}
 
                 {/* Service line items */}
                 <ul className="mb-3 space-y-1">
@@ -1037,10 +1058,10 @@ function DashboardContent() {
                 <button
                   type="button"
                   onClick={openSendModal}
-                  disabled={totalPrice === 0}
+                  disabled={totalPrice === 0 || !airport || airport.length < 3}
                   className="w-full mt-4 px-4 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  Send to Client
+                  {!airport || airport.length < 3 ? 'Enter Airport to Send' : 'Send to Client'}
                 </button>
 
                 <button
@@ -1053,6 +1074,7 @@ function DashboardContent() {
                     setAccessDifficulty(1.0);
                     setQuoteNotes('');
                     setJobLocation('');
+                    setAirport('');
                     setModelSearch('');
                   }}
                   className="w-full mt-2 px-4 py-2 rounded-lg border border-gray-500 text-gray-300 hover:bg-gray-800 text-sm"
@@ -1092,6 +1114,7 @@ function DashboardContent() {
             addonFees: addonFeeItems,
             addonsTotal: addonsTotal,
             notes: quoteNotes,
+            airport: airport,
           }}
           user={user}
         />

@@ -58,14 +58,14 @@ export async function GET(request) {
       customers = await getCustomersFromQuotes(supabase, user.id, q, limit);
     }
 
-    // Enrich with quote history
+    // Enrich with quote history (use client_email - the actual column name)
     const enriched = await Promise.all(customers.map(async (c) => {
       try {
         const { data: quotes } = await supabase
           .from('quotes')
           .select('id, status, created_at')
           .eq('detailer_id', user.id)
-          .eq('customer_email', c.email)
+          .eq('client_email', c.email)
           .order('created_at', { ascending: false });
 
         const allQuotes = quotes || [];
@@ -89,31 +89,31 @@ export async function GET(request) {
   }
 }
 
-// Fallback: build customer list from existing quotes
+// Fallback: build customer list from existing quotes (uses actual column names)
 async function getCustomersFromQuotes(supabase, detailerId, q, limit) {
   try {
     let query = supabase
       .from('quotes')
-      .select('customer_name, customer_email')
+      .select('client_name, client_email, client_phone')
       .eq('detailer_id', detailerId)
-      .not('customer_email', 'is', null);
+      .not('client_email', 'is', null);
 
     if (q) {
-      query = query.or(`customer_name.ilike.%${q}%,customer_email.ilike.%${q}%`);
+      query = query.or(`client_name.ilike.%${q}%,client_email.ilike.%${q}%`);
     }
 
     const { data } = await query;
     if (!data) return [];
 
-    // Deduplicate by email
+    // Deduplicate by email, keep most recent data
     const seen = new Map();
     for (const row of data) {
-      if (row.customer_email && !seen.has(row.customer_email.toLowerCase())) {
-        seen.set(row.customer_email.toLowerCase(), {
+      if (row.client_email && !seen.has(row.client_email.toLowerCase())) {
+        seen.set(row.client_email.toLowerCase(), {
           id: null,
-          name: row.customer_name || '',
-          email: row.customer_email,
-          phone: null,
+          name: row.client_name || '',
+          email: row.client_email,
+          phone: row.client_phone || null,
           company_name: null,
           notes: null,
         });
