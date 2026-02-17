@@ -56,14 +56,17 @@ export async function POST(request, { params }) {
   let resolvedCustomerId = customerId || null;
   if (clientEmail) {
     try {
-      const { data: existingCustomer } = await supabase
+      const { data: existingCustomer, error: lookupErr } = await supabase
         .from('customers')
         .select('id')
         .eq('detailer_id', user.id)
         .eq('email', clientEmail.toLowerCase().trim())
-        .single();
+        .maybeSingle();
 
-      if (existingCustomer) {
+      // If table doesn't exist, skip customer upsert entirely
+      if (lookupErr && (lookupErr.code === '42P01' || lookupErr.code === 'PGRST205')) {
+        console.log('Customers table not found, skipping upsert');
+      } else if (existingCustomer) {
         resolvedCustomerId = existingCustomer.id;
         // Update existing customer with latest info
         const custUpdates = { updated_at: new Date().toISOString() };
@@ -74,22 +77,41 @@ export async function POST(request, { params }) {
           .from('customers')
           .update(custUpdates)
           .eq('id', existingCustomer.id);
+        console.log('Updated existing customer:', existingCustomer.id);
       } else {
-        // Create new customer
-        const custRow = {
+        // Create new customer with column-stripping retry
+        let custRow = {
           detailer_id: user.id,
           name: clientName || '',
           email: clientEmail.toLowerCase().trim(),
           phone: clientPhone || null,
           company_name: clientCompany || null,
-          notes: '',
         };
-        const { data: newCust } = await supabase
-          .from('customers')
-          .insert(custRow)
-          .select('id')
-          .single();
-        if (newCust) resolvedCustomerId = newCust.id;
+        let newCust = null;
+        for (let attempt = 0; attempt < 5; attempt++) {
+          const { data, error: insertErr } = await supabase
+            .from('customers')
+            .insert(custRow)
+            .select('id')
+            .single();
+          if (!insertErr) {
+            newCust = data;
+            break;
+          }
+          const colMatch = insertErr.message?.match(/column "([^"]+)" of relation "customers" does not exist/)
+            || insertErr.message?.match(/Could not find the '([^']+)' column of 'customers'/);
+          if (colMatch) {
+            console.log(`Customer insert: stripping unknown column "${colMatch[1]}", retrying...`);
+            delete custRow[colMatch[1]];
+            continue;
+          }
+          console.error('Customer insert error:', insertErr.message || insertErr);
+          break;
+        }
+        if (newCust) {
+          resolvedCustomerId = newCust.id;
+          console.log('Created new customer:', newCust.id);
+        }
       }
     } catch (e) {
       // Table may not exist yet - that's fine, continue without customer record
