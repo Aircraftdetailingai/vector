@@ -170,10 +170,18 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
         const data = await res.json().catch(() => null);
         throw new Error(data?.error || "Failed to send quote");
       }
+      const sendResult = await res.json();
+      // Warn if email failed but quote was sent
+      if (sendResult.emailError) {
+        console.error('Email send failed:', sendResult.emailError);
+      }
       // success
       const link = `${window.location.origin}/q/${share_link}`;
       setQuoteLink(link);
       setSuccess(true);
+      if (sendResult.emailSent === false && sendResult.emailError) {
+        setError(`Quote sent but email failed: ${sendResult.emailError}`);
+      }
     } catch (err) {
       setError(err.message);
     } finally {
