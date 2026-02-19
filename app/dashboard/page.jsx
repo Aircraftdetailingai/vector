@@ -414,14 +414,20 @@ function DashboardContent() {
       return parseFloat(selectedAircraft[svc.hours_field]) || 0;
     }
 
-    // Fallback: guess from service name
+    // Map service name to aircraft hour column
     const name = (svc.name || '').toLowerCase();
     if (name.includes('leather')) return parseFloat(selectedAircraft.leather_hours) || 0;
-    if (name.includes('carpet') || name.includes('upholster')) return parseFloat(selectedAircraft.carpet_hours) || 0;
+    if (name.includes('carpet') || name.includes('upholster') || name.includes('extract')) return parseFloat(selectedAircraft.carpet_hours) || 0;
+    if (name.includes('decon')) return parseFloat(selectedAircraft.decon_hours) || parseFloat(selectedAircraft.ext_wash_hours) || 0;
+    // "Spray Ceramic" must match before generic "Ceramic"
+    if (name.includes('spray ceramic') || name.includes('spray coat') || name.includes('topcoat')) return parseFloat(selectedAircraft.spray_ceramic_hours) || parseFloat(selectedAircraft.ceramic_hours) || 0;
     if (name.includes('ceramic')) return parseFloat(selectedAircraft.ceramic_hours) || 0;
     if (name.includes('wax')) return parseFloat(selectedAircraft.wax_hours) || 0;
     if (name.includes('brightwork') || name.includes('bright') || name.includes('chrome')) return parseFloat(selectedAircraft.brightwork_hours) || 0;
+    // "Polish Brightwork" already handled above; this catches "One-Step Polish" etc.
     if (name.includes('polish')) return parseFloat(selectedAircraft.polish_hours) || 0;
+    if (name.includes('quick turn') && name.includes('interior')) return parseFloat(selectedAircraft.int_detail_hours) || 0;
+    if (name.includes('quick turn') && name.includes('exterior')) return parseFloat(selectedAircraft.ext_wash_hours) || 0;
     if (name.includes('interior') || name.includes('vacuum') || name.includes('wipe') || name.includes('cabin')) return parseFloat(selectedAircraft.int_detail_hours) || 0;
 
     // Default: exterior wash hours
