@@ -25,7 +25,7 @@ export default function CalendarPage() {
     const token = localStorage.getItem('vector_token');
     const stored = localStorage.getItem('vector_user');
     if (!token || !stored) {
-      router.push('/');
+      router.push('/login');
       return;
     }
     setUser(JSON.parse(stored));

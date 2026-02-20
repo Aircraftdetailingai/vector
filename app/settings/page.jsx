@@ -43,6 +43,9 @@ function SettingsContent() {
   const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
   const [newLocation, setNewLocation] = useState('');
 
+  // Platform fee pass-through
+  const [passFeeToCustomer, setPassFeeToCustomer] = useState(false);
+
   // Add-on Fees state
   const [addonFees, setAddonFees] = useState([]);
   const [addonLoading, setAddonLoading] = useState(false);
@@ -55,7 +58,7 @@ function SettingsContent() {
     const token = localStorage.getItem('vector_token');
     const stored = localStorage.getItem('vector_user');
     if (!token || !stored) {
-      router.push('/');
+      router.push('/login');
       return;
     }
     const u = JSON.parse(stored);
@@ -120,11 +123,47 @@ function SettingsContent() {
     }
   };
 
+  const fetchPassFee = async () => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/user/pass-fee', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPassFeeToCustomer(data.pass_fee_to_customer || false);
+      }
+    } catch (err) {
+      console.log('Failed to fetch pass fee setting:', err);
+    }
+  };
+
+  const savePassFee = async (val) => {
+    setPassFeeToCustomer(val);
+    try {
+      const token = localStorage.getItem('vector_token');
+      await fetch('/api/user/pass-fee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ pass_fee_to_customer: val }),
+      });
+      const stored = localStorage.getItem('vector_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        u.pass_fee_to_customer = val;
+        localStorage.setItem('vector_user', JSON.stringify(u));
+      }
+    } catch (err) {
+      console.error('Failed to save pass fee setting:', err);
+    }
+  };
+
   useEffect(() => {
     checkStripeStatus();
     fetchCurrency();
     fetchMinimumFee();
     fetchAddonFees();
+    fetchPassFee();
   }, []);
 
   const fetchMinimumFee = async () => {
@@ -509,6 +548,51 @@ function SettingsContent() {
               </button>
             </div>
           )}
+        </div>
+
+        {/* Platform Fee */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Platform Fee</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Vector charges a {user?.plan === 'business' ? '1%' : user?.plan === 'pro' ? '2%' : user?.plan === 'starter' ? '3%' : '10%'} platform fee on each job.
+            Choose who pays it.
+          </p>
+          <div className="space-y-3">
+            <label
+              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
+                !passFeeToCustomer ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="passFee"
+                checked={!passFeeToCustomer}
+                onChange={() => savePassFee(false)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <p className="font-medium">I absorb the fee</p>
+                <p className="text-sm text-gray-500">Fee is deducted from your payout. Customer sees only the quote price.</p>
+              </div>
+            </label>
+            <label
+              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
+                passFeeToCustomer ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="passFee"
+                checked={passFeeToCustomer}
+                onChange={() => savePassFee(true)}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <p className="font-medium">Pass fee to customer</p>
+                <p className="text-sm text-gray-500">A "Service Fee" line item is added to the customer's quote. You receive the full quote amount.</p>
+              </div>
+            </label>
+          </div>
         </div>
 
         {/* Currency */}

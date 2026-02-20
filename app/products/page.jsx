@@ -45,7 +45,7 @@ export default function ProductsPage() {
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     if (!token) {
-      router.push('/');
+      router.push('/login');
       return;
     }
     fetchProducts();

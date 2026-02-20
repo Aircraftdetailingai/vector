@@ -122,7 +122,7 @@ export default function LandingPage() {
         <div className="flex items-center space-x-6">
           <a href="#features" className="text-gray-300 hover:text-white hidden sm:inline">Features</a>
           <a href="#pricing" className="text-gray-300 hover:text-white hidden sm:inline">Pricing</a>
-          <a href="/" className="px-4 py-2 text-white border border-white/30 rounded-lg hover:bg-white/10">
+          <a href="/login" className="px-4 py-2 text-white border border-white/30 rounded-lg hover:bg-white/10">
             Sign In
           </a>
         </div>
@@ -313,7 +313,7 @@ export default function LandingPage() {
             <span className="text-gray-500 font-normal text-sm ml-2">by Aircraft Detailing 101</span>
           </div>
           <div className="flex items-center gap-6 text-sm text-gray-400">
-            <a href="/" className="hover:text-white">Sign In</a>
+            <a href="/login" className="hover:text-white">Sign In</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
             <a href="#features" className="hover:text-white">Features</a>
           </div>

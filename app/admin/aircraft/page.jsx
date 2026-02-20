@@ -42,7 +42,7 @@ export default function AdminAircraftPage() {
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     if (!token) {
-      router.push('/');
+      router.push('/login');
       return;
     }
     fetchAircraft();

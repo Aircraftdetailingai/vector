@@ -42,7 +42,7 @@ export async function POST(request) {
     // Fetch detailer for Stripe Connect account
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('stripe_account_id, company, email')
+      .select('stripe_account_id, company, email, plan, pass_fee_to_customer')
       .eq('id', quote.detailer_id)
       .single();
 
@@ -55,25 +55,21 @@ export async function POST(request) {
       ? 'acct_1SulfbE9Qo7bJV5q'  // Use working custom account
       : detailer.stripe_account_id;
 
-    // Fetch detailer's plan to calculate fee
-    const { data: detailerPlan } = await supabase
-      .from('detailers')
-      .select('plan')
-      .eq('id', quote.detailer_id)
-      .single();
-
     // Calculate application fee based on plan
-    // Free tier: 10% of transaction
-    // Pro tier: flat $10
-    // Business tier: flat $10
-    const totalAmount = Math.round((quote.total_price || 0) * 100); // Convert to cents
+    const baseAmount = Math.round((quote.total_price || 0) * 100); // Convert to cents
+    const plan = detailer?.plan || 'free';
+    const passFee = detailer?.pass_fee_to_customer || false;
+
     let applicationFee;
-    const plan = detailerPlan?.plan || 'free';
     if (plan === 'free' || plan === 'starter') {
-      applicationFee = Math.round(totalAmount * 0.10); // 10% platform fee
+      applicationFee = Math.round(baseAmount * 0.10); // 10% platform fee
     } else {
       applicationFee = 1000; // $10 flat fee in cents
     }
+
+    // When pass-through is enabled, add service fee to the total charged to customer
+    // The application fee stays the same — it just comes from the customer instead of the detailer
+    const totalAmount = passFee ? baseAmount + applicationFee : baseAmount;
 
     // Hardcode URL to avoid env var issues
     const appUrl = 'https://app.aircraftdetailing.ai';

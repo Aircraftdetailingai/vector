@@ -21,7 +21,7 @@ export default function JobPhotosPage() {
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     if (!token) {
-      router.push('/');
+      router.push('/login');
       return;
     }
     fetchData(token);

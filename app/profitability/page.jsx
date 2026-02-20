@@ -12,7 +12,7 @@ export default function ProfitabilityPage() {
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     if (!token) {
-      router.push('/');
+      router.push('/login');
       return;
     }
     fetchStats(token);

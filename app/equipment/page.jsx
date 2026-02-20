@@ -41,7 +41,7 @@ export default function EquipmentPage() {
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     if (!token) {
-      router.push('/');
+      router.push('/login');
       return;
     }
     fetchEquipment();

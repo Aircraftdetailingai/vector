@@ -1,15 +1,63 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
-export default function Page() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+const FEATURES = [
+  { icon: '\u2708\uFE0F', title: '308 Aircraft Database', desc: 'Pre-loaded service hours for every aircraft from Cessna 172 to Boeing 747. No more guessing.' },
+  { icon: '\uD83D\uDCB0', title: 'Instant Quoting', desc: 'Select aircraft, pick services, send. Your hourly rate times aircraft hours equals an accurate quote in 60 seconds.' },
+  { icon: '\uD83D\uDCE7', title: 'Email & SMS Delivery', desc: 'Send professional quotes directly to clients via email or text. Track when they view it.' },
+  { icon: '\uD83D\uDCB3', title: 'Get Paid Online', desc: 'Stripe payments built right into every quote. Clients accept and pay with one click.' },
+  { icon: '\uD83D\uDCC5', title: 'Calendar & Scheduling', desc: 'Track all your jobs in one place. Never double-book or miss an appointment.' },
+  { icon: '\uD83D\uDCCA', title: 'Track Your Growth', desc: 'ROI dashboard, revenue analytics, points, and rewards. Watch your business grow.' },
+];
 
-  // Redirect to dashboard if already logged in
+const STEPS = [
+  { num: '1', title: 'Add Your Services & Rates', desc: 'Set up your service menu and hourly rates. Exterior wash, ceramic coating, interior detail — whatever you offer.' },
+  { num: '2', title: 'Select Aircraft, Build Quote', desc: 'Pick the aircraft model, choose services, and Vector calculates the price instantly from pre-loaded hours.' },
+  { num: '3', title: 'Send to Client, Get Paid', desc: 'Email or text the quote. Your client views a professional branded page and pays online with one click.' },
+];
+
+const TIERS = [
+  {
+    name: 'Free',
+    price: '$0',
+    period: '/mo',
+    desc: 'Try Vector risk-free',
+    features: ['5 quotes/month', '308 aircraft database', 'Email quotes', 'Stripe payments', '10% platform fee'],
+    cta: 'Start Free',
+    highlight: false,
+  },
+  {
+    name: 'Pro',
+    price: '$79',
+    period: '/mo',
+    desc: 'For full-time detailers',
+    features: ['Unlimited quotes', '308 aircraft database', 'Email & SMS quotes', 'SMS alerts to you', 'Remove Vector branding', 'Calendar & scheduling', 'Priority support', '2% platform fee'],
+    cta: 'Go Pro',
+    highlight: true,
+  },
+  {
+    name: 'Business',
+    price: '$149',
+    period: '/mo',
+    desc: 'For teams & high-volume shops',
+    features: ['Everything in Pro', 'Multi-user access', 'Vendor portal', 'API access', 'ROI analytics', 'SMS to clients', 'Dedicated support', '1% platform fee'],
+    cta: 'Get Business',
+    highlight: false,
+  },
+];
+
+const FAQS = [
+  { q: 'How does pricing work?', a: 'Vector uses your hourly rate multiplied by pre-loaded aircraft service hours to calculate prices. A Gulfstream G450 ceramic coating might take 7.2 hours — at your rate of $190/hr, the quote is $1,368. You set the rates, Vector does the math.' },
+  { q: 'Can I customize my services?', a: 'Absolutely. Add any service you offer — exterior wash, interior detail, ceramic coating, brightwork, decon, or create your own. Bundle them into packages with automatic discounts.' },
+  { q: 'What payment methods do you accept?', a: 'Clients pay via Stripe — all major credit cards, Apple Pay, and Google Pay. Funds go directly to your connected Stripe account.' },
+  { q: 'Is there a long-term contract?', a: 'No contracts. Start free, upgrade anytime, cancel anytime. The free plan is free forever with up to 5 quotes per month.' },
+  { q: 'How accurate are the aircraft hours?', a: 'Our database covers 308 aircraft with service hours derived from real-world detailing data. You can also adjust hours with your efficiency factor if your crew is faster or slower than average.' },
+];
+
+export default function LandingPage() {
+  const router = useRouter();
+
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     const user = localStorage.getItem('vector_user');
@@ -18,114 +66,317 @@ export default function Page() {
     }
   }, [router]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    console.log('=== LOGIN ATTEMPT ===');
-    console.log('Email:', email);
-    console.log('Password length:', password.length);
-    setLoading(true);
-    setError('');
-    try {
-      console.log('Sending request to /api/auth/login...');
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      console.log('Response status:', res.status);
-      const data = await res.json();
-      console.log('Response data:', data);
-      if (!res.ok) {
-        console.log('Login failed - res.ok is false');
-        throw new Error(data.error || 'Login failed');
-      }
-      if (data.token) {
-        console.log('Token received, saving to localStorage...');
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('vector_token', data.token);
-          localStorage.setItem('vector_user', JSON.stringify(data.user));
-          console.log('Saved to localStorage');
-          console.log('Stored token:', localStorage.getItem('vector_token')?.substring(0, 20) + '...');
-          console.log('Stored user:', localStorage.getItem('vector_user'));
-        }
-        if (data.must_change_password) {
-          console.log('Redirecting to /onboarding (must_change_password: true)');
-          router.push('/onboarding');
-        } else {
-          console.log('Redirecting to /dashboard (must_change_password: false)');
-          router.push('/dashboard');
-        }
-      } else {
-        console.log('No token in response!');
-      }
-    } catch (err) {
-      console.log('Login error:', err.message);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-      console.log('=== LOGIN COMPLETE ===');
-    }
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
-        <div className="flex flex-col items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#1e3a5f] flex items-center">
-            <span className="mr-2">✈️</span> Vector
-          </h1>
-          <p className="text-gray-500 mt-1 text-center">
-            Professional Aircraft Detailing Quotes
+    <div className="min-h-screen bg-[#0a0f1e]">
+      {/* Navigation */}
+      <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0f1e]/90 backdrop-blur-md border-b border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center space-x-2 text-white text-xl font-bold">
+            <span className="text-2xl">{'\u2708\uFE0F'}</span>
+            <span>Vector</span>
+          </div>
+          <div className="flex items-center space-x-4 sm:space-x-6">
+            <a href="#features" className="text-gray-400 hover:text-white text-sm hidden sm:inline transition-colors">Features</a>
+            <a href="#pricing" className="text-gray-400 hover:text-white text-sm hidden sm:inline transition-colors">Pricing</a>
+            <a href="#faq" className="text-gray-400 hover:text-white text-sm hidden sm:inline transition-colors">FAQ</a>
+            <a href="/login" className="text-gray-300 hover:text-white text-sm transition-colors">Sign In</a>
+            <a href="/login" className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity">
+              Start Free
+            </a>
+          </div>
+        </div>
+      </nav>
+
+      {/* Hero */}
+      <section className="pt-32 pb-20 sm:pt-40 sm:pb-32">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="max-w-4xl mx-auto text-center">
+            <div className="inline-block px-4 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm font-medium mb-8">
+              Built for Aircraft Detailers
+            </div>
+            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-white mb-6 leading-[1.1] tracking-tight">
+              Quoting Software Built for{' '}
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-amber-600">
+                Aircraft Detailers
+              </span>
+            </h1>
+            <p className="text-lg sm:text-xl text-gray-400 max-w-2xl mx-auto mb-10 leading-relaxed">
+              Create professional quotes in 60 seconds. Get paid faster. Grow your business.
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a
+                href="/login"
+                className="px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-xl text-lg hover:opacity-90 shadow-lg shadow-amber-500/25 transition-opacity"
+              >
+                Start Free Trial
+              </a>
+              <a
+                href="#how-it-works"
+                className="px-8 py-4 border border-white/15 text-white font-semibold rounded-xl text-lg hover:bg-white/5 transition-colors"
+              >
+                See How It Works
+              </a>
+            </div>
+            <p className="text-gray-500 mt-6 text-sm">No credit card required. Free plan available forever.</p>
+          </div>
+
+          {/* Dashboard mockup */}
+          <div className="mt-16 max-w-5xl mx-auto">
+            <div className="rounded-xl border border-white/10 bg-gradient-to-b from-white/5 to-transparent p-1">
+              <div className="rounded-lg bg-[#0f172a] p-6 sm:p-8">
+                <div className="flex items-center gap-2 mb-6">
+                  <div className="w-3 h-3 rounded-full bg-red-500/60"></div>
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/60"></div>
+                  <div className="w-3 h-3 rounded-full bg-green-500/60"></div>
+                  <span className="text-gray-500 text-xs ml-2">Vector Dashboard</span>
+                </div>
+                <div className="grid grid-cols-3 gap-4 mb-6">
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <p className="text-gray-400 text-xs mb-1">Quotes This Month</p>
+                    <p className="text-white text-2xl font-bold">24</p>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <p className="text-gray-400 text-xs mb-1">Revenue Booked</p>
+                    <p className="text-white text-2xl font-bold">$18,450</p>
+                  </div>
+                  <div className="bg-white/5 rounded-lg p-4">
+                    <p className="text-gray-400 text-xs mb-1">Conversion Rate</p>
+                    <p className="text-white text-2xl font-bold">73%</p>
+                  </div>
+                </div>
+                <div className="bg-white/5 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-white font-medium text-sm">Recent Quote: Gulfstream G450</span>
+                    <span className="text-amber-400 text-sm font-medium">$4,890</span>
+                  </div>
+                  <div className="flex gap-2 flex-wrap">
+                    <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs">Exterior Wash</span>
+                    <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs">Ceramic Coating</span>
+                    <span className="px-2 py-1 bg-amber-500/20 text-amber-400 rounded text-xs">Interior Detail</span>
+                    <span className="px-2 py-1 bg-green-500/20 text-green-400 rounded text-xs">Sent</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Problem / Solution */}
+      <section className="py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            <div className="text-center p-8 rounded-xl bg-white/[0.03] border border-white/5">
+              <div className="text-4xl mb-4">{'\u23F1\uFE0F'}</div>
+              <h3 className="text-xl font-bold text-white mb-3">Stop Wasting Hours on Quotes</h3>
+              <p className="text-gray-400">No more spreadsheets, calculators, or back-of-napkin math. Vector automates the entire process.</p>
+            </div>
+            <div className="text-center p-8 rounded-xl bg-white/[0.03] border border-white/5">
+              <div className="text-4xl mb-4">{'\u2708\uFE0F'}</div>
+              <h3 className="text-xl font-bold text-white mb-3">308 Aircraft, Pre-Loaded</h3>
+              <p className="text-gray-400">Service hours for every aircraft from a Robinson R22 to a Boeing 747. We did the research so you don't have to.</p>
+            </div>
+            <div className="text-center p-8 rounded-xl bg-white/[0.03] border border-white/5">
+              <div className="text-4xl mb-4">{'\uD83D\uDCA1'}</div>
+              <h3 className="text-xl font-bold text-white mb-3">Your Rate &times; Aircraft Hours</h3>
+              <p className="text-gray-400">Set your hourly rate. Select the aircraft. Vector calculates the price instantly. It's that simple.</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works */}
+      <section id="how-it-works" className="py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">How It Works</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">From setup to getting paid — three simple steps.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {STEPS.map((step) => (
+              <div key={step.num} className="relative">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-amber-600 flex items-center justify-center text-white text-xl font-bold mb-5 shadow-lg shadow-amber-500/20">
+                  {step.num}
+                </div>
+                <h3 className="text-xl font-semibold text-white mb-3">{step.title}</h3>
+                <p className="text-gray-400 leading-relaxed">{step.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+              Everything You Need to Quote, Book & Grow
+            </h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">
+              Built specifically for aircraft detailers. No generic tools, no bloated features.
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {FEATURES.map((f) => (
+              <div key={f.title} className="p-6 rounded-xl bg-white/[0.03] border border-white/5 hover:border-amber-500/30 transition-colors">
+                <div className="text-3xl mb-4">{f.icon}</div>
+                <h3 className="text-lg font-semibold text-white mb-2">{f.title}</h3>
+                <p className="text-gray-400 text-sm leading-relaxed">{f.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing */}
+      <section id="pricing" className="py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Simple, Transparent Pricing</h2>
+            <p className="text-gray-400 max-w-2xl mx-auto">Start free and upgrade as you grow. No hidden fees, no long-term contracts.</p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {TIERS.map((tier) => (
+              <div
+                key={tier.name}
+                className={`rounded-2xl p-8 flex flex-col ${
+                  tier.highlight
+                    ? 'bg-gradient-to-b from-amber-500/10 to-amber-600/5 border-2 border-amber-500 relative'
+                    : 'bg-white/[0.03] border border-white/10'
+                }`}
+              >
+                {tier.highlight && (
+                  <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-xs font-bold px-4 py-1 rounded-full shadow-lg">
+                    MOST POPULAR
+                  </div>
+                )}
+                <h3 className="text-xl font-bold text-white">{tier.name}</h3>
+                <p className="text-gray-400 text-sm mt-1 mb-6">{tier.desc}</p>
+                <div className="mb-8">
+                  <span className="text-5xl font-bold text-white">{tier.price}</span>
+                  <span className="text-gray-400 text-sm">{tier.period}</span>
+                </div>
+                <ul className="space-y-3 mb-8 flex-1">
+                  {tier.features.map((f, i) => (
+                    <li key={i} className="flex items-start gap-3 text-sm">
+                      <span className="text-amber-400 mt-0.5 flex-shrink-0">{'\u2713'}</span>
+                      <span className="text-gray-300">{f}</span>
+                    </li>
+                  ))}
+                </ul>
+                <a
+                  href="/login"
+                  className={`w-full py-3.5 rounded-xl font-semibold text-center block transition-opacity ${
+                    tier.highlight
+                      ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:opacity-90 shadow-lg shadow-amber-500/25'
+                      : 'border border-white/20 text-white hover:bg-white/5'
+                  }`}
+                >
+                  {tier.cta}
+                </a>
+              </div>
+            ))}
+          </div>
+          <p className="text-center text-gray-500 mt-8 text-sm">
+            All plans include Stripe payment processing. Platform fee covers payment processing, hosting, and support.
           </p>
         </div>
-        {error && <div className="text-red-600 mb-4">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-            <input
-              type="email"
-              className="w-full border border-gray-300 rounded-md p-2"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
+      </section>
+
+      {/* Testimonials */}
+      <section className="py-20 border-t border-white/5">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">What Detailers Are Saying</h2>
           </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full border border-gray-300 rounded-md p-2"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {[
+              { quote: 'Vector saved me 10 hours a week on quoting. I used to spend 30 minutes per quote with spreadsheets — now it takes 60 seconds.', name: 'Aircraft Detailer', location: 'Scottsdale, AZ' },
+              { quote: 'The aircraft database is a game changer. Having pre-loaded hours for every model means I never underbid a job again.', name: 'Detailing Business Owner', location: 'Van Nuys, CA' },
+              { quote: 'My clients love getting professional quotes they can accept and pay online. It makes my business look way more polished.', name: 'Aviation Detailer', location: 'Teterboro, NJ' },
+            ].map((t, i) => (
+              <div key={i} className="p-6 rounded-xl bg-white/[0.03] border border-white/5">
+                <div className="flex gap-1 text-amber-400 mb-4">
+                  {[...Array(5)].map((_, j) => <span key={j}>{'\u2605'}</span>)}
+                </div>
+                <p className="text-gray-300 text-sm leading-relaxed mb-6">&ldquo;{t.quote}&rdquo;</p>
+                <div>
+                  <p className="text-white font-medium text-sm">{t.name}</p>
+                  <p className="text-gray-500 text-xs">{t.location}</p>
+                </div>
+              </div>
+            ))}
           </div>
-          <button
-            type="submit"
-            className="w-full py-2 rounded-md text-white font-medium bg-gradient-to-r from-[#f59e0b] to-[#d97706] hover:opacity-90"
-            disabled={loading}
+        </div>
+      </section>
+
+      {/* FAQ */}
+      <section id="faq" className="py-20 border-t border-white/5">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Frequently Asked Questions</h2>
+          </div>
+          <div className="space-y-4">
+            {FAQS.map((faq, i) => (
+              <details key={i} className="group rounded-xl bg-white/[0.03] border border-white/5 overflow-hidden">
+                <summary className="flex justify-between items-center cursor-pointer p-6 text-white font-medium hover:bg-white/[0.02] transition-colors">
+                  <span>{faq.q}</span>
+                  <span className="text-gray-400 group-open:rotate-45 transition-transform text-xl ml-4 flex-shrink-0">+</span>
+                </summary>
+                <div className="px-6 pb-6 text-gray-400 text-sm leading-relaxed">
+                  {faq.a}
+                </div>
+              </details>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Footer CTA */}
+      <section className="py-20 border-t border-white/5">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">
+            Ready to Grow Your Detailing Business?
+          </h2>
+          <p className="text-gray-400 mb-8 text-lg">
+            Join aircraft detailing professionals who save hours every week with Vector. Start free — no credit card required.
+          </p>
+          <a
+            href="/login"
+            className="inline-block px-10 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-xl text-lg hover:opacity-90 shadow-lg shadow-amber-500/25 transition-opacity"
           >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-        <div className="mt-2 text-right">
-          <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-            Forgot password?
+            Start Free Trial
           </a>
         </div>
-        <div className="my-6 flex items-center">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-2 text-gray-500 text-sm">New to Vector?</span>
-          <div className="flex-grow border-t border-gray-300"></div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-white/5 py-10">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="flex items-center space-x-2 text-white font-bold">
+              <span className="text-xl">{'\u2708\uFE0F'}</span>
+              <span>Vector</span>
+              <span className="text-gray-500 font-normal text-sm ml-2">by Aircraft Detailing 101</span>
+            </div>
+            <div className="flex items-center gap-6 text-sm text-gray-400">
+              <a href="/login" className="hover:text-white transition-colors">Sign In</a>
+              <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+              <a href="#features" className="hover:text-white transition-colors">Features</a>
+              <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+            </div>
+          </div>
+          <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <p className="text-gray-500 text-sm">&copy; 2025 Vector Aviation Software. All rights reserved.</p>
+            <div className="flex gap-6 text-sm text-gray-500">
+              <a href="#" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+              <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+              <a href="mailto:support@vectorav.ai" className="hover:text-gray-300 transition-colors">Contact</a>
+            </div>
+          </div>
         </div>
-        <a
-          href="/landing"
-          className="block w-full text-center bg-[#1e3a5f] text-white py-2 rounded-md font-medium hover:opacity-90"
-        >
-          See Plans & Pricing
-        </a>
-        <p className="mt-4 text-xs text-gray-400 text-center">By Aircraft Detailing 101</p>
-      </div>
+      </footer>
     </div>
   );
 }

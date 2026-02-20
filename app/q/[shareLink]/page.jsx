@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
+import { PLATFORM_FEES } from '@/lib/pricing-tiers';
 
 // Friendly error messages for payment declines
 const PAYMENT_ERROR_MESSAGES = {
@@ -363,10 +364,30 @@ export default function QuoteViewPage() {
               </div>
             )}
 
-            <div className="flex justify-between pt-3 border-t">
-              <span className="text-gray-800 font-semibold">Total:</span>
-              <span className="font-bold text-2xl text-[#1e3a5f]">${(parseFloat(quote.total_price) || 0).toFixed(2)}</span>
-            </div>
+            {/* Service Fee (platform fee passed to customer) */}
+            {(() => {
+              const plan = detailer?.plan || 'free';
+              const feeRate = PLATFORM_FEES[plan] || PLATFORM_FEES.free;
+              const passFee = detailer?.pass_fee_to_customer;
+              const basePrice = parseFloat(quote.total_price) || 0;
+              const serviceFee = passFee ? Math.round(basePrice * feeRate * 100) / 100 : 0;
+              const displayTotal = passFee ? basePrice + serviceFee : basePrice;
+
+              return (
+                <>
+                  {passFee && serviceFee > 0 && (
+                    <div className="flex justify-between text-sm pt-2">
+                      <span className="text-gray-500">Service Fee ({Math.round(feeRate * 100)}%)</span>
+                      <span className="text-gray-700">+${serviceFee.toFixed(2)}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between pt-3 border-t">
+                    <span className="text-gray-800 font-semibold">Total:</span>
+                    <span className="font-bold text-2xl text-[#1e3a5f]">${displayTotal.toFixed(2)}</span>
+                  </div>
+                </>
+              );
+            })()}
           </div>
         </div>
 
