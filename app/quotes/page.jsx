@@ -98,8 +98,8 @@ export default function QuotesPage() {
     const items = quote.line_items || [];
     if (!items.length) return 0;
     return items.reduce((sum, item) => {
-      const svc = servicesMap[item.service_id];
-      const costPerHour = parseFloat(svc?.product_cost_per_hour) || 0;
+      // Prefer cost stored on line item (historical), fall back to current service cost
+      const costPerHour = parseFloat(item.product_cost_per_hour) || parseFloat(servicesMap[item.service_id]?.product_cost_per_hour) || 0;
       const hours = parseFloat(item.hours) || 0;
       return sum + (costPerHour * hours);
     }, 0);

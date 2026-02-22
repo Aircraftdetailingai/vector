@@ -492,7 +492,16 @@ function DashboardContent() {
     hours: getHoursForService(svc),
     rate: parseFloat(svc.hourly_rate) || 0,
     amount: getServicePrice(svc) * accessDifficulty * (1 - discountPercent / 100),
+    product_cost_per_hour: parseFloat(svc.product_cost_per_hour) || 0,
   }));
+
+  // Estimated product cost for profit preview
+  const estimatedProductCost = selectedServicesList.reduce((sum, svc) => {
+    const hours = getHoursForService(svc);
+    const costPerHour = parseFloat(svc.product_cost_per_hour) || 0;
+    return sum + (hours * costPerHour);
+  }, 0);
+  const estimatedProfit = totalPrice - estimatedProductCost;
 
   // Build addon fee items for storage
   const addonFeeItems = selectedAddonsList.map(a => ({
@@ -521,8 +530,8 @@ function DashboardContent() {
     setModalOpen(false);
   };
 
-  const laborTotal = totalPrice * 0.7;
-  const productsTotal = totalPrice * 0.3;
+  const laborTotal = totalPrice - estimatedProductCost;
+  const productsTotal = estimatedProductCost;
 
   const quoteData = selectedAircraft
     ? {
@@ -1059,6 +1068,22 @@ function DashboardContent() {
                     <span>Total</span>
                     <span>${totalPrice.toFixed(2)}</span>
                   </div>
+
+                  {/* Profit preview (internal only) */}
+                  {estimatedProductCost > 0 && totalPrice > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-600/50 space-y-1">
+                      <div className="flex justify-between text-xs text-gray-400">
+                        <span>Product Cost</span>
+                        <span>-${estimatedProductCost.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between text-sm font-semibold text-green-400">
+                        <span>Est. Profit</span>
+                        <span>${estimatedProfit.toFixed(2)}
+                          <span className="text-xs font-normal ml-1">({totalPrice > 0 ? ((estimatedProfit / totalPrice) * 100).toFixed(0) : 0}%)</span>
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <button
