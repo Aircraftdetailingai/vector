@@ -49,6 +49,7 @@ export default function QuotesPage() {
     reason: '',
   });
   const [submittingChangeOrder, setSubmittingChangeOrder] = useState(false);
+  const [servicesMap, setServicesMap] = useState({});
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -73,8 +74,36 @@ export default function QuotesPage() {
       }
     };
 
+    const fetchServices = async () => {
+      try {
+        const res = await fetch('/api/services', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          const map = {};
+          (data.services || []).forEach(s => { map[s.id] = s; });
+          setServicesMap(map);
+        }
+      } catch (err) {
+        console.error('Failed to fetch services:', err);
+      }
+    };
+
     fetchQuotes();
+    fetchServices();
   }, [router]);
+
+  const getProductCost = (quote) => {
+    const items = quote.line_items || [];
+    if (!items.length) return 0;
+    return items.reduce((sum, item) => {
+      const svc = servicesMap[item.service_id];
+      const costPerHour = parseFloat(svc?.product_cost_per_hour) || 0;
+      const hours = parseFloat(item.hours) || 0;
+      return sum + (costPerHour * hours);
+    }, 0);
+  };
 
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
@@ -265,6 +294,36 @@ export default function QuotesPage() {
       ),
     },
     {
+      id: 'product_cost',
+      header: 'Product Cost',
+      accessorFn: (row) => getProductCost(row),
+      cell: ({ getValue }) => {
+        const cost = getValue();
+        return cost > 0 ? <span className="text-red-600">${cost.toFixed(2)}</span> : <span className="text-gray-400">-</span>;
+      },
+    },
+    {
+      id: 'profit',
+      header: 'Gross Profit',
+      accessorFn: (row) => {
+        const revenue = parseFloat(row.total_price) || 0;
+        const cost = getProductCost(row);
+        return revenue - cost;
+      },
+      cell: ({ getValue, row }) => {
+        const revenue = parseFloat(row.original.total_price) || 0;
+        const profit = getValue();
+        if (revenue === 0) return <span className="text-gray-400">-</span>;
+        const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(0) : 0;
+        return (
+          <div>
+            <span className={`font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>${profit.toFixed(2)}</span>
+            <span className="text-xs text-gray-400 ml-1">({margin}%)</span>
+          </div>
+        );
+      },
+    },
+    {
       id: 'status',
       header: 'Status',
       accessorFn: (row) => getStatus(row),
@@ -391,7 +450,7 @@ export default function QuotesPage() {
         );
       },
     },
-  ], []);
+  ], [servicesMap]);
 
   const filteredQuotes = quotes.filter((q) => {
     const status = getStatus(q);
@@ -409,6 +468,7 @@ export default function QuotesPage() {
     paid: quotes.filter(q => getStatus(q) === 'paid').length,
     completed: quotes.filter(q => getStatus(q) === 'completed').length,
     revenue: quotes.filter(q => ['paid', 'completed'].includes(getStatus(q))).reduce((sum, q) => sum + (q.total_price || 0), 0),
+    productCost: quotes.filter(q => ['paid', 'completed'].includes(getStatus(q))).reduce((sum, q) => sum + getProductCost(q), 0),
   };
 
   if (loading) {
@@ -436,7 +496,7 @@ export default function QuotesPage() {
       </header>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
+      <div className="grid grid-cols-2 md:grid-cols-6 gap-4 mb-6">
         <div className="bg-white rounded-lg p-4 shadow">
           <p className="text-gray-500 text-sm">Total</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
@@ -456,6 +516,13 @@ export default function QuotesPage() {
         <div className="bg-white rounded-lg p-4 shadow">
           <p className="text-gray-500 text-sm">Revenue</p>
           <p className="text-2xl font-bold text-blue-600">${stats.revenue.toLocaleString()}</p>
+        </div>
+        <div className="bg-white rounded-lg p-4 shadow">
+          <p className="text-gray-500 text-sm">Gross Profit</p>
+          <p className="text-2xl font-bold text-green-600">${(stats.revenue - stats.productCost).toLocaleString()}</p>
+          {stats.revenue > 0 && (
+            <p className="text-xs text-gray-400">{((1 - stats.productCost / stats.revenue) * 100).toFixed(0)}% margin</p>
+          )}
         </div>
       </div>
 

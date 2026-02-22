@@ -45,7 +45,7 @@ export default function ServicesPage() {
   // Service form
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
-  const [newService, setNewService] = useState({ name: '', description: '', hourly_rate: '', hours_field: 'ext_wash_hours' });
+  const [newService, setNewService] = useState({ name: '', description: '', hourly_rate: '', hours_field: 'ext_wash_hours', product_cost_per_hour: '', product_notes: '' });
 
   // Package form
   const [showPackageBuilder, setShowPackageBuilder] = useState(false);
@@ -119,12 +119,14 @@ export default function ServicesPage() {
           description: newService.description,
           hourly_rate: parseFloat(newService.hourly_rate) || 0,
           hours_field: newService.hours_field || 'ext_wash_hours',
+          product_cost_per_hour: parseFloat(newService.product_cost_per_hour) || 0,
+          product_notes: newService.product_notes || '',
         }),
       });
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to add service'); return; }
       setServices([...services, data.service]);
-      setNewService({ name: '', description: '', hourly_rate: '', hours_field: 'ext_wash_hours' });
+      setNewService({ name: '', description: '', hourly_rate: '', hours_field: 'ext_wash_hours', product_cost_per_hour: '', product_notes: '' });
       setShowServiceModal(false);
       setError('');
     } catch (err) {
@@ -147,6 +149,8 @@ export default function ServicesPage() {
           description: editingService.description,
           hourly_rate: parseFloat(editingService.hourly_rate) || 0,
           hours_field: editingService.hours_field || 'ext_wash_hours',
+          product_cost_per_hour: parseFloat(editingService.product_cost_per_hour) || 0,
+          product_notes: editingService.product_notes || '',
         }),
       });
       const data = await res.json();
@@ -445,6 +449,9 @@ export default function ServicesPage() {
                       <div className="text-right">
                         <span className="text-lg font-bold text-amber-600">${svc.hourly_rate || 0}</span>
                         <span className="text-xs text-gray-400">/hr</span>
+                        {parseFloat(svc.product_cost_per_hour) > 0 && (
+                          <p className="text-[10px] text-gray-400">${svc.product_cost_per_hour} product/hr</p>
+                        )}
                       </div>
                       <button onClick={() => setEditingService({ ...svc })} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded">&#9998;</button>
                       <button onClick={() => deleteService(svc)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">&#128465;</button>
@@ -664,6 +671,24 @@ export default function ServicesPage() {
               </select>
               <p className="text-xs text-gray-400 mt-1">Which aircraft time estimate to use for this service</p>
             </div>
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-3">Product Cost Tracking <span className="text-xs text-gray-400 font-normal">(internal only)</span></p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Cost / Hour</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                  <input type="number" step="0.01" value={newService.product_cost_per_hour} onChange={(e) => setNewService({ ...newService, product_cost_per_hour: e.target.value })}
+                    placeholder="0.00" className="w-full border rounded-lg pl-7 pr-12 py-2" />
+                  <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Average product/material cost per hour of this service</p>
+              </div>
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Notes</label>
+                <textarea value={newService.product_notes} onChange={(e) => setNewService({ ...newService, product_notes: e.target.value })}
+                  placeholder="e.g., 1oz IronX, 2oz ceramic per hour" rows={2} className="w-full border rounded-lg px-3 py-2 resize-y min-h-[40px]" />
+              </div>
+            </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <button onClick={() => setShowServiceModal(false)} className="px-4 py-2 border rounded-lg">Cancel</button>
@@ -708,6 +733,24 @@ export default function ServicesPage() {
                 ))}
               </select>
               <p className="text-xs text-gray-400 mt-1">Which aircraft time estimate to use for this service</p>
+            </div>
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-3">Product Cost Tracking <span className="text-xs text-gray-400 font-normal">(internal only)</span></p>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Cost / Hour</label>
+                <div className="relative">
+                  <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                  <input type="number" step="0.01" value={editingService.product_cost_per_hour || ''} onChange={(e) => setEditingService({ ...editingService, product_cost_per_hour: e.target.value })}
+                    placeholder="0.00" className="w-full border rounded-lg pl-7 pr-12 py-2" />
+                  <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
+                </div>
+                <p className="text-xs text-gray-400 mt-1">Average product/material cost per hour of this service</p>
+              </div>
+              <div className="mt-3">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Product Notes</label>
+                <textarea value={editingService.product_notes || ''} onChange={(e) => setEditingService({ ...editingService, product_notes: e.target.value })}
+                  placeholder="e.g., 1oz IronX, 2oz ceramic per hour" rows={2} className="w-full border rounded-lg px-3 py-2 resize-y min-h-[40px]" />
+              </div>
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">

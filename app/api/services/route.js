@@ -73,7 +73,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, description, hourly_rate, hours_field } = body;
+    const { name, description, hourly_rate, hours_field, product_cost_per_hour, product_notes } = body;
 
     if (!name) {
       return Response.json({ error: 'Name is required' }, { status: 400 });
@@ -89,6 +89,12 @@ export async function POST(request) {
     // Add hours_field if provided (column may not exist yet in DB - that's OK)
     if (hours_field) {
       row.hours_field = hours_field;
+    }
+    if (product_cost_per_hour !== undefined) {
+      row.product_cost_per_hour = parseFloat(product_cost_per_hour) || 0;
+    }
+    if (product_notes !== undefined) {
+      row.product_notes = product_notes || '';
     }
 
     const { data: service, error } = await supabase

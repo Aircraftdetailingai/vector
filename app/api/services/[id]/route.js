@@ -42,13 +42,15 @@ export async function PUT(request, { params }) {
 
     const { id } = params;
     const body = await request.json();
-    const { name, description, hourly_rate, hours_field } = body;
+    const { name, description, hourly_rate, hours_field, product_cost_per_hour, product_notes } = body;
 
     const updates = {};
     if (name !== undefined) updates.name = name;
     if (description !== undefined) updates.description = description;
     if (hourly_rate !== undefined) updates.hourly_rate = parseFloat(hourly_rate) || 0;
     if (hours_field !== undefined) updates.hours_field = hours_field;
+    if (product_cost_per_hour !== undefined) updates.product_cost_per_hour = parseFloat(product_cost_per_hour) || 0;
+    if (product_notes !== undefined) updates.product_notes = product_notes || '';
     updates.updated_at = new Date().toISOString();
 
     const { data: service, error } = await supabase
