@@ -255,8 +255,26 @@ function DashboardContent() {
       router.push('/login');
       return;
     }
-    setUser(JSON.parse(stored));
+    const parsedUser = JSON.parse(stored);
+    setUser(parsedUser);
     setLoading(false);
+
+    // Check onboarding status
+    const checkOnboarding = async () => {
+      try {
+        const res = await fetch('/api/onboarding', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.onboarding_complete === false) {
+            router.push('/onboarding');
+            return true;
+          }
+        }
+      } catch (e) {}
+      return false;
+    };
 
     // Fetch all dashboard data in parallel
     const fetchDashboardData = async () => {
@@ -327,7 +345,11 @@ function DashboardContent() {
       }
     };
 
-    fetchDashboardData().catch(err => console.error('Dashboard fetch error:', err));
+    checkOnboarding().then(redirected => {
+      if (!redirected) {
+        fetchDashboardData().catch(err => console.error('Dashboard fetch error:', err));
+      }
+    });
   }, [router]);
 
   const handleConnectStripe = async () => {
