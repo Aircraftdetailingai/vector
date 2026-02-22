@@ -91,6 +91,17 @@ export default function GrowthPage() {
       </header>
 
       <div className="max-w-4xl mx-auto space-y-6">
+        {/* AI Sales Assistant CTA */}
+        <a href="/growth/sales-assistant" className="block bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl p-5 shadow-lg hover:opacity-95 transition-opacity">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-white text-lg font-bold">AI Sales Assistant</h2>
+              <p className="text-indigo-200 text-sm mt-1">Research prospects and generate personalized cold call, email, and LinkedIn scripts</p>
+            </div>
+            <span className="text-white text-2xl">&#8594;</span>
+          </div>
+        </a>
+
         {/* Quick Stats */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
