@@ -42,6 +42,7 @@ export default function QuotesPage() {
     customer_late: false,
     issues: '',
   });
+  const [serviceHours, setServiceHours] = useState([]);
   const [completing, setCompleting] = useState(false);
   const [changeOrderModal, setChangeOrderModal] = useState(null);
   const [changeOrderData, setChangeOrderData] = useState({
@@ -132,6 +133,18 @@ export default function QuotesPage() {
       customer_late: false,
       issues: '',
     });
+    // Pre-fill per-service hours from line items
+    const items = quote.line_items || [];
+    if (items.length > 0) {
+      setServiceHours(items.map(item => ({
+        service_name: item.description || item.service || '',
+        hours_field: item.hours_field || '',
+        quoted_hours: parseFloat(item.hours) || 0,
+        actual_hours: parseFloat(item.hours) || 0,
+      })));
+    } else {
+      setServiceHours([]);
+    }
   };
 
   const openChangeOrderModal = (quote) => {
@@ -219,6 +232,7 @@ export default function QuotesPage() {
         body: JSON.stringify({
           quote_id: completeModal.id,
           actual_hours: parseFloat(completionData.actual_hours),
+          service_hours: serviceHours.length > 0 ? serviceHours : undefined,
           product_cost: parseFloat(completionData.product_cost) || 0,
           notes: completionData.notes,
           wait_time_minutes: parseInt(completionData.wait_time_minutes) || 0,
@@ -562,20 +576,67 @@ export default function QuotesPage() {
             </p>
 
             <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium mb-1">Actual Hours Worked *</label>
-                <input
-                  type="number"
-                  step="0.25"
-                  value={completionData.actual_hours}
-                  onChange={(e) => setCompletionData({ ...completionData, actual_hours: e.target.value })}
-                  placeholder={`Estimated: ${completeModal.total_hours?.toFixed(1) || '0'}`}
-                  className="w-full border rounded px-3 py-2"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Quote estimate: {completeModal.total_hours?.toFixed(1) || '0'} hours
-                </p>
-              </div>
+              {/* Per-Service Hours Breakdown */}
+              {serviceHours.length > 0 ? (
+                <div>
+                  <label className="block text-sm font-medium mb-2">Actual Hours Per Service *</label>
+                  <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                    {serviceHours.map((sh, idx) => (
+                      <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
+                        <div className="flex-1 min-w-0 mr-3">
+                          <p className="text-sm font-medium text-gray-900 truncate">{sh.service_name}</p>
+                          <p className="text-xs text-gray-400">Quoted: {sh.quoted_hours.toFixed(1)}h</p>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <input
+                            type="number"
+                            step="0.25"
+                            value={sh.actual_hours}
+                            onChange={(e) => {
+                              const updated = [...serviceHours];
+                              updated[idx] = { ...updated[idx], actual_hours: parseFloat(e.target.value) || 0 };
+                              setServiceHours(updated);
+                              // Auto-update total
+                              const total = updated.reduce((sum, s) => sum + (parseFloat(s.actual_hours) || 0), 0);
+                              setCompletionData(prev => ({ ...prev, actual_hours: total.toString() }));
+                            }}
+                            className="w-20 border rounded px-2 py-1.5 text-sm text-right"
+                          />
+                          <span className="text-xs text-gray-500">hrs</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div className="flex justify-between items-center mt-2 pt-2 border-t">
+                    <span className="text-sm font-medium text-gray-700">Total Hours</span>
+                    <span className="text-lg font-bold text-gray-900">{parseFloat(completionData.actual_hours || 0).toFixed(1)}h</span>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-1">
+                    Quote estimate: {completeModal.total_hours?.toFixed(1) || '0'}h
+                    {completeModal.total_hours && parseFloat(completionData.actual_hours) !== completeModal.total_hours && (
+                      <span className={parseFloat(completionData.actual_hours) > completeModal.total_hours ? ' text-red-500' : ' text-green-500'}>
+                        {' '}({parseFloat(completionData.actual_hours) > completeModal.total_hours ? '+' : ''}
+                        {(parseFloat(completionData.actual_hours) - completeModal.total_hours).toFixed(1)}h)
+                      </span>
+                    )}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-sm font-medium mb-1">Actual Hours Worked *</label>
+                  <input
+                    type="number"
+                    step="0.25"
+                    value={completionData.actual_hours}
+                    onChange={(e) => setCompletionData({ ...completionData, actual_hours: e.target.value })}
+                    placeholder={`Estimated: ${completeModal.total_hours?.toFixed(1) || '0'}`}
+                    className="w-full border rounded px-3 py-2"
+                  />
+                  <p className="text-xs text-gray-500 mt-1">
+                    Quote estimate: {completeModal.total_hours?.toFixed(1) || '0'} hours
+                  </p>
+                </div>
+              )}
 
               <div>
                 <label className="block text-sm font-medium mb-1">Product/Material Cost</label>
