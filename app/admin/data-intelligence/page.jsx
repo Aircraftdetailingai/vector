@@ -35,12 +35,19 @@ export default function DataIntelligencePage() {
   const [history, setHistory] = useState([]);
   const [historyLoading, setHistoryLoading] = useState(false);
 
+  // Raw logs state
+  const [rawLogs, setRawLogs] = useState([]);
+  const [rawLogsLoading, setRawLogsLoading] = useState(false);
+  const [rawLogManufacturer, setRawLogManufacturer] = useState('');
+  const [rawLogService, setRawLogService] = useState('');
+  const [rawLogManufacturers, setRawLogManufacturers] = useState([]);
+
   // Filters
   const [category, setCategory] = useState('');
   const [manufacturer, setManufacturer] = useState('');
   const [hoursField, setHoursField] = useState('');
   const [minSamples, setMinSamples] = useState(3);
-  const [varianceOnly, setVarianceOnly] = useState(false);
+  const [varianceThreshold, setVarianceThreshold] = useState(10);
 
   // Update modal
   const [showModal, setShowModal] = useState(false);
@@ -108,9 +115,33 @@ export default function DataIntelligencePage() {
     }
   };
 
+  const fetchRawLogs = async () => {
+    setRawLogsLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (rawLogManufacturer) params.set('manufacturer', rawLogManufacturer);
+      if (rawLogService) params.set('hours_field', rawLogService);
+      params.set('limit', '200');
+
+      const res = await fetch(`/api/admin/hours-log?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const json = await res.json();
+      setRawLogs(json.logs || []);
+      setRawLogManufacturers(json.manufacturers || []);
+    } catch (err) {
+      console.error('Failed to fetch raw logs:', err);
+    } finally {
+      setRawLogsLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (tab === 'history' && history.length === 0) {
       fetchHistory();
+    }
+    if (tab === 'logs' && rawLogs.length === 0) {
+      fetchRawLogs();
     }
   }, [tab]);
 
@@ -119,8 +150,14 @@ export default function DataIntelligencePage() {
     if (!loading) fetchData();
   }, [category, manufacturer, hoursField, minSamples]);
 
-  const filteredData = varianceOnly
-    ? data.filter(d => d.variance_flag !== 'ok')
+  // Re-fetch raw logs when raw log filters change
+  useEffect(() => {
+    if (tab === 'logs') fetchRawLogs();
+  }, [rawLogManufacturer, rawLogService]);
+
+  // Filter data by configurable variance threshold
+  const filteredData = varianceThreshold > 0
+    ? data.filter(d => Math.abs(d.variance_percent) >= varianceThreshold)
     : data;
 
   // Get unique manufacturers from data
@@ -201,7 +238,7 @@ export default function DataIntelligencePage() {
   const selectAllFlagged = () => {
     const newSelected = {};
     filteredData.forEach((item, i) => {
-      if (item.variance_flag !== 'ok' && item.sample_count >= 10) {
+      if (Math.abs(item.variance_percent) >= varianceThreshold && item.sample_count >= 10) {
         newSelected[i] = true;
       }
     });
@@ -236,8 +273,8 @@ export default function DataIntelligencePage() {
       </header>
 
       {/* Tabs */}
-      <div className="flex space-x-1 mb-6 bg-white/10 rounded-lg p-1 max-w-md">
-        {['overview', 'details', 'history'].map(t => (
+      <div className="flex space-x-1 mb-6 bg-white/10 rounded-lg p-1 max-w-lg">
+        {['overview', 'details', 'logs', 'history'].map(t => (
           <button
             key={t}
             onClick={() => setTab(t)}
@@ -247,7 +284,7 @@ export default function DataIntelligencePage() {
                 : 'text-gray-300 hover:text-white'
             }`}
           >
-            {t.charAt(0).toUpperCase() + t.slice(1)}
+            {t === 'logs' ? 'Detailer Logs' : t.charAt(0).toUpperCase() + t.slice(1)}
           </button>
         ))}
       </div>
@@ -293,9 +330,9 @@ export default function DataIntelligencePage() {
           {/* Quick Actions */}
           <div className="bg-white rounded-xl p-6 shadow">
             <h2 className="text-lg font-bold text-gray-900 mb-4">Quick Actions</h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <button
-                onClick={() => { setVarianceOnly(true); setTab('details'); }}
+                onClick={() => { setVarianceThreshold(10); setTab('details'); }}
                 className="p-4 bg-red-50 border border-red-200 rounded-lg text-left hover:bg-red-100 transition-colors"
               >
                 <p className="font-medium text-red-900">Review Flagged Items</p>
@@ -304,12 +341,21 @@ export default function DataIntelligencePage() {
                 </p>
               </button>
               <button
-                onClick={() => setTab('details')}
+                onClick={() => { setVarianceThreshold(0); setTab('details'); }}
                 className="p-4 bg-blue-50 border border-blue-200 rounded-lg text-left hover:bg-blue-100 transition-colors"
               >
                 <p className="font-medium text-blue-900">Browse All Data</p>
                 <p className="text-xs text-blue-700 mt-1">
                   View all aircraft with real data
+                </p>
+              </button>
+              <button
+                onClick={() => setTab('logs')}
+                className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-left hover:bg-purple-100 transition-colors"
+              >
+                <p className="font-medium text-purple-900">Detailer Logs</p>
+                <p className="text-xs text-purple-700 mt-1">
+                  Raw hours from all detailers
                 </p>
               </button>
               <button
@@ -350,7 +396,7 @@ export default function DataIntelligencePage() {
         <div className="max-w-6xl">
           {/* Filters */}
           <div className="bg-white rounded-lg p-4 shadow mb-4">
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Category</label>
                 <select
@@ -400,16 +446,35 @@ export default function DataIntelligencePage() {
                   min={1}
                 />
               </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Variance Threshold %</label>
+                <input
+                  type="number"
+                  value={varianceThreshold}
+                  onChange={(e) => {
+                    setVarianceThreshold(parseInt(e.target.value) || 0);
+                    setSelectedRows({});
+                  }}
+                  className="w-full border rounded px-2 py-1.5 text-sm"
+                  min={0}
+                  max={100}
+                  step={5}
+                />
+              </div>
               <div className="flex items-end">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={varianceOnly}
-                    onChange={(e) => setVarianceOnly(e.target.checked)}
-                    className="rounded text-amber-500"
-                  />
-                  <span className="text-sm text-gray-700">&gt;10% variance only</span>
-                </label>
+                <button
+                  onClick={() => {
+                    setCategory('');
+                    setManufacturer('');
+                    setHoursField('');
+                    setMinSamples(3);
+                    setVarianceThreshold(10);
+                    setSelectedRows({});
+                  }}
+                  className="w-full px-2 py-1.5 text-sm text-gray-500 border rounded hover:bg-gray-50"
+                >
+                  Reset Filters
+                </button>
               </div>
             </div>
           </div>
@@ -472,8 +537,9 @@ export default function DataIntelligencePage() {
                     </tr>
                   ) : (
                     filteredData.map((item, i) => {
-                      const isOver = item.variance_flag === 'over';
-                      const isUnder = item.variance_flag === 'under';
+                      const absVariance = Math.abs(item.variance_percent);
+                      const isOver = item.variance_percent > 0 && absVariance >= varianceThreshold;
+                      const isUnder = item.variance_percent < 0 && absVariance >= varianceThreshold;
                       const rowBg = isOver
                         ? 'bg-red-50 border-l-4 border-l-red-400'
                         : isUnder
@@ -508,7 +574,7 @@ export default function DataIntelligencePage() {
                           </td>
                           <td className="px-3 py-3 text-right">
                             <span className={`font-semibold ${
-                              isOver ? 'text-red-600' : isUnder ? 'text-blue-600' : 'text-green-600'
+                              item.variance_percent > 10 ? 'text-red-600' : item.variance_percent < -10 ? 'text-blue-600' : 'text-green-600'
                             }`}>
                               {item.variance_percent > 0 ? '+' : ''}{item.variance_percent.toFixed(1)}%
                             </span>
@@ -518,7 +584,7 @@ export default function DataIntelligencePage() {
                               onClick={() => openUpdateModal(item)}
                               className="px-3 py-1 text-xs bg-amber-100 text-amber-700 rounded hover:bg-amber-200 font-medium"
                             >
-                              Update
+                              Update Default
                             </button>
                           </td>
                         </tr>
@@ -530,8 +596,111 @@ export default function DataIntelligencePage() {
             </div>
             {filteredData.length > 0 && (
               <div className="px-4 py-3 bg-gray-50 border-t text-sm text-gray-500">
-                Showing {filteredData.length} results
-                {varianceOnly && ` (filtered from ${data.length} total)`}
+                Showing {filteredData.length} of {data.length} results
+                {varianceThreshold > 0 && ` (variance >= ${varianceThreshold}%)`}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Detailer Logs Tab */}
+      {tab === 'logs' && (
+        <div className="max-w-6xl">
+          <div className="bg-white rounded-lg p-4 shadow mb-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Manufacturer</label>
+                <select
+                  value={rawLogManufacturer}
+                  onChange={(e) => setRawLogManufacturer(e.target.value)}
+                  className="w-full border rounded px-2 py-1.5 text-sm"
+                >
+                  <option value="">All Manufacturers</option>
+                  {rawLogManufacturers.map(m => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Service Type</label>
+                <select
+                  value={rawLogService}
+                  onChange={(e) => setRawLogService(e.target.value)}
+                  className="w-full border rounded px-2 py-1.5 text-sm"
+                >
+                  <option value="">All Services</option>
+                  {HOURS_FIELDS.map(hf => (
+                    <option key={hf.value} value={hf.value}>{hf.label}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex items-end">
+                <button
+                  onClick={fetchRawLogs}
+                  className="w-full px-2 py-1.5 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded hover:bg-amber-100"
+                >
+                  Refresh
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="p-4 border-b">
+              <h2 className="font-bold text-gray-900">Hours Collected from Detailers</h2>
+              <p className="text-sm text-gray-500">Individual service hours logged after job completion</p>
+            </div>
+            {rawLogsLoading ? (
+              <div className="p-8 text-center text-gray-500">Loading detailer logs...</div>
+            ) : rawLogs.length === 0 ? (
+              <div className="p-8 text-center text-gray-500">No hours logged yet. Data will appear as detailers complete jobs.</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-gray-50 border-b">
+                    <tr>
+                      <th className="px-3 py-3 text-left">Date</th>
+                      <th className="px-3 py-3 text-left">Detailer</th>
+                      <th className="px-3 py-3 text-left">Aircraft</th>
+                      <th className="px-3 py-3 text-left">Service</th>
+                      <th className="px-3 py-3 text-right">Quoted</th>
+                      <th className="px-3 py-3 text-right">Actual</th>
+                      <th className="px-3 py-3 text-right">Variance</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y">
+                    {rawLogs.map((log) => {
+                      const flagged = Math.abs(log.variance_percent) > 10;
+                      return (
+                        <tr key={log.id} className={flagged ? 'bg-amber-50' : 'hover:bg-gray-50'}>
+                          <td className="px-3 py-3 text-gray-500 whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleDateString()}
+                          </td>
+                          <td className="px-3 py-3 font-medium text-gray-900">{log.detailer_name}</td>
+                          <td className="px-3 py-3">
+                            <p className="text-gray-900">{log.aircraft_manufacturer} {log.aircraft_model}</p>
+                          </td>
+                          <td className="px-3 py-3 text-gray-600">{log.hours_field_label}</td>
+                          <td className="px-3 py-3 text-right font-mono">{parseFloat(log.quoted_hours).toFixed(1)}h</td>
+                          <td className="px-3 py-3 text-right font-mono font-semibold">{parseFloat(log.actual_hours).toFixed(1)}h</td>
+                          <td className="px-3 py-3 text-right">
+                            <span className={`font-semibold ${
+                              log.variance_percent > 10 ? 'text-red-600' : log.variance_percent < -10 ? 'text-blue-600' : 'text-green-600'
+                            }`}>
+                              {log.variance_percent > 0 ? '+' : ''}{log.variance_percent.toFixed(1)}%
+                            </span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {rawLogs.length > 0 && (
+              <div className="px-4 py-3 bg-gray-50 border-t text-sm text-gray-500">
+                Showing {rawLogs.length} most recent entries
               </div>
             )}
           </div>
