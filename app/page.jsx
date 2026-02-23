@@ -3,8 +3,8 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const FEATURES = [
-  { icon: '\u2708\uFE0F', title: '308 Aircraft Database', desc: 'Pre-loaded service hours for every aircraft from Cessna 172 to Boeing 747. No more guessing.' },
-  { icon: '\uD83D\uDCB0', title: 'Instant Quoting', desc: 'Select aircraft, pick services, send. Your hourly rate times aircraft hours equals an accurate quote in 60 seconds.' },
+  { icon: '\u2708\uFE0F', title: '300+ Aircraft Database', desc: 'Pre-loaded hours for 300+ aircraft — or upload your own. Use our defaults as a starting point and adjust per job.' },
+  { icon: '\uD83D\uDCB0', title: 'Instant Quoting', desc: 'Select aircraft, pick services, adjust hours if needed. Your hourly rate times your hours equals an accurate quote in 60 seconds.' },
   { icon: '\uD83D\uDCE7', title: 'Email & SMS Delivery', desc: 'Send professional quotes directly to clients via email or text. Track when they view it.' },
   { icon: '\uD83D\uDCB3', title: 'Get Paid Online', desc: 'Stripe payments built right into every quote. Clients accept and pay with one click.' },
   { icon: '\uD83D\uDCC5', title: 'Calendar & Scheduling', desc: 'Track all your jobs in one place. Never double-book or miss an appointment.' },
@@ -13,7 +13,7 @@ const FEATURES = [
 
 const STEPS = [
   { num: '1', title: 'Add Your Services & Rates', desc: 'Set up your service menu and hourly rates. Exterior wash, ceramic coating, interior detail — whatever you offer.' },
-  { num: '2', title: 'Select Aircraft, Build Quote', desc: 'Pick the aircraft model, choose services, and Vector calculates the price instantly from pre-loaded hours.' },
+  { num: '2', title: 'Select Aircraft, Build Quote', desc: 'Choose from 300+ pre-loaded aircraft or add your own hours. Vector calculates the price — you stay in control.' },
   { num: '3', title: 'Send to Client, Get Paid', desc: 'Email or text the quote. Your client views a professional branded page and pays online with one click.' },
 ];
 
@@ -23,7 +23,7 @@ const TIERS = [
     price: '$0',
     period: '/mo',
     desc: 'Try Vector risk-free',
-    features: ['5 quotes/month', '308 aircraft database', 'Email quotes', 'Stripe payments', '10% platform fee'],
+    features: ['5 quotes/month', '300+ aircraft database', 'Email quotes', 'Stripe payments', '10% platform fee'],
     cta: 'Start Free',
     highlight: false,
   },
@@ -32,7 +32,7 @@ const TIERS = [
     price: '$79',
     period: '/mo',
     desc: 'For full-time detailers',
-    features: ['Unlimited quotes', '308 aircraft database', 'Email & SMS quotes', 'SMS alerts to you', 'Remove Vector branding', 'Calendar & scheduling', 'Priority support', '2% platform fee'],
+    features: ['Unlimited quotes', '300+ aircraft database', 'Email & SMS quotes', 'SMS alerts to you', 'Remove Vector branding', 'Calendar & scheduling', 'Priority support', '2% platform fee'],
     cta: 'Go Pro',
     highlight: true,
   },
@@ -48,11 +48,11 @@ const TIERS = [
 ];
 
 const FAQS = [
-  { q: 'How does pricing work?', a: 'Vector uses your hourly rate multiplied by pre-loaded aircraft service hours to calculate prices. A Gulfstream G450 ceramic coating might take 7.2 hours — at your rate of $190/hr, the quote is $1,368. You set the rates, Vector does the math.' },
+  { q: 'How does pricing work?', a: 'Vector multiplies your hourly rate by the service hours for each aircraft. We pre-load default hours for 300+ models, but you can upload your own or adjust hours on any quote. A G450 ceramic coating might default to 7.2 hours — at $190/hr that\'s $1,368 — but you can change it to whatever fits your crew.' },
   { q: 'Can I customize my services?', a: 'Absolutely. Add any service you offer — exterior wash, interior detail, ceramic coating, brightwork, decon, or create your own. Bundle them into packages with automatic discounts.' },
   { q: 'What payment methods do you accept?', a: 'Clients pay via Stripe — all major credit cards, Apple Pay, and Google Pay. Funds go directly to your connected Stripe account.' },
   { q: 'Is there a long-term contract?', a: 'No contracts. Start free, upgrade anytime, cancel anytime. The free plan is free forever with up to 5 quotes per month.' },
-  { q: 'How accurate are the aircraft hours?', a: 'Our database covers 308 aircraft with service hours derived from real-world detailing data. You can also adjust hours with your efficiency factor if your crew is faster or slower than average.' },
+  { q: 'How accurate are the aircraft hours?', a: 'Our database covers 300+ aircraft with default hours derived from real-world detailing data. You can use the defaults as-is, upload your own hours for any aircraft, or adjust hours directly on each quote. The platform learns from actual job data over time and improves defaults for everyone.' },
 ];
 
 export default function LandingPage() {
@@ -173,13 +173,13 @@ export default function LandingPage() {
             </div>
             <div className="text-center p-8 rounded-xl bg-white/[0.03] border border-white/5">
               <div className="text-4xl mb-4">{'\u2708\uFE0F'}</div>
-              <h3 className="text-xl font-bold text-white mb-3">308 Aircraft, Pre-Loaded</h3>
-              <p className="text-gray-400">Service hours for every aircraft from a Robinson R22 to a Boeing 747. We did the research so you don't have to.</p>
+              <h3 className="text-xl font-bold text-white mb-3">300+ Aircraft, Your Hours</h3>
+              <p className="text-gray-400">Default hours for 300+ aircraft from a Robinson R22 to a Boeing 747. Use ours, upload yours, or adjust per job.</p>
             </div>
             <div className="text-center p-8 rounded-xl bg-white/[0.03] border border-white/5">
               <div className="text-4xl mb-4">{'\uD83D\uDCA1'}</div>
-              <h3 className="text-xl font-bold text-white mb-3">Your Rate &times; Aircraft Hours</h3>
-              <p className="text-gray-400">Set your hourly rate. Select the aircraft. Vector calculates the price instantly. It's that simple.</p>
+              <h3 className="text-xl font-bold text-white mb-3">Your Rate &times; Your Hours</h3>
+              <p className="text-gray-400">Set your hourly rate. Pick the aircraft. Adjust the hours if you want. Vector handles the math — you control the numbers.</p>
             </div>
           </div>
         </div>
@@ -293,7 +293,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
             {[
               { quote: 'Vector saved me 10 hours a week on quoting. I used to spend 30 minutes per quote with spreadsheets — now it takes 60 seconds.', name: 'Aircraft Detailer', location: 'Scottsdale, AZ' },
-              { quote: 'The aircraft database is a game changer. Having pre-loaded hours for every model means I never underbid a job again.', name: 'Detailing Business Owner', location: 'Van Nuys, CA' },
+              { quote: 'The aircraft database is a game changer. I started with the default hours and now I\'ve dialed in my own numbers for every model. Never underbid a job again.', name: 'Detailing Business Owner', location: 'Van Nuys, CA' },
               { quote: 'My clients love getting professional quotes they can accept and pay online. It makes my business look way more polished.', name: 'Aviation Detailer', location: 'Teterboro, NJ' },
             ].map((t, i) => (
               <div key={i} className="p-6 rounded-xl bg-white/[0.03] border border-white/5">
