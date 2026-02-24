@@ -2,6 +2,7 @@
 import { ToastProvider } from './Toast';
 import ErrorBoundary from './ErrorBoundary';
 import OfflineBanner from './OfflineBanner';
+import KeyboardShortcuts from './KeyboardShortcuts';
 
 export default function Providers({ children }) {
   return (
@@ -9,6 +10,7 @@ export default function Providers({ children }) {
       <ToastProvider>
         <OfflineBanner />
         {children}
+        <KeyboardShortcuts />
       </ToastProvider>
     </ErrorBoundary>
   );
