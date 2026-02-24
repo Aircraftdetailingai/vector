@@ -58,6 +58,11 @@ export default function QuotesPage() {
   const [servicesMap, setServicesMap] = useState({});
   const [userPlan, setUserPlan] = useState('free');
 
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState(null); // { action, label }
+  const [bulkProcessing, setBulkProcessing] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     if (!token) {
@@ -282,8 +287,134 @@ export default function QuotesPage() {
     }
   };
 
+  const filteredQuotes = useMemo(() => quotes.filter((q) => {
+    const status = getStatus(q);
+    if (filter === 'all') return true;
+    if (filter === 'active') return ['sent', 'viewed'].includes(status);
+    if (filter === 'paid') return status === 'paid';
+    if (filter === 'completed') return status === 'completed';
+    if (filter === 'expired') return status === 'expired';
+    return true;
+  }), [quotes, filter]);
+
+  // Bulk selection helpers
+  const toggleSelect = (id) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredQuotes.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredQuotes.map(q => q.id)));
+    }
+  };
+
+  const clearSelection = () => setSelectedIds(new Set());
+
+  const executeBulkAction = async (action) => {
+    setBulkProcessing(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+
+      if (action === 'export') {
+        // Client-side CSV export
+        const selected = quotes.filter(q => selectedIds.has(q.id));
+        const escCSV = (v) => { const s = String(v ?? ''); return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s.replace(/"/g, '""')}"` : s; };
+        const rows = selected.map(q => [
+          q.created_at ? new Date(q.created_at).toISOString().split('T')[0] : '',
+          q.client_name || '',
+          q.client_email || '',
+          q.aircraft_model || q.aircraft_type || '',
+          q.tail_number || '',
+          (q.line_items || []).map(li => li.description || li.service).join('; '),
+          q.total_price?.toFixed(2) || '0.00',
+          getStatus(q),
+          q.sent_at ? new Date(q.sent_at).toISOString().split('T')[0] : '',
+          q.paid_at ? new Date(q.paid_at).toISOString().split('T')[0] : '',
+          q.notes || '',
+        ]);
+        const csv = [
+          'date,customer,email,aircraft,registration,services,amount,status,sent_date,paid_date,notes',
+          ...rows.map(r => r.map(escCSV).join(',')),
+        ].join('\n');
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `quotes-selected-${new Date().toISOString().split('T')[0]}.csv`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        clearSelection();
+        setBulkConfirm(null);
+        return;
+      }
+
+      const res = await fetch('/api/quotes/bulk', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ action, ids: Array.from(selectedIds) }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        alert(data.error || 'Bulk action failed');
+        return;
+      }
+
+      // Update local state
+      if (action === 'delete') {
+        setQuotes(prev => prev.filter(q => !selectedIds.has(q.id)));
+      } else if (action === 'expire') {
+        setQuotes(prev => prev.map(q => selectedIds.has(q.id) ? { ...q, status: 'expired' } : q));
+      } else if (action === 'send') {
+        setQuotes(prev => prev.map(q => selectedIds.has(q.id) && ['draft', 'sent'].includes(q.status) && q.client_email ? { ...q, status: 'sent' } : q));
+        if (data.emailsSent !== undefined) {
+          alert(`Sent ${data.emailsSent} email${data.emailsSent !== 1 ? 's' : ''} (${data.updated} quotes updated)`);
+        }
+      }
+
+      clearSelection();
+    } catch (err) {
+      console.error('Bulk action error:', err);
+      alert('Bulk action failed');
+    } finally {
+      setBulkProcessing(false);
+      setBulkConfirm(null);
+    }
+  };
+
   // Table columns
   const columns = useMemo(() => [
+    {
+      id: 'select',
+      header: () => (
+        <input
+          type="checkbox"
+          checked={filteredQuotes.length > 0 && selectedIds.size === filteredQuotes.length}
+          onChange={toggleSelectAll}
+          className="w-4 h-4 rounded border-gray-300 text-amber-500 cursor-pointer"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ),
+      cell: ({ row }) => (
+        <input
+          type="checkbox"
+          checked={selectedIds.has(row.original.id)}
+          onChange={() => toggleSelect(row.original.id)}
+          className="w-4 h-4 rounded border-gray-300 text-amber-500 cursor-pointer"
+          onClick={(e) => e.stopPropagation()}
+        />
+      ),
+      enableSorting: false,
+    },
     {
       id: 'customer',
       header: 'Customer',
@@ -488,17 +619,7 @@ export default function QuotesPage() {
         );
       },
     },
-  ], [servicesMap]);
-
-  const filteredQuotes = quotes.filter((q) => {
-    const status = getStatus(q);
-    if (filter === 'all') return true;
-    if (filter === 'active') return ['sent', 'viewed'].includes(status);
-    if (filter === 'paid') return status === 'paid';
-    if (filter === 'completed') return status === 'completed';
-    if (filter === 'expired') return status === 'expired';
-    return true;
-  });
+  ], [servicesMap, selectedIds, filteredQuotes]);
 
   const stats = {
     total: quotes.length,
@@ -617,6 +738,52 @@ export default function QuotesPage() {
           </button>
         ))}
       </div>
+
+      {/* Bulk Actions Bar */}
+      {selectedIds.size > 0 && (
+        <div className="bg-white border border-amber-300 rounded-lg px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+          <div className="flex items-center gap-3">
+            <span className="text-sm font-semibold text-gray-900">
+              {selectedIds.size} selected
+            </span>
+            <button onClick={clearSelection} className="text-xs text-gray-500 hover:text-gray-700 underline">
+              Clear
+            </button>
+          </div>
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => setBulkConfirm({ action: 'send', label: `Send ${selectedIds.size} quote${selectedIds.size !== 1 ? 's' : ''}?`, description: 'Quotes with a customer email in draft/sent status will be emailed.' })}
+              disabled={bulkProcessing}
+              className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            >
+              Send All
+            </button>
+            <button
+              onClick={() => setBulkConfirm({ action: 'expire', label: `Mark ${selectedIds.size} quote${selectedIds.size !== 1 ? 's' : ''} as expired?`, description: 'This will change their status to expired.' })}
+              disabled={bulkProcessing}
+              className="px-3 py-1.5 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600 disabled:opacity-50"
+            >
+              Mark Expired
+            </button>
+            <ExportGate plan={userPlan}>
+              <button
+                onClick={() => executeBulkAction('export')}
+                disabled={bulkProcessing}
+                className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 disabled:opacity-50"
+              >
+                Export CSV
+              </button>
+            </ExportGate>
+            <button
+              onClick={() => setBulkConfirm({ action: 'delete', label: `Delete ${selectedIds.size} quote${selectedIds.size !== 1 ? 's' : ''} permanently?`, description: 'This cannot be undone.' })}
+              disabled={bulkProcessing}
+              className="px-3 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 disabled:opacity-50"
+            >
+              Delete All
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Data Table */}
       <DataTable
@@ -880,6 +1047,36 @@ export default function QuotesPage() {
       )}
 
       {/* Change Order Modal */}
+      {/* Bulk Confirm Modal */}
+      {bulkConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl">
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">{bulkConfirm.label}</h3>
+            <p className="text-sm text-gray-600 mb-6">{bulkConfirm.description}</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setBulkConfirm(null)}
+                disabled={bulkProcessing}
+                className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => executeBulkAction(bulkConfirm.action)}
+                disabled={bulkProcessing}
+                className={`px-4 py-2 text-white rounded disabled:opacity-50 ${
+                  bulkConfirm.action === 'delete' ? 'bg-red-600 hover:bg-red-700' :
+                  bulkConfirm.action === 'expire' ? 'bg-amber-500 hover:bg-amber-600' :
+                  'bg-blue-500 hover:bg-blue-600'
+                }`}
+              >
+                {bulkProcessing ? 'Processing...' : 'Confirm'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {changeOrderModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">

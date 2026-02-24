@@ -16,8 +16,8 @@ const getDefaultConfig = (tableId) => {
       visible: ['make', 'model', 'registration', 'company', 'services', 'total', 'status', 'date'],
     },
     detailer: {
-      order: ['customer', 'aircraft', 'registration', 'services', 'total', 'status', 'date', 'actions'],
-      visible: ['customer', 'aircraft', 'registration', 'services', 'total', 'status', 'date', 'actions'],
+      order: ['select', 'customer', 'aircraft', 'registration', 'services', 'total', 'status', 'date', 'actions'],
+      visible: ['select', 'customer', 'aircraft', 'registration', 'services', 'total', 'status', 'date', 'actions'],
     },
     vendor: {
       order: ['product', 'customer', 'quantity', 'total', 'commission', 'status', 'date', 'actions'],
