@@ -1383,8 +1383,8 @@ function SettingsContent() {
 
         {/* Add Addon Fee Modal */}
         {showAddonModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
+            <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Add Fee</h3>
               {addonError && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{addonError}</div>}
               <div className="space-y-4">
@@ -1433,8 +1433,8 @@ function SettingsContent() {
 
         {/* Edit Addon Fee Modal */}
         {editingAddon && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
+            <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
               <h3 className="text-lg font-semibold mb-4">Edit Fee</h3>
               {addonError && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{addonError}</div>}
               <div className="space-y-4">
