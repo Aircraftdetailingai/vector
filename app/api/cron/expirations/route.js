@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendExpirationAlertSms, sendExpirationWarningSms } from '@/lib/sms';
 import { hasPremiumAccess } from '@/lib/pricing-tiers';
+import { notifyQuoteExpired } from '@/lib/notifications';
 
 export async function POST(request) {
   // Verify CRON_SECRET from Authorization header
@@ -70,6 +71,9 @@ export async function POST(request) {
           // ignore sms errors
         }
       }
+      // In-app notification
+      notifyQuoteExpired({ detailerId: detailer.id, quote }).catch(console.error);
+
       await supabase.from('quotes').update({ expiration_warning_sent: nowISO }).eq('id', quote.id);
       processed++;
     } catch (err) {

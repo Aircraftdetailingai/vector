@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { notifyQuoteViewed } from '@/lib/push';
 import { sendQuoteViewedEmail } from '@/lib/email';
+import { notifyQuoteViewedInApp } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -71,6 +72,11 @@ export async function GET(request, { params }) {
           detailer,
           viewedAt: now,
         }).catch(err => console.error('Failed to send quote viewed email:', err));
+      }
+
+      // Create in-app notification
+      if (detailer?.id) {
+        notifyQuoteViewedInApp({ detailerId: detailer.id, quote }).catch(console.error);
       }
     }
   }

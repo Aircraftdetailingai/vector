@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import SendQuoteModal from '../../components/SendQuoteModal.jsx';
 import PushNotifications from '../../components/PushNotifications.jsx';
 import PointsBadge from '../../components/PointsBadge.jsx';
+import NotificationBell from '../../components/NotificationBell.jsx';
 import LoadingSpinner from '../../components/LoadingSpinner.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import { formatPrice, formatPriceWhole } from '../../lib/formatPrice';
@@ -820,6 +821,7 @@ function DashboardContent() {
           {user && <span className="text-sm sm:text-lg font-medium hidden sm:inline">- {user.company}</span>}
         </div>
         <div className="flex items-center gap-2 sm:gap-4 text-sm">
+          <NotificationBell />
           <PointsBadge />
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center space-x-4">

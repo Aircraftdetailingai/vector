@@ -4,6 +4,7 @@ import { sendPaymentReceivedEmail, sendPaymentConfirmedEmail } from '@/lib/email
 import { notifyQuotePaid } from '@/lib/push';
 import { sendPaymentConfirmationSms } from '@/lib/sms';
 import { hasPremiumAccess, PLATFORM_FEES } from '@/lib/pricing-tiers';
+import { notifyPaymentReceived } from '@/lib/notifications';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,6 +88,15 @@ export async function POST(request) {
           // Send push notification to detailer
           if (detailer?.fcm_token) {
             notifyQuotePaid({ fcmToken: detailer.fcm_token, quote }).catch(console.error);
+          }
+
+          // In-app notification for detailer
+          if (detailer?.id) {
+            notifyPaymentReceived({
+              detailerId: detailer.id,
+              quote,
+              amount: quote.total_price,
+            }).catch(console.error);
           }
 
           // Send payment confirmation to customer (email) with fee breakdown

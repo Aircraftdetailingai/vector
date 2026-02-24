@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendJobReminderSms } from '@/lib/sms';
 import { hasPremiumAccess } from '@/lib/pricing-tiers';
+import { notifyJobReminder } from '@/lib/notifications';
 
 export async function POST(request) {
   const authHeader = request.headers.get('authorization') || request.headers.get('Authorization') || '';
@@ -20,8 +21,7 @@ export async function POST(request) {
     .from('quotes')
     .select('*, detailers(*)')
     .eq('scheduled_date', tomorrowDate)
-    .in('status', ['paid', 'scheduled', 'accepted'])
-    .not('client_phone', 'is', null);
+    .in('status', ['paid', 'scheduled', 'accepted']);
 
   if (error) {
     console.error('Job reminder SMS cron error:', error);
@@ -34,8 +34,19 @@ export async function POST(request) {
   for (const quote of quotes || []) {
     const detailer = quote.detailers;
 
+    // In-app notification for all detailers
+    if (detailer?.id) {
+      notifyJobReminder({
+        detailerId: detailer.id,
+        quote,
+        scheduledDate: tomorrowDate,
+      }).catch(console.error);
+    }
+
+    // SMS only for eligible plans
     if (!hasPremiumAccess(detailer?.plan)) { skipped++; continue; }
     if (detailer?.sms_enabled === false) { skipped++; continue; }
+    if (!quote.client_phone) { skipped++; continue; }
 
     const settings = detailer.notification_settings || {};
     if (settings.jobReminderSms === false) { skipped++; continue; }
