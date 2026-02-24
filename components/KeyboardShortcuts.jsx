@@ -92,12 +92,8 @@ export default function KeyboardShortcuts() {
         return;
       }
 
-      // Cmd/Ctrl + K -> Search (go to aircraft database)
-      if (meta && e.key === 'k') {
-        e.preventDefault();
-        window.location.href = '/admin/aircraft';
-        return;
-      }
+      // Cmd/Ctrl + K -> Search (handled by GlobalSearch component)
+      // Don't intercept here — let GlobalSearch handle it
 
       // Cmd/Ctrl + S -> Save (dispatch custom event for forms to listen to)
       if (meta && e.key === 's') {
