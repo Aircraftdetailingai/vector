@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPrice } from '@/lib/formatPrice';
 
 const statusColors = {
   scheduled: 'bg-blue-500',
@@ -290,7 +291,7 @@ export default function CalendarPage() {
                     {job.aircraft_model || job.aircraft_type}
                   </div>
                   <div className="text-xs text-green-600 font-medium mt-1">
-                    ${(job.total_price || 0).toFixed(2)}
+                    ${formatPrice(job.total_price)}
                   </div>
                 </div>
               ))}
@@ -360,7 +361,7 @@ export default function CalendarPage() {
               <div>
                 <label className="text-sm text-gray-500">Total</label>
                 <p className="font-semibold text-lg text-green-600">
-                  ${(selectedJob.total_price || 0).toFixed(2)}
+                  ${formatPrice(selectedJob.total_price)}
                 </p>
               </div>
             </div>

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPrice, formatPriceWhole } from '@/lib/formatPrice';
 
 const COMMON_SERVICES = [
   { name: 'Exterior Wash', description: 'Full exterior aircraft wash and dry', hours_field: 'ext_wash_hours', defaultRate: 85 },
@@ -722,7 +723,7 @@ export default function OnboardingPage() {
                             <span className="text-gray-800">{svc.name}</span>
                           </div>
                           <div className="text-right">
-                            <span className="font-semibold">${price.toFixed(0)}</span>
+                            <span className="font-semibold">${formatPriceWhole(price)}</span>
                             <span className="text-xs text-gray-400 ml-1">({hours.toFixed(1)}h)</span>
                           </div>
                         </div>
@@ -738,11 +739,11 @@ export default function OnboardingPage() {
                     </div>
                     <div className="flex justify-between text-xl font-bold">
                       <span>Quote Total</span>
-                      <span>${testTotal.toFixed(2)}</span>
+                      <span>${formatPrice(testTotal)}</span>
                     </div>
                     {parseFloat(minimumFee) > 0 && testTotal > 0 && testTotal < parseFloat(minimumFee) && (
                       <div className="mt-2 text-xs text-amber-400">
-                        Minimum fee of ${parseFloat(minimumFee).toFixed(0)} would apply
+                        Minimum fee of ${formatPriceWhole(minimumFee)} would apply
                       </div>
                     )}
                   </div>

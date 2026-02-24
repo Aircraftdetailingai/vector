@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { EquipmentTeaser } from './EquipmentROI';
+import { formatPrice, formatPriceWhole } from '@/lib/formatPrice';
 
 export default function UpgradeModal({ isOpen, onClose, detailerId, existingServices = [] }) {
   const [analysis, setAnalysis] = useState(null);
@@ -135,7 +136,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Fees This Month</p>
-                <p className="text-2xl font-bold">${analysis.stats.feesThisMonth.toFixed(2)}</p>
+                <p className="text-2xl font-bold">${formatPrice(analysis.stats.feesThisMonth)}</p>
               </div>
             </div>
 
@@ -162,10 +163,10 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                   <>
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
                       <p className="text-green-800 font-medium">
-                        You'd save <span className="text-xl font-bold">${analysis.savings.netMonthlySavings.toFixed(2)}</span>/month
+                        You'd save <span className="text-xl font-bold">${formatPrice(analysis.savings.netMonthlySavings)}</span>/month
                       </p>
                       <p className="text-green-600 text-sm">
-                        That's ${(analysis.savings.netMonthlySavings * 12).toFixed(2)}/year!
+                        That's ${formatPrice(analysis.savings.netMonthlySavings * 12)}/year!
                       </p>
                     </div>
                     {/* Equipment ROI Teaser */}
@@ -177,7 +178,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                 ) : (
                   <div className="bg-gray-50 rounded-lg p-3 text-center">
                     <p className="text-gray-600 text-sm">
-                      Upgrade pays for itself at ${analysis.savings.breakevenRevenue.toFixed(0)}/month revenue
+                      Upgrade pays for itself at ${formatPriceWhole(analysis.savings.breakevenRevenue)}/month revenue
                     </p>
                   </div>
                 )}

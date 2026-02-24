@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { PLATFORM_FEES } from '@/lib/pricing-tiers';
+import { formatPrice } from '@/lib/formatPrice';
 
 // Friendly error messages for payment declines
 const PAYMENT_ERROR_MESSAGES = {
@@ -24,6 +25,7 @@ export default function QuoteViewPage() {
   const [paymentLoading, setPaymentLoading] = useState(false);
   const [requestSent, setRequestSent] = useState(false);
   const [tipsSent, setTipsSent] = useState(false);
+  const [stripeConnected, setStripeConnected] = useState(true);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -35,6 +37,7 @@ export default function QuoteViewPage() {
         const data = await res.json();
         setQuote(data.quote);
         setDetailer(data.detailer);
+        setStripeConnected(data.stripe_connected !== false);
       } catch (err) {
         setError(err.message);
       } finally {
@@ -238,7 +241,7 @@ export default function QuoteViewPage() {
               </div>
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-gray-800 font-semibold">Total Paid:</span>
-                <span className="font-bold text-lg">${(parseFloat(quote.total_price) || 0).toFixed(2)}</span>
+                <span className="font-bold text-lg">${formatPrice(quote.total_price)}</span>
               </div>
             </div>
           </div>
@@ -323,7 +326,7 @@ export default function QuoteViewPage() {
                 {quote.line_items.map((item, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-gray-700">{item.description}</span>
-                    <span className="text-gray-900">${(parseFloat(item.amount) || 0).toFixed(2)}</span>
+                    <span className="text-gray-900">${formatPrice(item.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -333,11 +336,11 @@ export default function QuoteViewPage() {
               <div className="pt-3 border-t space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">Labor</span>
-                  <span className="text-gray-900">${(parseFloat(quote.labor_total) || parseFloat(quote.total_price) * 0.7 || 0).toFixed(2)}</span>
+                  <span className="text-gray-900">${formatPrice(parseFloat(quote.labor_total) || parseFloat(quote.total_price) * 0.7)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">Products & Materials</span>
-                  <span className="text-gray-900">${(parseFloat(quote.products_total) || parseFloat(quote.total_price) * 0.3 || 0).toFixed(2)}</span>
+                  <span className="text-gray-900">${formatPrice(parseFloat(quote.products_total) || parseFloat(quote.total_price) * 0.3)}</span>
                 </div>
               </div>
             )}
@@ -358,7 +361,7 @@ export default function QuoteViewPage() {
                     <span className="text-gray-700">
                       {fee.name} {fee.fee_type === 'percent' ? `(${fee.amount}%)` : ''}
                     </span>
-                    <span className="text-gray-900">+${(parseFloat(fee.calculated) || 0).toFixed(2)}</span>
+                    <span className="text-gray-900">+${formatPrice(fee.calculated)}</span>
                   </div>
                 ))}
               </div>
@@ -378,12 +381,12 @@ export default function QuoteViewPage() {
                   {passFee && serviceFee > 0 && (
                     <div className="flex justify-between text-sm pt-2">
                       <span className="text-gray-500">Service Fee ({Math.round(feeRate * 100)}%)</span>
-                      <span className="text-gray-700">+${serviceFee.toFixed(2)}</span>
+                      <span className="text-gray-700">+${formatPrice(serviceFee)}</span>
                     </div>
                   )}
                   <div className="flex justify-between pt-3 border-t">
                     <span className="text-gray-800 font-semibold">Total:</span>
-                    <span className="font-bold text-2xl text-[#1e3a5f]">${displayTotal.toFixed(2)}</span>
+                    <span className="font-bold text-2xl text-[#1e3a5f]">${formatPrice(displayTotal)}</span>
                   </div>
                 </>
               );
@@ -421,14 +424,23 @@ export default function QuoteViewPage() {
           </div>
         )}
 
-        {/* Pay Button */}
-        <button
-          onClick={handlePayment}
-          disabled={paymentLoading}
-          className="w-full py-3 rounded-lg text-white font-medium bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 disabled:opacity-50"
-        >
-          {paymentLoading ? 'Processing...' : 'Approve & Pay'}
-        </button>
+        {/* Pay Button or Payment Unavailable */}
+        {stripeConnected ? (
+          <button
+            onClick={handlePayment}
+            disabled={paymentLoading}
+            className="w-full py-3 rounded-lg text-white font-medium bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 disabled:opacity-50"
+          >
+            {paymentLoading ? 'Processing...' : 'Approve & Pay'}
+          </button>
+        ) : (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
+            <p className="text-blue-800 font-medium">Payment details to follow</p>
+            <p className="text-blue-700 text-sm mt-1">
+              Online payment is not available for this quote. {detailer?.company || 'The detailer'} will contact you with payment arrangements.
+            </p>
+          </div>
+        )}
 
         {/* Detailer Contact */}
         {detailer && (

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPriceWhole } from '@/lib/formatPrice';
 
 const CATEGORY_LABELS = {
   compound: 'Compound',
@@ -253,7 +254,7 @@ export default function ProductsPage() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div className="bg-white rounded-lg p-4 shadow">
             <p className="text-gray-500 text-xs">Inventory Value</p>
-            <p className="text-2xl font-bold text-gray-900">${totalValue.toFixed(0)}</p>
+            <p className="text-2xl font-bold text-gray-900">${formatPriceWhole(totalValue)}</p>
           </div>
           <div className="bg-white rounded-lg p-4 shadow">
             <p className="text-gray-500 text-xs">Products Tracked</p>
@@ -263,11 +264,11 @@ export default function ProductsPage() {
             <>
               <div className="bg-white rounded-lg p-4 shadow">
                 <p className="text-gray-500 text-xs">Material Cost (Month)</p>
-                <p className="text-2xl font-bold text-blue-600">${insights.summary.totalMaterialCost.toFixed(0)}</p>
+                <p className="text-2xl font-bold text-blue-600">${formatPriceWhole(insights.summary.totalMaterialCost)}</p>
               </div>
               <div className="bg-white rounded-lg p-4 shadow">
                 <p className="text-gray-500 text-xs">Avg Cost/Job</p>
-                <p className="text-2xl font-bold text-purple-600">${insights.summary.avgMaterialCostPerJob.toFixed(0)}</p>
+                <p className="text-2xl font-bold text-purple-600">${formatPriceWhole(insights.summary.avgMaterialCostPerJob)}</p>
               </div>
             </>
           )}

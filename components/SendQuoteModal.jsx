@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import CustomerSelector from "./CustomerSelector";
+import { formatPrice } from "@/lib/formatPrice";
 
 export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
   const [clientName, setClientName] = useState("");
@@ -262,7 +263,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
           <div>
             <h2 className="text-xl font-semibold mb-2">Send Quote to Client</h2>
             <p className="mb-4 text-gray-600">
-              {aircraftName && `Aircraft: ${aircraftName}`}{quote?.airport ? ` • ${quote.airport}` : ''} • Total: ${totalPrice.toFixed(2)}
+              {aircraftName && `Aircraft: ${aircraftName}`}{quote?.airport ? ` • ${quote.airport}` : ''} • Total: ${formatPrice(totalPrice)}
             </p>
             {error && <p className="text-red-600 mb-2">{error}</p>}
 
@@ -362,7 +363,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
             {requiresSms && isBusiness && effectiveName && effectivePhone && (
               <div className="mb-3">
                 <div className="bg-green-100 text-green-800 p-3 rounded text-sm whitespace-pre-line">
-                  {`Hi ${effectiveName}, here's your quote for the ${aircraftName} detail:\n${quoteLink || '[link will appear after sending]'}\nTotal: $${totalPrice.toFixed(2)}\n- ${user?.name || ''}, ${user?.company || ''}`}
+                  {`Hi ${effectiveName}, here's your quote for the ${aircraftName} detail:\n${quoteLink || '[link will appear after sending]'}\nTotal: $${formatPrice(totalPrice)}\n- ${user?.name || ''}, ${user?.company || ''}`}
                 </div>
               </div>
             )}

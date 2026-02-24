@@ -1,5 +1,6 @@
 "use client";
 import { useState } from 'react';
+import { formatPriceWhole } from '@/lib/formatPrice';
 
 const TIERS = [
   {
@@ -233,7 +234,7 @@ export default function LandingPage() {
                 <p className="text-gray-400 text-sm mb-4">{tier.description}</p>
                 <div className="mb-6">
                   <span className="text-4xl font-bold text-white">
-                    {tier.price === 0 ? 'Free' : `$${tier.price}`}
+                    {tier.price === 0 ? 'Free' : `$${formatPriceWhole(tier.price)}`}
                   </span>
                   {tier.price > 0 && (
                     <span className="text-gray-400 text-sm">{tier.period}</span>

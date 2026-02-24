@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPrice } from '@/lib/formatPrice';
 
 export default function TeamPage() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export default function TeamPage() {
         </div>
         <div className="bg-white/10 rounded-lg p-3 text-center">
           <p className="text-white/60 text-xs">Total Pay</p>
-          <p className="text-white text-xl font-bold">${totalPay.toFixed(2)}</p>
+          <p className="text-white text-xl font-bold">${formatPrice(totalPay)}</p>
         </div>
       </div>
 
@@ -133,7 +134,7 @@ export default function TeamPage() {
                     {(member.total_hours || 0).toFixed(1)}
                   </td>
                   <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">
-                    ${(member.total_pay || 0).toFixed(2)}
+                    ${formatPrice(member.total_pay)}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-block w-2 h-2 rounded-full ${

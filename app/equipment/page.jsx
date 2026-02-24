@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPriceWhole } from '@/lib/formatPrice';
 
 const CATEGORY_LABELS = {
   polisher: 'Polisher',
@@ -228,7 +229,7 @@ export default function EquipmentPage() {
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-gray-500 text-xs">Total Investment</p>
-              <p className="text-2xl font-bold text-gray-900">${stats.totalInvestment.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-gray-900">${formatPriceWhole(stats.totalInvestment)}</p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-gray-500 text-xs">Equipment Tracked</p>
@@ -241,7 +242,7 @@ export default function EquipmentPage() {
             <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-gray-500 text-xs">Avg Cost/Job</p>
               <p className="text-2xl font-bold text-purple-600">
-                {stats.avgCostPerJob ? `$${stats.avgCostPerJob.toFixed(0)}` : '-'}
+                {stats.avgCostPerJob ? `$${formatPriceWhole(stats.avgCostPerJob)}` : '-'}
               </p>
             </div>
           </div>
@@ -262,8 +263,8 @@ export default function EquipmentPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-emerald-600">${item.cost_per_job.toFixed(0)}/job</p>
-                    <p className="text-xs text-gray-400">${item.purchase_price} invested</p>
+                    <p className="font-bold text-emerald-600">${formatPriceWhole(item.cost_per_job)}/job</p>
+                    <p className="text-xs text-gray-400">${formatPriceWhole(item.purchase_price)} invested</p>
                   </div>
                 </div>
               ))}
@@ -322,14 +323,14 @@ export default function EquipmentPage() {
                           </div>
                           <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
                             {item.purchase_price > 0 && (
-                              <span>${item.purchase_price.toLocaleString()}</span>
+                              <span>${formatPriceWhole(item.purchase_price)}</span>
                             )}
                             {item.purchase_date && (
                               <span>Bought {formatDate(item.purchase_date)}</span>
                             )}
                             <span className="font-medium text-blue-600">{item.jobs_completed} jobs</span>
                             {item.cost_per_job && (
-                              <span className="text-emerald-600">${item.cost_per_job.toFixed(0)}/job</span>
+                              <span className="text-emerald-600">${formatPriceWhole(item.cost_per_job)}/job</span>
                             )}
                           </div>
                           {item.maintenance_notes && (

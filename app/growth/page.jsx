@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPriceWhole } from '@/lib/formatPrice';
 
 export default function GrowthPage() {
   const router = useRouter();
@@ -121,7 +122,7 @@ export default function GrowthPage() {
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-gray-500 text-xs">Avg Hourly Rate</p>
-              <p className="text-2xl font-bold text-green-600">${avgRate.toFixed(0)}</p>
+              <p className="text-2xl font-bold text-green-600">${formatPriceWhole(avgRate)}</p>
             </div>
           </div>
         )}
@@ -189,8 +190,8 @@ export default function GrowthPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-green-600">${item.costPerJob.toFixed(0)}/job</p>
-                    <p className="text-xs text-gray-400">${item.purchase_price} invested</p>
+                    <p className="font-bold text-green-600">${formatPriceWhole(item.costPerJob)}/job</p>
+                    <p className="text-xs text-gray-400">${formatPriceWhole(item.purchase_price)} invested</p>
                   </div>
                 </div>
               ))}

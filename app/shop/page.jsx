@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPrice } from '@/lib/formatPrice';
 
 const CATEGORIES = [
   { key: 'all', name: 'All Products' },
@@ -246,7 +247,7 @@ export default function ShopPage() {
 
                   <div className="mt-4 flex items-center justify-between">
                     <span className="text-xl font-bold text-amber-600">
-                      ${product.price?.toFixed(2)}
+                      ${formatPrice(product.price)}
                     </span>
                     <button
                       onClick={() => addToCart(product)}
@@ -309,7 +310,7 @@ export default function ShopPage() {
                       <div className="flex-1">
                         <h4 className="font-medium text-gray-900 line-clamp-1">{item.name}</h4>
                         <p className="text-sm text-gray-500">{item.vendor}</p>
-                        <p className="text-amber-600 font-semibold">${item.price?.toFixed(2)}</p>
+                        <p className="text-amber-600 font-semibold">${formatPrice(item.price)}</p>
 
                         {/* Quantity Controls */}
                         <div className="flex items-center gap-2 mt-2">

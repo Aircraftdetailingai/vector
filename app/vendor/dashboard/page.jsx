@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DataTable from '@/components/DataTable';
+import { formatPrice, formatPriceWhole } from '@/lib/formatPrice';
 
 export default function VendorDashboardPage() {
   const router = useRouter();
@@ -115,18 +116,18 @@ export default function VendorDashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard
                 label="Total Sales"
-                value={`$${stats.totalSales.toLocaleString()}`}
+                value={`$${formatPriceWhole(stats.totalSales)}`}
                 sub="All time"
               />
               <StatCard
                 label="Your Earnings"
-                value={`$${stats.vendorEarnings.toLocaleString()}`}
+                value={`$${formatPriceWhole(stats.vendorEarnings)}`}
                 sub={`${100 - stats.commissionRate}% of sales`}
                 highlight
               />
               <StatCard
                 label="Available Balance"
-                value={`$${stats.currentBalance.toLocaleString()}`}
+                value={`$${formatPriceWhole(stats.currentBalance)}`}
                 sub="Ready for payout"
               />
               <StatCard
@@ -150,7 +151,7 @@ export default function VendorDashboardPage() {
                           <p className="font-medium text-sm">{p.name}</p>
                           <p className="text-xs text-gray-500">{p.sales || 0} sales</p>
                         </div>
-                        <p className="text-green-600 font-medium">${(p.price * (p.sales || 0)).toLocaleString()}</p>
+                        <p className="text-green-600 font-medium">${formatPriceWhole(p.price * (p.sales || 0))}</p>
                       </div>
                     ))}
                   </div>
@@ -601,19 +602,19 @@ function VendorOrders() {
       id: 'total',
       header: 'Total',
       accessorKey: 'total',
-      cell: ({ getValue }) => <span className="font-semibold">${(getValue() || 0).toFixed(2)}</span>,
+      cell: ({ getValue }) => <span className="font-semibold">${formatPrice(getValue())}</span>,
     },
     {
       id: 'commission',
       header: 'Commission',
       accessorKey: 'commission',
-      cell: ({ getValue }) => <span className="text-red-600">-${(getValue() || 0).toFixed(2)}</span>,
+      cell: ({ getValue }) => <span className="text-red-600">-${formatPrice(getValue())}</span>,
     },
     {
       id: 'vendor_amount',
       header: 'Your Earnings',
       accessorKey: 'vendor_amount',
-      cell: ({ getValue }) => <span className="text-green-600 font-medium">${(getValue() || 0).toFixed(2)}</span>,
+      cell: ({ getValue }) => <span className="text-green-600 font-medium">${formatPrice(getValue())}</span>,
     },
     {
       id: 'status',
@@ -750,24 +751,24 @@ function VendorAnalytics({ stats }) {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Total Sales</span>
-            <span className="font-bold text-lg">${stats.totalSales.toLocaleString()}</span>
+            <span className="font-bold text-lg">${formatPriceWhole(stats.totalSales)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Platform Commission ({stats.commissionRate}%)</span>
-            <span className="text-red-600">-${stats.commissionPaid.toLocaleString()}</span>
+            <span className="text-red-600">-${formatPriceWhole(stats.commissionPaid)}</span>
           </div>
           <hr />
           <div className="flex justify-between items-center">
             <span className="font-semibold">Your Earnings</span>
-            <span className="font-bold text-lg text-green-600">${stats.vendorEarnings.toLocaleString()}</span>
+            <span className="font-bold text-lg text-green-600">${formatPriceWhole(stats.vendorEarnings)}</span>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-500">Already Paid Out</span>
-            <span>${stats.totalPaidOut.toLocaleString()}</span>
+            <span>${formatPriceWhole(stats.totalPaidOut)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="font-semibold">Available Balance</span>
-            <span className="font-bold text-amber-600">${stats.currentBalance.toLocaleString()}</span>
+            <span className="font-bold text-amber-600">${formatPriceWhole(stats.currentBalance)}</span>
           </div>
         </div>
       </div>
