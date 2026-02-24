@@ -2,8 +2,10 @@
 import { useState, useEffect } from "react";
 import CustomerSelector from "./CustomerSelector";
 import { formatPrice } from "@/lib/formatPrice";
+import { useToast } from "./Toast";
 
 export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
+  const { success: toastSuccess, error: toastError } = useToast();
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
   const [clientEmail, setClientEmail] = useState("");
@@ -218,6 +220,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       const link = `${window.location.origin}/q/${share_link}`;
       setQuoteLink(link);
       setSuccess(true);
+      toastSuccess("Quote sent successfully!");
       if (sendResult.emailSent === false && sendResult.emailError) {
         setError(`Quote sent but email failed: ${sendResult.emailError}`);
       }
@@ -233,8 +236,9 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(quoteLink);
+      toastSuccess("Link copied to clipboard");
     } catch (e) {
-      console.error("Failed to copy", e);
+      toastError("Failed to copy link");
     }
   };
 

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import LoadingSpinner from '@/components/LoadingSpinner';
 
 const categories = [
   { value: 'piston', label: 'Piston' },
@@ -370,11 +371,7 @@ export default function AdminAircraftPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
-        <div className="text-gray-500">Loading...</div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading aircraft database..." />;
   }
 
   return (
