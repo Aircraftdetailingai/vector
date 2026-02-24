@@ -6,15 +6,15 @@ const TIERS = [
   {
     key: 'free',
     name: 'Free',
-    price: 0,
-    period: 'forever',
+    monthlyPrice: 0,
+    annualPrice: 0,
     description: 'Get started with Vector',
     features: [
       'Up to 3 quotes/month',
       'Basic aircraft database',
       'Share quotes via link',
       'Email support',
-      '10% platform fee',
+      '5% platform fee',
     ],
     cta: 'Start Free',
     highlight: false,
@@ -22,8 +22,8 @@ const TIERS = [
   {
     key: 'pro',
     name: 'Pro',
-    price: 79,
-    period: '/month',
+    monthlyPrice: 79,
+    annualPrice: 59,
     description: 'Most popular for full-time detailers',
     features: [
       'Unlimited quotes',
@@ -40,8 +40,8 @@ const TIERS = [
   {
     key: 'business',
     name: 'Business',
-    price: 149,
-    period: '/month',
+    monthlyPrice: 149,
+    annualPrice: 112,
     description: 'For teams and high-volume shops',
     features: [
       'Unlimited quotes',
@@ -211,12 +211,38 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold text-white text-center mb-4">
             Simple, Transparent Pricing
           </h2>
-          <p className="text-gray-400 text-center mb-12 max-w-2xl mx-auto">
+          <p className="text-gray-400 text-center mb-8 max-w-2xl mx-auto">
             Start free and upgrade as your business grows. No hidden fees, no long-term contracts.
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            {TIERS.map((tier) => (
+          {/* Billing Toggle */}
+          <div className="flex justify-center mb-12">
+            <div className="inline-flex items-center gap-3 bg-white/[0.05] border border-white/10 rounded-full p-1.5">
+              <button
+                onClick={() => setAnnualBilling(false)}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  !annualBilling ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setAnnualBilling(true)}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  annualBilling ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Annual
+                <span className="ml-1.5 text-xs font-bold text-green-500">-25%</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
+            {TIERS.map((tier) => {
+              const price = annualBilling ? tier.annualPrice : tier.monthlyPrice;
+              const showSavings = annualBilling && tier.monthlyPrice > 0;
+              return (
               <div
                 key={tier.key}
                 className={`rounded-xl p-6 flex flex-col ${
@@ -234,10 +260,19 @@ export default function LandingPage() {
                 <p className="text-gray-400 text-sm mb-4">{tier.description}</p>
                 <div className="mb-6">
                   <span className="text-4xl font-bold text-white">
-                    {tier.price === 0 ? 'Free' : `$${formatPriceWhole(tier.price)}`}
+                    {price === 0 ? 'Free' : `$${price}`}
                   </span>
-                  {tier.price > 0 && (
-                    <span className="text-gray-400 text-sm">{tier.period}</span>
+                  {price > 0 && (
+                    <span className="text-gray-400 text-sm">/mo</span>
+                  )}
+                  {showSavings && (
+                    <div className="mt-1">
+                      <span className="text-gray-500 text-sm line-through">${tier.monthlyPrice}/mo</span>
+                      <span className="ml-2 text-green-400 text-xs font-semibold">Save ${(tier.monthlyPrice - tier.annualPrice) * 12}/yr</span>
+                    </div>
+                  )}
+                  {annualBilling && price > 0 && (
+                    <p className="text-gray-500 text-xs mt-1">Billed ${price * 12}/year</p>
                   )}
                 </div>
                 <ul className="space-y-3 mb-8 flex-1">
@@ -259,7 +294,8 @@ export default function LandingPage() {
                   {tier.cta}
                 </a>
               </div>
-            ))}
+              );
+            })}
           </div>
 
           <p className="text-center text-gray-500 mt-8 text-sm">
@@ -299,6 +335,8 @@ export default function LandingPage() {
             <a href="/login" className="hover:text-white">Sign In</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
             <a href="#features" className="hover:text-white">Features</a>
+            <a href="/terms" className="hover:text-white">Terms</a>
+            <a href="/privacy" className="hover:text-white">Privacy</a>
           </div>
         </div>
       </footer>

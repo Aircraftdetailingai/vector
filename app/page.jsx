@@ -1,5 +1,5 @@
 "use client";
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 const FEATURES = [
@@ -20,17 +20,17 @@ const STEPS = [
 const TIERS = [
   {
     name: 'Free',
-    price: '$0',
-    period: '/mo',
+    monthlyPrice: 0,
+    annualPrice: 0,
     desc: 'Try Vector risk-free',
-    features: ['3 quotes/month', '300+ aircraft database', 'Email quotes', 'Stripe payments', '10% platform fee'],
+    features: ['3 quotes/month', '300+ aircraft database', 'Email quotes', 'Stripe payments', '5% platform fee'],
     cta: 'Start Free',
     highlight: false,
   },
   {
     name: 'Pro',
-    price: '$79',
-    period: '/mo',
+    monthlyPrice: 79,
+    annualPrice: 59,
     desc: 'For full-time detailers',
     features: ['Unlimited quotes', '300+ aircraft database', 'Email & SMS quotes', 'SMS alerts to you', 'Remove Vector branding', 'Calendar & scheduling', 'Priority support', '2% platform fee'],
     cta: 'Go Pro',
@@ -38,8 +38,8 @@ const TIERS = [
   },
   {
     name: 'Business',
-    price: '$149',
-    period: '/mo',
+    monthlyPrice: 149,
+    annualPrice: 112,
     desc: 'For teams & high-volume shops',
     features: ['Everything in Pro', 'Multi-user access', 'Vendor portal', 'API access', 'ROI analytics', 'SMS to clients', 'Dedicated support', '1% platform fee'],
     cta: 'Get Business',
@@ -57,6 +57,7 @@ const FAQS = [
 
 export default function LandingPage() {
   const router = useRouter();
+  const [billingAnnual, setBillingAnnual] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -234,10 +235,34 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="text-center mb-16">
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">Simple, Transparent Pricing</h2>
-            <p className="text-gray-400 max-w-2xl mx-auto">Start free and upgrade as you grow. No hidden fees, no long-term contracts.</p>
+            <p className="text-gray-400 max-w-2xl mx-auto mb-8">Start free and upgrade as you grow. No hidden fees, no long-term contracts.</p>
+
+            {/* Billing Toggle */}
+            <div className="inline-flex items-center gap-3 bg-white/[0.05] border border-white/10 rounded-full p-1.5">
+              <button
+                onClick={() => setBillingAnnual(false)}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  !billingAnnual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setBillingAnnual(true)}
+                className={`px-5 py-2 rounded-full text-sm font-medium transition-all ${
+                  billingAnnual ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400 hover:text-white'
+                }`}
+              >
+                Annual
+                <span className="ml-1.5 text-xs font-bold text-green-500">-25%</span>
+              </button>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-5xl mx-auto">
-            {TIERS.map((tier) => (
+            {TIERS.map((tier) => {
+              const price = billingAnnual ? tier.annualPrice : tier.monthlyPrice;
+              const showSavings = billingAnnual && tier.monthlyPrice > 0;
+              return (
               <div
                 key={tier.name}
                 className={`rounded-2xl p-8 flex flex-col ${
@@ -254,8 +279,17 @@ export default function LandingPage() {
                 <h3 className="text-xl font-bold text-white">{tier.name}</h3>
                 <p className="text-gray-400 text-sm mt-1 mb-6">{tier.desc}</p>
                 <div className="mb-8">
-                  <span className="text-5xl font-bold text-white">{tier.price}</span>
-                  <span className="text-gray-400 text-sm">{tier.period}</span>
+                  <span className="text-5xl font-bold text-white">{price === 0 ? '$0' : `$${price}`}</span>
+                  <span className="text-gray-400 text-sm">/mo</span>
+                  {showSavings && (
+                    <div className="mt-1">
+                      <span className="text-gray-500 text-sm line-through">${tier.monthlyPrice}/mo</span>
+                      <span className="ml-2 text-green-400 text-xs font-semibold">Save ${(tier.monthlyPrice - tier.annualPrice) * 12}/yr</span>
+                    </div>
+                  )}
+                  {billingAnnual && price > 0 && (
+                    <p className="text-gray-500 text-xs mt-1">Billed ${price * 12}/year</p>
+                  )}
                 </div>
                 <ul className="space-y-3 mb-8 flex-1">
                   {tier.features.map((f, i) => (
@@ -276,7 +310,8 @@ export default function LandingPage() {
                   {tier.cta}
                 </a>
               </div>
-            ))}
+              );
+            })}
           </div>
           <p className="text-center text-gray-500 mt-8 text-sm">
             All plans include Stripe payment processing. Platform fee covers payment processing, hosting, and support.
@@ -370,8 +405,8 @@ export default function LandingPage() {
           <div className="mt-8 pt-6 border-t border-white/5 flex flex-col sm:flex-row justify-between items-center gap-4">
             <p className="text-gray-500 text-sm">&copy; 2025 Vector Aviation Software. All rights reserved.</p>
             <div className="flex gap-6 text-sm text-gray-500">
-              <a href="#" className="hover:text-gray-300 transition-colors">Terms of Service</a>
-              <a href="#" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
+              <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
+              <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
               <a href="mailto:support@vectorav.ai" className="hover:text-gray-300 transition-colors">Contact</a>
             </div>
           </div>
