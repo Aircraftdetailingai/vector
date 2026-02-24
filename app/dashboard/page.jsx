@@ -845,6 +845,7 @@ function DashboardContent() {
             <a href="/equipment" className="underline">Equipment</a>
             <a href="/team" className="underline">Team</a>
             <a href="/recurring" className="underline">Recurring</a>
+            <a href="/analytics" className="underline">Analytics</a>
             <a href="/growth" className="underline">Growth</a>
             <a href="/settings" className="underline">Settings</a>
             <button onClick={handleLogout} className="underline">Logout</button>
@@ -869,6 +870,7 @@ function DashboardContent() {
                   { href: '/equipment', label: 'Equipment' },
                   { href: '/team', label: 'Team' },
                   { href: '/recurring', label: 'Recurring' },
+                  { href: '/analytics', label: 'Analytics' },
                   { href: '/growth', label: 'Growth' },
                   { href: '/settings', label: 'Settings' },
                 ].map(link => (
