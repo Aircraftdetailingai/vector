@@ -1,4 +1,5 @@
 .vercel
 .env*.local
+.env.local.prod
 node_modules/
 .next/
