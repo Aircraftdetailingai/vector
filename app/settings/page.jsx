@@ -60,6 +60,13 @@ function SettingsContent() {
   // Upgrade billing toggle
   const [upgradeBilling, setUpgradeBilling] = useState('monthly');
 
+  // Promo code state
+  const [showPromo, setShowPromo] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoValidating, setPromoValidating] = useState(false);
+  const [promoResult, setPromoResult] = useState(null); // { valid, description, min_months, ... }
+  const [promoError, setPromoError] = useState('');
+
   // Sticky save button state
   const [pendingChanges, setPendingChanges] = useState(new Set());
   const [saving, setSaving] = useState(false);
@@ -493,6 +500,34 @@ function SettingsContent() {
     finally { setAddonLoading(false); }
   };
 
+  const validatePromo = async (code) => {
+    if (!code.trim()) {
+      setPromoResult(null);
+      setPromoError('');
+      return;
+    }
+    setPromoValidating(true);
+    setPromoError('');
+    setPromoResult(null);
+    try {
+      const res = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setPromoResult(data);
+      } else {
+        setPromoError(data.error || 'Invalid promo code');
+      }
+    } catch (err) {
+      setPromoError('Failed to validate code');
+    } finally {
+      setPromoValidating(false);
+    }
+  };
+
   const saveAllChanges = async () => {
     setSaving(true);
     try {
@@ -594,16 +629,61 @@ function SettingsContent() {
                       Annual <span className="text-green-500 font-bold">-25%</span>
                     </button>
                   </div>
+                  {/* Promo Code Section */}
+                  <div className="mb-3">
+                    <button
+                      onClick={() => setShowPromo(!showPromo)}
+                      className="text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                      {showPromo ? '- Hide promo code' : '+ Have a promo code?'}
+                    </button>
+                    {showPromo && (
+                      <div className="mt-2 flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={promoCode}
+                          onChange={(e) => {
+                            setPromoCode(e.target.value.toUpperCase());
+                            setPromoResult(null);
+                            setPromoError('');
+                          }}
+                          onBlur={() => validatePromo(promoCode)}
+                          onKeyDown={(e) => e.key === 'Enter' && validatePromo(promoCode)}
+                          placeholder="Enter code"
+                          className="px-3 py-1.5 rounded bg-white/10 border border-white/20 text-white placeholder-gray-500 text-sm w-40"
+                        />
+                        {promoValidating && (
+                          <span className="text-xs text-gray-400">Checking...</span>
+                        )}
+                        {promoResult && (
+                          <span className="text-xs text-green-400 font-medium">
+                            {promoResult.code}: {promoResult.description}
+                          </span>
+                        )}
+                        {promoError && (
+                          <span className="text-xs text-red-400">{promoError}</span>
+                        )}
+                      </div>
+                    )}
+                    {promoResult?.min_months > 0 && (
+                      <p className="text-xs text-gray-400 mt-1 ml-1">
+                        {promoResult.min_months} month minimum commitment required
+                      </p>
+                    )}
+                  </div>
+
                   <div className="flex flex-wrap gap-2">
                     {user?.plan !== 'pro' && user?.plan !== 'business' && (
                       <button
                         onClick={async () => {
                           try {
                             const token = localStorage.getItem('vector_token');
+                            const body = { tier: 'pro', billing: upgradeBilling };
+                            if (promoResult?.code) body.promo_code = promoResult.code;
                             const res = await fetch('/api/upgrade', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                              body: JSON.stringify({ tier: 'pro', billing: upgradeBilling }),
+                              body: JSON.stringify(body),
                             });
                             const data = await res.json();
                             if (data.url) window.location.href = data.url;
@@ -621,10 +701,12 @@ function SettingsContent() {
                         onClick={async () => {
                           try {
                             const token = localStorage.getItem('vector_token');
+                            const body = { tier: 'business', billing: upgradeBilling };
+                            if (promoResult?.code) body.promo_code = promoResult.code;
                             const res = await fetch('/api/upgrade', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                              body: JSON.stringify({ tier: 'business', billing: upgradeBilling }),
+                              body: JSON.stringify(body),
                             });
                             const data = await res.json();
                             if (data.url) window.location.href = data.url;
@@ -642,10 +724,12 @@ function SettingsContent() {
                         onClick={async () => {
                           try {
                             const token = localStorage.getItem('vector_token');
+                            const body = { tier: 'enterprise', billing: upgradeBilling };
+                            if (promoResult?.code) body.promo_code = promoResult.code;
                             const res = await fetch('/api/upgrade', {
                               method: 'POST',
                               headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                              body: JSON.stringify({ tier: 'enterprise', billing: upgradeBilling }),
+                              body: JSON.stringify(body),
                             });
                             const data = await res.json();
                             if (data.url) window.location.href = data.url;

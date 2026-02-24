@@ -7,6 +7,11 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
+  const [showPromo, setShowPromo] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoValidating, setPromoValidating] = useState(false);
+  const [promoResult, setPromoResult] = useState(null);
+  const [promoError, setPromoError] = useState('');
 
   useEffect(() => {
     if (isOpen && detailerId) {
@@ -32,19 +37,49 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
     }
   };
 
+  const validatePromo = async (code) => {
+    if (!code.trim()) {
+      setPromoResult(null);
+      setPromoError('');
+      return;
+    }
+    setPromoValidating(true);
+    setPromoError('');
+    setPromoResult(null);
+    try {
+      const res = await fetch('/api/promo/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: code.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok && data.valid) {
+        setPromoResult(data);
+      } else {
+        setPromoError(data.error || 'Invalid promo code');
+      }
+    } catch (err) {
+      setPromoError('Failed to validate code');
+    } finally {
+      setPromoValidating(false);
+    }
+  };
+
   const handleUpgrade = async () => {
     if (!analysis?.nextTier) return;
     setUpgrading(true);
 
     try {
       const token = localStorage.getItem('vector_token');
+      const body = { tier: analysis.nextTier };
+      if (promoResult?.code) body.promo_code = promoResult.code;
       const res = await fetch('/api/upgrade', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ tier: analysis.nextTier }),
+        body: JSON.stringify(body),
       });
 
       const data = await res.json();
@@ -181,6 +216,51 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                       Upgrade pays for itself at ${formatPriceWhole(analysis.savings.breakevenRevenue)}/month revenue
                     </p>
                   </div>
+                )}
+              </div>
+            )}
+
+            {/* Promo Code */}
+            {analysis.nextTier && (
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowPromo(!showPromo)}
+                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  {showPromo ? '- Hide promo code' : '+ Have a promo code?'}
+                </button>
+                {showPromo && (
+                  <div className="mt-2 flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => {
+                        setPromoCode(e.target.value.toUpperCase());
+                        setPromoResult(null);
+                        setPromoError('');
+                      }}
+                      onBlur={() => validatePromo(promoCode)}
+                      onKeyDown={(e) => e.key === 'Enter' && validatePromo(promoCode)}
+                      placeholder="Enter code"
+                      className="px-3 py-1.5 border rounded text-sm w-36"
+                    />
+                    {promoValidating && (
+                      <span className="text-xs text-gray-400">Checking...</span>
+                    )}
+                    {promoResult && (
+                      <span className="text-xs text-green-600 font-medium">
+                        {promoResult.code}: {promoResult.description}
+                      </span>
+                    )}
+                    {promoError && (
+                      <span className="text-xs text-red-500">{promoError}</span>
+                    )}
+                  </div>
+                )}
+                {promoResult?.min_months > 0 && (
+                  <p className="text-xs text-gray-500 mt-1">
+                    {promoResult.min_months} month minimum commitment required
+                  </p>
                 )}
               </div>
             )}

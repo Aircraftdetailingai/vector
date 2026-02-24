@@ -175,17 +175,25 @@ export async function POST(request) {
       const tier = subscription.metadata?.tier;
 
       if (detailerId && tier && subscription.status === 'active') {
+        const updateData = {
+          plan: tier,
+          stripe_subscription_id: subscription.id,
+          subscription_status: subscription.status,
+          subscription_updated_at: new Date().toISOString(),
+        };
+
+        // Track promo code if used
+        const promoCode = subscription.metadata?.promo_code;
+        if (promoCode) {
+          updateData.promo_code_used = promoCode;
+        }
+
         await supabase
           .from('detailers')
-          .update({
-            plan: tier,
-            stripe_subscription_id: subscription.id,
-            subscription_status: subscription.status,
-            subscription_updated_at: new Date().toISOString(),
-          })
+          .update(updateData)
           .eq('id', detailerId);
 
-        console.log(`Updated detailer ${detailerId} to ${tier} plan`);
+        console.log(`Updated detailer ${detailerId} to ${tier} plan${promoCode ? ` with promo ${promoCode}` : ''}`);
       }
       break;
     }
