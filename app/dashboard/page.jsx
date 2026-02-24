@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import SendQuoteModal from '../../components/SendQuoteModal.jsx';
 import PushNotifications from '../../components/PushNotifications.jsx';
 import PointsBadge from '../../components/PointsBadge.jsx';
+import { formatPrice, formatPriceWhole } from '../../lib/formatPrice';
 
 // Error boundary to catch render crashes and show a message instead of blank page
 class DashboardErrorBoundary extends Component {
@@ -61,9 +62,20 @@ const HOURS_FIELD_OPTIONS = {
 };
 
 // Stripe Connect Warning Banner Component
-function StripeWarningBanner({ onConnect, loading, error, onClearError }) {
+function StripeWarningBanner({ onConnect, loading, error, onClearError, status }) {
+  const isDisconnected = status === 'INCOMPLETE' || status === 'PENDING';
+  const bgColor = isDisconnected ? 'bg-red-50 border-red-300' : 'bg-amber-100 border-amber-300';
+  const iconColor = isDisconnected ? 'text-red-600' : 'text-amber-600';
+  const titleColor = isDisconnected ? 'text-red-800' : 'text-amber-800';
+  const msgColor = isDisconnected ? 'text-red-700' : 'text-amber-700';
+  const title = isDisconnected ? 'Stripe disconnected - payments disabled' : 'Stripe not connected';
+  const msg = isDisconnected
+    ? 'Online payments are currently disabled. Quotes can still be sent but customers cannot pay online.'
+    : 'You cannot receive payments until you connect Stripe.';
+  const btnLabel = isDisconnected ? 'Reconnect Stripe' : 'Connect Stripe';
+
   return (
-    <div className="bg-amber-100 border border-amber-300 rounded-lg p-4 mb-4">
+    <div className={`${bgColor} border rounded-lg p-4 mb-4`}>
       {error && (
         <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm flex justify-between items-start">
           <span>{error}</span>
@@ -72,10 +84,10 @@ function StripeWarningBanner({ onConnect, loading, error, onClearError }) {
       )}
       <div className="flex items-center justify-between">
         <div className="flex items-center">
-          <span className="text-amber-600 text-xl mr-3">&#9888;</span>
+          <span className={`${iconColor} text-xl mr-3`}>&#9888;</span>
           <div>
-            <p className="text-amber-800 font-medium">Stripe not connected</p>
-            <p className="text-amber-700 text-sm">You cannot receive payments until you connect Stripe.</p>
+            <p className={`${titleColor} font-medium`}>{title}</p>
+            <p className={`${msgColor} text-sm`}>{msg}</p>
           </div>
         </div>
         <button
@@ -83,7 +95,7 @@ function StripeWarningBanner({ onConnect, loading, error, onClearError }) {
           disabled={loading}
           className="px-4 py-2 rounded bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
         >
-          {loading ? 'Connecting...' : 'Connect Stripe'}
+          {loading ? 'Connecting...' : btnLabel}
         </button>
       </div>
     </div>
@@ -134,6 +146,37 @@ function FreeUsageBar({ user }) {
   );
 }
 
+// Low Stock Alert Component
+function LowStockAlert() {
+  const [lowStock, setLowStock] = useState(null);
+
+  useEffect(() => {
+    const token = localStorage.getItem('vector_token');
+    if (!token) return;
+    fetch('/api/products', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data?.lowStock?.length) setLowStock(data.lowStock); })
+      .catch(() => {});
+  }, []);
+
+  if (!lowStock || lowStock.length === 0) return null;
+
+  return (
+    <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-4 shadow">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="text-red-500 text-lg">&#9888;</span>
+          <div>
+            <p className="text-red-800 text-sm font-semibold">Low Stock ({lowStock.length})</p>
+            <p className="text-red-600 text-xs">{lowStock.map(p => p.name).join(', ')}</p>
+          </div>
+        </div>
+        <a href="/products" className="text-xs text-red-700 font-medium hover:underline whitespace-nowrap">View Inventory</a>
+      </div>
+    </div>
+  );
+}
+
 // Quick Stats Bar Component (inline, fast loading)
 function QuickStats({ stats }) {
   if (!stats) return null;
@@ -154,7 +197,7 @@ function QuickStats({ stats }) {
       </div>
       <div className="bg-white rounded-lg p-3 shadow">
         <p className="text-gray-500 text-xs">Avg Job Value</p>
-        <p className="text-xl font-bold text-green-600">${(parseFloat(stats.avgJobValue) || 0).toFixed(0)}</p>
+        <p className="text-xl font-bold text-green-600">${formatPriceWhole(stats.avgJobValue)}</p>
       </div>
     </div>
   );
@@ -213,7 +256,7 @@ function RecentQuotes({ quotes, onViewQuote }) {
               <span className={`text-xs px-2 py-1 rounded-full ${statusColors[quote.status] || 'bg-gray-100 text-gray-600'}`}>
                 {quote.status || 'draft'}
               </span>
-              <span className="font-bold text-gray-900">${(parseFloat(quote.total_price) || 0).toFixed(0)}</span>
+              <span className="font-bold text-gray-900">${formatPriceWhole(quote.total_price)}</span>
             </div>
           </a>
         ))}
@@ -258,7 +301,7 @@ function UpcomingRecurring({ recurring }) {
               </p>
             </div>
             <div className="text-right">
-              <p className="font-bold text-gray-900">${(parseFloat(item.total_price) || 0).toFixed(0)}</p>
+              <p className="font-bold text-gray-900">${formatPriceWhole(item.total_price)}</p>
               <p className="text-xs text-amber-600">
                 {item.next_service_date ? new Date(item.next_service_date).toLocaleDateString() : 'No date'}
               </p>
@@ -721,6 +764,7 @@ function DashboardContent() {
           loading={stripeLoading}
           error={stripeError}
           onClearError={() => setStripeError(null)}
+          status={stripeStatus.status}
         />
       )}
 
@@ -958,7 +1002,7 @@ function DashboardContent() {
                             {hours.toFixed(1)}h @ ${svc.hourly_rate}/hr
                           </span>
                         </div>
-                        <span className="font-bold text-lg">${price.toFixed(0)}</span>
+                        <span className="font-bold text-lg">${formatPriceWhole(price)}</span>
                       </div>
                     );
                   })}
@@ -1008,10 +1052,10 @@ function DashboardContent() {
                             <div className="text-right">
                               {disc > 0 && (
                                 <span className="text-sm text-gray-400 line-through block">
-                                  ${servicesValue.toFixed(0)}
+                                  ${formatPriceWhole(servicesValue)}
                                 </span>
                               )}
-                              <span className="font-bold text-xl text-green-600">${packagePrice.toFixed(0)}</span>
+                              <span className="font-bold text-xl text-green-600">${formatPriceWhole(packagePrice)}</span>
                             </div>
                           </div>
                         </div>
@@ -1120,7 +1164,7 @@ function DashboardContent() {
                           <span className="text-gray-300">{svc.name}</span>
                           <span className="text-xs text-gray-500 block">{hours.toFixed(1)}h x ${svc.hourly_rate}/hr</span>
                         </div>
-                        <span>${price.toFixed(0)}</span>
+                        <span>${formatPriceWhole(price)}</span>
                       </li>
                     );
                   })}
@@ -1130,7 +1174,7 @@ function DashboardContent() {
                 {selectedPackage && discountPercent > 0 && (
                   <div className="flex justify-between text-sm text-green-400 mb-1">
                     <span>{selectedPackage.name} ({discountPercent}% off)</span>
-                    <span>-${discountAmount.toFixed(0)}</span>
+                    <span>-${formatPriceWhole(discountAmount)}</span>
                   </div>
                 )}
                 {selectedPackage && discountPercent === 0 && (
@@ -1155,7 +1199,7 @@ function DashboardContent() {
                   {addonsTotal > 0 && (
                     <div className="flex justify-between text-sm text-gray-400">
                       <span>Subtotal</span>
-                      <span>${afterDifficulty.toFixed(0)}</span>
+                      <span>${formatPriceWhole(afterDifficulty)}</span>
                     </div>
                   )}
 
@@ -1163,7 +1207,7 @@ function DashboardContent() {
                   {addonFeeItems.map((a) => (
                     <div key={a.id} className="flex justify-between text-sm text-orange-400">
                       <span>{a.name} {a.fee_type === 'percent' ? `(${a.amount}%)` : ''}</span>
-                      <span>+${a.calculated.toFixed(0)}</span>
+                      <span>+${formatPriceWhole(a.calculated)}</span>
                     </div>
                   ))}
 
@@ -1172,11 +1216,11 @@ function DashboardContent() {
                     <>
                       <div className="flex justify-between text-sm text-gray-500 line-through">
                         <span>Calculated</span>
-                        <span>${calculatedPrice.toFixed(2)}</span>
+                        <span>${formatPrice(calculatedPrice)}</span>
                       </div>
                       <div className="flex justify-between text-sm text-amber-400">
                         <span>Minimum Fee Applied</span>
-                        <span>${minimumFee.toFixed(2)}</span>
+                        <span>${formatPrice(minimumFee)}</span>
                       </div>
                     </>
                   )}
@@ -1190,7 +1234,7 @@ function DashboardContent() {
 
                   <div className="flex justify-between text-xl font-bold pt-1">
                     <span>Total</span>
-                    <span>${totalPrice.toFixed(2)}</span>
+                    <span>${formatPrice(totalPrice)}</span>
                   </div>
 
                   {/* Profit preview (internal only) */}
@@ -1198,11 +1242,11 @@ function DashboardContent() {
                     <div className="mt-2 pt-2 border-t border-gray-600/50 space-y-1">
                       <div className="flex justify-between text-xs text-gray-400">
                         <span>Product Cost</span>
-                        <span>-${estimatedProductCost.toFixed(2)}</span>
+                        <span>-${formatPrice(estimatedProductCost)}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold text-green-400">
                         <span>Est. Profit</span>
-                        <span>${estimatedProfit.toFixed(2)}
+                        <span>${formatPrice(estimatedProfit)}
                           <span className="text-xs font-normal ml-1">({totalPrice > 0 ? ((estimatedProfit / totalPrice) * 100).toFixed(0) : 0}%)</span>
                         </span>
                       </div>
@@ -1279,6 +1323,7 @@ function DashboardContent() {
       <div className="mt-6 space-y-4">
         <QuickStats stats={quickStats} />
         <FreeUsageBar user={user} />
+        <LowStockAlert />
         <RecentQuotes quotes={recentQuotes} />
         <UpcomingRecurring recurring={upcomingRecurring} />
 

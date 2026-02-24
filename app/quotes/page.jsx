@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DataTable from '@/components/DataTable';
+import { formatPrice, formatPriceWhole } from '@/lib/formatPrice';
 
 const statusColors = {
   draft: 'bg-gray-100 text-gray-700',
@@ -43,6 +44,8 @@ export default function QuotesPage() {
     issues: '',
   });
   const [serviceHours, setServiceHours] = useState([]);
+  const [inventoryProducts, setInventoryProducts] = useState([]);
+  const [selectedProducts, setSelectedProducts] = useState([]);
   const [completing, setCompleting] = useState(false);
   const [changeOrderModal, setChangeOrderModal] = useState(null);
   const [changeOrderData, setChangeOrderData] = useState({
@@ -145,6 +148,15 @@ export default function QuotesPage() {
     } else {
       setServiceHours([]);
     }
+    // Fetch inventory products for selection
+    setSelectedProducts([]);
+    const token = localStorage.getItem('vector_token');
+    if (token) {
+      fetch('/api/products', { headers: { Authorization: `Bearer ${token}` } })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.products) setInventoryProducts(data.products); })
+        .catch(() => {});
+    }
   };
 
   const openChangeOrderModal = (quote) => {
@@ -233,6 +245,10 @@ export default function QuotesPage() {
           quote_id: completeModal.id,
           actual_hours: parseFloat(completionData.actual_hours),
           service_hours: serviceHours.length > 0 ? serviceHours : undefined,
+          products_used: selectedProducts.filter(sp => sp.product_id && sp.amount).map(sp => ({
+            product_id: sp.product_id,
+            amount: parseFloat(sp.amount) || 0,
+          })),
           product_cost: parseFloat(completionData.product_cost) || 0,
           notes: completionData.notes,
           wait_time_minutes: parseInt(completionData.wait_time_minutes) || 0,
@@ -304,7 +320,7 @@ export default function QuotesPage() {
       header: 'Quote Total',
       accessorKey: 'total_price',
       cell: ({ getValue }) => (
-        <span className="font-semibold">${(parseFloat(getValue()) || 0).toFixed(2)}</span>
+        <span className="font-semibold">${formatPrice(getValue())}</span>
       ),
     },
     {
@@ -313,7 +329,7 @@ export default function QuotesPage() {
       accessorFn: (row) => getProductCost(row),
       cell: ({ getValue }) => {
         const cost = getValue();
-        return cost > 0 ? <span className="text-red-600">${cost.toFixed(2)}</span> : <span className="text-gray-400">-</span>;
+        return cost > 0 ? <span className="text-red-600">${formatPrice(cost)}</span> : <span className="text-gray-400">-</span>;
       },
     },
     {
@@ -331,7 +347,7 @@ export default function QuotesPage() {
         const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(0) : 0;
         return (
           <div>
-            <span className={`font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>${profit.toFixed(2)}</span>
+            <span className={`font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>${formatPrice(profit)}</span>
             <span className="text-xs text-gray-400 ml-1">({margin}%)</span>
           </div>
         );
@@ -529,11 +545,11 @@ export default function QuotesPage() {
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
           <p className="text-gray-500 text-sm">Revenue</p>
-          <p className="text-2xl font-bold text-blue-600">${stats.revenue.toLocaleString()}</p>
+          <p className="text-2xl font-bold text-blue-600">${formatPriceWhole(stats.revenue)}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
           <p className="text-gray-500 text-sm">Gross Profit</p>
-          <p className="text-2xl font-bold text-green-600">${(stats.revenue - stats.productCost).toLocaleString()}</p>
+          <p className="text-2xl font-bold text-green-600">${formatPriceWhole(stats.revenue - stats.productCost)}</p>
           {stats.revenue > 0 && (
             <p className="text-xs text-gray-400">{((1 - stats.productCost / stats.revenue) * 100).toFixed(0)}% margin</p>
           )}
@@ -639,18 +655,74 @@ export default function QuotesPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-1">Product/Material Cost</label>
-                <div className="flex items-center">
-                  <span className="mr-1">$</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={completionData.product_cost}
-                    onChange={(e) => setCompletionData({ ...completionData, product_cost: e.target.value })}
-                    placeholder="0.00"
-                    className="w-32 border rounded px-3 py-2"
-                  />
-                </div>
+                <label className="block text-sm font-medium mb-1">Products Used</label>
+                {inventoryProducts.length > 0 ? (
+                  <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                    {selectedProducts.map((sp, idx) => (
+                      <div key={idx} className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                        <select
+                          value={sp.product_id}
+                          onChange={(e) => {
+                            const updated = [...selectedProducts];
+                            updated[idx] = { ...updated[idx], product_id: e.target.value };
+                            setSelectedProducts(updated);
+                          }}
+                          className="flex-1 border rounded px-2 py-1.5 text-sm"
+                        >
+                          <option value="">Select product...</option>
+                          {inventoryProducts.map(p => (
+                            <option key={p.id} value={p.id}>{p.name} ({p.current_quantity} {p.unit})</option>
+                          ))}
+                        </select>
+                        <input
+                          type="number"
+                          step="0.1"
+                          value={sp.amount}
+                          onChange={(e) => {
+                            const updated = [...selectedProducts];
+                            updated[idx] = { ...updated[idx], amount: e.target.value };
+                            setSelectedProducts(updated);
+                            // Auto-calculate total product cost
+                            let totalCost = 0;
+                            updated.forEach(s => {
+                              const prod = inventoryProducts.find(p => p.id === s.product_id);
+                              if (prod) totalCost += (parseFloat(s.amount) || 0) * (prod.cost_per_unit || 0);
+                            });
+                            setCompletionData(prev => ({ ...prev, product_cost: totalCost.toFixed(2) }));
+                          }}
+                          placeholder="Qty"
+                          className="w-20 border rounded px-2 py-1.5 text-sm text-right"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setSelectedProducts(selectedProducts.filter((_, i) => i !== idx))}
+                          className="text-red-400 hover:text-red-600 text-lg"
+                        >&times;</button>
+                      </div>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setSelectedProducts([...selectedProducts, { product_id: '', amount: '' }])}
+                      className="text-sm text-amber-600 hover:underline"
+                    >+ Add Product</button>
+                    {selectedProducts.length > 0 && completionData.product_cost && (
+                      <p className="text-xs text-gray-500 mt-1">Estimated material cost: ${completionData.product_cost}</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-gray-500">$</span>
+                    <input
+                      type="number"
+                      step="0.01"
+                      value={completionData.product_cost}
+                      onChange={(e) => setCompletionData({ ...completionData, product_cost: e.target.value })}
+                      placeholder="0.00"
+                      className="w-32 border rounded px-3 py-2"
+                    />
+                    <a href="/products" className="text-xs text-amber-600 hover:underline">Add products to track inventory</a>
+                  </div>
+                )}
               </div>
 
               <div>
@@ -759,7 +831,7 @@ export default function QuotesPage() {
 
             <div className="bg-gray-50 p-3 rounded mb-4">
               <p className="text-sm text-gray-600">
-                <strong>Current Quote Total:</strong> ${(parseFloat(changeOrderModal.total_price) || 0).toFixed(2)}
+                <strong>Current Quote Total:</strong> ${formatPrice(changeOrderModal.total_price)}
               </p>
             </div>
 
@@ -824,17 +896,15 @@ export default function QuotesPage() {
                 <div className="flex justify-between text-sm mb-1">
                   <span>Additional Amount:</span>
                   <span className="font-semibold">
-                    ${changeOrderData.services
-                      .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
-                      .toFixed(2)}
+                    ${formatPrice(changeOrderData.services
+                      .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0))}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-bold">
                   <span>New Total:</span>
                   <span>
-                    ${((parseFloat(changeOrderModal.total_price) || 0) +
-                      changeOrderData.services.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0)
-                    ).toFixed(2)}
+                    ${formatPrice((parseFloat(changeOrderModal.total_price) || 0) +
+                      changeOrderData.services.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0))}
                   </span>
                 </div>
               </div>
