@@ -57,6 +57,16 @@ function SettingsContent() {
   const [newAddon, setNewAddon] = useState({ name: '', description: '', fee_type: 'flat', amount: '' });
   const [addonError, setAddonError] = useState('');
 
+  // Sticky save button state
+  const [pendingChanges, setPendingChanges] = useState(new Set());
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  const markDirty = (field) => {
+    setPendingChanges(prev => new Set(prev).add(field));
+    setSaveSuccess(false);
+  };
+
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     const stored = localStorage.getItem('vector_user');
@@ -218,7 +228,7 @@ function SettingsContent() {
     if (newLocation.trim() && !minimumFeeLocations.includes(newLocation.trim())) {
       const updated = [...minimumFeeLocations, newLocation.trim()];
       setMinimumFeeLocations(updated);
-      saveMinimumFee(minimumFee, updated);
+      markDirty('minimumFee');
       setNewLocation('');
     }
   };
@@ -226,7 +236,7 @@ function SettingsContent() {
   const removeLocation = (loc) => {
     const updated = minimumFeeLocations.filter(l => l !== loc);
     setMinimumFeeLocations(updated);
-    saveMinimumFee(minimumFee, updated);
+    markDirty('minimumFee');
   };
 
   const fetchCurrency = async () => {
@@ -480,11 +490,75 @@ function SettingsContent() {
     finally { setAddonLoading(false); }
   };
 
+  const saveAllChanges = async () => {
+    setSaving(true);
+    try {
+      const promises = [];
+      if (pendingChanges.has('laborRate')) promises.push(saveLaborRate(parseFloat(laborRate) || 0));
+      if (pendingChanges.has('efficiencyFactor')) promises.push(saveEfficiencyFactor(efficiencyFactor));
+      if (pendingChanges.has('minimumFee')) promises.push(saveMinimumFee(parseFloat(minimumFee) || 0, minimumFeeLocations));
+      if (pendingChanges.has('currency')) promises.push(saveCurrency(currency));
+      if (pendingChanges.has('passFee')) promises.push(savePassFee(passFeeToCustomer));
+      if (pendingChanges.has('quoteDisplay')) promises.push(saveQuoteDisplayPref(quoteDisplayPref));
+      if (pendingChanges.has('notifications')) {
+        const allNotifs = { ...emailNotifs, ...smsAlerts, ...smsClient, priceReviewMonths: priceReminder };
+        promises.push(saveNotifications(allNotifs));
+      }
+      if (pendingChanges.has('smsEnabled')) promises.push(saveSmsSettings({ sms_enabled: smsEnabled }));
+      await Promise.all(promises);
+      setPendingChanges(new Set());
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      console.error('Failed to save:', err);
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const hasAllFeatures = user?.is_admin || user?.plan === 'enterprise' || user?.plan === 'business';
   const planPrice = user?.plan === 'enterprise' ? '299' : user?.plan === 'business' ? '149' : user?.plan === 'pro' ? '79' : '0';
 
   return (
     <div className="space-y-4">
+        {/* Sticky Save Bar */}
+        {(pendingChanges.size > 0 || saveSuccess) && (
+          <div className={`sticky top-0 z-40 rounded-lg px-4 py-3 flex items-center justify-between shadow-lg transition-all duration-300 ${
+            saveSuccess ? 'bg-green-600 text-white' : 'bg-[#0f172a] text-white border border-white/10'
+          }`}>
+            {saveSuccess ? (
+              <div className="flex items-center gap-2 w-full justify-center">
+                <span className="text-lg">&#10003;</span>
+                <span className="font-medium">Settings saved successfully!</span>
+              </div>
+            ) : (
+              <>
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
+                  <span className="text-sm text-gray-300">
+                    {pendingChanges.size} unsaved change{pendingChanges.size !== 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="px-4 py-1.5 text-sm border border-white/30 rounded hover:bg-white/10 transition-colors"
+                  >
+                    Discard
+                  </button>
+                  <button
+                    onClick={saveAllChanges}
+                    disabled={saving}
+                    className="px-6 py-1.5 text-sm bg-gradient-to-r from-amber-500 to-amber-600 rounded font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                  >
+                    {saving ? 'Saving...' : `Save Changes (${pendingChanges.size} unsaved)`}
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         {/* Plan & Billing */}
         <div className="bg-[#0f172a] text-white p-4 rounded">
           <h2 className="text-lg font-semibold mb-1">Plan & Billing</h2>
@@ -631,6 +705,23 @@ function SettingsContent() {
                 {stripeLoading ? 'Loading...' : 'Complete Setup'}
               </button>
             </div>
+          ) : stripeStatus.status === 'INCOMPLETE' ? (
+            <div>
+              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+                <div className="flex items-center mb-1">
+                  <span className="text-red-500 mr-2">&#9888;</span>
+                  <span className="text-red-700 font-medium">Disconnected - Payments Disabled</span>
+                </div>
+                <p className="text-sm text-red-600">Your Stripe account needs attention. Online payments are currently disabled on your quotes.</p>
+              </div>
+              <button
+                onClick={handleConnectStripe}
+                disabled={stripeLoading}
+                className="w-full px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 font-medium"
+              >
+                {stripeLoading ? 'Reconnecting...' : 'Reconnect Stripe'}
+              </button>
+            </div>
           ) : (
             <div>
               <div className="flex items-center mb-2">
@@ -666,7 +757,7 @@ function SettingsContent() {
                 type="radio"
                 name="passFee"
                 checked={!passFeeToCustomer}
-                onChange={() => savePassFee(false)}
+                onChange={() => { setPassFeeToCustomer(false); markDirty('passFee'); }}
                 className="mt-1 mr-3"
               />
               <div>
@@ -683,7 +774,7 @@ function SettingsContent() {
                 type="radio"
                 name="passFee"
                 checked={passFeeToCustomer}
-                onChange={() => savePassFee(true)}
+                onChange={() => { setPassFeeToCustomer(true); markDirty('passFee'); }}
                 className="mt-1 mr-3"
               />
               <div>
@@ -702,7 +793,7 @@ function SettingsContent() {
           </p>
           <select
             value={currency}
-            onChange={(e) => saveCurrency(e.target.value)}
+            onChange={(e) => { setCurrency(e.target.value); markDirty('currency'); }}
             disabled={currencyLoading}
             className="w-full md:w-auto border rounded px-3 py-2 disabled:opacity-50"
           >
@@ -737,7 +828,7 @@ function SettingsContent() {
               onChange={(e) => {
                 const val = parseFloat(e.target.value);
                 setEfficiencyFactor(val);
-                saveEfficiencyFactor(val);
+                markDirty('efficiencyFactor');
               }}
               className="flex-1"
             />
@@ -772,12 +863,12 @@ function SettingsContent() {
                 const val = e.target.value;
                 if (val === '' || /^\d*\.?\d*$/.test(val)) {
                   setLaborRate(val);
+                  markDirty('laborRate');
                 }
               }}
               onBlur={(e) => {
                 const num = parseFloat(e.target.value) || 0;
                 setLaborRate(num);
-                saveLaborRate(num);
               }}
               className="w-24 border rounded px-3 py-2"
             />
@@ -804,12 +895,12 @@ function SettingsContent() {
                 const val = e.target.value;
                 if (val === '' || /^\d*\.?\d*$/.test(val)) {
                   setMinimumFee(val);
+                  markDirty('minimumFee');
                 }
               }}
               onBlur={(e) => {
                 const num = parseFloat(e.target.value) || 0;
                 setMinimumFee(num);
-                saveMinimumFee(num, minimumFeeLocations);
               }}
               className="w-28 border rounded px-3 py-2"
               placeholder="0.00"
@@ -938,7 +1029,7 @@ function SettingsContent() {
                   checked={quoteDisplayPref === option.value}
                   onChange={(e) => {
                     setQuoteDisplayPref(e.target.value);
-                    saveQuoteDisplayPref(e.target.value);
+                    markDirty('quoteDisplay');
                   }}
                   className="mt-1 mr-3"
                 />
@@ -968,7 +1059,7 @@ function SettingsContent() {
                 onChange={(e) => {
                   const newSettings = { ...emailNotifs, [item.key]: e.target.checked };
                   setEmailNotifs(newSettings);
-                  saveNotifications({ ...user?.notification_settings, ...newSettings, ...smsAlerts, ...smsClient });
+                  markDirty('notifications');
                 }}
               />
             </div>
@@ -996,7 +1087,7 @@ function SettingsContent() {
                   onChange={(e) => {
                     const newSettings = { ...smsAlerts, [item.key]: e.target.checked };
                     setSmsAlerts(newSettings);
-                    saveNotifications({ ...user?.notification_settings, ...emailNotifs, ...newSettings, ...smsClient });
+                    markDirty('notifications');
                   }}
                 />
               </div>
@@ -1025,7 +1116,7 @@ function SettingsContent() {
                   checked={smsEnabled}
                   onChange={(e) => {
                     setSmsEnabled(e.target.checked);
-                    saveSmsSettings({ sms_enabled: e.target.checked });
+                    markDirty('smsEnabled');
                   }}
                 />
               </div>
@@ -1046,7 +1137,7 @@ function SettingsContent() {
                     onChange={(e) => {
                       const newSettings = { ...smsClient, [item.key]: e.target.checked };
                       setSmsClient(newSettings);
-                      saveNotifications({ ...user?.notification_settings, ...emailNotifs, ...smsAlerts, ...newSettings });
+                      markDirty('notifications');
                     }}
                   />
                 </div>
@@ -1065,7 +1156,7 @@ function SettingsContent() {
               value={priceReminder}
               onChange={(e) => {
                 setPriceReminder(parseInt(e.target.value));
-                saveNotifications({ ...user?.notification_settings, priceReviewMonths: parseInt(e.target.value) });
+                markDirty('notifications');
               }}
               className="border rounded px-2 py-1"
             >
