@@ -135,6 +135,15 @@ export default function CustomerSelector({
                   {selectedCustomer.phone && (
                     <p className="text-sm text-gray-500">{selectedCustomer.phone}</p>
                   )}
+                  {Array.isArray(selectedCustomer.tags) && selectedCustomer.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {selectedCustomer.tags.map((tag) => (
+                        <span key={tag} className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-medium">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                   <div className="flex gap-3 mt-1 text-xs text-gray-500">
                     {selectedCustomer.quote_count > 0 && (
                       <span>{selectedCustomer.quote_count} previous quote{selectedCustomer.quote_count !== 1 ? "s" : ""}</span>
@@ -195,6 +204,18 @@ export default function CustomerSelector({
                               )}
                             </p>
                             <p className="text-sm text-gray-500">{customer.email}</p>
+                            {Array.isArray(customer.tags) && customer.tags.length > 0 && (
+                              <div className="flex flex-wrap gap-1 mt-0.5">
+                                {customer.tags.slice(0, 3).map((tag) => (
+                                  <span key={tag} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                                    {tag}
+                                  </span>
+                                ))}
+                                {customer.tags.length > 3 && (
+                                  <span className="text-xs text-gray-400">+{customer.tags.length - 3}</span>
+                                )}
+                              </div>
+                            )}
                           </div>
                           <div className="text-right text-xs text-gray-400">
                             {customer.quote_count > 0 ? (

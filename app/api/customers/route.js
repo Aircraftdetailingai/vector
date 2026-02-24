@@ -32,13 +32,19 @@ export async function GET(request) {
     try {
       let query = supabase
         .from('customers')
-        .select('id, name, email, phone, company_name, notes, created_at, updated_at')
+        .select('id, name, email, phone, company_name, notes, tags, created_at, updated_at')
         .eq('detailer_id', user.id)
         .order('updated_at', { ascending: false })
         .limit(limit);
 
       if (q) {
         query = query.or(`name.ilike.%${q}%,email.ilike.%${q}%,company_name.ilike.%${q}%`);
+      }
+
+      // Filter by tag if provided
+      const tag = searchParams.get('tag');
+      if (tag) {
+        query = query.contains('tags', [tag]);
       }
 
       const { data, error } = await query;
@@ -140,7 +146,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { name, email, phone, company_name, notes } = body;
+    const { name, email, phone, company_name, notes, tags } = body;
 
     if (!name || !email) {
       return Response.json({ error: 'Name and email are required' }, { status: 400 });
@@ -162,6 +168,7 @@ export async function POST(request) {
         if (phone !== undefined) updates.phone = phone;
         if (company_name !== undefined) updates.company_name = company_name;
         if (notes !== undefined) updates.notes = notes;
+        if (tags !== undefined) updates.tags = tags;
 
         const { data: updated } = await supabase
           .from('customers')
@@ -184,6 +191,7 @@ export async function POST(request) {
       phone: phone || null,
       company_name: company_name || null,
       notes: notes || '',
+      tags: Array.isArray(tags) ? tags : [],
     };
 
     // Column-stripping retry pattern

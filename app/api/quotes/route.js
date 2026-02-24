@@ -58,6 +58,34 @@ export async function GET(request) {
         : q.aircraft_type || 'Unknown Aircraft',
     }));
 
+    // Enrich with customer tags (batch lookup)
+    try {
+      const emails = [...new Set(quotes.map(q => q.client_email).filter(Boolean))];
+      if (emails.length > 0) {
+        const { data: customers } = await supabase
+          .from('customers')
+          .select('email, tags')
+          .eq('detailer_id', user.id)
+          .in('email', emails.map(e => e.toLowerCase()));
+
+        if (customers) {
+          const tagMap = {};
+          customers.forEach(c => {
+            if (c.email && Array.isArray(c.tags)) {
+              tagMap[c.email.toLowerCase()] = c.tags;
+            }
+          });
+          quotes.forEach(q => {
+            if (q.client_email) {
+              q.customer_tags = tagMap[q.client_email.toLowerCase()] || [];
+            }
+          });
+        }
+      }
+    } catch (e) {
+      // tags column may not exist - skip silently
+    }
+
     return Response.json({ quotes });
 
   } catch (err) {

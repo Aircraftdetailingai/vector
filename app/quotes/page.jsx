@@ -425,6 +425,18 @@ export default function QuotesPage() {
           {row.original.client_email && (
             <span className="text-xs text-gray-500 block">{row.original.client_email}</span>
           )}
+          {Array.isArray(row.original.customer_tags) && row.original.customer_tags.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-0.5">
+              {row.original.customer_tags.slice(0, 2).map((tag) => (
+                <span key={tag} className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-[10px] font-medium leading-tight">
+                  {tag}
+                </span>
+              ))}
+              {row.original.customer_tags.length > 2 && (
+                <span className="text-[10px] text-gray-400">+{row.original.customer_tags.length - 2}</span>
+              )}
+            </div>
+          )}
         </div>
       ),
     },
