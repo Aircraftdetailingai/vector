@@ -1,42 +1,13 @@
 "use client";
-import { useState, useEffect, Component } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import SendQuoteModal from '../../components/SendQuoteModal.jsx';
 import PushNotifications from '../../components/PushNotifications.jsx';
 import PointsBadge from '../../components/PointsBadge.jsx';
+import LoadingSpinner from '../../components/LoadingSpinner.jsx';
+import { useToast } from '../../components/Toast.jsx';
 import { formatPrice, formatPriceWhole } from '../../lib/formatPrice';
 import { calculateProductEstimates } from '../../lib/product-calculator';
-
-// Error boundary to catch render crashes and show a message instead of blank page
-class DashboardErrorBoundary extends Component {
-  constructor(props) {
-    super(props);
-    this.state = { hasError: false, error: null };
-  }
-  static getDerivedStateFromError(error) {
-    return { hasError: true, error };
-  }
-  componentDidCatch(error, info) {
-    console.error('Dashboard crash:', error, info);
-  }
-  render() {
-    if (this.state.hasError) {
-      return (
-        <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full text-center">
-            <p className="text-red-600 text-xl font-bold mb-2">Something went wrong</p>
-            <p className="text-gray-600 mb-4 text-sm">{this.state.error?.message}</p>
-            <button onClick={() => { this.setState({ hasError: false, error: null }); window.location.reload(); }}
-              className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600">
-              Reload Page
-            </button>
-          </div>
-        </div>
-      );
-    }
-    return this.props.children;
-  }
-}
 
 const categoryLabels = {
   piston: 'Pistons',
@@ -179,27 +150,120 @@ function LowStockAlert() {
 }
 
 // Quick Stats Bar Component (inline, fast loading)
-function QuickStats({ stats }) {
+function QuickStats({ stats, onNewQuote }) {
   if (!stats) return null;
 
+  const activityLabels = {
+    completed: { text: 'Job completed', color: 'text-emerald-600', icon: '\u2713' },
+    paid: { text: 'Payment received', color: 'text-green-600', icon: '$' },
+    viewed: { text: 'Quote viewed', color: 'text-purple-600', icon: '\u25C9' },
+    sent: { text: 'Quote sent', color: 'text-blue-600', icon: '\u2192' },
+    created: { text: 'Quote created', color: 'text-gray-600', icon: '+' },
+  };
+
+  const timeAgo = (dateStr) => {
+    if (!dateStr) return '';
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    return `${days}d ago`;
+  };
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-      <div className="bg-white rounded-lg p-3 shadow">
-        <p className="text-gray-500 text-xs">This Month</p>
-        <p className="text-xl font-bold text-gray-900">${(stats.monthRevenue || 0).toLocaleString()}</p>
+    <div className="space-y-3 mb-4">
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div className="bg-white rounded-lg p-3 shadow">
+          <p className="text-gray-500 text-xs">Today&apos;s Jobs</p>
+          <p className="text-xl font-bold text-blue-600">{stats.todayScheduledJobs || 0}</p>
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow">
+          <p className="text-gray-500 text-xs">Pending Quotes</p>
+          <p className="text-xl font-bold text-amber-600">{stats.pendingQuotes || 0}</p>
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow">
+          <p className="text-gray-500 text-xs">This Week</p>
+          <p className="text-xl font-bold text-gray-900">${(stats.weekRevenue || 0).toLocaleString()}</p>
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow">
+          <p className="text-gray-500 text-xs">This Month</p>
+          <p className="text-xl font-bold text-gray-900">${(stats.monthRevenue || 0).toLocaleString()}</p>
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow">
+          <p className="text-gray-500 text-xs">Outstanding</p>
+          <p className="text-xl font-bold text-red-500">{stats.outstandingInvoices || 0}</p>
+          {stats.outstandingTotal > 0 && (
+            <p className="text-xs text-gray-400">${(stats.outstandingTotal || 0).toLocaleString()}</p>
+          )}
+        </div>
+        <div className="bg-white rounded-lg p-3 shadow">
+          <p className="text-gray-500 text-xs">Avg Job Value</p>
+          <p className="text-xl font-bold text-green-600">${formatPriceWhole(stats.avgJobValue)}</p>
+        </div>
       </div>
-      <div className="bg-white rounded-lg p-3 shadow">
-        <p className="text-gray-500 text-xs">Jobs Done</p>
-        <p className="text-xl font-bold text-blue-600">{stats.monthJobs || 0}</p>
+
+      {/* Quick Actions */}
+      <div className="flex gap-2 flex-wrap">
+        <button
+          onClick={onNewQuote}
+          className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-sm font-semibold hover:opacity-90 shadow"
+        >
+          <span>+</span> New Quote
+        </button>
+        <a
+          href="/customers"
+          className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200"
+        >
+          <span>&#128100;</span> Add Customer
+        </a>
+        <a
+          href="/calendar"
+          className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200"
+        >
+          <span>&#128197;</span> View Calendar
+        </a>
+        <a
+          href="/quotes"
+          className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200"
+        >
+          <span>&#128196;</span> All Quotes
+        </a>
       </div>
-      <div className="bg-white rounded-lg p-3 shadow">
-        <p className="text-gray-500 text-xs">Pending Quotes</p>
-        <p className="text-xl font-bold text-amber-600">{stats.pendingQuotes || 0}</p>
-      </div>
-      <div className="bg-white rounded-lg p-3 shadow">
-        <p className="text-gray-500 text-xs">Avg Job Value</p>
-        <p className="text-xl font-bold text-green-600">${formatPriceWhole(stats.avgJobValue)}</p>
-      </div>
+
+      {/* Recent Activity Feed */}
+      {stats.activityFeed && stats.activityFeed.length > 0 && (
+        <div className="bg-white rounded-lg p-4 shadow">
+          <h3 className="font-semibold text-sm text-gray-700 mb-2">Recent Activity</h3>
+          <div className="space-y-2">
+            {stats.activityFeed.map((item, i) => {
+              const label = activityLabels[item.type] || activityLabels.created;
+              return (
+                <div key={i} className="flex items-center justify-between text-sm">
+                  <div className="flex items-center gap-2">
+                    <span className={`w-5 h-5 flex items-center justify-center rounded-full text-xs font-bold ${label.color} bg-gray-100`}>
+                      {label.icon}
+                    </span>
+                    <div>
+                      <span className="text-gray-800">{label.text}</span>
+                      <span className="text-gray-400 mx-1">&#183;</span>
+                      <span className="text-gray-600">{item.name}</span>
+                      <span className="text-gray-400 ml-1 text-xs">({item.aircraft})</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="font-medium text-gray-900">${(item.price || 0).toLocaleString()}</span>
+                    <span className="text-xs text-gray-400 w-14 text-right">{timeAgo(item.date)}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -743,11 +807,7 @@ function DashboardContent() {
     : null;
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
-      </div>
-    );
+    return <LoadingSpinner message="Loading dashboard..." />;
   }
 
   return (
@@ -1389,7 +1449,7 @@ function DashboardContent() {
 
       {/* Dashboard info sections - below quote builder */}
       <div className="mt-6 space-y-4">
-        <QuickStats stats={quickStats} />
+        <QuickStats stats={quickStats} onNewQuote={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
         <FreeUsageBar user={user} />
         <LowStockAlert />
         <RecentQuotes quotes={recentQuotes} />
@@ -1447,9 +1507,5 @@ function DashboardContent() {
 }
 
 export default function DashboardPage() {
-  return (
-    <DashboardErrorBoundary>
-      <DashboardContent />
-    </DashboardErrorBoundary>
-  );
+  return <DashboardContent />;
 }

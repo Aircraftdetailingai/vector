@@ -51,9 +51,11 @@ export async function GET(request) {
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
     const weekAgo = new Date(now - 7 * 24 * 60 * 60 * 1000).toISOString();
     const monthAgo = new Date(now - 30 * 24 * 60 * 60 * 1000).toISOString();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1).toISOString();
 
     // Fetch all data in parallel for speed
-    const [weekQuotesRes, weekPointsRes, monthQuotesRes, allQuotesRes, pendingRes] = await Promise.all([
+    const [weekQuotesRes, weekPointsRes, monthQuotesRes, allQuotesRes, pendingRes, todayJobsRes, recentActivityRes] = await Promise.all([
       // This week's quotes
       supabase
         .from('quotes')
@@ -84,9 +86,26 @@ export async function GET(request) {
       // Pending quotes (sent but not accepted/paid)
       supabase
         .from('quotes')
-        .select('id')
+        .select('id, total_price')
         .eq('detailer_id', user.id)
         .in('status', ['sent', 'viewed']),
+
+      // Today's scheduled jobs
+      supabase
+        .from('quotes')
+        .select('id')
+        .eq('detailer_id', user.id)
+        .gte('scheduled_date', todayStart)
+        .lt('scheduled_date', todayEnd)
+        .in('status', ['paid', 'scheduled', 'in_progress']),
+
+      // Recent activity (last 5 quotes updated)
+      supabase
+        .from('quotes')
+        .select('id, aircraft_model, aircraft_type, client_name, customer_name, total_price, status, created_at, paid_at, completed_at, sent_at, viewed_at')
+        .eq('detailer_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(10),
     ]);
 
     const weekQuotes = weekQuotesRes.data || [];
@@ -94,6 +113,8 @@ export async function GET(request) {
     const monthQuotes = monthQuotesRes.data || [];
     const allQuotes = allQuotesRes.data || [];
     const pendingQuotes = pendingRes.data || [];
+    const todayJobs = todayJobsRes.data || [];
+    const recentQuotesRaw = recentActivityRes.data || [];
 
     // Calculate stats
     const weekPaidQuotes = weekQuotes.filter(q => q.status === 'paid' || q.status === 'completed');
@@ -112,6 +133,32 @@ export async function GET(request) {
       ? allTimeBooked / allPaidQuotes.length
       : 0;
 
+    // Outstanding invoices (sent/viewed but unpaid)
+    const outstandingTotal = pendingQuotes.reduce((sum, q) => sum + (parseFloat(q.total_price) || 0), 0);
+
+    // Build recent activity feed from quote events
+    const recentActivity = [];
+    for (const q of recentQuotesRaw) {
+      const name = q.client_name || q.customer_name || 'Customer';
+      const aircraft = q.aircraft_model || q.aircraft_type || 'Aircraft';
+      const price = parseFloat(q.total_price) || 0;
+
+      if (q.completed_at) {
+        recentActivity.push({ type: 'completed', name, aircraft, price, date: q.completed_at });
+      } else if (q.paid_at) {
+        recentActivity.push({ type: 'paid', name, aircraft, price, date: q.paid_at });
+      } else if (q.viewed_at) {
+        recentActivity.push({ type: 'viewed', name, aircraft, price, date: q.viewed_at });
+      } else if (q.sent_at) {
+        recentActivity.push({ type: 'sent', name, aircraft, price, date: q.sent_at });
+      } else {
+        recentActivity.push({ type: 'created', name, aircraft, price, date: q.created_at });
+      }
+    }
+    // Sort by date descending and take 5
+    recentActivity.sort((a, b) => new Date(b.date) - new Date(a.date));
+    const activityFeed = recentActivity.slice(0, 5);
+
     // Get today's tip
     const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / (1000 * 60 * 60 * 24));
     const tips = [
@@ -126,9 +173,14 @@ export async function GET(request) {
     return Response.json({
       // Quick stats format (for dashboard quick stats bar)
       monthRevenue: monthBooked,
+      weekRevenue: weekBooked,
       monthJobs: monthCompletedQuotes.length,
       pendingQuotes: pendingQuotes.length,
       avgJobValue: avgJobValue,
+      todayScheduledJobs: todayJobs.length,
+      outstandingInvoices: pendingQuotes.length,
+      outstandingTotal: outstandingTotal,
+      activityFeed: activityFeed,
 
       // Legacy format (for backwards compatibility)
       points: {
