@@ -33,16 +33,23 @@ export default function ProductsPage() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
+    brand: '',
     category: 'other',
     unit: 'oz',
+    size: '',
     costPerUnit: '',
     currentQuantity: '',
     reorderThreshold: '',
     supplier: '',
     notes: '',
+    productUrl: '',
+    imageUrl: '',
   });
   const [saving, setSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('inventory');
+  const [pasteUrl, setPasteUrl] = useState('');
+  const [scraping, setScraping] = useState(false);
+  const [scrapeError, setScrapeError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -91,32 +98,87 @@ export default function ProductsPage() {
   };
 
   const handleOpenModal = (product = null) => {
+    setPasteUrl('');
+    setScrapeError('');
     if (product) {
       setEditingProduct(product);
       setFormData({
         name: product.name,
+        brand: product.brand || '',
         category: product.category,
         unit: product.unit || 'oz',
+        size: product.size || '',
         costPerUnit: product.cost_per_unit || '',
         currentQuantity: product.current_quantity || '',
         reorderThreshold: product.reorder_threshold || '',
         supplier: product.supplier || '',
         notes: product.notes || '',
+        productUrl: product.product_url || '',
+        imageUrl: product.image_url || '',
       });
     } else {
       setEditingProduct(null);
       setFormData({
         name: '',
+        brand: '',
         category: 'other',
         unit: 'oz',
+        size: '',
         costPerUnit: '',
         currentQuantity: '',
         reorderThreshold: '',
         supplier: '',
         notes: '',
+        productUrl: '',
+        imageUrl: '',
       });
     }
     setShowModal(true);
+  };
+
+  const handleScrapeUrl = async (url) => {
+    if (!url) return;
+    setScraping(true);
+    setScrapeError('');
+    const token = localStorage.getItem('vector_token');
+    try {
+      const res = await fetch('/api/products/scrape', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ url }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const p = data.product;
+        setFormData(prev => ({
+          ...prev,
+          name: p.name || prev.name,
+          brand: p.brand || prev.brand,
+          category: p.category || prev.category,
+          costPerUnit: p.price ? String(p.price) : prev.costPerUnit,
+          size: p.size || prev.size,
+          supplier: p.supplier || prev.supplier,
+          productUrl: url,
+          imageUrl: p.image || prev.imageUrl,
+        }));
+      } else {
+        const data = await res.json();
+        setScrapeError(data.error || 'Could not extract product info');
+      }
+    } catch {
+      setScrapeError('Failed to fetch product data');
+    } finally {
+      setScraping(false);
+    }
+  };
+
+  const handlePasteUrlChange = (e) => {
+    const val = e.target.value;
+    setPasteUrl(val);
+    // Auto-trigger scrape when a URL is pasted
+    if (val && (val.startsWith('http://') || val.startsWith('https://'))) {
+      handleScrapeUrl(val);
+    }
   };
 
   const handleCloseModal = () => {
@@ -131,13 +193,17 @@ export default function ProductsPage() {
     const token = localStorage.getItem('vector_token');
     const payload = {
       name: formData.name,
+      brand: formData.brand,
       category: formData.category,
       unit: formData.unit,
+      size: formData.size,
       costPerUnit: parseFloat(formData.costPerUnit) || 0,
       currentQuantity: parseFloat(formData.currentQuantity) || 0,
       reorderThreshold: parseFloat(formData.reorderThreshold) || 0,
       supplier: formData.supplier,
       notes: formData.notes,
+      productUrl: formData.productUrl,
+      imageUrl: formData.imageUrl,
     };
 
     try {
@@ -326,21 +392,40 @@ export default function ProductsPage() {
                   {categoryProducts.map((product) => (
                     <div key={product.id} className="p-4 hover:bg-gray-50">
                       <div className="flex items-center justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <p className="font-medium text-gray-900">{product.name}</p>
-                            {product.reorder_threshold > 0 && product.current_quantity <= product.reorder_threshold && (
-                              <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full">Low Stock</span>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
-                            <span>Qty: <strong>{product.current_quantity || 0}</strong> {product.unit}</span>
-                            {product.cost_per_unit > 0 && (
-                              <span>${product.cost_per_unit.toFixed(2)}/{product.unit}</span>
-                            )}
-                            {product.supplier && (
-                              <span className="text-gray-400">{product.supplier}</span>
-                            )}
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          {product.image_url && (
+                            <img
+                              src={product.image_url}
+                              alt=""
+                              className="w-10 h-10 rounded object-cover flex-shrink-0 bg-gray-100"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              {product.brand && (
+                                <span className="text-xs text-gray-400 font-medium">{product.brand}</span>
+                              )}
+                              <p className="font-medium text-gray-900 truncate">{product.name}</p>
+                              {product.size && (
+                                <span className="text-xs text-gray-400">{product.size}</span>
+                              )}
+                              {product.reorder_threshold > 0 && product.current_quantity <= product.reorder_threshold && (
+                                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full flex-shrink-0">Low Stock</span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                              <span>Qty: <strong>{product.current_quantity || 0}</strong> {product.unit}</span>
+                              {product.cost_per_unit > 0 && (
+                                <span>${product.cost_per_unit.toFixed(2)}/{product.unit}</span>
+                              )}
+                              {product.supplier && (
+                                <span className="text-gray-400">{product.supplier}</span>
+                              )}
+                              {product.product_url && (
+                                <a href={product.product_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 text-xs">Reorder</a>
+                              )}
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -424,16 +509,81 @@ export default function ProductsPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
-                <input
-                  type="text"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  required
-                  placeholder="e.g., Meguiar's M105"
-                  className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500"
-                />
+              {/* Paste Product Link */}
+              {!editingProduct && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <label className="block text-sm font-medium text-blue-800 mb-1">Paste Product Link</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={pasteUrl}
+                      onChange={handlePasteUrlChange}
+                      placeholder="https://www.chemicalguys.com/product..."
+                      className="flex-1 border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 bg-white"
+                    />
+                    {pasteUrl && !scraping && (
+                      <button
+                        type="button"
+                        onClick={() => handleScrapeUrl(pasteUrl)}
+                        className="px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
+                      >
+                        Fetch
+                      </button>
+                    )}
+                  </div>
+                  {scraping && (
+                    <p className="text-xs text-blue-600 mt-1 flex items-center gap-1">
+                      <span className="inline-block w-3 h-3 border-2 border-blue-400 border-t-transparent rounded-full animate-spin"></span>
+                      Extracting product info...
+                    </p>
+                  )}
+                  {scrapeError && (
+                    <p className="text-xs text-red-600 mt-1">{scrapeError}</p>
+                  )}
+                  <p className="text-[10px] text-blue-500 mt-1">Supports: Detail King, Autogeek, Amazon, Chemical Guys, P&amp;S, and more</p>
+                </div>
+              )}
+
+              {/* Image preview */}
+              {formData.imageUrl && (
+                <div className="flex items-center gap-3">
+                  <img src={formData.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover bg-gray-100 border" onError={(e) => { e.target.style.display = 'none'; }} />
+                  <button type="button" onClick={() => setFormData({ ...formData, imageUrl: '' })} className="text-xs text-gray-400 hover:text-red-500">Remove image</button>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Product Name *</label>
+                  <input
+                    type="text"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                    placeholder="e.g., M105 Ultra-Cut Compound"
+                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                  <input
+                    type="text"
+                    value={formData.brand}
+                    onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
+                    placeholder="e.g., Meguiar's"
+                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Size</label>
+                  <input
+                    type="text"
+                    value={formData.size}
+                    onChange={(e) => setFormData({ ...formData, size: e.target.value })}
+                    placeholder="e.g., 32 oz"
+                    className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">

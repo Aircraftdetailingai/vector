@@ -96,40 +96,61 @@ export async function POST(request) {
   const body = await request.json();
   const {
     name,
+    brand,
     category,
     unit,
+    size,
     costPerUnit,
     currentQuantity,
     reorderThreshold,
     supplier,
-    notes
+    notes,
+    productUrl,
+    imageUrl,
   } = body;
 
   if (!name) {
     return Response.json({ error: 'Product name required' }, { status: 400 });
   }
 
-  const { data: product, error } = await supabase
-    .from('products')
-    .insert({
-      detailer_id: user.id,
-      name,
-      category: category || 'other',
-      unit: unit || 'oz',
-      cost_per_unit: parseFloat(costPerUnit) || 0,
-      current_quantity: parseFloat(currentQuantity) || 0,
-      reorder_threshold: parseFloat(reorderThreshold) || 0,
-      supplier: supplier || '',
-      notes: notes || '',
-    })
-    .select()
-    .single();
+  const row = {
+    detailer_id: user.id,
+    name,
+    brand: brand || '',
+    category: category || 'other',
+    unit: unit || 'oz',
+    size: size || '',
+    cost_per_unit: parseFloat(costPerUnit) || 0,
+    current_quantity: parseFloat(currentQuantity) || 0,
+    reorder_threshold: parseFloat(reorderThreshold) || 0,
+    supplier: supplier || '',
+    notes: notes || '',
+    product_url: productUrl || '',
+    image_url: imageUrl || '',
+  };
 
-  if (error) {
+  // Column-stripping retry pattern for graceful handling of missing columns
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data: product, error } = await supabase
+      .from('products')
+      .insert(row)
+      .select()
+      .single();
+
+    if (!error) {
+      return Response.json({ product });
+    }
+
+    const colMatch = error.message?.match(/column "([^"]+)".*does not exist/);
+    if (colMatch) {
+      delete row[colMatch[1]];
+      continue;
+    }
+
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  return Response.json({ product });
+  return Response.json({ error: 'Failed to create product' }, { status: 500 });
 }
 
 // PUT - Update a product
@@ -148,13 +169,17 @@ export async function PUT(request) {
   const {
     id,
     name,
+    brand,
     category,
     unit,
+    size,
     costPerUnit,
     currentQuantity,
     reorderThreshold,
     supplier,
-    notes
+    notes,
+    productUrl,
+    imageUrl,
   } = body;
 
   if (!id) {
@@ -166,27 +191,42 @@ export async function PUT(request) {
   };
 
   if (name !== undefined) updates.name = name;
+  if (brand !== undefined) updates.brand = brand;
   if (category !== undefined) updates.category = category;
   if (unit !== undefined) updates.unit = unit;
+  if (size !== undefined) updates.size = size;
   if (costPerUnit !== undefined) updates.cost_per_unit = parseFloat(costPerUnit) || 0;
   if (currentQuantity !== undefined) updates.current_quantity = parseFloat(currentQuantity) || 0;
   if (reorderThreshold !== undefined) updates.reorder_threshold = parseFloat(reorderThreshold) || 0;
   if (supplier !== undefined) updates.supplier = supplier;
   if (notes !== undefined) updates.notes = notes;
+  if (productUrl !== undefined) updates.product_url = productUrl;
+  if (imageUrl !== undefined) updates.image_url = imageUrl;
 
-  const { data: product, error } = await supabase
-    .from('products')
-    .update(updates)
-    .eq('id', id)
-    .eq('detailer_id', user.id)
-    .select()
-    .single();
+  // Column-stripping retry for graceful handling of missing columns
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data: product, error } = await supabase
+      .from('products')
+      .update(updates)
+      .eq('id', id)
+      .eq('detailer_id', user.id)
+      .select()
+      .single();
 
-  if (error) {
+    if (!error) {
+      return Response.json({ product });
+    }
+
+    const colMatch = error.message?.match(/column "([^"]+)".*does not exist/);
+    if (colMatch) {
+      delete updates[colMatch[1]];
+      continue;
+    }
+
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  return Response.json({ product });
+  return Response.json({ error: 'Failed to update product' }, { status: 500 });
 }
 
 // PATCH - Adjust inventory (add or subtract quantity)
