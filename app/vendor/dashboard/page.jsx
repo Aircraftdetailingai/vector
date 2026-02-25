@@ -159,7 +159,7 @@ export default function VendorDashboardPage() {
                           <p className="font-medium text-sm">{p.name}</p>
                           <p className="text-xs text-gray-500">{p.sales || 0} sales</p>
                         </div>
-                        <p className="text-green-600 font-medium">${formatPriceWhole(p.price * (p.sales || 0))}</p>
+                        <p className="text-green-600 font-medium">{currencySymbol()}{formatPriceWhole(p.price * (p.sales || 0))}</p>
                       </div>
                     ))}
                   </div>
@@ -610,19 +610,19 @@ function VendorOrders() {
       id: 'total',
       header: 'Total',
       accessorKey: 'total',
-      cell: ({ getValue }) => <span className="font-semibold">${formatPrice(getValue())}</span>,
+      cell: ({ getValue }) => <span className="font-semibold">{currencySymbol()}{formatPrice(getValue())}</span>,
     },
     {
       id: 'commission',
       header: 'Commission',
       accessorKey: 'commission',
-      cell: ({ getValue }) => <span className="text-red-600">-${formatPrice(getValue())}</span>,
+      cell: ({ getValue }) => <span className="text-red-600">-{currencySymbol()}{formatPrice(getValue())}</span>,
     },
     {
       id: 'vendor_amount',
       header: 'Your Earnings',
       accessorKey: 'vendor_amount',
-      cell: ({ getValue }) => <span className="text-green-600 font-medium">${formatPrice(getValue())}</span>,
+      cell: ({ getValue }) => <span className="text-green-600 font-medium">{currencySymbol()}{formatPrice(getValue())}</span>,
     },
     {
       id: 'status',
@@ -759,24 +759,24 @@ function VendorAnalytics({ stats }) {
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Total Sales</span>
-            <span className="font-bold text-lg">${formatPriceWhole(stats.totalSales)}</span>
+            <span className="font-bold text-lg">{currencySymbol()}{formatPriceWhole(stats.totalSales)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="text-gray-600">Platform Commission ({stats.commissionRate}%)</span>
-            <span className="text-red-600">-${formatPriceWhole(stats.commissionPaid)}</span>
+            <span className="text-red-600">-{currencySymbol()}{formatPriceWhole(stats.commissionPaid)}</span>
           </div>
           <hr />
           <div className="flex justify-between items-center">
             <span className="font-semibold">Your Earnings</span>
-            <span className="font-bold text-lg text-green-600">${formatPriceWhole(stats.vendorEarnings)}</span>
+            <span className="font-bold text-lg text-green-600">{currencySymbol()}{formatPriceWhole(stats.vendorEarnings)}</span>
           </div>
           <div className="flex justify-between items-center text-sm">
             <span className="text-gray-500">Already Paid Out</span>
-            <span>${formatPriceWhole(stats.totalPaidOut)}</span>
+            <span>{currencySymbol()}{formatPriceWhole(stats.totalPaidOut)}</span>
           </div>
           <div className="flex justify-between items-center">
             <span className="font-semibold">Available Balance</span>
-            <span className="font-bold text-amber-600">${formatPriceWhole(stats.currentBalance)}</span>
+            <span className="font-bold text-amber-600">{currencySymbol()}{formatPriceWhole(stats.currentBalance)}</span>
           </div>
         </div>
       </div>

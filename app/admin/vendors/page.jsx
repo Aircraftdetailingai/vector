@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatPrice, formatPriceWhole } from '@/lib/formatPrice';
+import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 
 const COMMISSION_TIERS = [
   { key: 'basic', name: 'Basic', rate: '10%', color: 'bg-gray-100 text-gray-800' },
@@ -181,11 +181,11 @@ export default function AdminVendorsPage() {
           </div>
           <div className="bg-white rounded-lg p-4 border">
             <p className="text-sm text-gray-500">Total Revenue</p>
-            <p className="text-2xl font-bold">${formatPriceWhole(stats.totalRevenue)}</p>
+            <p className="text-2xl font-bold">{currencySymbol()}{formatPriceWhole(stats.totalRevenue)}</p>
           </div>
           <div className="bg-white rounded-lg p-4 border">
             <p className="text-sm text-gray-500">Total Commission</p>
-            <p className="text-2xl font-bold text-amber-600">${formatPriceWhole(stats.totalCommission)}</p>
+            <p className="text-2xl font-bold text-amber-600">{currencySymbol()}{formatPriceWhole(stats.totalCommission)}</p>
           </div>
         </div>
       </div>
@@ -394,7 +394,7 @@ export default function AdminVendorsPage() {
                       <div className="flex justify-between items-start">
                         <div>
                           <h3 className="text-xl font-semibold">{product.name}</h3>
-                          <p className="text-amber-600 font-bold">${formatPrice(product.price)}</p>
+                          <p className="text-amber-600 font-bold">{currencySymbol()}{formatPrice(product.price)}</p>
                           <p className="text-sm text-gray-500 mt-1">
                             by {product.vendors?.company_name} ({product.vendors?.email})
                           </p>

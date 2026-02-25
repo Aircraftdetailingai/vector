@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatPrice, formatPriceWhole } from '@/lib/formatPrice';
+import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 
 const intervalLabels = {
   weekly: 'Weekly',
@@ -180,7 +180,7 @@ export default function RecurringPage() {
         </div>
         <div className="bg-white/10 rounded-lg p-3 text-center">
           <p className="text-white/60 text-xs">Est. Monthly Revenue</p>
-          <p className="text-white text-xl font-bold">${formatPriceWhole(monthlyRevenue)}</p>
+          <p className="text-white text-xl font-bold">{currencySymbol()}{formatPriceWhole(monthlyRevenue)}</p>
         </div>
         <div className="bg-white/10 rounded-lg p-3 text-center">
           <p className="text-white/60 text-xs">Due This Week</p>

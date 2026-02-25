@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatPrice } from '@/lib/formatPrice';
+import { formatPrice, currencySymbol } from '@/lib/formatPrice';
 
 export default function TeamPage() {
   const router = useRouter();
@@ -75,7 +75,7 @@ export default function TeamPage() {
         </div>
         <div className="bg-white/10 rounded-lg p-3 text-center">
           <p className="text-white/60 text-xs">Total Pay</p>
-          <p className="text-white text-xl font-bold">${formatPrice(totalPay)}</p>
+          <p className="text-white text-xl font-bold">{currencySymbol()}{formatPrice(totalPay)}</p>
         </div>
       </div>
 

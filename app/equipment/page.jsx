@@ -343,7 +343,7 @@ export default function EquipmentPage() {
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-gray-500 text-xs">Total Investment</p>
-              <p className="text-2xl font-bold text-gray-900">${formatPriceWhole(stats.totalInvestment)}</p>
+              <p className="text-2xl font-bold text-gray-900">{currencySymbol()}{formatPriceWhole(stats.totalInvestment)}</p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-gray-500 text-xs">Active Equipment</p>
@@ -424,8 +424,8 @@ export default function EquipmentPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-emerald-600">${formatPriceWhole(item.cost_per_job)}/job</p>
-                    <p className="text-xs text-gray-400">${formatPriceWhole(item.purchase_price)} invested</p>
+                    <p className="font-bold text-emerald-600">{currencySymbol()}{formatPriceWhole(item.cost_per_job)}/job</p>
+                    <p className="text-xs text-gray-400">{currencySymbol()}{formatPriceWhole(item.purchase_price)} invested</p>
                   </div>
                 </div>
               ))}
@@ -530,14 +530,14 @@ export default function EquipmentPage() {
                             {/* Key stats row */}
                             <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 flex-wrap">
                               {item.purchase_price > 0 && (
-                                <span>${formatPriceWhole(item.purchase_price)}</span>
+                                <span>{currencySymbol()}{formatPriceWhole(item.purchase_price)}</span>
                               )}
                               {item.purchase_date && (
                                 <span>Bought {formatDate(item.purchase_date)}</span>
                               )}
                               <span className="font-medium text-blue-600">{item.jobs_completed || 0} jobs</span>
                               {item.cost_per_job && (
-                                <span className="text-emerald-600 font-medium">${formatPriceWhole(item.cost_per_job)}/job</span>
+                                <span className="text-emerald-600 font-medium">{currencySymbol()}{formatPriceWhole(item.cost_per_job)}/job</span>
                               )}
                             </div>
 

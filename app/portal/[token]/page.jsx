@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { PLATFORM_FEES } from '@/lib/pricing-tiers';
 import { formatPrice } from '@/lib/formatPrice';
+import { getCurrencySymbol } from '@/lib/currency';
 
 const STATUS_LABELS = {
   draft: 'Draft',
@@ -69,6 +70,7 @@ export default function PortalPage() {
   const isExpired = quote && !isPaid && new Date() > new Date(quote.valid_until);
   const canPay = quote && !isPaid && !isExpired && stripeConnected && ['sent', 'viewed'].includes(quote.status);
   const companyName = detailer?.company || detailer?.name || 'Your Detailer';
+  const sym = getCurrencySymbol(detailer?.currency || 'USD');
 
   const handlePayment = async () => {
     setPaymentError('');
@@ -179,7 +181,7 @@ export default function PortalPage() {
             {/* Payment CTA */}
             {canPay && (
               <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl p-5 text-white text-center">
-                <p className="text-2xl font-bold mb-1">${formatPrice(quote.total_price)}</p>
+                <p className="text-2xl font-bold mb-1">{sym}{formatPrice(quote.total_price)}</p>
                 <p className="text-white/80 text-sm mb-4">{aircraftDisplay} Detail</p>
                 {paymentError && <p className="text-white bg-red-600/30 rounded p-2 mb-3 text-sm">{paymentError}</p>}
                 <button
@@ -197,7 +199,7 @@ export default function PortalPage() {
               <div className="bg-green-50 border border-green-200 rounded-xl p-5 text-center">
                 <div className="text-green-600 text-3xl mb-2">&#10003;</div>
                 <p className="font-semibold text-green-800 text-lg">Payment Confirmed</p>
-                <p className="text-green-700 text-2xl font-bold mt-1">${formatPrice(quote.total_price)}</p>
+                <p className="text-green-700 text-2xl font-bold mt-1">{sym}{formatPrice(quote.total_price)}</p>
                 {quote.paid_at && (
                   <p className="text-green-600 text-sm mt-1">
                     {new Date(quote.paid_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
@@ -248,12 +250,12 @@ export default function PortalPage() {
                   {lineItems.map((li, i) => (
                     <div key={i} className="flex justify-between py-2">
                       <span className="text-gray-700">{li.description}</span>
-                      <span className="font-medium">${formatPrice(li.amount)}</span>
+                      <span className="font-medium">{sym}{formatPrice(li.amount)}</span>
                     </div>
                   ))}
                   <div className="flex justify-between pt-3 mt-2 border-t-2 border-[#1e3a5f]">
                     <span className="font-semibold text-[#1e3a5f] text-lg">Total</span>
-                    <span className="font-bold text-[#1e3a5f] text-lg">${formatPrice(quote.total_price)}</span>
+                    <span className="font-bold text-[#1e3a5f] text-lg">{sym}{formatPrice(quote.total_price)}</span>
                   </div>
                 </div>
               )}
@@ -261,7 +263,7 @@ export default function PortalPage() {
               {lineItems.length === 0 && (
                 <div className="flex justify-between pt-4 mt-4 border-t-2 border-[#1e3a5f]">
                   <span className="font-semibold text-[#1e3a5f] text-lg">Total</span>
-                  <span className="font-bold text-[#1e3a5f] text-lg">${formatPrice(quote.total_price)}</span>
+                  <span className="font-bold text-[#1e3a5f] text-lg">{sym}{formatPrice(quote.total_price)}</span>
                 </div>
               )}
 
@@ -342,7 +344,7 @@ export default function PortalPage() {
                 <p className="text-xs text-gray-500">Completed</p>
               </div>
               <div className="bg-white rounded-xl shadow-sm border p-4 text-center">
-                <p className="text-2xl font-bold text-[#1e3a5f]">${formatPrice(totalSpent)}</p>
+                <p className="text-2xl font-bold text-[#1e3a5f]">{sym}{formatPrice(totalSpent)}</p>
                 <p className="text-xs text-gray-500">Total Spent</p>
               </div>
             </div>
@@ -367,7 +369,7 @@ export default function PortalPage() {
                         </p>
                       </div>
                       <div className="text-right">
-                        <p className="font-bold">${formatPrice(h.total_price)}</p>
+                        <p className="font-bold">{sym}{formatPrice(h.total_price)}</p>
                         <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[h.status] || 'bg-gray-100 text-gray-700'}`}>
                           {STATUS_LABELS[h.status] || h.status}
                         </span>
@@ -395,7 +397,7 @@ export default function PortalPage() {
                   </div>
                   <div className="text-right flex items-center gap-3">
                     <div>
-                      <p className="font-bold text-lg">${formatPrice(quote.total_price)}</p>
+                      <p className="font-bold text-lg">{sym}{formatPrice(quote.total_price)}</p>
                       <span className="text-xs text-green-600 font-medium">Paid</span>
                     </div>
                     <a
@@ -423,7 +425,7 @@ export default function PortalPage() {
                   </div>
                   <div className="text-right flex items-center gap-3">
                     <div>
-                      <p className="font-bold text-lg">${formatPrice(h.total_price)}</p>
+                      <p className="font-bold text-lg">{sym}{formatPrice(h.total_price)}</p>
                       <span className="text-xs text-green-600 font-medium">{STATUS_LABELS[h.status]}</span>
                     </div>
                     <a

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { EquipmentTeaser } from './EquipmentROI';
-import { formatPrice, formatPriceWhole } from '@/lib/formatPrice';
+import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 
 export default function UpgradeModal({ isOpen, onClose, detailerId, existingServices = [] }) {
   const [analysis, setAnalysis] = useState(null);
@@ -171,7 +171,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
                 <p className="text-xs text-gray-500 uppercase tracking-wide">Fees This Month</p>
-                <p className="text-2xl font-bold">${formatPrice(analysis.stats.feesThisMonth)}</p>
+                <p className="text-2xl font-bold">{currencySymbol()}{formatPrice(analysis.stats.feesThisMonth)}</p>
               </div>
             </div>
 
@@ -198,7 +198,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                   <>
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
                       <p className="text-green-800 font-medium">
-                        You'd save <span className="text-xl font-bold">${formatPrice(analysis.savings.netMonthlySavings)}</span>/month
+                        You'd save <span className="text-xl font-bold">{currencySymbol()}{formatPrice(analysis.savings.netMonthlySavings)}</span>/month
                       </p>
                       <p className="text-green-600 text-sm">
                         That's ${formatPrice(analysis.savings.netMonthlySavings * 12)}/year!

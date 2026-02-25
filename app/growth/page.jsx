@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatPriceWhole } from '@/lib/formatPrice';
+import { formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 export default function GrowthPage() {
@@ -119,7 +119,7 @@ export default function GrowthPage() {
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-gray-500 text-xs">Avg Hourly Rate</p>
-              <p className="text-2xl font-bold text-green-600">${formatPriceWhole(avgRate)}</p>
+              <p className="text-2xl font-bold text-green-600">{currencySymbol()}{formatPriceWhole(avgRate)}</p>
             </div>
           </div>
         )}
@@ -187,8 +187,8 @@ export default function GrowthPage() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-green-600">${formatPriceWhole(item.costPerJob)}/job</p>
-                    <p className="text-xs text-gray-400">${formatPriceWhole(item.purchase_price)} invested</p>
+                    <p className="font-bold text-green-600">{currencySymbol()}{formatPriceWhole(item.costPerJob)}/job</p>
+                    <p className="text-xs text-gray-400">{currencySymbol()}{formatPriceWhole(item.purchase_price)} invested</p>
                   </div>
                 </div>
               ))}
