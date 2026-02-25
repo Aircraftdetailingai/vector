@@ -1,0 +1,631 @@
+"use client";
+import { useState, useEffect, useCallback } from 'react';
+import { useRouter } from 'next/navigation';
+
+const API = (path, token, opts = {}) =>
+  fetch(path, { ...opts, headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}`, ...opts.headers } }).then(r => r.json());
+
+export default function CrewDashboard() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [tab, setTab] = useState('jobs');
+  const [loading, setLoading] = useState(true);
+
+  // Jobs state
+  const [jobs, setJobs] = useState([]);
+  const [selectedJob, setSelectedJob] = useState(null);
+
+  // Clock state
+  const [clockStatus, setClockStatus] = useState(null);
+  const [clockLoading, setClockLoading] = useState(false);
+  const [clockElapsed, setClockElapsed] = useState('');
+
+  // Photos state
+  const [photos, setPhotos] = useState([]);
+  const [photoUploading, setPhotoUploading] = useState(false);
+
+  // Products state
+  const [products, setProducts] = useState([]);
+  const [usageForm, setUsageForm] = useState({ product_id: '', amount_used: '', notes: '' });
+
+  // Equipment state
+  const [equipment, setEquipment] = useState([]);
+  const [issueForm, setIssueForm] = useState({ equipment_id: '', issue: '' });
+
+  // Messages
+  const [msg, setMsg] = useState('');
+  const [msgType, setMsgType] = useState('success');
+
+  const showMsg = (text, type = 'success') => {
+    setMsg(text);
+    setMsgType(type);
+    setTimeout(() => setMsg(''), 3000);
+  };
+
+  // Auth check
+  useEffect(() => {
+    const t = localStorage.getItem('crew_token');
+    const u = localStorage.getItem('crew_user');
+    if (!t || !u) {
+      router.push('/crew/login');
+      return;
+    }
+    try {
+      const parsed = JSON.parse(u);
+      setUser(parsed);
+      setToken(t);
+    } catch {
+      router.push('/crew/login');
+    }
+  }, [router]);
+
+  // Fetch jobs
+  const fetchJobs = useCallback(async () => {
+    if (!token) return;
+    const data = await API('/api/crew/jobs', token);
+    if (data.jobs) setJobs(data.jobs);
+  }, [token]);
+
+  // Fetch clock status
+  const fetchClock = useCallback(async () => {
+    if (!token) return;
+    const data = await API('/api/crew/clock', token);
+    setClockStatus(data);
+  }, [token]);
+
+  // Fetch photos for selected job
+  const fetchPhotos = useCallback(async () => {
+    if (!token || !selectedJob) return;
+    const data = await API(`/api/crew/photos?quote_id=${selectedJob.id}`, token);
+    if (data.photos) setPhotos(data.photos);
+  }, [token, selectedJob]);
+
+  // Fetch products
+  const fetchProducts = useCallback(async () => {
+    if (!token || !user?.can_see_inventory) return;
+    const data = await API('/api/crew/products', token);
+    if (data.products) setProducts(data.products);
+  }, [token, user]);
+
+  // Fetch equipment
+  const fetchEquipment = useCallback(async () => {
+    if (!token || !user?.can_see_equipment) return;
+    const data = await API('/api/crew/equipment', token);
+    if (data.equipment) setEquipment(data.equipment);
+  }, [token, user]);
+
+  // Initial load
+  useEffect(() => {
+    if (!token) return;
+    setLoading(true);
+    Promise.all([fetchJobs(), fetchClock()]).finally(() => setLoading(false));
+  }, [token, fetchJobs, fetchClock]);
+
+  // Load tab data
+  useEffect(() => {
+    if (tab === 'products') fetchProducts();
+    if (tab === 'equipment') fetchEquipment();
+  }, [tab, fetchProducts, fetchEquipment]);
+
+  // Load photos when job selected
+  useEffect(() => {
+    if (selectedJob) fetchPhotos();
+  }, [selectedJob, fetchPhotos]);
+
+  // Clock elapsed timer
+  useEffect(() => {
+    if (!clockStatus?.clocked_in || !clockStatus?.clock_in_time) return;
+    const update = () => {
+      const diff = Date.now() - new Date(clockStatus.clock_in_time).getTime();
+      const h = Math.floor(diff / 3600000);
+      const m = Math.floor((diff % 3600000) / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setClockElapsed(`${h}h ${m}m ${s}s`);
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [clockStatus]);
+
+  // Clock in/out
+  const handleClock = async (action) => {
+    setClockLoading(true);
+    const data = await API('/api/crew/clock', token, {
+      method: 'POST',
+      body: JSON.stringify({ action, quote_id: selectedJob?.id }),
+    });
+    if (data.success) {
+      showMsg(action === 'clock_in' ? 'Clocked in!' : `Clocked out! ${data.hours_worked || 0}h logged`);
+      fetchClock();
+    } else {
+      showMsg(data.error || 'Failed', 'error');
+    }
+    setClockLoading(false);
+  };
+
+  // Mark job complete
+  const handleComplete = async (jobId) => {
+    if (!confirm('Mark this job as complete?')) return;
+    const data = await API('/api/crew/complete', token, {
+      method: 'POST',
+      body: JSON.stringify({ quote_id: jobId }),
+    });
+    if (data.success) {
+      showMsg('Job marked complete!');
+      fetchJobs();
+      setSelectedJob(null);
+    } else {
+      showMsg(data.error || 'Failed', 'error');
+    }
+  };
+
+  // Photo upload (base64)
+  const handlePhotoUpload = async (e, mediaType) => {
+    const file = e.target.files?.[0];
+    if (!file || !selectedJob) return;
+    setPhotoUploading(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        const data = await API('/api/crew/photos', token, {
+          method: 'POST',
+          body: JSON.stringify({
+            quote_id: selectedJob.id,
+            media_type: mediaType,
+            url: reader.result,
+          }),
+        });
+        if (data.success) {
+          showMsg('Photo uploaded!');
+          fetchPhotos();
+        } else {
+          showMsg(data.error || 'Upload failed', 'error');
+        }
+        setPhotoUploading(false);
+      };
+      reader.readAsDataURL(file);
+    } catch {
+      showMsg('Upload failed', 'error');
+      setPhotoUploading(false);
+    }
+  };
+
+  // Log product usage
+  const handleLogUsage = async () => {
+    if (!selectedJob || !usageForm.product_id || !usageForm.amount_used) {
+      showMsg('Select a product and enter amount', 'error');
+      return;
+    }
+    const data = await API('/api/crew/products', token, {
+      method: 'POST',
+      body: JSON.stringify({
+        quote_id: selectedJob.id,
+        product_id: usageForm.product_id,
+        amount_used: parseFloat(usageForm.amount_used),
+        notes: usageForm.notes,
+      }),
+    });
+    if (data.success) {
+      showMsg('Product usage logged!');
+      setUsageForm({ product_id: '', amount_used: '', notes: '' });
+      fetchProducts();
+    } else {
+      showMsg(data.error || 'Failed', 'error');
+    }
+  };
+
+  // Report equipment issue
+  const handleReportIssue = async () => {
+    if (!issueForm.equipment_id || !issueForm.issue) {
+      showMsg('Select equipment and describe the issue', 'error');
+      return;
+    }
+    const data = await API('/api/crew/equipment', token, {
+      method: 'POST',
+      body: JSON.stringify(issueForm),
+    });
+    if (data.success) {
+      showMsg('Issue reported!');
+      setIssueForm({ equipment_id: '', issue: '' });
+      fetchEquipment();
+    } else {
+      showMsg(data.error || 'Failed', 'error');
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('crew_token');
+    localStorage.removeItem('crew_user');
+    router.push('/crew/login');
+  };
+
+  if (loading || !user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f]">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  const statusColors = {
+    paid: 'bg-green-100 text-green-800',
+    accepted: 'bg-blue-100 text-blue-800',
+    scheduled: 'bg-purple-100 text-purple-800',
+    in_progress: 'bg-amber-100 text-amber-800',
+  };
+
+  const tabs = [
+    { id: 'jobs', label: 'Jobs', icon: '📋' },
+    { id: 'clock', label: 'Clock', icon: '⏱️' },
+    ...(user.can_see_inventory ? [{ id: 'products', label: 'Products', icon: '🧴' }] : []),
+    ...(user.can_see_equipment ? [{ id: 'equipment', label: 'Equipment', icon: '🔧' }] : []),
+  ];
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f]">
+      {/* Header */}
+      <div className="bg-[#0f172a]/80 border-b border-white/10 px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-white font-bold text-lg flex items-center gap-2">
+            <span>✈️</span> Vector Crew
+          </h1>
+          <p className="text-white/60 text-sm">{user.name} {user.is_lead_tech && <span className="text-amber-400 text-xs ml-1">Lead Tech</span>}</p>
+        </div>
+        <button onClick={logout} className="text-white/60 hover:text-white text-sm px-3 py-1 rounded border border-white/20">
+          Logout
+        </button>
+      </div>
+
+      {/* Toast */}
+      {msg && (
+        <div className={`fixed top-4 left-1/2 -translate-x-1/2 z-50 px-4 py-2 rounded-lg shadow-lg text-sm font-medium ${
+          msgType === 'error' ? 'bg-red-500 text-white' : 'bg-green-500 text-white'
+        }`}>
+          {msg}
+        </div>
+      )}
+
+      {/* Tab bar */}
+      <div className="flex border-b border-white/10 px-2 overflow-x-auto">
+        {tabs.map(t => (
+          <button
+            key={t.id}
+            onClick={() => { setTab(t.id); setSelectedJob(null); }}
+            className={`px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors ${
+              tab === t.id ? 'text-amber-400 border-b-2 border-amber-400' : 'text-white/60 hover:text-white'
+            }`}
+          >
+            {t.icon} {t.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div className="p-4 max-w-2xl mx-auto pb-24">
+
+        {/* ===== JOBS TAB ===== */}
+        {tab === 'jobs' && !selectedJob && (
+          <div className="space-y-3">
+            <h2 className="text-white font-semibold text-lg mb-3">Active Jobs</h2>
+            {jobs.length === 0 && (
+              <div className="text-white/50 text-center py-8">No active jobs</div>
+            )}
+            {jobs.map(job => (
+              <button
+                key={job.id}
+                onClick={() => setSelectedJob(job)}
+                className="w-full bg-white/10 backdrop-blur rounded-xl p-4 text-left hover:bg-white/15 transition-colors"
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <p className="text-white font-medium">{job.aircraft}</p>
+                    <p className="text-white/60 text-sm">{job.airport || 'No airport'}</p>
+                    {job.scheduled_date && (
+                      <p className="text-white/50 text-xs mt-1">
+                        {new Date(job.scheduled_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
+                      </p>
+                    )}
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[job.status] || 'bg-gray-100 text-gray-800'}`}>
+                    {job.status?.replace('_', ' ')}
+                  </span>
+                </div>
+                {job.services?.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-1">
+                    {job.services.map((s, i) => (
+                      <span key={i} className="bg-white/10 text-white/70 text-xs px-2 py-0.5 rounded">
+                        {s.description}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {/* ===== JOB DETAIL ===== */}
+        {tab === 'jobs' && selectedJob && (
+          <div className="space-y-4">
+            <button onClick={() => setSelectedJob(null)} className="text-amber-400 text-sm hover:underline">
+              ← Back to Jobs
+            </button>
+
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4">
+              <div className="flex items-start justify-between mb-3">
+                <div>
+                  <h2 className="text-white font-bold text-xl">{selectedJob.aircraft}</h2>
+                  <p className="text-white/60">{selectedJob.airport || 'No airport'}</p>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[selectedJob.status] || 'bg-gray-100 text-gray-800'}`}>
+                  {selectedJob.status?.replace('_', ' ')}
+                </span>
+              </div>
+
+              {selectedJob.scheduled_date && (
+                <p className="text-white/70 text-sm mb-2">
+                  Scheduled: {new Date(selectedJob.scheduled_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+                </p>
+              )}
+
+              {/* Lead tech contact info */}
+              {user.is_lead_tech && (selectedJob.client_name || selectedJob.client_phone) && (
+                <div className="bg-amber-400/10 border border-amber-400/30 rounded-lg p-3 mb-3">
+                  <p className="text-amber-400 text-xs font-medium mb-1">Client Contact (Lead Tech)</p>
+                  {selectedJob.client_name && <p className="text-white text-sm">{selectedJob.client_name}</p>}
+                  {selectedJob.client_phone && (
+                    <a href={`tel:${selectedJob.client_phone}`} className="text-amber-400 text-sm hover:underline">{selectedJob.client_phone}</a>
+                  )}
+                  {selectedJob.client_email && (
+                    <a href={`mailto:${selectedJob.client_email}`} className="text-amber-400 text-sm hover:underline block">{selectedJob.client_email}</a>
+                  )}
+                </div>
+              )}
+
+              {/* Services */}
+              {selectedJob.services?.length > 0 && (
+                <div className="mb-3">
+                  <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Services</p>
+                  <div className="space-y-1">
+                    {selectedJob.services.map((s, i) => (
+                      <div key={i} className="text-white text-sm flex justify-between">
+                        <span>{s.description}</span>
+                        {s.hours > 0 && <span className="text-white/50">{s.hours}h</span>}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {selectedJob.notes && (
+                <div className="mb-3">
+                  <p className="text-white/50 text-xs uppercase tracking-wide mb-1">Notes</p>
+                  <p className="text-white/80 text-sm">{selectedJob.notes}</p>
+                </div>
+              )}
+
+              {/* Action buttons */}
+              <div className="flex gap-2 mt-4">
+                {['paid', 'accepted', 'scheduled', 'in_progress'].includes(selectedJob.status) && (
+                  <button
+                    onClick={() => handleComplete(selectedJob.id)}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white py-3 rounded-lg font-medium text-sm transition-colors"
+                  >
+                    Mark Complete
+                  </button>
+                )}
+              </div>
+            </div>
+
+            {/* Photo upload section */}
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4">
+              <h3 className="text-white font-semibold mb-3">Photos</h3>
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                {['before_photo', 'after_photo'].map(type => (
+                  <label key={type} className="cursor-pointer bg-white/10 hover:bg-white/20 rounded-lg p-3 text-center transition-colors">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      className="hidden"
+                      onChange={(e) => handlePhotoUpload(e, type)}
+                      disabled={photoUploading}
+                    />
+                    <div className="text-2xl mb-1">{type === 'before_photo' ? '📸' : '✅'}</div>
+                    <p className="text-white text-xs">{type === 'before_photo' ? 'Before Photo' : 'After Photo'}</p>
+                  </label>
+                ))}
+              </div>
+              {photoUploading && <p className="text-amber-400 text-sm text-center">Uploading...</p>}
+              {photos.length > 0 && (
+                <div className="grid grid-cols-3 gap-2 mt-3">
+                  {photos.map(p => (
+                    <div key={p.id} className="relative rounded-lg overflow-hidden">
+                      <img src={p.url} alt={p.media_type} className="w-full h-20 object-cover" />
+                      <span className="absolute bottom-0 left-0 right-0 bg-black/60 text-white text-[10px] text-center py-0.5">
+                        {p.media_type?.replace('_', ' ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Product usage on this job (if inventory access) */}
+            {user.can_see_inventory && products.length === 0 && tab === 'jobs' && (
+              <button onClick={() => { fetchProducts(); }} className="hidden">load</button>
+            )}
+            {user.can_see_inventory && (
+              <div className="bg-white/10 backdrop-blur rounded-xl p-4">
+                <h3 className="text-white font-semibold mb-3">Log Product Usage</h3>
+                {products.length === 0 ? (
+                  <button onClick={fetchProducts} className="text-amber-400 text-sm hover:underline">Load products</button>
+                ) : (
+                  <div className="space-y-2">
+                    <select
+                      value={usageForm.product_id}
+                      onChange={e => setUsageForm(f => ({ ...f, product_id: e.target.value }))}
+                      className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm"
+                    >
+                      <option value="" className="text-gray-900">Select product</option>
+                      {products.map(p => (
+                        <option key={p.id} value={p.id} className="text-gray-900">
+                          {p.name} ({p.current_quantity} {p.unit} left)
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      placeholder="Amount used"
+                      value={usageForm.amount_used}
+                      onChange={e => setUsageForm(f => ({ ...f, amount_used: e.target.value }))}
+                      className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40"
+                      step="0.1"
+                      min="0"
+                    />
+                    <button
+                      onClick={handleLogUsage}
+                      className="w-full bg-amber-600 hover:bg-amber-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                    >
+                      Log Usage
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ===== CLOCK TAB ===== */}
+        {tab === 'clock' && (
+          <div className="space-y-4">
+            <h2 className="text-white font-semibold text-lg">Time Clock</h2>
+
+            <div className="bg-white/10 backdrop-blur rounded-xl p-6 text-center">
+              {clockStatus?.clocked_in ? (
+                <>
+                  <div className="text-green-400 text-sm font-medium mb-2">Clocked In</div>
+                  <div className="text-white text-4xl font-mono font-bold mb-4">{clockElapsed}</div>
+                  <p className="text-white/50 text-sm mb-4">
+                    Since {new Date(clockStatus.clock_in_time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                  </p>
+                  <button
+                    onClick={() => handleClock('clock_out')}
+                    disabled={clockLoading}
+                    className="w-full bg-red-600 hover:bg-red-700 disabled:opacity-50 text-white py-4 rounded-xl font-bold text-lg transition-colors"
+                  >
+                    {clockLoading ? 'Processing...' : 'Clock Out'}
+                  </button>
+                </>
+              ) : (
+                <>
+                  <div className="text-white/50 text-sm mb-4">Not clocked in</div>
+                  <button
+                    onClick={() => handleClock('clock_in')}
+                    disabled={clockLoading}
+                    className="w-full bg-green-600 hover:bg-green-700 disabled:opacity-50 text-white py-4 rounded-xl font-bold text-lg transition-colors"
+                  >
+                    {clockLoading ? 'Processing...' : 'Clock In'}
+                  </button>
+                </>
+              )}
+
+              {clockStatus?.today_hours > 0 && (
+                <p className="text-white/50 text-sm mt-4">
+                  Today: {clockStatus.today_hours.toFixed(2)} hours
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===== PRODUCTS TAB ===== */}
+        {tab === 'products' && (
+          <div className="space-y-3">
+            <h2 className="text-white font-semibold text-lg mb-3">Products</h2>
+            {products.length === 0 && (
+              <div className="text-white/50 text-center py-8">No products</div>
+            )}
+            {products.map(p => (
+              <div key={p.id} className="bg-white/10 backdrop-blur rounded-xl p-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-white font-medium">{p.name}</p>
+                    <p className="text-white/50 text-sm">{p.brand || p.category}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className={`font-medium ${p.low_stock ? 'text-red-400' : 'text-white'}`}>
+                      {p.current_quantity} {p.unit}
+                    </p>
+                    {p.low_stock && <p className="text-red-400 text-xs">Low stock</p>}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* ===== EQUIPMENT TAB ===== */}
+        {tab === 'equipment' && (
+          <div className="space-y-3">
+            <h2 className="text-white font-semibold text-lg mb-3">Equipment</h2>
+            {equipment.length === 0 && (
+              <div className="text-white/50 text-center py-8">No equipment</div>
+            )}
+            {equipment.map(e => (
+              <div key={e.id} className="bg-white/10 backdrop-blur rounded-xl p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div>
+                    <p className="text-white font-medium">{e.name}</p>
+                    <p className="text-white/50 text-sm">{e.brand} {e.model}</p>
+                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full font-medium ${
+                    e.status === 'active' ? 'bg-green-100 text-green-800' :
+                    e.status === 'needs_repair' ? 'bg-red-100 text-red-800' :
+                    e.status === 'maintenance' ? 'bg-amber-100 text-amber-800' :
+                    'bg-gray-100 text-gray-800'
+                  }`}>
+                    {e.status?.replace('_', ' ')}
+                  </span>
+                </div>
+                {e.needs_maintenance && (
+                  <p className="text-amber-400 text-xs mb-1">Maintenance due</p>
+                )}
+              </div>
+            ))}
+
+            {/* Report issue form */}
+            <div className="bg-white/10 backdrop-blur rounded-xl p-4 mt-4">
+              <h3 className="text-white font-semibold mb-3">Report an Issue</h3>
+              <div className="space-y-2">
+                <select
+                  value={issueForm.equipment_id}
+                  onChange={e => setIssueForm(f => ({ ...f, equipment_id: e.target.value }))}
+                  className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm"
+                >
+                  <option value="" className="text-gray-900">Select equipment</option>
+                  {equipment.map(e => (
+                    <option key={e.id} value={e.id} className="text-gray-900">{e.name}</option>
+                  ))}
+                </select>
+                <textarea
+                  placeholder="Describe the issue..."
+                  value={issueForm.issue}
+                  onChange={e => setIssueForm(f => ({ ...f, issue: e.target.value }))}
+                  className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40 min-h-[80px]"
+                />
+                <button
+                  onClick={handleReportIssue}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-2 rounded-lg text-sm font-medium transition-colors"
+                >
+                  Report Issue
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

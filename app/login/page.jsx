@@ -142,7 +142,12 @@ export default function Page() {
         >
           See Plans & Pricing
         </a>
-        <p className="mt-4 text-xs text-gray-400 text-center">By Aircraft Detailing 101</p>
+        <div className="mt-4 flex items-center justify-between">
+          <a href="/crew/login" className="text-sm text-gray-500 hover:text-[#1e3a5f] transition-colors">
+            Crew login →
+          </a>
+          <p className="text-xs text-gray-400">By Aircraft Detailing 101</p>
+        </div>
       </div>
     </div>
   );
