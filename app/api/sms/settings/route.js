@@ -36,11 +36,11 @@ export async function POST(request) {
 
   const { data: detailer } = await supabase
     .from('detailers')
-    .select('plan')
+    .select('plan, is_admin')
     .eq('id', user.id)
     .single();
 
-  if (!hasPremiumAccess(detailer?.plan)) {
+  if (!hasPremiumAccess(detailer?.plan, detailer?.is_admin)) {
     return Response.json({ error: 'SMS settings require Business plan' }, { status: 403 });
   }
 

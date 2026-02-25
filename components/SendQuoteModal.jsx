@@ -345,11 +345,19 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
           setMethod(value);
         }}
         className={`cursor-pointer border rounded p-3 flex items-center justify-between mb-2 ${
-          locked ? "opacity-50" : ""
+          locked ? "opacity-60" : ""
         } ${isSelected ? "border-amber-500" : "border-gray-300"}`}
       >
         <span>{label}</span>
-        {locked && <span className="text-sm text-gray-500">Business Plan</span>}
+        {locked && (
+          <a
+            href="/settings?upgrade=business"
+            onClick={(e) => e.stopPropagation()}
+            className="text-xs px-2 py-1 rounded bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium hover:opacity-90"
+          >
+            Upgrade — $149/mo
+          </a>
+        )}
       </div>
     );
   };

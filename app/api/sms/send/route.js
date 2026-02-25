@@ -19,11 +19,11 @@ export async function POST(request) {
 
   const { data: detailer } = await supabase
     .from('detailers')
-    .select('id, plan, sms_enabled, twilio_phone')
+    .select('id, plan, is_admin, sms_enabled, twilio_phone')
     .eq('id', user.id)
     .single();
 
-  if (!hasPremiumAccess(detailer?.plan)) {
+  if (!hasPremiumAccess(detailer?.plan, detailer?.is_admin)) {
     return Response.json({ error: 'SMS requires Business plan' }, { status: 403 });
   }
 

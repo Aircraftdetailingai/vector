@@ -169,7 +169,7 @@ export async function POST(request, { params }) {
   // Fetch detailer info for email (includes currency for proper formatting)
   const { data: detailer } = await supabase
     .from('detailers')
-    .select('id, name, email, phone, company, plan, notification_settings, sms_enabled, currency')
+    .select('id, name, email, phone, company, plan, is_admin, notification_settings, sms_enabled, currency')
     .eq('id', user.id)
     .single();
 
@@ -230,7 +230,7 @@ export async function POST(request, { params }) {
   }
 
   // Send SMS for business plan
-  if (hasPremiumAccess(detailer?.plan) && detailer?.sms_enabled !== false && clientPhone) {
+  if (hasPremiumAccess(detailer?.plan, detailer?.is_admin) && detailer?.sms_enabled !== false && clientPhone) {
     try {
       const smsResult = await sendQuoteSms({
         clientPhone,
