@@ -71,6 +71,8 @@ export default function PortalPage() {
   const canPay = quote && !isPaid && !isExpired && stripeConnected && ['sent', 'viewed'].includes(quote.status);
   const companyName = detailer?.company || detailer?.name || 'Your Detailer';
   const sym = getCurrencySymbol(detailer?.currency || 'USD');
+  const comparableQuotes = history.filter(h => ['sent', 'viewed'].includes(h.status));
+  const hasComparableQuotes = comparableQuotes.length > 0 && !isPaid;
 
   const handlePayment = async () => {
     setPaymentError('');
@@ -192,6 +194,25 @@ export default function PortalPage() {
                   {paymentLoading ? 'Processing...' : 'Approve & Pay'}
                 </button>
               </div>
+            )}
+
+            {/* Compare Quotes banner */}
+            {hasComparableQuotes && (
+              <a
+                href={`/compare/${token}`}
+                className="block bg-white border-2 border-[#1e3a5f] rounded-xl p-4 hover:bg-[#1e3a5f]/5 transition-colors"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-lg bg-[#1e3a5f]/10 flex items-center justify-center text-lg">&#9878;</div>
+                    <div>
+                      <p className="font-semibold text-[#1e3a5f]">Compare Quotes</p>
+                      <p className="text-xs text-gray-500">{comparableQuotes.length + 1} options available &middot; See side-by-side</p>
+                    </div>
+                  </div>
+                  <span className="text-[#1e3a5f] text-xl">&#8250;</span>
+                </div>
+              </a>
             )}
 
             {/* Paid confirmation */}
