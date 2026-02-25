@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatPriceWhole } from '@/lib/formatPrice';
+import { formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 const CATEGORY_LABELS = {
@@ -57,8 +57,13 @@ export default function EquipmentPage() {
     nextMaintenance: '',
     maintenanceNotes: '',
     status: 'active',
+    product_url: '',
+    image_url: '',
   });
   const [saving, setSaving] = useState(false);
+  const [scraping, setScraping] = useState(false);
+  const [scrapeUrl, setScrapeUrl] = useState('');
+  const [scrapeError, setScrapeError] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -102,6 +107,8 @@ export default function EquipmentPage() {
         nextMaintenance: item.next_maintenance || '',
         maintenanceNotes: item.maintenance_notes || '',
         status: item.status || 'active',
+        product_url: item.product_url || '',
+        image_url: item.image_url || '',
       });
     } else {
       setEditingItem(null);
@@ -116,14 +123,61 @@ export default function EquipmentPage() {
         nextMaintenance: '',
         maintenanceNotes: '',
         status: 'active',
+        product_url: '',
+        image_url: '',
       });
     }
+    setScrapeUrl('');
+    setScrapeError('');
     setShowModal(true);
   };
 
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingItem(null);
+    setScrapeUrl('');
+    setScrapeError('');
+  };
+
+  const handleScrapeUrl = async (url) => {
+    if (!url) return;
+    setScraping(true);
+    setScrapeError('');
+    const token = localStorage.getItem('vector_token');
+    try {
+      const res = await fetch('/api/equipment/scrape', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ url }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to extract product info');
+      const p = data.product;
+      setFormData(prev => ({
+        ...prev,
+        name: p.name || prev.name,
+        brand: p.brand || prev.brand,
+        model: p.model || prev.model,
+        purchasePrice: p.price || prev.purchasePrice,
+        product_url: p.product_url || url,
+        image_url: p.image_url || prev.image_url,
+      }));
+    } catch (err) {
+      setScrapeError(err.message);
+    } finally {
+      setScraping(false);
+    }
+  };
+
+  const handlePasteUrl = (e) => {
+    const url = e.target.value;
+    setScrapeUrl(url);
+    if (url && (url.startsWith('http://') || url.startsWith('https://'))) {
+      handleScrapeUrl(url);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -142,6 +196,8 @@ export default function EquipmentPage() {
       nextMaintenance: formData.nextMaintenance || null,
       maintenanceNotes: formData.maintenanceNotes,
       status: formData.status,
+      product_url: formData.product_url || null,
+      image_url: formData.image_url || null,
     };
 
     try {
@@ -300,7 +356,7 @@ export default function EquipmentPage() {
             <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-gray-500 text-xs">Avg Cost/Job</p>
               <p className="text-2xl font-bold text-purple-600">
-                {stats.avgCostPerJob ? `$${formatPriceWhole(stats.avgCostPerJob)}` : '-'}
+                {stats.avgCostPerJob ? `${currencySymbol()}${formatPriceWhole(stats.avgCostPerJob)}` : '-'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
@@ -436,10 +492,19 @@ export default function EquipmentPage() {
                     return (
                       <div key={item.id} className="p-4 hover:bg-gray-50">
                         <div className="flex items-start justify-between gap-3">
+                          {item.image_url && (
+                            <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-gray-100 border">
+                              <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+                            </div>
+                          )}
                           <div className="flex-1 min-w-0">
                             {/* Name + Status row */}
                             <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-semibold text-gray-900">{item.name}</p>
+                              {item.product_url ? (
+                                <a href={item.product_url} target="_blank" rel="noopener noreferrer" className="font-semibold text-gray-900 hover:text-amber-600 underline decoration-gray-300 hover:decoration-amber-500">{item.name}</a>
+                              ) : (
+                                <p className="font-semibold text-gray-900">{item.name}</p>
+                              )}
                               <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-600'}`}>
                                 {STATUS_LABELS[item.status] || item.status}
                               </span>
@@ -549,6 +614,46 @@ export default function EquipmentPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Product Link Auto-fill */}
+              <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-3">
+                <label className="block text-sm font-semibold text-amber-800 mb-1.5">Paste Product Link</label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={scrapeUrl}
+                    onChange={handlePasteUrl}
+                    placeholder="https://www.amazon.com/... or any product page"
+                    className="flex-1 border border-amber-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
+                  />
+                  {scraping && (
+                    <div className="flex items-center px-3">
+                      <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-amber-500" />
+                    </div>
+                  )}
+                </div>
+                {scrapeError && (
+                  <p className="text-xs text-red-600 mt-1">{scrapeError}</p>
+                )}
+                <p className="text-xs text-amber-600 mt-1">Supports Amazon, Home Depot, Grainger, Detail King, Rupes, Autogeek &amp; more</p>
+              </div>
+
+              {/* Image preview from scrape */}
+              {formData.image_url && (
+                <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-2">
+                  <img src={formData.image_url} alt="Product" className="w-16 h-16 rounded-lg object-cover border" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-xs text-gray-500">Product image detected</p>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, image_url: '' })}
+                      className="text-xs text-red-500 hover:text-red-700"
+                    >
+                      Remove image
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Name */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Equipment Name *</label>

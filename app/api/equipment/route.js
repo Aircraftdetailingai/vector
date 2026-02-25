@@ -179,6 +179,8 @@ export async function POST(request) {
     nextMaintenance,
     maintenanceNotes,
     status,
+    product_url,
+    image_url,
   } = body;
 
   if (!name) {
@@ -198,6 +200,8 @@ export async function POST(request) {
     maintenance_notes: maintenanceNotes || '',
     jobs_completed: 0,
     status: status || 'active',
+    product_url: product_url || null,
+    image_url: image_url || null,
   };
 
   const { data: item, error } = await retryStrippingColumns(supabase, 'equipment', 'insert', row);
@@ -235,6 +239,8 @@ export async function PUT(request) {
     jobsCompleted,
     maintenanceNotes,
     status,
+    product_url,
+    image_url,
   } = body;
 
   if (!id) {
@@ -256,6 +262,8 @@ export async function PUT(request) {
   if (jobsCompleted !== undefined) updates.jobs_completed = parseInt(jobsCompleted) || 0;
   if (maintenanceNotes !== undefined) updates.maintenance_notes = maintenanceNotes;
   if (status !== undefined) updates.status = status;
+  if (product_url !== undefined) updates.product_url = product_url || null;
+  if (image_url !== undefined) updates.image_url = image_url || null;
 
   const { data: item, error } = await retryStrippingColumns(
     supabase, 'equipment', 'update', updates, { id, detailer_id: user.id }
