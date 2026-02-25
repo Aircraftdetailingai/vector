@@ -29,6 +29,9 @@ export default function RootLayout({ children }) {
         </Providers>
         <InstallPrompt />
         <ServiceWorkerRegistrar />
+        <script dangerouslySetInnerHTML={{ __html: `
+          (function(){var o=new MutationObserver(function(m){m.forEach(function(r){r.addedNodes.forEach(function(n){if(n.id==='__vercel-toolbar'||n.id==='vercel-live-feedback'||(n.tagName==='SCRIPT'&&n.src&&n.src.includes('vercel-toolbar'))){n.remove()}})})});o.observe(document.documentElement,{childList:true,subtree:true});setTimeout(function(){o.disconnect()},10000)})();
+        `}} />
       </body>
     </html>
   )
