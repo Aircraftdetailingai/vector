@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 
 const CUSTOMER_TYPES = [
   { value: 'fbo', label: 'FBO (Fixed Base Operator)' },
@@ -75,6 +76,7 @@ For a cold contact:
 
 export default function SalesAssistantPage() {
   const router = useRouter();
+  const { t } = useTranslation();
 
   // Core fields (always visible)
   const [companyName, setCompanyName] = useState('');
@@ -160,7 +162,7 @@ export default function SalesAssistantPage() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          customer_type: CUSTOMER_TYPES.find(t => t.value === customerType)?.label || customerType,
+          customer_type: CUSTOMER_TYPES.find(ct => ct.value === customerType)?.label || customerType,
           contact_type: contactType,
           notes: notes || null,
           company_name: hasCompany ? companyName : null,
@@ -174,14 +176,14 @@ export default function SalesAssistantPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Failed to generate scripts');
+        setError(data.error || t('errors.failedToCreate'));
         return;
       }
 
       setCompanyIntel(data.company_intel || null);
       setScripts(data.scripts || []);
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError(t('errors.networkError', { error: err.message }));
     } finally {
       if (interval) clearInterval(interval);
       setLoading(false);
@@ -205,7 +207,7 @@ export default function SalesAssistantPage() {
     }
   };
 
-  const selectedContactType = CONTACT_TYPES.find(t => t.value === contactType);
+  const selectedContactType = CONTACT_TYPES.find(ct => ct.value === contactType);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
@@ -213,15 +215,15 @@ export default function SalesAssistantPage() {
         <div className="flex items-center space-x-4">
           <a href="/growth" className="text-2xl hover:text-amber-400">&#8592;</a>
           <div>
-            <h1 className="text-2xl font-bold">AI Sales Assistant</h1>
-            <p className="text-sm text-gray-400">Research prospects and generate personalized pitches</p>
+            <h1 className="text-2xl font-bold">{t('growth.aiSalesAssistant')}</h1>
+            <p className="text-sm text-gray-400">{t('growth.aiDesc')}</p>
           </div>
         </div>
         <button
           onClick={() => { setShowHistory(!showHistory); if (!showHistory && history.length === 0) fetchHistory(); }}
           className="px-4 py-2 text-sm border border-white/30 rounded-lg text-white hover:bg-white/10"
         >
-          {showHistory ? 'Back to Generator' : 'History'}
+          {showHistory ? t('common.back') : 'History'}
         </button>
       </header>
 
@@ -231,7 +233,7 @@ export default function SalesAssistantPage() {
           <div className="space-y-4">
             <h2 className="text-white text-lg font-semibold">Past Generations</h2>
             {historyLoading ? (
-              <div className="text-gray-400 text-center py-8">Loading...</div>
+              <div className="text-gray-400 text-center py-8">{t('common.loading')}</div>
             ) : history.length === 0 ? (
               <div className="text-gray-400 text-center py-8">No saved scripts yet. Generate your first one!</div>
             ) : (
@@ -267,7 +269,7 @@ export default function SalesAssistantPage() {
 
                 {/* Company Name - Prominent */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('customers.companyName')}</label>
                   <input
                     type="text"
                     value={companyName}
@@ -301,22 +303,22 @@ export default function SalesAssistantPage() {
 
                 {/* Customer Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Type *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.type')} *</label>
                   <select
                     value={customerType}
                     onChange={(e) => setCustomerType(e.target.value)}
                     className="w-full border rounded-lg px-3 py-2"
                   >
                     <option value="">Select customer type...</option>
-                    {CUSTOMER_TYPES.map(t => (
-                      <option key={t.value} value={t.value}>{t.label}</option>
+                    {CUSTOMER_TYPES.map(ct => (
+                      <option key={ct.value} value={ct.value}>{ct.label}</option>
                     ))}
                   </select>
                 </div>
 
                 {/* Notes with Smart Prompts */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Notes & Context</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.notes')} & Context</label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -339,7 +341,7 @@ export default function SalesAssistantPage() {
                     <div className="p-4 space-y-4 border-t bg-gray-50/50">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Location / Airport</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Location / {t('common.airport')}</label>
                           <input
                             type="text"
                             value={location}
@@ -349,7 +351,7 @@ export default function SalesAssistantPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Contact Name</label>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
                           <input
                             type="text"
                             value={contactName}
@@ -403,7 +405,7 @@ export default function SalesAssistantPage() {
                   className="w-full py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading
-                    ? (companyName.trim() ? 'Researching & Generating...' : 'Generating...')
+                    ? (companyName.trim() ? 'Researching & Generating...' : t('common.processing'))
                     : (companyName.trim()
                       ? `Research ${companyName.trim()} & Generate Scripts`
                       : selectedContactType

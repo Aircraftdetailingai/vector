@@ -5,6 +5,7 @@ import { DEFAULT_PRODUCT_RATIOS, SERVICE_TYPE_LABELS } from '../../lib/product-c
 import { setUserCurrency } from '@/lib/currency';
 import { currencySymbol } from '@/lib/formatPrice';
 import { restartTour } from '@/components/DashboardTour';
+import { useTranslation, LANGUAGES } from '@/lib/i18n';
 
 const DEFAULT_ADDON_FEES = [
   { name: 'Hazmat Fee', description: 'Hazardous material handling surcharge', fee_type: 'flat', amount: 250 },
@@ -17,6 +18,7 @@ const DEFAULT_ADDON_FEES = [
 function SettingsContent() {
   const router = useRouter();
   const params = useSearchParams();
+  const { t, lang: uiLang, setLang: setUiLang } = useTranslation();
   const [user, setUser] = useState(null);
   const [laborRate, setLaborRate] = useState(25);
   const [emailNotifs, setEmailNotifs] = useState({
@@ -760,7 +762,7 @@ function SettingsContent() {
             {saveSuccess ? (
               <div className="flex items-center gap-2 w-full justify-center">
                 <span className="text-lg">&#10003;</span>
-                <span className="font-medium">Settings saved successfully!</span>
+                <span className="font-medium">{t('settings.saved')}</span>
               </div>
             ) : (
               <>
@@ -775,14 +777,14 @@ function SettingsContent() {
                     onClick={() => window.location.reload()}
                     className="px-4 py-1.5 text-sm border border-white/30 rounded hover:bg-white/10 transition-colors"
                   >
-                    Discard
+                    {t('common.cancel')}
                   </button>
                   <button
                     onClick={saveAllChanges}
                     disabled={saving}
                     className="px-6 py-1.5 text-sm bg-gradient-to-r from-amber-500 to-amber-600 rounded font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
                   >
-                    {saving ? 'Saving...' : `Save Changes (${pendingChanges.size} unsaved)`}
+                    {saving ? t('common.saving') : `${t('common.save')} (${pendingChanges.size})`}
                   </button>
                 </div>
               </>
@@ -792,7 +794,7 @@ function SettingsContent() {
 
         {/* Plan & Billing */}
         <div className="bg-[#0f172a] text-white p-4 rounded">
-          <h2 className="text-lg font-semibold mb-1">Plan & Billing</h2>
+          <h2 className="text-lg font-semibold mb-1">{t('settings.billing')}</h2>
           {user?.is_admin ? (
             <div>
               <p className="mb-1 capitalize">{user?.plan || 'enterprise'} Plan</p>
@@ -828,7 +830,7 @@ function SettingsContent() {
                       onClick={() => setShowPromo(!showPromo)}
                       className="text-sm text-gray-400 hover:text-white transition-colors"
                     >
-                      {showPromo ? '- Hide promo code' : '+ Have a promo code?'}
+                      {showPromo ? t('upgrade.hidePromoCode') : t('upgrade.havePromoCode')}
                     </button>
                     {showPromo && (
                       <div className="mt-2 flex items-center gap-2">
@@ -846,7 +848,7 @@ function SettingsContent() {
                           className="px-3 py-1.5 rounded bg-white/10 border border-white/20 text-white placeholder-gray-500 text-sm w-40"
                         />
                         {promoValidating && (
-                          <span className="text-xs text-gray-400">Checking...</span>
+                          <span className="text-xs text-gray-400">{t('upgrade.checking')}</span>
                         )}
                         {promoResult && (
                           <span className="text-xs text-green-400 font-medium">
@@ -946,7 +948,7 @@ function SettingsContent() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           <a href="/settings/services" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
             <div className="text-2xl mb-1">&#9881;</div>
-            <div className="font-medium text-sm">Services</div>
+            <div className="font-medium text-sm">{t('nav.services')}</div>
             <div className="text-xs text-gray-500">Configure rates</div>
           </a>
           <a href="/settings/embed" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
@@ -979,7 +981,7 @@ function SettingsContent() {
             <div>
               <div className="flex items-center mb-2">
                 <span className="text-green-500 mr-2">&#10003;</span>
-                <span className="text-green-700 font-medium">Connected</span>
+                <span className="text-green-700 font-medium">{t('common.active')}</span>
               </div>
               {stripeStatus.bankAccount && (
                 <p className="text-sm text-gray-600 mb-2">Account: {stripeStatus.bankAccount}</p>
@@ -1014,7 +1016,7 @@ function SettingsContent() {
               <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
                 <div className="flex items-center mb-1">
                   <span className="text-red-500 mr-2">&#9888;</span>
-                  <span className="text-red-700 font-medium">Disconnected - Payments Disabled</span>
+                  <span className="text-red-700 font-medium">{t('stripe.disconnected')}</span>
                 </div>
                 <p className="text-sm text-red-600">Your Stripe account needs attention. Online payments are currently disabled on your quotes.</p>
               </div>
@@ -1023,14 +1025,14 @@ function SettingsContent() {
                 disabled={stripeLoading}
                 className="w-full px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 font-medium"
               >
-                {stripeLoading ? 'Reconnecting...' : 'Reconnect Stripe'}
+                {stripeLoading ? t('common.connecting') : t('stripe.reconnect')}
               </button>
             </div>
           ) : (
             <div>
               <div className="flex items-center mb-2">
                 <span className="text-red-500 mr-2">&#10007;</span>
-                <span className="text-red-700 font-medium">Not Connected</span>
+                <span className="text-red-700 font-medium">{t('stripe.notConnected')}</span>
               </div>
               <p className="text-sm text-gray-600 mb-3">Connect Stripe to receive payments for your quotes.</p>
               <button
@@ -1038,7 +1040,7 @@ function SettingsContent() {
                 disabled={stripeLoading}
                 className="px-4 py-2 rounded bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:opacity-90 disabled:opacity-50"
               >
-                {stripeLoading ? 'Connecting...' : 'Connect Stripe'}
+                {stripeLoading ? t('common.connecting') : t('stripe.connect')}
               </button>
             </div>
           )}
@@ -1141,7 +1143,7 @@ function SettingsContent() {
 
         {/* Platform Fee */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Platform Fee</h3>
+          <h3 className="font-semibold mb-2">{t('invoices.platformFee')}</h3>
           <p className="text-sm text-gray-600 mb-3">
             Vector charges a {user?.plan === 'enterprise' ? '0%' : hasAllFeatures ? '1%' : user?.plan === 'pro' ? '2%' : '5%'} platform fee on each job.
             Choose who pays it.
@@ -1177,7 +1179,7 @@ function SettingsContent() {
                 className="mt-1 mr-3"
               />
               <div>
-                <p className="font-medium">Pass fee to customer</p>
+                <p className="font-medium">{t('settings.passFeeToCustomer')}</p>
                 <p className="text-sm text-gray-500">A "Service Fee" line item is added to the customer's quote. You receive the full quote amount.</p>
               </div>
             </label>
@@ -1186,13 +1188,30 @@ function SettingsContent() {
 
         {/* Localization */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Localization</h3>
+          <h3 className="font-semibold mb-2">{t('settings.language')}</h3>
           <p className="text-sm text-gray-600 mb-4">
             Set your preferred language and currency for your account.
           </p>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">App Language</label>
+              <select
+                value={uiLang}
+                onChange={(e) => setUiLang(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              >
+                {LANGUAGES.map((l) => (
+                  <option key={l.code} value={l.code}>
+                    {l.flag} {l.label}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-gray-400 mt-1">
+                Changes the app interface language.
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.language')}</label>
               <select
                 value={language}
                 onChange={(e) => { setLanguage(e.target.value); markDirty('language'); }}
@@ -1213,7 +1232,7 @@ function SettingsContent() {
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.currency')}</label>
               <select
                 value={currency}
                 onChange={(e) => { setCurrency(e.target.value); markDirty('currency'); }}
@@ -1306,7 +1325,7 @@ function SettingsContent() {
 
         {/* Minimum Call Out Fee */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Minimum Call Out Fee</h3>
+          <h3 className="font-semibold mb-2">{t('settings.minimumFee')}</h3>
           <p className="text-sm text-gray-600 mb-3">
             Set a minimum charge for jobs. If the quote total is less than this amount, the minimum fee will be applied instead.
           </p>
@@ -1399,7 +1418,7 @@ function SettingsContent() {
         <div className="bg-white p-4 rounded shadow">
           <div className="flex justify-between items-start mb-3">
             <div>
-              <h3 className="font-semibold">Add-on Fees</h3>
+              <h3 className="font-semibold">{t('settings.addonFees')}</h3>
               <p className="text-sm text-gray-500">Flat or percentage surcharges (hazmat, after-hours, rush, etc.) added on top of service pricing.</p>
             </div>
             <div className="flex gap-2 flex-shrink-0">
@@ -1520,7 +1539,7 @@ function SettingsContent() {
 
         {/* Quote Display Preference */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Quote Display for Customers</h3>
+          <h3 className="font-semibold mb-2">{t('settings.quoteDisplayPreference')}</h3>
           <p className="text-sm text-gray-600 mb-3">Choose what pricing details customers see on their quotes.</p>
           <div className="space-y-3">
             {[
@@ -1556,12 +1575,12 @@ function SettingsContent() {
 
         {/* Email Notifications */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Email Notifications</h3>
+          <h3 className="font-semibold mb-2">{t('settings.emailNotifications')}</h3>
           {[
-            { key: 'quoteCreated', label: 'Quote created confirmation' },
-            { key: 'quoteSent', label: 'Quote sent confirmation' },
-            { key: 'weeklySummary', label: 'Weekly summary' },
-            { key: 'priceReview', label: 'Price review reminders' },
+            { key: 'quoteCreated', label: t('settings.quoteCreated') },
+            { key: 'quoteSent', label: t('settings.quoteSentNotif') },
+            { key: 'weeklySummary', label: t('settings.weeklySummary') },
+            { key: 'priceReview', label: t('settings.priceReview') },
           ].map((item) => (
             <div key={item.key} className="flex items-center justify-between mb-2">
               <span>{item.label}</span>
@@ -1579,7 +1598,7 @@ function SettingsContent() {
         </div>
         {/* SMS Alerts to You */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">SMS Alerts to You</h3>
+          <h3 className="font-semibold mb-2">{t('settings.smsNotifications')}</h3>
           {!hasAllFeatures && user?.plan === 'free' && (
             <div className="text-center py-4">
               <p className="mb-2">SMS alerts are available on Pro plans.</p>
@@ -1588,8 +1607,8 @@ function SettingsContent() {
           )}
           {(hasAllFeatures || (user && user.plan !== 'free')) && (
             [
-              { key: 'quoteViewed', label: 'Quote viewed alert' },
-              { key: 'quoteExpiring', label: 'Quote expiring soon' },
+              { key: 'quoteViewed', label: t('settings.quoteViewedNotif') },
+              { key: 'quoteExpiring', label: t('settings.quoteExpiring') },
             ].map((item) => (
               <div key={item.key} className="flex items-center justify-between mb-2">
                 <span>{item.label}</span>
@@ -1634,11 +1653,11 @@ function SettingsContent() {
               </div>
               {[
                 { key: 'quoteDelivery', label: 'Quote delivery via SMS' },
-                { key: 'followup3', label: '3-day follow-up' },
-                { key: 'followup7', label: '7-day follow-up' },
-                { key: 'expiration', label: 'Expiration warning to client' },
-                { key: 'jobReminderSms', label: 'Job reminder (day before)' },
-                { key: 'paymentConfirmSms', label: 'Payment confirmation' },
+                { key: 'followup3', label: t('settings.followup3') },
+                { key: 'followup7', label: t('settings.followup7') },
+                { key: 'expiration', label: t('settings.expiration') },
+                { key: 'jobReminderSms', label: t('settings.jobReminderSms') },
+                { key: 'paymentConfirmSms', label: t('settings.paymentConfirmSms') },
               ].map((item) => (
                 <div key={item.key} className="flex items-center justify-between mb-2">
                   <span className={!smsEnabled ? 'text-gray-400' : ''}>{item.label}</span>
@@ -1860,21 +1879,21 @@ function SettingsContent() {
         {showAddonModal && (
           <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
             <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Add Fee</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('common.add')}</h3>
               {addonError && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{addonError}</div>}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fee Name *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
                   <input type="text" value={newAddon.name} onChange={(e) => setNewAddon({ ...newAddon, name: e.target.value })}
                     placeholder="e.g., After Hours" className="w-full border rounded px-3 py-2" autoFocus />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
                   <input type="text" value={newAddon.description} onChange={(e) => setNewAddon({ ...newAddon, description: e.target.value })}
                     placeholder="Optional description" className="w-full border rounded px-3 py-2" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fee Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.type')}</label>
                   <div className="flex gap-2">
                     {['flat', 'percent'].map(t => (
                       <button key={t} type="button" onClick={() => setNewAddon({ ...newAddon, fee_type: t })}
@@ -1887,7 +1906,7 @@ function SettingsContent() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.amount')} *</label>
                   <div className="relative">
                     {newAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-gray-400">$</span>}
                     <input type="number" value={newAddon.amount} onChange={(e) => setNewAddon({ ...newAddon, amount: e.target.value })}
@@ -1898,9 +1917,9 @@ function SettingsContent() {
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => { setShowAddonModal(false); setAddonError(''); }} className="px-4 py-2 border rounded">Cancel</button>
+                <button onClick={() => { setShowAddonModal(false); setAddonError(''); }} className="px-4 py-2 border rounded">{t('common.cancel')}</button>
                 <button onClick={addAddonFee} disabled={addonLoading || !newAddon.name}
-                  className="px-4 py-2 bg-amber-500 text-white rounded disabled:opacity-50">{addonLoading ? 'Saving...' : 'Add Fee'}</button>
+                  className="px-4 py-2 bg-amber-500 text-white rounded disabled:opacity-50">{addonLoading ? t('common.saving') : t('common.add')}</button>
               </div>
             </div>
           </div>
@@ -1910,21 +1929,21 @@ function SettingsContent() {
         {editingAddon && (
           <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
             <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-              <h3 className="text-lg font-semibold mb-4">Edit Fee</h3>
+              <h3 className="text-lg font-semibold mb-4">{t('common.edit')}</h3>
               {addonError && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{addonError}</div>}
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fee Name</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
                   <input type="text" value={editingAddon.name} onChange={(e) => setEditingAddon({ ...editingAddon, name: e.target.value })}
                     className="w-full border rounded px-3 py-2" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
                   <input type="text" value={editingAddon.description || ''} onChange={(e) => setEditingAddon({ ...editingAddon, description: e.target.value })}
                     className="w-full border rounded px-3 py-2" />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Fee Type</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.type')}</label>
                   <div className="flex gap-2">
                     {['flat', 'percent'].map(t => (
                       <button key={t} type="button" onClick={() => setEditingAddon({ ...editingAddon, fee_type: t })}
@@ -1937,7 +1956,7 @@ function SettingsContent() {
                   </div>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.amount')}</label>
                   <div className="relative">
                     {editingAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-gray-400">$</span>}
                     <input type="number" value={editingAddon.amount || ''} onChange={(e) => setEditingAddon({ ...editingAddon, amount: e.target.value })}
@@ -1947,9 +1966,9 @@ function SettingsContent() {
                 </div>
               </div>
               <div className="flex justify-end gap-3 mt-6">
-                <button onClick={() => { setEditingAddon(null); setAddonError(''); }} className="px-4 py-2 border rounded">Cancel</button>
+                <button onClick={() => { setEditingAddon(null); setAddonError(''); }} className="px-4 py-2 border rounded">{t('common.cancel')}</button>
                 <button onClick={updateAddonFee} disabled={addonLoading}
-                  className="px-4 py-2 bg-amber-500 text-white rounded disabled:opacity-50">{addonLoading ? 'Saving...' : 'Save'}</button>
+                  className="px-4 py-2 bg-amber-500 text-white rounded disabled:opacity-50">{addonLoading ? t('common.saving') : t('common.save')}</button>
               </div>
             </div>
           </div>

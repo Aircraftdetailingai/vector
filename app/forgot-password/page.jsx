@@ -1,7 +1,9 @@
 "use client";
 import { useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
 
 export default function ForgotPasswordPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
@@ -19,7 +21,7 @@ export default function ForgotPasswordPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Something went wrong');
+        throw new Error(data.error || t('errors.somethingWentWrong'));
       }
       setSent(true);
     } catch (err) {
@@ -34,7 +36,7 @@ export default function ForgotPasswordPage() {
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
         <div className="flex flex-col items-center mb-6">
           <h1 className="text-2xl font-bold text-[#1e3a5f] flex items-center">
-            <span className="mr-2">&#9992;&#65039;</span> Vector
+            <span className="mr-2">&#9992;&#65039;</span> {t('dashboard.title')}
           </h1>
           <p className="text-gray-500 mt-1 text-center">Reset Your Password</p>
         </div>
@@ -53,7 +55,7 @@ export default function ForgotPasswordPage() {
               href="/login"
               className="inline-block px-6 py-2 rounded-md text-white font-medium bg-gradient-to-r from-[#f59e0b] to-[#d97706] hover:opacity-90"
             >
-              Back to Login
+              Back to {t('common.login')}
             </a>
           </div>
         ) : (
@@ -64,7 +66,7 @@ export default function ForgotPasswordPage() {
             {error && <div className="text-red-600 mb-4 text-sm">{error}</div>}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.email')}</label>
                 <input
                   type="email"
                   className="w-full border border-gray-300 rounded-md p-2"
@@ -80,12 +82,12 @@ export default function ForgotPasswordPage() {
                 className="w-full py-2 rounded-md text-white font-medium bg-gradient-to-r from-[#f59e0b] to-[#d97706] hover:opacity-90 disabled:opacity-50"
                 disabled={loading}
               >
-                {loading ? 'Sending...' : 'Send Reset Link'}
+                {loading ? t('common.sending') : 'Send Reset Link'}
               </button>
             </form>
             <div className="mt-4 text-center">
               <a href="/login" className="text-sm text-blue-600 hover:underline">
-                Back to Login
+                Back to {t('common.login')}
               </a>
             </div>
           </>

@@ -2,9 +2,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useTranslation } from '@/lib/i18n';
 
 export default function EmbedSettingsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [user, setUser] = useState(null);
   const [copied, setCopied] = useState(null);
   const [widgetColor, setWidgetColor] = useState('#f59e0b');
@@ -73,7 +75,7 @@ export default function EmbedSettingsPage() {
   };
 
   if (!user) {
-    return <LoadingSpinner message="Loading embed settings..." />;
+    return <LoadingSpinner message={t('common.loading')} />;
   }
 
   return (
@@ -84,7 +86,7 @@ export default function EmbedSettingsPage() {
           <a href="/settings" className="text-2xl hover:text-amber-400">&larr;</a>
           <h1 className="text-2xl font-bold">Embed & QR Codes</h1>
         </div>
-        <a href="/dashboard" className="text-amber-400 hover:underline">Dashboard</a>
+        <a href="/dashboard" className="text-amber-400 hover:underline">{t('nav.dashboard')}</a>
       </header>
 
       <div className="max-w-4xl mx-auto space-y-6">
@@ -114,13 +116,13 @@ export default function EmbedSettingsPage() {
                   onClick={downloadQR}
                   className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
                 >
-                  Download PNG
+                  {t('common.download')} PNG
                 </button>
                 <button
                   onClick={() => copyToClipboard(directLink, 'link')}
                   className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
                 >
-                  {copied === 'link' ? 'Copied!' : 'Copy Link'}
+                  {copied === 'link' ? t('success.copied') : 'Copy Link'}
                 </button>
               </div>
               <p className="text-xs text-gray-400">
@@ -200,7 +202,7 @@ export default function EmbedSettingsPage() {
               onClick={() => copyToClipboard(widgetCode, 'widget')}
               className="absolute top-2 right-2 px-3 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-600"
             >
-              {copied === 'widget' ? 'Copied!' : 'Copy'}
+              {copied === 'widget' ? t('success.copied') : 'Copy'}
             </button>
           </div>
           <p className="text-xs text-gray-500 mt-2">
@@ -223,7 +225,7 @@ export default function EmbedSettingsPage() {
               onClick={() => copyToClipboard(iframeCode, 'iframe')}
               className="absolute top-2 right-2 px-3 py-1 bg-gray-700 text-white rounded text-xs hover:bg-gray-600"
             >
-              {copied === 'iframe' ? 'Copied!' : 'Copy'}
+              {copied === 'iframe' ? t('success.copied') : 'Copy'}
             </button>
           </div>
         </div>
@@ -246,7 +248,7 @@ export default function EmbedSettingsPage() {
               onClick={() => copyToClipboard(directLink, 'direct')}
               className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
             >
-              {copied === 'direct' ? 'Copied!' : 'Copy'}
+              {copied === 'direct' ? t('success.copied') : 'Copy'}
             </button>
           </div>
         </div>

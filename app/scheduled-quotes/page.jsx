@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 
 function formatCurrency(val) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
@@ -41,6 +42,7 @@ const STATUS_COLORS = {
 
 export default function ScheduledQuotesPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [scheduled, setScheduled] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -72,21 +74,21 @@ export default function ScheduledQuotesPage() {
       const data = await res.json();
       setScheduled(data.scheduled || []);
     } catch (err) {
-      setError('Failed to load scheduled quotes');
+      setError(t('scheduledQuotes.failedToLoad'));
     } finally {
       setLoading(false);
     }
   }
 
   async function cancelScheduled(sq) {
-    if (!confirm(`Cancel scheduled send for ${sq.client_name || 'this customer'}?`)) return;
+    if (!confirm(t('scheduledQuotes.cancelConfirm', { name: sq.client_name || t('common.customer') }))) return;
     try {
       const res = await fetch(`/api/scheduled-quotes?id=${sq.id}`, {
         method: 'DELETE',
         headers: headers(),
       });
       if (!res.ok) throw new Error('Failed to cancel');
-      setSuccess('Scheduled send cancelled');
+      setSuccess(t('scheduledQuotes.sendCancelled'));
       fetchScheduled();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -120,9 +122,9 @@ export default function ScheduledQuotesPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update');
+      if (!res.ok) throw new Error(data.error || t('errors.failedToUpdate'));
       setEditModal(null);
-      setSuccess('Schedule updated');
+      setSuccess(t('scheduledQuotes.scheduleUpdated'));
       fetchScheduled();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -150,13 +152,13 @@ export default function ScheduledQuotesPage() {
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-3">
           <a href="/dashboard" className="text-white text-2xl hover:opacity-70">&larr;</a>
-          <h1 className="text-2xl font-bold text-white">Scheduled Quotes</h1>
+          <h1 className="text-2xl font-bold text-white">{t('scheduledQuotes.title')}</h1>
         </div>
         <a
           href="/dashboard"
           className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:opacity-90 shadow"
         >
-          New Quote
+          {t('scheduledQuotes.newQuote')}
         </a>
       </div>
 
@@ -174,15 +176,15 @@ export default function ScheduledQuotesPage() {
       {/* Stats */}
       <div className="grid grid-cols-3 gap-3 mb-4">
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Pending</p>
+          <p className="text-gray-500 text-xs">{t('status.pending')}</p>
           <p className="text-xl font-bold text-blue-600">{pending.length}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Sent</p>
+          <p className="text-gray-500 text-xs">{t('status.sent')}</p>
           <p className="text-xl font-bold text-green-600">{sent.length}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Total Scheduled</p>
+          <p className="text-gray-500 text-xs">{t('scheduledQuotes.totalScheduled')}</p>
           <p className="text-xl font-bold text-gray-900">{scheduled.length}</p>
         </div>
       </div>
@@ -190,32 +192,32 @@ export default function ScheduledQuotesPage() {
       {/* Pending Queue */}
       {pending.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-white font-semibold text-sm uppercase tracking-wide mb-2">Upcoming</h2>
+          <h2 className="text-white font-semibold text-sm uppercase tracking-wide mb-2">{t('scheduledQuotes.upcoming')}</h2>
           <div className="space-y-2">
             {pending.map(sq => (
               <div key={sq.id} className="bg-white rounded-lg p-4 shadow">
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-gray-900">{sq.client_name || 'Customer'}</h3>
+                      <h3 className="font-bold text-gray-900">{sq.client_name || t('common.customer')}</h3>
                       <span className="text-xs px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 font-medium">
                         {timeUntil(sq.send_at)}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mt-0.5">
-                      {sq.aircraft || 'Aircraft'} &middot; {formatCurrency(sq.total_price)}
+                      {sq.aircraft || t('common.aircraft')} &middot; {formatCurrency(sq.total_price)}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5">
-                      Scheduled: {formatDateTime(sq.send_at)}
+                      {t('status.scheduled')}: {formatDateTime(sq.send_at)}
                     </p>
                     <p className="text-xs text-gray-400">
-                      To: {sq.client_email || '—'}
+                      {t('scheduledQuotes.to')}: {sq.client_email || '\u2014'}
                     </p>
                   </div>
                   <div className="flex items-center gap-1 flex-shrink-0">
                     <button
                       onClick={() => openEditModal(sq)}
-                      title="Edit"
+                      title={t('common.edit')}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -224,7 +226,7 @@ export default function ScheduledQuotesPage() {
                     </button>
                     <button
                       onClick={() => cancelScheduled(sq)}
-                      title="Cancel"
+                      title={t('common.cancel')}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -242,21 +244,21 @@ export default function ScheduledQuotesPage() {
       {/* Sent */}
       {sent.length > 0 && (
         <div className="mb-6">
-          <h2 className="text-white/70 font-semibold text-sm uppercase tracking-wide mb-2">Sent</h2>
+          <h2 className="text-white/70 font-semibold text-sm uppercase tracking-wide mb-2">{t('status.sent')}</h2>
           <div className="space-y-2">
             {sent.map(sq => (
               <div key={sq.id} className="bg-white/90 rounded-lg p-4 shadow">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h3 className="font-semibold text-gray-900">{sq.client_name || 'Customer'}</h3>
-                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">Sent</span>
+                      <h3 className="font-semibold text-gray-900">{sq.client_name || t('common.customer')}</h3>
+                      <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700">{t('status.sent')}</span>
                     </div>
                     <p className="text-sm text-gray-600">
-                      {sq.aircraft || 'Aircraft'} &middot; {formatCurrency(sq.total_price)}
+                      {sq.aircraft || t('common.aircraft')} &middot; {formatCurrency(sq.total_price)}
                     </p>
                     <p className="text-xs text-gray-400">
-                      Sent: {formatDateTime(sq.sent_at)}
+                      {t('scheduledQuotes.sentLabel')}: {formatDateTime(sq.sent_at)}
                     </p>
                   </div>
                 </div>
@@ -272,9 +274,9 @@ export default function ScheduledQuotesPage() {
           <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
           </svg>
-          <p className="text-gray-500 mb-2">No scheduled quotes</p>
+          <p className="text-gray-500 mb-2">{t('scheduledQuotes.noScheduledQuotes')}</p>
           <p className="text-sm text-gray-400">
-            Use the &ldquo;Schedule for later&rdquo; option when sending a quote to add it to the queue.
+            {t('scheduledQuotes.useScheduleOption')}
           </p>
         </div>
       )}
@@ -282,14 +284,14 @@ export default function ScheduledQuotesPage() {
       {/* Failed/Other */}
       {other.length > 0 && (
         <div>
-          <h2 className="text-white/50 font-semibold text-sm uppercase tracking-wide mb-2">Other</h2>
+          <h2 className="text-white/50 font-semibold text-sm uppercase tracking-wide mb-2">{t('scheduledQuotes.other')}</h2>
           <div className="space-y-2">
             {other.map(sq => (
               <div key={sq.id} className="bg-white/70 rounded-lg p-3 shadow">
                 <div className="flex items-center justify-between">
                   <div>
                     <div className="flex items-center gap-2">
-                      <span className="font-medium text-gray-700">{sq.client_name || 'Customer'}</span>
+                      <span className="font-medium text-gray-700">{sq.client_name || t('common.customer')}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[sq.status] || STATUS_COLORS.cancelled}`}>
                         {sq.status}
                       </span>
@@ -308,13 +310,13 @@ export default function ScheduledQuotesPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setEditModal(null)}>
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900">Edit Scheduled Send</h2>
+              <h2 className="text-lg font-bold text-gray-900">{t('scheduledQuotes.editScheduledSend')}</h2>
               <button onClick={() => setEditModal(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Send Date & Time</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('scheduledQuotes.sendDateTime')}</label>
                 <input
                   type="datetime-local"
                   value={editDate}
@@ -324,7 +326,7 @@ export default function ScheduledQuotesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('scheduledQuotes.customerName')}</label>
                 <input
                   type="text"
                   value={editName}
@@ -333,7 +335,7 @@ export default function ScheduledQuotesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.email')}</label>
                 <input
                   type="email"
                   value={editEmail}
@@ -342,7 +344,7 @@ export default function ScheduledQuotesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Phone (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('scheduledQuotes.phoneOptional')}</label>
                 <input
                   type="tel"
                   value={editPhone}
@@ -354,14 +356,14 @@ export default function ScheduledQuotesPage() {
 
             <div className="flex gap-2 mt-4">
               <button onClick={() => setEditModal(null)} className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={saveEdit}
                 disabled={saving}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50 text-sm"
               >
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? t('common.saving') : t('scheduledQuotes.saveChanges')}
               </button>
             </div>
           </div>

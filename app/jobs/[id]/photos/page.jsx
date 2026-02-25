@@ -2,11 +2,13 @@
 import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useTranslation } from '@/lib/i18n';
 
 export default function JobPhotosPage() {
   const router = useRouter();
   const params = useParams();
   const quoteId = params.id;
+  const { t } = useTranslation();
 
   const [loading, setLoading] = useState(true);
   const [quote, setQuote] = useState(null);
@@ -48,7 +50,7 @@ export default function JobPhotosPage() {
       }
     } catch (err) {
       console.error('Failed to fetch data:', err);
-      setError('Failed to load job data');
+      setError(t('jobPhotos.failedToLoadJobData'));
     } finally {
       setLoading(false);
     }
@@ -98,13 +100,13 @@ export default function JobPhotosPage() {
           setNotes('');
         } else {
           const data = await res.json();
-          setError(data.error || 'Upload failed');
+          setError(data.error || t('jobPhotos.uploadFailed'));
         }
       };
       reader.readAsDataURL(file);
     } catch (err) {
       console.error('Upload error:', err);
-      setError('Failed to upload file');
+      setError(t('errors.failedToUpload'));
     } finally {
       setUploading(false);
       if (fileInputRef.current) {
@@ -114,7 +116,7 @@ export default function JobPhotosPage() {
   };
 
   const handleDelete = async (mediaId) => {
-    if (!confirm('Delete this media?')) return;
+    if (!confirm(t('jobPhotos.deleteMedia'))) return;
 
     try {
       const token = localStorage.getItem('vector_token');
@@ -132,7 +134,7 @@ export default function JobPhotosPage() {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading photos..." />;
+    return <LoadingSpinner message={t('jobPhotos.loadingPhotos')} />;
   }
 
   return (
@@ -152,7 +154,7 @@ export default function JobPhotosPage() {
         <div className="flex items-center space-x-4">
           <a href="/calendar" className="text-2xl hover:text-amber-400">&#8592;</a>
           <div>
-            <h1 className="text-2xl font-bold">Job Documentation</h1>
+            <h1 className="text-2xl font-bold">{t('jobPhotos.jobDocumentation')}</h1>
             {quote && (
               <p className="text-gray-400 text-sm">
                 {quote.aircraft_type} {quote.aircraft_model}
@@ -161,7 +163,7 @@ export default function JobPhotosPage() {
           </div>
         </div>
         <a href={`/quotes/${quoteId}`} className="text-sm text-amber-400 hover:underline">
-          View Quote
+          {t('calendar.viewQuote')}
         </a>
       </header>
 
@@ -170,9 +172,9 @@ export default function JobPhotosPage() {
         <div className="max-w-2xl mx-auto mb-4">
           <div className="bg-white rounded-xl p-4 shadow">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Contacts</h3>
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{t('jobPhotos.contacts')}</h3>
               {quote.contact_notes && (
-                <span className="text-xs text-gray-400" title={quote.contact_notes}>Notes &#9432;</span>
+                <span className="text-xs text-gray-400" title={quote.contact_notes}>{t('common.notes')} &#9432;</span>
               )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -180,7 +182,7 @@ export default function JobPhotosPage() {
               {(quote.poc_name || quote.client_name) && (
                 <div className="bg-gray-50 rounded-lg p-3">
                   <p className="text-xs font-semibold text-gray-500 uppercase mb-1">
-                    {quote.poc_role ? `${quote.poc_role} (POC)` : 'Point of Contact'}
+                    {quote.poc_role ? `${quote.poc_role} (POC)` : t('jobPhotos.pointOfContact')}
                   </p>
                   <p className="text-sm font-medium text-gray-900">{quote.poc_name || quote.client_name}</p>
                   <div className="mt-1 space-y-0.5">
@@ -200,7 +202,7 @@ export default function JobPhotosPage() {
               {/* Emergency Contact */}
               {quote.emergency_contact_name && (
                 <div className="bg-red-50 rounded-lg p-3 border border-red-100">
-                  <p className="text-xs font-semibold text-red-600 uppercase mb-1">Emergency Contact</p>
+                  <p className="text-xs font-semibold text-red-600 uppercase mb-1">{t('jobPhotos.emergencyContact')}</p>
                   <p className="text-sm font-medium text-gray-900">{quote.emergency_contact_name}</p>
                   {quote.emergency_contact_phone && (
                     <a href={`tel:${quote.emergency_contact_phone}`} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline mt-1">
@@ -230,13 +232,13 @@ export default function JobPhotosPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <span className="text-2xl">&#128249;</span> Before Photos/Video
+                <span className="text-2xl">&#128249;</span> {t('jobPhotos.beforePhotosVideo')}
               </h2>
-              <p className="text-sm text-gray-500">Document the aircraft condition before starting</p>
+              <p className="text-sm text-gray-500">{t('jobPhotos.documentBeforeStarting')}</p>
             </div>
             {beforeMedia.length > 0 && (
               <span className="text-green-600 text-sm font-medium">
-                &#10003; {beforeMedia.length} uploaded
+                &#10003; {beforeMedia.length} {t('jobPhotos.uploaded')}
               </span>
             )}
           </div>
@@ -284,7 +286,7 @@ export default function JobPhotosPage() {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
             >
               <span>&#127909;</span>
-              {uploading && uploadType === 'before_video' ? 'Uploading...' : 'Record Video'}
+              {uploading && uploadType === 'before_video' ? t('crew.uploading') : t('jobPhotos.recordVideo')}
             </button>
             <button
               onClick={() => handleUploadClick('before_photo')}
@@ -292,7 +294,7 @@ export default function JobPhotosPage() {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
             >
               <span>&#128247;</span>
-              {uploading && uploadType === 'before_photo' ? 'Uploading...' : 'Take Photo'}
+              {uploading && uploadType === 'before_photo' ? t('crew.uploading') : t('jobPhotos.takePhoto')}
             </button>
           </div>
         </div>
@@ -302,13 +304,13 @@ export default function JobPhotosPage() {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <span className="text-2xl">&#128248;</span> After Photos
+                <span className="text-2xl">&#128248;</span> {t('jobPhotos.afterPhotos')}
               </h2>
-              <p className="text-sm text-gray-500">Document your completed work</p>
+              <p className="text-sm text-gray-500">{t('jobPhotos.documentCompletedWork')}</p>
             </div>
             {afterMedia.length > 0 && (
               <span className="text-green-600 text-sm font-medium">
-                &#10003; {afterMedia.length} uploaded
+                &#10003; {afterMedia.length} {t('jobPhotos.uploaded')}
               </span>
             )}
           </div>
@@ -356,7 +358,7 @@ export default function JobPhotosPage() {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
             >
               <span>&#128247;</span>
-              {uploading && uploadType === 'after_photo' ? 'Uploading...' : 'Take Photo'}
+              {uploading && uploadType === 'after_photo' ? t('crew.uploading') : t('jobPhotos.takePhoto')}
             </button>
             <button
               onClick={() => handleUploadClick('after_video')}
@@ -364,41 +366,41 @@ export default function JobPhotosPage() {
               className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
             >
               <span>&#127909;</span>
-              {uploading && uploadType === 'after_video' ? 'Uploading...' : 'Record Video'}
+              {uploading && uploadType === 'after_video' ? t('crew.uploading') : t('jobPhotos.recordVideo')}
             </button>
           </div>
         </div>
 
         {/* Tips Card */}
         <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <h3 className="font-bold text-amber-900 mb-2">&#128161; Documentation Tips</h3>
+          <h3 className="font-bold text-amber-900 mb-2">&#128161; {t('jobPhotos.documentationTips')}</h3>
           <ul className="text-sm text-amber-800 space-y-1">
-            <li>&#8226; Capture any existing damage or stains before starting</li>
-            <li>&#8226; Take wide shots and close-ups of problem areas</li>
-            <li>&#8226; Video walk-around shows more than photos</li>
-            <li>&#8226; After photos are great for social media</li>
-            <li>&#8226; Customers love seeing before/after comparisons</li>
+            <li>&#8226; {t('jobPhotos.tipDamage')}</li>
+            <li>&#8226; {t('jobPhotos.tipWideShots')}</li>
+            <li>&#8226; {t('jobPhotos.tipVideoWalkAround')}</li>
+            <li>&#8226; {t('jobPhotos.tipSocialMedia')}</li>
+            <li>&#8226; {t('jobPhotos.tipBeforeAfter')}</li>
           </ul>
         </div>
 
         {/* Completion Summary */}
         <div className="bg-white rounded-xl p-6 shadow">
-          <h3 className="font-bold text-gray-900 mb-3">Documentation Status</h3>
+          <h3 className="font-bold text-gray-900 mb-3">{t('jobPhotos.documentationStatus')}</h3>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">Before Documentation</span>
+              <span className="text-gray-600">{t('jobPhotos.beforeDocumentation')}</span>
               {beforeMedia.length > 0 ? (
-                <span className="text-green-600 font-medium">&#10003; Complete</span>
+                <span className="text-green-600 font-medium">&#10003; {t('jobPhotos.complete')}</span>
               ) : (
-                <span className="text-amber-600 font-medium">&#9888; Missing</span>
+                <span className="text-amber-600 font-medium">&#9888; {t('jobPhotos.missing')}</span>
               )}
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">After Documentation</span>
+              <span className="text-gray-600">{t('jobPhotos.afterDocumentation')}</span>
               {afterMedia.length > 0 ? (
-                <span className="text-green-600 font-medium">&#10003; Complete</span>
+                <span className="text-green-600 font-medium">&#10003; {t('jobPhotos.complete')}</span>
               ) : (
-                <span className="text-amber-600 font-medium">&#9888; Missing</span>
+                <span className="text-amber-600 font-medium">&#9888; {t('jobPhotos.missing')}</span>
               )}
             </div>
           </div>
@@ -406,10 +408,10 @@ export default function JobPhotosPage() {
           {beforeMedia.length > 0 && afterMedia.length > 0 && (
             <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
               <p className="text-green-800 font-medium">
-                &#127881; Great job! Full documentation complete.
+                &#127881; {t('jobPhotos.fullDocComplete')}
               </p>
               <p className="text-green-600 text-sm">
-                Your customer can view these in their portal.
+                {t('jobPhotos.customerCanView')}
               </p>
             </div>
           )}

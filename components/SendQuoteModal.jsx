@@ -3,8 +3,10 @@ import { useState, useEffect } from "react";
 import CustomerSelector from "./CustomerSelector";
 import { formatPrice, currencySymbol } from "@/lib/formatPrice";
 import { useToast } from "./Toast";
+import { useTranslation } from '@/lib/i18n';
 
 export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
+  const { t } = useTranslation();
   const { success: toastSuccess, error: toastError } = useToast();
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -167,7 +169,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
         setQuoteLimitHit(errData);
         throw new Error("QUOTE_LIMIT");
       }
-      throw new Error(errData?.error || "Failed to create quote");
+      throw new Error(errData?.error || t('errors.failedToCreate'));
     }
     const data = await res.json();
     return { id: data.id, share_link: data.share_link };
@@ -246,7 +248,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        throw new Error(data?.error || "Failed to send quote");
+        throw new Error(data?.error || t('errors.failedToSend'));
       }
       const sendResult = await res.json();
 
@@ -311,7 +313,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       const link = `${window.location.origin}/q/${share_link}`;
       setQuoteLink(link);
       setSuccess(true);
-      toastSuccess("Quote sent successfully!");
+      toastSuccess(t('success.sent'));
       if (sendResult.emailSent === false && sendResult.emailError) {
         setError(`Quote sent but email failed: ${sendResult.emailError}`);
       }
@@ -327,7 +329,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
   const copyToClipboard = async () => {
     try {
       await navigator.clipboard.writeText(quoteLink);
-      toastSuccess("Link copied to clipboard");
+      toastSuccess(t('success.copied'));
     } catch (e) {
       toastError("Failed to copy link");
     }
@@ -357,19 +359,19 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
         {!success ? (
           <div>
-            <h2 className="text-xl font-semibold mb-2">Send Quote to Client</h2>
+            <h2 className="text-xl font-semibold mb-2">{t('dashboard.sendToClient')}</h2>
             <p className="mb-4 text-gray-600">
-              {aircraftName && `Aircraft: ${aircraftName}`}{quote?.airport ? ` • ${quote.airport}` : ''} • Total: {currencySymbol()}{formatPrice(totalPrice)}
+              {aircraftName && `${t('common.aircraft')}: ${aircraftName}`}{quote?.airport ? ` • ${quote.airport}` : ''} • {t('common.total')}: {currencySymbol()}{formatPrice(totalPrice)}
             </p>
             {error && <p className="text-red-600 mb-2">{error}</p>}
 
             {/* Quote Limit Upgrade Prompt */}
             {quoteLimitHit && (
               <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
-                <p className="font-semibold text-amber-900 mb-1">Free quote limit reached</p>
+                <p className="font-semibold text-amber-900 mb-1">{t('usage.limitReached')}</p>
                 <p className="text-sm text-amber-800 mb-3">
                   You&apos;ve used {quoteLimitHit.quotesUsed} of {quoteLimitHit.quotesLimit} free quotes this month.
-                  Upgrade for unlimited quotes.
+                  {t('usage.upgradeUnlimited')}.
                 </p>
                 <div className="flex flex-col gap-2">
                   <button
@@ -413,7 +415,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
             )}
 
             {/* Customer Selection */}
-            <label className="block mb-2 text-sm font-medium">Customer</label>
+            <label className="block mb-2 text-sm font-medium">{t('common.customer')}</label>
             <CustomerSelector
               customerMode={customerMode}
               onModeChange={setCustomerMode}
@@ -451,14 +453,14 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
                         type="tel"
                         value={pocPhone}
                         onChange={(e) => setPocPhone(e.target.value)}
-                        placeholder="Phone"
+                        placeholder={t('common.phone')}
                         className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                       />
                       <input
                         type="email"
                         value={pocEmail}
                         onChange={(e) => setPocEmail(e.target.value)}
-                        placeholder="Email"
+                        placeholder={t('common.email')}
                         className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                       />
                     </div>
@@ -590,16 +592,16 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
 
               {isRecurring && (
                 <div className="mt-3 pl-6">
-                  <label className="block mb-2 text-sm font-medium">Billing Frequency</label>
+                  <label className="block mb-2 text-sm font-medium">{t('recurring.frequency')}</label>
                   <select
                     value={recurringInterval}
                     onChange={(e) => setRecurringInterval(e.target.value)}
                     className="w-full border rounded px-3 py-2 mb-2"
                   >
-                    <option value="4_weeks">Every 4 weeks (Recommended)</option>
-                    <option value="monthly">Monthly</option>
-                    <option value="6_weeks">Every 6 weeks</option>
-                    <option value="quarterly">Quarterly</option>
+                    <option value="4_weeks">{t('recurring.fourWeeks')} (Recommended)</option>
+                    <option value="monthly">{t('recurring.monthly')}</option>
+                    <option value="6_weeks">{t('recurring.sixWeeks')}</option>
+                    <option value="quarterly">{t('recurring.quarterly')}</option>
                   </select>
 
                   {recurringInterval === "4_weeks" && (
@@ -622,7 +624,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
                 onClick={onClose}
                 className="px-4 py-3 border rounded-lg text-gray-700 min-h-[44px] font-medium"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 type="button"
@@ -630,7 +632,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
                 disabled={loading}
                 className="px-4 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white disabled:opacity-50 min-h-[44px] font-medium"
               >
-                {loading ? (isScheduled ? 'Scheduling...' : 'Sending...') : (isScheduled && scheduledDate ? 'Schedule Quote' : 'Send Quote')}
+                {loading ? (isScheduled ? 'Scheduling...' : t('common.sending')) : (isScheduled && scheduledDate ? 'Schedule Quote' : t('dashboard.sendToClient'))}
               </button>
             </div>
           </div>

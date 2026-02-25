@@ -12,16 +12,8 @@ import { formatPrice, formatPriceWhole, currencySymbol } from '../../lib/formatP
 import { calculateProductEstimates } from '../../lib/product-calculator';
 import DashboardTour from '../../components/DashboardTour.jsx';
 import WeatherWidget from '../../components/WeatherWidget.jsx';
-
-const categoryLabels = {
-  piston: 'Pistons',
-  turboprop: 'Turboprops',
-  light_jet: 'Light Jets',
-  midsize_jet: 'Midsize Jets',
-  super_midsize_jet: 'Super Midsize',
-  large_jet: 'Large Jets',
-  helicopter: 'Helicopters',
-};
+import DashboardLanguageSelector from '../../components/DashboardLanguageSelector.jsx';
+import { useTranslation } from '@/lib/i18n';
 
 const categoryOrder = ['piston', 'turboprop', 'light_jet', 'midsize_jet', 'super_midsize_jet', 'large_jet', 'helicopter'];
 
@@ -39,16 +31,17 @@ const HOURS_FIELD_OPTIONS = {
 
 // Stripe Connect Warning Banner Component
 function StripeWarningBanner({ onConnect, loading, error, onClearError, status }) {
+  const { t } = useTranslation();
   const isDisconnected = status === 'INCOMPLETE' || status === 'PENDING';
   const bgColor = isDisconnected ? 'bg-red-50 border-red-300' : 'bg-amber-100 border-amber-300';
   const iconColor = isDisconnected ? 'text-red-600' : 'text-amber-600';
   const titleColor = isDisconnected ? 'text-red-800' : 'text-amber-800';
   const msgColor = isDisconnected ? 'text-red-700' : 'text-amber-700';
-  const title = isDisconnected ? 'Stripe disconnected - payments disabled' : 'Stripe not connected';
+  const title = isDisconnected ? t('stripe.disconnected') : t('stripe.notConnected');
   const msg = isDisconnected
-    ? 'Online payments are currently disabled. Quotes can still be sent but customers cannot pay online.'
-    : 'You cannot receive payments until you connect Stripe.';
-  const btnLabel = isDisconnected ? 'Reconnect Stripe' : 'Connect Stripe';
+    ? t('stripe.disabledMsg')
+    : t('stripe.connectMsg');
+  const btnLabel = isDisconnected ? t('stripe.reconnect') : t('stripe.connect');
 
   return (
     <div className={`${bgColor} border rounded-lg p-4 mb-4`}>
@@ -71,7 +64,7 @@ function StripeWarningBanner({ onConnect, loading, error, onClearError, status }
           disabled={loading}
           className="px-4 py-2 rounded bg-amber-500 text-white font-medium hover:bg-amber-600 disabled:opacity-50"
         >
-          {loading ? 'Connecting...' : btnLabel}
+          {loading ? t('common.connecting') : btnLabel}
         </button>
       </div>
     </div>
@@ -80,6 +73,7 @@ function StripeWarningBanner({ onConnect, loading, error, onClearError, status }
 
 // Free Tier Usage Bar Component
 function FreeUsageBar({ user }) {
+  const { t } = useTranslation();
   const [usage, setUsage] = useState(null);
 
   useEffect(() => {
@@ -101,21 +95,21 @@ function FreeUsageBar({ user }) {
   return (
     <div className="bg-white rounded-lg p-4 mb-4 shadow">
       <div className="flex justify-between items-center mb-2">
-        <h3 className="font-semibold text-gray-900 text-sm">Free Plan Usage</h3>
-        <span className="text-xs text-gray-500">{used} of {limit} quotes used</span>
+        <h3 className="font-semibold text-gray-900 text-sm">{t('usage.freePlanUsage')}</h3>
+        <span className="text-xs text-gray-500">{t('usage.quotesUsed', { used, limit })}</span>
       </div>
       <div className="w-full bg-gray-200 rounded-full h-3 mb-2">
         <div className={`${barColor} h-3 rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
       </div>
       {pct >= 100 ? (
         <div className="flex justify-between items-center">
-          <p className="text-red-600 text-xs font-medium">Quote limit reached this month</p>
-          <a href="/settings?tab=billing" className="text-xs text-amber-600 font-semibold hover:underline">Upgrade for Unlimited</a>
+          <p className="text-red-600 text-xs font-medium">{t('usage.limitReached')}</p>
+          <a href="/settings?tab=billing" className="text-xs text-amber-600 font-semibold hover:underline">{t('usage.upgradeUnlimited')}</a>
         </div>
       ) : (
         <div className="flex justify-between items-center">
-          <p className="text-gray-500 text-xs">{limit - used} quote{limit - used !== 1 ? 's' : ''} remaining this month</p>
-          <a href="/settings?tab=billing" className="text-xs text-amber-600 hover:underline">Upgrade for Unlimited</a>
+          <p className="text-gray-500 text-xs">{t('usage.remaining', { count: limit - used, s: limit - used !== 1 ? 's' : '' })}</p>
+          <a href="/settings?tab=billing" className="text-xs text-amber-600 hover:underline">{t('usage.upgradeUnlimited')}</a>
         </div>
       )}
     </div>
@@ -124,6 +118,7 @@ function FreeUsageBar({ user }) {
 
 // Low Stock Alert Component
 function LowStockAlert() {
+  const { t } = useTranslation();
   const [lowStock, setLowStock] = useState(null);
   const [totalValue, setTotalValue] = useState(0);
   const [productCount, setProductCount] = useState(0);
@@ -151,13 +146,13 @@ function LowStockAlert() {
         <div className="flex items-center gap-2">
           <span className="text-red-500 text-lg">&#9888;</span>
           <div>
-            <p className="text-red-800 text-sm font-semibold">Low Stock ({lowStock.length})</p>
+            <p className="text-red-800 text-sm font-semibold">{t('lowStock.title', { count: lowStock.length })}</p>
             {productCount > 0 && totalValue > 0 && (
-              <p className="text-xs text-gray-500">Inventory: {currencySymbol()}{totalValue.toLocaleString()} across {productCount} products</p>
+              <p className="text-xs text-gray-500">{t('lowStock.inventory', { value: `${currencySymbol()}${totalValue.toLocaleString()}`, count: productCount })}</p>
             )}
           </div>
         </div>
-        <a href="/products" className="text-xs text-red-700 font-medium hover:underline whitespace-nowrap">View All</a>
+        <a href="/products" className="text-xs text-red-700 font-medium hover:underline whitespace-nowrap">{t('common.viewAll')}</a>
       </div>
       <div className="divide-y">
         {lowStock.slice(0, 5).map(p => (
@@ -182,10 +177,10 @@ function LowStockAlert() {
                 rel="noopener noreferrer"
                 className="px-3 py-1 text-xs bg-amber-500 text-white font-medium rounded hover:bg-amber-600 whitespace-nowrap flex-shrink-0"
               >
-                Reorder
+                {t('lowStock.reorder')}
               </a>
             ) : (
-              <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full flex-shrink-0">Low</span>
+              <span className="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full flex-shrink-0">{t('lowStock.low')}</span>
             )}
           </div>
         ))}
@@ -193,7 +188,7 @@ function LowStockAlert() {
       {lowStock.length > 5 && (
         <div className="px-4 py-2 bg-gray-50 border-t text-center">
           <a href="/products" className="text-xs text-amber-600 font-medium hover:underline">
-            +{lowStock.length - 5} more low stock items
+            {t('lowStock.moreItems', { count: lowStock.length - 5 })}
           </a>
         </div>
       )}
@@ -203,6 +198,7 @@ function LowStockAlert() {
 
 // Quick Stats Bar Component (inline, fast loading)
 function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
+  const { t } = useTranslation();
   const [extending, setExtending] = useState(null);
 
   if (expiring.length === 0 && expired.length === 0) return null;
@@ -234,7 +230,7 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
     if (diff > 0 && diff < 24) return `${diff}h left`;
     if (diff <= 0) {
       const daysAgo = Math.abs(Math.floor(diff / 24));
-      return daysAgo === 0 ? 'Today' : `${daysAgo}d ago`;
+      return daysAgo === 0 ? t('common.today') : `${daysAgo}d ago`;
     }
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   };
@@ -245,14 +241,14 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
       {expiring.length > 0 && (
         <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
           <h3 className="font-semibold text-sm text-amber-900 mb-2 flex items-center gap-2">
-            <span>&#9200;</span> Expiring Soon ({expiring.length})
+            <span>&#9200;</span> {t('dashboard.expiringSoon')} ({expiring.length})
           </h3>
           <div className="space-y-2">
             {expiring.map((q) => (
               <div key={q.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{q.client_name || 'Customer'}</p>
-                  <p className="text-xs text-gray-500">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &#183; {currencySymbol()}{(q.total_price || 0).toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-900">{q.client_name || t('common.customer')}</p>
+                  <p className="text-xs text-gray-500">{q.aircraft_model || q.aircraft_type || t('common.aircraft')} &#183; {currencySymbol()}{(q.total_price || 0).toLocaleString()}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-amber-600 font-medium">{formatExpiry(q.valid_until)}</span>
@@ -261,7 +257,7 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
                     disabled={extending === q.id}
                     className="px-3 py-2 text-xs bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 font-medium min-h-[36px]"
                   >
-                    {extending === q.id ? '...' : '+7 Days'}
+                    {extending === q.id ? '...' : t('dashboard.extendDays')}
                   </button>
                 </div>
               </div>
@@ -274,14 +270,14 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
       {expired.length > 0 && (
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
           <h3 className="font-semibold text-sm text-red-900 mb-2 flex items-center gap-2">
-            <span>&#128683;</span> Recently Expired ({expired.length})
+            <span>&#128683;</span> {t('dashboard.recentlyExpired')} ({expired.length})
           </h3>
           <div className="space-y-2">
             {expired.slice(0, 5).map((q) => (
               <div key={q.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{q.client_name || 'Customer'}</p>
-                  <p className="text-xs text-gray-500">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &#183; {currencySymbol()}{(q.total_price || 0).toLocaleString()}</p>
+                  <p className="text-sm font-medium text-gray-900">{q.client_name || t('common.customer')}</p>
+                  <p className="text-xs text-gray-500">{q.aircraft_model || q.aircraft_type || t('common.aircraft')} &#183; {currencySymbol()}{(q.total_price || 0).toLocaleString()}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-red-500">{formatExpiry(q.valid_until)}</span>
@@ -290,7 +286,7 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
                     disabled={extending === q.id}
                     className="px-3 py-2 text-xs bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 font-medium min-h-[36px]"
                   >
-                    {extending === q.id ? '...' : 'Reactivate'}
+                    {extending === q.id ? '...' : t('dashboard.reactivate')}
                   </button>
                 </div>
               </div>
@@ -303,14 +299,15 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
 }
 
 function QuickStats({ stats, onNewQuote }) {
+  const { t } = useTranslation();
   if (!stats) return null;
 
   const activityLabels = {
-    completed: { text: 'Job completed', color: 'text-emerald-600', icon: '\u2713' },
-    paid: { text: 'Payment received', color: 'text-green-600', icon: '$' },
-    viewed: { text: 'Quote viewed', color: 'text-purple-600', icon: '\u25C9' },
-    sent: { text: 'Quote sent', color: 'text-blue-600', icon: '\u2192' },
-    created: { text: 'Quote created', color: 'text-gray-600', icon: '+' },
+    completed: { text: t('dashboard.jobCompleted'), color: 'text-emerald-600', icon: '\u2713' },
+    paid: { text: t('dashboard.paymentReceived'), color: 'text-green-600', icon: '$' },
+    viewed: { text: t('dashboard.quoteViewed'), color: 'text-purple-600', icon: '\u25C9' },
+    sent: { text: t('dashboard.quoteSent'), color: 'text-blue-600', icon: '\u2192' },
+    created: { text: t('dashboard.quoteCreated'), color: 'text-gray-600', icon: '+' },
   };
 
   const timeAgo = (dateStr) => {
@@ -330,35 +327,35 @@ function QuickStats({ stats, onNewQuote }) {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Today&apos;s Jobs</p>
+          <p className="text-gray-500 text-xs">{t('dashboard.todaysJobs')}</p>
           <p className="text-xl font-bold text-blue-600">{stats.todayScheduledJobs || 0}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Pending Quotes</p>
+          <p className="text-gray-500 text-xs">{t('dashboard.pendingQuotes')}</p>
           <p className="text-xl font-bold text-amber-600">{stats.pendingQuotes || 0}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">This Week</p>
+          <p className="text-gray-500 text-xs">{t('dashboard.thisWeek')}</p>
           <p className="text-xl font-bold text-gray-900">{currencySymbol()}{(stats.weekRevenue || 0).toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">This Month</p>
+          <p className="text-gray-500 text-xs">{t('dashboard.thisMonth')}</p>
           <p className="text-xl font-bold text-gray-900">{currencySymbol()}{(stats.monthRevenue || 0).toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Outstanding</p>
+          <p className="text-gray-500 text-xs">{t('dashboard.outstanding')}</p>
           <p className="text-xl font-bold text-red-500">{stats.outstandingInvoices || 0}</p>
           {stats.outstandingTotal > 0 && (
             <p className="text-xs text-gray-400">{currencySymbol()}{(stats.outstandingTotal || 0).toLocaleString()}</p>
           )}
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Avg Job Value</p>
+          <p className="text-gray-500 text-xs">{t('dashboard.avgJobValue')}</p>
           <p className="text-xl font-bold text-green-600">{currencySymbol()}{formatPriceWhole(stats.avgJobValue)}</p>
         </div>
         {stats.avgRating !== null && stats.avgRating !== undefined && (
           <div className="bg-white rounded-lg p-3 shadow">
-            <p className="text-gray-500 text-xs">Avg Rating</p>
+            <p className="text-gray-500 text-xs">{t('dashboard.avgRating')}</p>
             <div className="flex items-baseline gap-1.5">
               <p className="text-xl font-bold text-amber-500">{stats.avgRating}</p>
               <span className="text-amber-400 text-sm">&#9733;</span>
@@ -376,32 +373,32 @@ function QuickStats({ stats, onNewQuote }) {
           onClick={onNewQuote}
           className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-sm font-semibold hover:opacity-90 shadow min-h-[44px]"
         >
-          <span>+</span> New Quote
+          <span>+</span> {t('quickActions.newQuote')}
         </button>
         <a
           href="/customers"
           className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]"
         >
-          <span>&#128100;</span> Add Customer
+          <span>&#128100;</span> {t('dashboard.addCustomer')}
         </a>
         <a
           href="/calendar"
           className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]"
         >
-          <span>&#128197;</span> View Calendar
+          <span>&#128197;</span> {t('dashboard.viewCalendar')}
         </a>
         <a
           href="/quotes"
           className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]"
         >
-          <span>&#128196;</span> All Quotes
+          <span>&#128196;</span> {t('dashboard.allQuotes')}
         </a>
       </div>
 
       {/* Recent Activity Feed */}
       {stats.activityFeed && stats.activityFeed.length > 0 && (
         <div className="bg-white rounded-lg p-4 shadow">
-          <h3 className="font-semibold text-sm text-gray-700 mb-2">Recent Activity</h3>
+          <h3 className="font-semibold text-sm text-gray-700 mb-2">{t('dashboard.recentActivity')}</h3>
           <div className="space-y-2">
             {stats.activityFeed.map((item, i) => {
               const label = activityLabels[item.type] || activityLabels.created;
@@ -437,14 +434,15 @@ function QuickStats({ stats, onNewQuote }) {
 
 // Recent Quotes Component
 function RecentQuotes({ quotes, onViewQuote }) {
+  const { t } = useTranslation();
   if (!quotes || quotes.length === 0) {
     return (
       <div className="bg-white rounded-lg p-4 mb-4 shadow">
         <div className="flex justify-between items-center mb-3">
-          <h3 className="font-semibold">Recent Quotes</h3>
-          <a href="/quotes" className="text-sm text-amber-600 hover:underline">View All</a>
+          <h3 className="font-semibold">{t('dashboard.recentQuotes')}</h3>
+          <a href="/quotes" className="text-sm text-amber-600 hover:underline">{t('common.viewAll')}</a>
         </div>
-        <p className="text-gray-500 text-sm">No quotes yet. Create your first quote below.</p>
+        <p className="text-gray-500 text-sm">{t('dashboard.noQuotesYet')}</p>
       </div>
     );
   }
@@ -461,8 +459,8 @@ function RecentQuotes({ quotes, onViewQuote }) {
   return (
     <div className="bg-white rounded-lg p-4 mb-4 shadow">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="font-semibold">Recent Quotes</h3>
-        <a href="/quotes" className="text-sm text-amber-600 hover:underline">View All</a>
+        <h3 className="font-semibold">{t('dashboard.recentQuotes')}</h3>
+        <a href="/quotes" className="text-sm text-amber-600 hover:underline">{t('common.viewAll')}</a>
       </div>
       <div className="space-y-2">
         {quotes.map((quote) => (
@@ -486,7 +484,7 @@ function RecentQuotes({ quotes, onViewQuote }) {
             </div>
             <div className="flex items-center gap-3">
               <span className={`text-xs px-2 py-1 rounded-full ${statusColors[quote.status] || 'bg-gray-100 text-gray-600'}`}>
-                {quote.status || 'draft'}
+                {quote.status || t('status.draft').toLowerCase()}
               </span>
               <span className="font-bold text-gray-900">{currencySymbol()}{formatPriceWhole(quote.total_price)}</span>
             </div>
@@ -500,22 +498,23 @@ function RecentQuotes({ quotes, onViewQuote }) {
 
 // Upcoming Recurring Services Component
 function UpcomingRecurring({ recurring }) {
+  const { t } = useTranslation();
   if (!recurring || recurring.length === 0) return null;
 
   const intervalLabels = {
-    weekly: 'Weekly',
-    biweekly: 'Bi-weekly',
-    '4_weeks': '4 weeks',
-    monthly: 'Monthly',
-    '6_weeks': '6 weeks',
-    quarterly: 'Quarterly',
+    weekly: t('recurring.weekly'),
+    biweekly: t('recurring.biweekly'),
+    '4_weeks': t('recurring.fourWeeks'),
+    monthly: t('recurring.monthly'),
+    '6_weeks': t('recurring.sixWeeks'),
+    quarterly: t('recurring.quarterly'),
   };
 
   return (
     <div className="bg-white rounded-lg p-4 mb-4 shadow">
       <div className="flex justify-between items-center mb-3">
-        <h3 className="font-semibold">Upcoming Recurring Services</h3>
-        <a href="/recurring" className="text-sm text-amber-600 hover:underline">Manage All</a>
+        <h3 className="font-semibold">{t('dashboard.upcomingRecurring')}</h3>
+        <a href="/recurring" className="text-sm text-amber-600 hover:underline">{t('dashboard.manageAll')}</a>
       </div>
       <div className="space-y-2">
         {recurring.slice(0, 5).map((item) => (
@@ -525,10 +524,10 @@ function UpcomingRecurring({ recurring }) {
           >
             <div className="flex-1">
               <p className="font-medium text-gray-900">
-                {item.customer_name || item.client_name || 'Customer'}
+                {item.customer_name || item.client_name || t('common.customer')}
               </p>
               <p className="text-sm text-gray-500">
-                {item.aircraft_model || item.aircraft_type || 'Aircraft'}
+                {item.aircraft_model || item.aircraft_type || t('common.aircraft')}
                 <span className="ml-2 text-xs text-gray-400">{intervalLabels[item.recurring_interval] || item.recurring_interval}</span>
               </p>
             </div>
@@ -547,6 +546,7 @@ function UpcomingRecurring({ recurring }) {
 
 function DashboardContent() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [user, setUser] = useState(null);
   const [availableServices, setAvailableServices] = useState([]);
   const [availablePackages, setAvailablePackages] = useState([]);
@@ -578,6 +578,16 @@ function DashboardContent() {
   const [selectedAddons, setSelectedAddons] = useState({});
   const [airport, setAirport] = useState('');
   const [customProductRatios, setCustomProductRatios] = useState(null);
+
+  const categoryLabels = {
+    piston: t('categories.piston'),
+    turboprop: t('categories.turboprop'),
+    light_jet: t('categories.lightJet'),
+    midsize_jet: t('categories.midsizeJet'),
+    super_midsize_jet: t('categories.superMidsizeJet'),
+    large_jet: t('categories.largeJet'),
+    helicopter: t('categories.helicopter'),
+  };
 
   // Fetch manufacturers on mount
   useEffect(() => {
@@ -741,7 +751,7 @@ function DashboardContent() {
     try {
       const token = localStorage.getItem('vector_token');
       if (!token) {
-        setStripeError('Not logged in - please refresh and try again');
+        setStripeError(t('errors.notLoggedIn'));
         return;
       }
       const res = await fetch('/api/stripe/connect', {
@@ -763,7 +773,7 @@ function DashboardContent() {
       }
     } catch (err) {
       console.error('Failed to connect Stripe:', err);
-      setStripeError(`Network error: ${err.message}`);
+      setStripeError(t('errors.networkError', { error: err.message }));
     } finally {
       setStripeLoading(false);
     }
@@ -974,7 +984,7 @@ function DashboardContent() {
     : null;
 
   if (loading) {
-    return <LoadingSpinner message="Loading dashboard..." />;
+    return <LoadingSpinner message={t('dashboard.loadingDashboard')} />;
   }
 
   return (
@@ -984,25 +994,26 @@ function DashboardContent() {
       <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-1 bg-gradient-to-b from-[#0f172a] via-[#0f172a] to-transparent flex justify-between items-center text-white">
         <div className="flex items-center space-x-2 text-xl sm:text-2xl font-bold">
           <span>&#9992;</span>
-          <span>Vector</span>
+          <span>{t('dashboard.title')}</span>
           {user && <span className="text-sm sm:text-lg font-medium hidden sm:inline">- {user.company}</span>}
         </div>
         <div className="flex items-center gap-2 sm:gap-4 text-sm">
+          <DashboardLanguageSelector />
           <GlobalSearch />
           <NotificationBell />
           <PointsBadge />
           {/* Desktop nav links */}
           <div className="hidden md:flex items-center space-x-4">
-            <a href="/quotes" className="underline">Quotes</a>
-            <a href="/calendar" className="underline" data-tour="nav-calendar">Calendar</a>
-            <a href="/products" className="underline">Inventory</a>
-            <a href="/equipment" className="underline">Equipment</a>
-            <a href="/team" className="underline">Team</a>
-            <a href="/recurring" className="underline">Recurring</a>
-            <a href="/analytics" className="underline" data-tour="nav-analytics">Analytics</a>
-            <a href="/growth" className="underline">Growth</a>
-            <a href="/settings" className="underline" data-tour="nav-settings">Settings</a>
-            <button onClick={handleLogout} className="underline">Logout</button>
+            <a href="/quotes" className="underline">{t('nav.quotes')}</a>
+            <a href="/calendar" className="underline" data-tour="nav-calendar">{t('nav.calendar')}</a>
+            <a href="/products" className="underline">{t('nav.inventory')}</a>
+            <a href="/equipment" className="underline">{t('nav.equipment')}</a>
+            <a href="/team" className="underline">{t('nav.team')}</a>
+            <a href="/recurring" className="underline">{t('nav.recurring')}</a>
+            <a href="/analytics" className="underline" data-tour="nav-analytics">{t('nav.analytics')}</a>
+            <a href="/growth" className="underline">{t('nav.growth')}</a>
+            <a href="/settings" className="underline" data-tour="nav-settings">{t('nav.settings')}</a>
+            <button onClick={handleLogout} className="underline">{t('common.logout')}</button>
           </div>
           {/* Mobile hamburger menu */}
           <div className="md:hidden relative">
@@ -1018,19 +1029,19 @@ function DashboardContent() {
             {mobileMenuOpen && (
               <div className="absolute right-0 top-full mt-2 w-48 bg-[#1e3a5f] rounded-lg shadow-xl border border-white/10 py-2 z-50">
                 {[
-                  { href: '/quotes', label: 'Quotes' },
-                  { href: '/calendar', label: 'Calendar' },
-                  { href: '/products', label: 'Inventory' },
-                  { href: '/equipment', label: 'Equipment' },
-                  { href: '/team', label: 'Team' },
-                  { href: '/recurring', label: 'Recurring' },
-                  { href: '/analytics', label: 'Analytics' },
-                  { href: '/growth', label: 'Growth' },
-                  { href: '/settings', label: 'Settings' },
+                  { href: '/quotes', label: t('nav.quotes') },
+                  { href: '/calendar', label: t('nav.calendar') },
+                  { href: '/products', label: t('nav.inventory') },
+                  { href: '/equipment', label: t('nav.equipment') },
+                  { href: '/team', label: t('nav.team') },
+                  { href: '/recurring', label: t('nav.recurring') },
+                  { href: '/analytics', label: t('nav.analytics') },
+                  { href: '/growth', label: t('nav.growth') },
+                  { href: '/settings', label: t('nav.settings') },
                 ].map(link => (
                   <a key={link.href} href={link.href} className="block px-4 py-3 hover:bg-white/10 text-sm">{link.label}</a>
                 ))}
-                <button onClick={handleLogout} className="block w-full text-left px-4 py-3 hover:bg-white/10 text-sm border-t border-white/10">Logout</button>
+                <button onClick={handleLogout} className="block w-full text-left px-4 py-3 hover:bg-white/10 text-sm border-t border-white/10">{t('common.logout')}</button>
               </div>
             )}
           </div>
@@ -1054,15 +1065,15 @@ function DashboardContent() {
           <div className="flex items-center">
             <span className="text-blue-600 text-xl mr-3">&#9432;</span>
             <div>
-              <p className="text-blue-800 font-medium">Set up your service menu</p>
-              <p className="text-blue-700 text-sm">Add services you offer to start building quotes.</p>
+              <p className="text-blue-800 font-medium">{t('dashboard.setupServiceMenu')}</p>
+              <p className="text-blue-700 text-sm">{t('dashboard.addServicesDesc')}</p>
             </div>
           </div>
           <a
             href="/settings/services"
             className="px-4 py-3 rounded bg-blue-500 text-white font-medium hover:bg-blue-600 min-h-[44px] whitespace-nowrap"
           >
-            Add Services
+            {t('dashboard.addServicesToStart')}
           </a>
         </div>
       )}
@@ -1072,18 +1083,18 @@ function DashboardContent() {
         <div className="flex-1">
           {/* Aircraft Selection */}
           <div className="bg-white rounded-lg p-4 mb-4 shadow">
-            <h3 className="font-semibold mb-3 text-lg">Select Aircraft</h3>
+            <h3 className="font-semibold mb-3 text-lg">{t('dashboard.selectAircraft')}</h3>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               {/* Manufacturer Dropdown */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('dashboard.manufacturer')}</label>
                 <select
                   value={selectedManufacturer}
                   onChange={(e) => setSelectedManufacturer(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 >
-                  <option value="">All Manufacturers</option>
+                  <option value="">{t('categories.allManufacturers')}</option>
                   {manufacturers.map((mfr) => (
                     <option key={mfr} value={mfr}>{mfr}</option>
                   ))}
@@ -1092,13 +1103,13 @@ function DashboardContent() {
 
               {/* Category Dropdown */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.category')}</label>
                 <select
                   value={selectedCategory}
                   onChange={(e) => setSelectedCategory(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 >
-                  <option value="">All Categories</option>
+                  <option value="">{t('categories.allCategories')}</option>
                   {categoryOrder.map((cat) => (
                     <option key={cat} value={cat}>{categoryLabels[cat]}</option>
                   ))}
@@ -1110,7 +1121,7 @@ function DashboardContent() {
             <div className="mb-3">
               <input
                 type="text"
-                placeholder="Search models..."
+                placeholder={t('dashboard.searchModels')}
                 value={modelSearch}
                 onChange={(e) => setModelSearch(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
@@ -1125,13 +1136,13 @@ function DashboardContent() {
                 <>
                   {models.length > 0 && (
                     <p className="text-xs text-gray-500 mb-1">
-                      {filteredModels.length} of {models.length} aircraft
+                      {filteredModels.length} {t('common.of')} {models.length} {t('common.aircraft').toLowerCase()}
                     </p>
                   )}
                   <div className="max-h-64 overflow-y-auto border rounded-lg">
                     {filteredModels.length === 0 ? (
                       <div className="p-4 text-gray-500 text-center">
-                        {models.length === 0 ? 'Loading aircraft...' : 'No matches found'}
+                        {models.length === 0 ? t('dashboard.loadingAircraft') : t('dashboard.noMatchesFound')}
                       </div>
                     ) : (
                       <div className="divide-y">
@@ -1145,7 +1156,7 @@ function DashboardContent() {
                       >
                         <div>
                           <p className="font-medium">{aircraft.manufacturer} {aircraft.model}</p>
-                          <p className="text-sm text-gray-500">{categoryLabels[aircraft.category]} • {aircraft.seats} seats</p>
+                          <p className="text-sm text-gray-500">{categoryLabels[aircraft.category]} • {aircraft.seats} {t('dashboard.seats')}</p>
                         </div>
                         {selectedAircraft?.id === aircraft.id && (
                           <span className="text-amber-500">&#10003;</span>
@@ -1169,21 +1180,21 @@ function DashboardContent() {
                   <p className="text-blue-700 text-sm">{categoryLabels[selectedAircraft.category]}</p>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm text-blue-600">Surface Area</p>
-                  <p className="text-2xl font-bold text-blue-900">{selectedAircraft.surface_area_sqft?.toLocaleString()} sq ft</p>
+                  <p className="text-sm text-blue-600">{t('dashboard.surfaceArea')}</p>
+                  <p className="text-2xl font-bold text-blue-900">{selectedAircraft.surface_area_sqft?.toLocaleString()} {t('dashboard.sqft')}</p>
                 </div>
               </div>
               <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-blue-700">
-                <div>Wingspan: {selectedAircraft.wingspan_ft} ft</div>
-                <div>Length: {selectedAircraft.length_ft} ft</div>
-                <div>Ext Wash: {selectedAircraft.ext_wash_hours || 0}h</div>
-                <div>Int Detail: {selectedAircraft.int_detail_hours || 0}h</div>
+                <div>{t('dashboard.wingspan')}: {selectedAircraft.wingspan_ft} {t('dashboard.ft')}</div>
+                <div>{t('dashboard.length')}: {selectedAircraft.length_ft} {t('dashboard.ft')}</div>
+                <div>{t('serviceTypes.extWash')}: {selectedAircraft.ext_wash_hours || 0}{t('common.hrs')}</div>
+                <div>{t('serviceTypes.intDetail')}: {selectedAircraft.int_detail_hours || 0}{t('common.hrs')}</div>
               </div>
               <div className="mt-1 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-blue-600">
-                <div>Wax: {selectedAircraft.wax_hours || 0}h</div>
-                <div>Polish: {selectedAircraft.polish_hours || 0}h</div>
-                <div>Ceramic: {selectedAircraft.ceramic_hours || 0}h</div>
-                <div>Leather: {selectedAircraft.leather_hours || 0}h</div>
+                <div>{t('serviceTypes.wax')}: {selectedAircraft.wax_hours || 0}{t('common.hrs')}</div>
+                <div>{t('serviceTypes.polish')}: {selectedAircraft.polish_hours || 0}{t('common.hrs')}</div>
+                <div>{t('serviceTypes.ceramic')}: {selectedAircraft.ceramic_hours || 0}{t('common.hrs')}</div>
+                <div>{t('serviceTypes.leather')}: {selectedAircraft.leather_hours || 0}{t('common.hrs')}</div>
               </div>
             </div>
           )}
@@ -1191,12 +1202,12 @@ function DashboardContent() {
           {/* Airport */}
           {selectedAircraft && (
             <div className="bg-white rounded-lg p-4 mb-4 shadow">
-              <h3 className="font-semibold mb-2">Airport <span className="text-red-500">*</span></h3>
+              <h3 className="font-semibold mb-2">{t('common.airport')} <span className="text-red-500">*</span></h3>
               <input
                 type="text"
                 value={airport}
                 onChange={(e) => setAirport(e.target.value.toUpperCase())}
-                placeholder="ICAO code (e.g., KJFK, KLAX, KSDL)"
+                placeholder={t('dashboard.airportPlaceholder')}
                 maxLength={6}
                 className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 uppercase font-mono tracking-wider"
               />
@@ -1210,7 +1221,7 @@ function DashboardContent() {
           {selectedAircraft && (
             <div className="bg-white rounded-lg p-4 mb-4 shadow">
               <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold">Access Difficulty</h3>
+                <h3 className="font-semibold">{t('dashboard.accessDifficulty')}</h3>
                 <span className="text-lg font-bold text-amber-600">{accessDifficulty.toFixed(2)}x</span>
               </div>
               <p className="text-sm text-gray-600 mb-3">
@@ -1218,10 +1229,10 @@ function DashboardContent() {
               </p>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 {[
-                  { value: 1.0, label: 'Standard', desc: 'Easy hangar access' },
-                  { value: 1.15, label: 'Moderate', desc: 'Limited access' },
-                  { value: 1.3, label: 'Difficult', desc: 'Remote or tight space' },
-                  { value: 1.5, label: 'Extreme', desc: 'Special equipment needed' },
+                  { value: 1.0, label: t('dashboard.standard'), desc: t('dashboard.easyAccess') },
+                  { value: 1.15, label: t('dashboard.moderate'), desc: t('dashboard.limitedAccess') },
+                  { value: 1.3, label: t('dashboard.difficult'), desc: t('dashboard.remoteOrTight') },
+                  { value: 1.5, label: t('dashboard.extreme'), desc: t('dashboard.specialEquipment') },
                 ].map((opt) => (
                   <button
                     key={opt.value}
@@ -1242,13 +1253,13 @@ function DashboardContent() {
           {/* Services section */}
           {selectedAircraft && (
             <div className="bg-white rounded-lg p-4 shadow">
-              <h3 className="font-semibold text-lg mb-3">Services</h3>
+              <h3 className="font-semibold text-lg mb-3">{t('common.services')}</h3>
 
               {availableServices.length === 0 ? (
                 <div className="text-center py-4">
-                  <p className="text-gray-500 mb-2">No services configured yet.</p>
+                  <p className="text-gray-500 mb-2">{t('dashboard.noServicesConfigured')}</p>
                   <a href="/settings/services" className="text-amber-600 hover:underline text-sm">
-                    Add services to get started
+                    {t('dashboard.addServicesToStart')}
                   </a>
                 </div>
               ) : (
@@ -1279,7 +1290,7 @@ function DashboardContent() {
                             <span className="text-xs text-gray-500 block">{svc.description}</span>
                           )}
                           <span className="text-xs text-gray-400">
-                            {hours.toFixed(1)}h @ {currencySymbol()}{svc.hourly_rate}/hr
+                            {hours.toFixed(1)}{t('common.hrs')} @ {currencySymbol()}{svc.hourly_rate}{t('common.perHour')}
                           </span>
                         </div>
                         <span className="font-bold text-lg">{currencySymbol()}{formatPriceWhole(price)}</span>
@@ -1293,7 +1304,7 @@ function DashboardContent() {
               {availablePackages.length > 0 && (
                 <div className="mt-6">
                   <h4 className="font-semibold mb-3 flex items-center gap-2">
-                    <span>&#127873;</span> Or select a package
+                    <span>&#127873;</span> {t('dashboard.selectPackage')}
                   </h4>
                   <div className="space-y-2">
                     {availablePackages.map((pkg) => {
@@ -1326,7 +1337,7 @@ function DashboardContent() {
                                 <p className="text-sm text-gray-500 mt-1">{pkg.description}</p>
                               )}
                               <p className="text-xs text-gray-400 mt-2">
-                                Includes: {pkgServices.map(s => s.name).join(', ') || 'No services'}
+                                {t('dashboard.includes')} {pkgServices.map(s => s.name).join(', ') || t('dashboard.noServices')}
                               </p>
                             </div>
                             <div className="text-right">
@@ -1350,7 +1361,7 @@ function DashboardContent() {
           {/* Add-on Fees */}
           {selectedAircraft && availableAddons.length > 0 && (
             <div className="bg-white rounded-lg p-4 mt-4 shadow">
-              <h3 className="font-semibold mb-3">Add-on Fees</h3>
+              <h3 className="font-semibold mb-3">{t('dashboard.addonFees')}</h3>
               <div className="space-y-2">
                 {availableAddons.map((addon) => {
                   const isChecked = selectedAddons[addon.id] || false;
@@ -1389,7 +1400,7 @@ function DashboardContent() {
           {/* Job Location */}
           {selectedAircraft && (
             <div className="bg-white rounded-lg p-4 mt-4 shadow">
-              <h3 className="font-semibold mb-2">Job Location</h3>
+              <h3 className="font-semibold mb-2">{t('dashboard.jobLocation')}</h3>
               <input
                 type="text"
                 value={jobLocation}
@@ -1400,8 +1411,8 @@ function DashboardContent() {
               {minimumFee > 0 && (
                 <p className="text-xs text-gray-500 mt-1">
                   {minimumFeeLocations.length > 0
-                    ? `Minimum fee of ${currencySymbol()}${minimumFee.toFixed(2)} applies at: ${minimumFeeLocations.join(', ')}`
-                    : `Minimum call out fee: ${currencySymbol()}${minimumFee.toFixed(2)}`
+                    ? `${t('dashboard.minimumFeeOf')} ${currencySymbol()}${minimumFee.toFixed(2)} ${t('dashboard.appliesAt')}: ${minimumFeeLocations.join(', ')}`
+                    : `${t('dashboard.minimumFee')}: ${currencySymbol()}${minimumFee.toFixed(2)}`
                   }
                 </p>
               )}
@@ -1411,11 +1422,11 @@ function DashboardContent() {
           {/* Quote Notes */}
           {selectedAircraft && (
             <div className="bg-white rounded-lg p-4 mt-4 shadow">
-              <h3 className="font-semibold mb-2">Notes</h3>
+              <h3 className="font-semibold mb-2">{t('common.notes')}</h3>
               <textarea
                 value={quoteNotes}
                 onChange={(e) => setQuoteNotes(e.target.value)}
-                placeholder="Add notes for this quote (visible to customer)..."
+                placeholder={t('dashboard.notesPlaceholder')}
                 rows={3}
                 className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none"
               />
@@ -1426,7 +1437,7 @@ function DashboardContent() {
         {/* Right column - Quote summary */}
         <div className="w-full lg:w-80">
           <div className="lg:sticky lg:top-16 bg-[#0f172a] text-white rounded-lg p-4 shadow-lg">
-            <h3 className="text-lg font-semibold mb-3">Quote Summary</h3>
+            <h3 className="text-lg font-semibold mb-3">{t('dashboard.quoteSummary')}</h3>
             {selectedAircraft ? (
               <>
                 <p className="mb-1 font-medium">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
@@ -1442,7 +1453,7 @@ function DashboardContent() {
                       <li key={svc.id} className="flex justify-between text-sm">
                         <div>
                           <span className="text-gray-300">{svc.name}</span>
-                          <span className="text-xs text-gray-500 block">{hours.toFixed(1)}h x {currencySymbol()}{svc.hourly_rate}/hr</span>
+                          <span className="text-xs text-gray-500 block">{hours.toFixed(1)}{t('common.hrs')} x {currencySymbol()}{svc.hourly_rate}{t('common.perHour')}</span>
                         </div>
                         <span>{currencySymbol()}{formatPriceWhole(price)}</span>
                       </li>
@@ -1465,12 +1476,12 @@ function DashboardContent() {
 
                 <div className="border-t border-gray-600 pt-3 space-y-1">
                   <div className="flex justify-between text-sm text-gray-400">
-                    <span>Est. Hours</span>
-                    <span>{totalHours.toFixed(1)}h</span>
+                    <span>{t('dashboard.estHours')}</span>
+                    <span>{totalHours.toFixed(1)}{t('common.hrs')}</span>
                   </div>
                   {accessDifficulty !== 1.0 && (
                     <div className="flex justify-between text-xs text-gray-500">
-                      <span>Difficulty multiplier</span>
+                      <span>{t('dashboard.difficultyMultiplier')}</span>
                       <span>{accessDifficulty.toFixed(2)}x</span>
                     </div>
                   )}
@@ -1478,7 +1489,7 @@ function DashboardContent() {
                   {/* Subtotal before addons */}
                   {addonsTotal > 0 && (
                     <div className="flex justify-between text-sm text-gray-400">
-                      <span>Subtotal</span>
+                      <span>{t('common.subtotal')}</span>
                       <span>{currencySymbol()}{formatPriceWhole(afterDifficulty)}</span>
                     </div>
                   )}
@@ -1495,11 +1506,11 @@ function DashboardContent() {
                   {isMinimumApplied && (
                     <>
                       <div className="flex justify-between text-sm text-gray-500 line-through">
-                        <span>Calculated</span>
+                        <span>{t('dashboard.calculated')}</span>
                         <span>{currencySymbol()}{formatPrice(calculatedPrice)}</span>
                       </div>
                       <div className="flex justify-between text-sm text-amber-400">
-                        <span>Minimum Fee Applied</span>
+                        <span>{t('dashboard.minimumFeeApplied')}</span>
                         <span>{currencySymbol()}{formatPrice(minimumFee)}</span>
                       </div>
                     </>
@@ -1513,7 +1524,7 @@ function DashboardContent() {
                   )}
 
                   <div className="flex justify-between text-xl font-bold pt-1">
-                    <span>Total</span>
+                    <span>{t('common.total')}</span>
                     <span>{currencySymbol()}{formatPrice(totalPrice)}</span>
                   </div>
 
@@ -1521,11 +1532,11 @@ function DashboardContent() {
                   {estimatedProductCost > 0 && totalPrice > 0 && (
                     <div className="mt-2 pt-2 border-t border-gray-600/50 space-y-1">
                       <div className="flex justify-between text-xs text-gray-400">
-                        <span>Product Cost</span>
+                        <span>{t('dashboard.productCost')}</span>
                         <span>-{currencySymbol()}{formatPrice(estimatedProductCost)}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold text-green-400">
-                        <span>Est. Profit</span>
+                        <span>{t('dashboard.estProfit')}</span>
                         <span>{currencySymbol()}{formatPrice(estimatedProfit)}
                           <span className="text-xs font-normal ml-1">({totalPrice > 0 ? ((estimatedProfit / totalPrice) * 100).toFixed(0) : 0}%)</span>
                         </span>
@@ -1536,7 +1547,7 @@ function DashboardContent() {
                   {/* Product usage estimates */}
                   {productEstimates.length > 0 && (
                     <div className="mt-2 pt-2 border-t border-gray-600/50">
-                      <p className="text-xs text-gray-400 mb-1">Estimated Products</p>
+                      <p className="text-xs text-gray-400 mb-1">{t('dashboard.estimatedProducts')}</p>
                       <div className="space-y-0.5">
                         {productEstimates.map(e => (
                           <div key={e.product_name} className="flex justify-between text-xs">
@@ -1559,7 +1570,7 @@ function DashboardContent() {
                   disabled={totalPrice === 0 || !airport || airport.length < 3}
                   className="w-full mt-4 px-4 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {!airport || airport.length < 3 ? 'Enter Airport to Send' : 'Send to Client'}
+                  {!airport || airport.length < 3 ? t('dashboard.enterAirport') : t('dashboard.sendToClient')}
                 </button>
 
                 <button
@@ -1577,12 +1588,12 @@ function DashboardContent() {
                   }}
                   className="w-full mt-2 px-4 py-3 rounded-lg border border-gray-500 text-gray-300 hover:bg-gray-800 text-sm min-h-[44px]"
                 >
-                  Start New Quote
+                  {t('dashboard.startNewQuote')}
                 </button>
               </>
             ) : (
               <div className="text-gray-400 text-center py-8">
-                <p>Select an aircraft to build a quote</p>
+                <p>{t('dashboard.selectAircraftToBuild')}</p>
               </div>
             )}
           </div>
@@ -1661,19 +1672,19 @@ function DashboardContent() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
           <a href="/products" className="flex flex-col items-center p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white min-h-[60px]">
             <span className="text-2xl mb-1">&#128230;</span>
-            <span className="text-sm font-medium">Inventory</span>
+            <span className="text-sm font-medium">{t('nav.inventory')}</span>
           </a>
           <a href="/equipment" className="flex flex-col items-center p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white min-h-[60px]">
             <span className="text-2xl mb-1">&#128295;</span>
-            <span className="text-sm font-medium">Equipment</span>
+            <span className="text-sm font-medium">{t('nav.equipment')}</span>
           </a>
           <a href="/growth" className="flex flex-col items-center p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white min-h-[60px]">
             <span className="text-2xl mb-1">&#128200;</span>
-            <span className="text-sm font-medium">Growth</span>
+            <span className="text-sm font-medium">{t('nav.growth')}</span>
           </a>
           <a href="/settings/services" className="flex flex-col items-center p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white min-h-[60px]">
             <span className="text-2xl mb-1">&#9881;</span>
-            <span className="text-sm font-medium">Services</span>
+            <span className="text-sm font-medium">{t('nav.services')}</span>
           </a>
         </div>
       </div>

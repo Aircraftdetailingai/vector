@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 
 // Helper to get auth token
 const getToken = () => localStorage.getItem('vector_token');
@@ -16,6 +17,7 @@ const DEFAULT_QUESTIONS = [
 
 export default function LeadIntakeSettingsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [questions, setQuestions] = useState([]);
@@ -91,13 +93,13 @@ export default function LeadIntakeSettingsPage() {
 
       if (res.ok) {
         setIsDefault(false);
-        alert('Questions saved!');
+        alert(t('settings.saved'));
       } else {
         const data = await res.json();
-        alert(data.error || 'Failed to save');
+        alert(data.error || t('settings.saveFailed'));
       }
     } catch (err) {
-      alert('Failed to save');
+      alert(t('settings.saveFailed'));
     } finally {
       setSaving(false);
     }
@@ -122,7 +124,7 @@ export default function LeadIntakeSettingsPage() {
         setIsDefault(true);
       }
     } catch (err) {
-      alert('Failed to reset');
+      alert(t('errors.failedToSave'));
     } finally {
       setSaving(false);
     }
@@ -188,7 +190,7 @@ export default function LeadIntakeSettingsPage() {
         setSuggestions(data.suggestions);
       }
     } catch (err) {
-      alert('Failed to analyze website');
+      alert(t('errors.somethingWentWrong'));
     } finally {
       setAnalyzing(false);
     }
@@ -231,7 +233,7 @@ export default function LeadIntakeSettingsPage() {
         setSuggestedFromFaq(data.suggestedQuestions);
       }
     } catch (err) {
-      alert('Failed to process FAQ');
+      alert(t('errors.somethingWentWrong'));
     } finally {
       setUploadingFaq(false);
     }
@@ -244,7 +246,7 @@ export default function LeadIntakeSettingsPage() {
 
   const copyWidgetCode = () => {
     navigator.clipboard.writeText(getWidgetCode());
-    alert('Widget code copied to clipboard!');
+    alert(t('success.copied'));
   };
 
   if (loading) {
@@ -266,7 +268,7 @@ export default function LeadIntakeSettingsPage() {
                 onClick={() => router.push('/settings')}
                 className="text-gray-500 hover:text-gray-700"
               >
-                &larr; Back
+                &larr; {t('common.back')}
               </button>
               <h1 className="text-2xl font-bold">AI Lead Intake</h1>
             </div>
@@ -275,7 +277,7 @@ export default function LeadIntakeSettingsPage() {
               disabled={saving}
               className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
             >
-              {saving ? 'Saving...' : 'Save Changes'}
+              {saving ? t('common.saving') : t('common.save')}
             </button>
           </div>
         </div>
@@ -379,7 +381,7 @@ export default function LeadIntakeSettingsPage() {
                               onChange={(e) => updateQuestion(index, 'required', e.target.checked)}
                               className="w-4 h-4 text-amber-500"
                             />
-                            <span className="text-sm">Required</span>
+                            <span className="text-sm">{t('common.required')}</span>
                           </label>
                         </div>
                       </div>
@@ -428,7 +430,7 @@ export default function LeadIntakeSettingsPage() {
                 disabled={analyzing || !websiteUrl}
                 className="px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
               >
-                {analyzing ? 'Analyzing...' : 'Analyze'}
+                {analyzing ? t('common.processing') : 'Analyze'}
               </button>
             </div>
 
@@ -446,7 +448,7 @@ export default function LeadIntakeSettingsPage() {
                         onClick={() => addSuggestion(s)}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
                       >
-                        Add
+                        {t('common.add')}
                       </button>
                     </div>
                   ))}
@@ -482,7 +484,7 @@ A: Yes, we come to your hangar."
               disabled={uploadingFaq || !faqText.trim()}
               className="mt-4 px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
             >
-              {uploadingFaq ? 'Processing...' : 'Extract FAQs'}
+              {uploadingFaq ? t('common.processing') : 'Extract FAQs'}
             </button>
 
             {extractedFaqs.length > 0 && (
@@ -516,7 +518,7 @@ A: Yes, we come to your hangar."
                         }}
                         className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 text-sm"
                       >
-                        Add
+                        {t('common.add')}
                       </button>
                     </div>
                   ))}

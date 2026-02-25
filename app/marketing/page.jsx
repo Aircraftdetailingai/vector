@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 
 const SEGMENTS = [
   { value: 'all', label: 'All Customers', desc: 'Every customer with an email' },
@@ -68,6 +69,7 @@ function formatShortDate(d) {
 
 export default function MarketingPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -102,7 +104,7 @@ export default function MarketingPage() {
       const data = await res.json();
       setCampaigns(data.campaigns || []);
     } catch (err) {
-      setError('Failed to load campaigns');
+      setError(t('marketing.failedToLoadCampaigns'));
     } finally {
       setLoading(false);
     }
@@ -130,7 +132,7 @@ export default function MarketingPage() {
 
   async function createCampaign() {
     if (!formName || !formSubject || !formContent) {
-      setError('Name, subject, and content are required');
+      setError(t('marketing.nameSubjectContentRequired'));
       return;
     }
     setCreating(true);
@@ -149,9 +151,9 @@ export default function MarketingPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to create');
+      if (!res.ok) throw new Error(data.error || t('errors.failedToCreate'));
       setShowCreate(false);
-      setSuccess('Campaign created');
+      setSuccess(t('marketing.campaignCreated'));
       fetchCampaigns();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -163,7 +165,7 @@ export default function MarketingPage() {
 
   async function sendCampaign(campaign) {
     if (campaign.status === 'sent') return;
-    if (!confirm(`Send "${campaign.name}" to ${campaign.recipient_count || 'all'} recipients now?`)) return;
+    if (!confirm(t('marketing.sendConfirm', { name: campaign.name, count: campaign.recipient_count || t('common.all') }))) return;
     setSending(campaign.id);
     setError('');
     try {
@@ -173,8 +175,8 @@ export default function MarketingPage() {
         body: JSON.stringify({ campaign_id: campaign.id }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to send');
-      setSuccess(`Campaign sent to ${data.sent} of ${data.total} recipients`);
+      if (!res.ok) throw new Error(data.error || t('errors.failedToSend'));
+      setSuccess(t('marketing.campaignSentTo', { sent: data.sent, total: data.total }));
       fetchCampaigns();
       if (showDetail?.id === campaign.id) {
         setShowDetail({ ...showDetail, status: 'sent', sent_count: data.sent });
@@ -188,14 +190,14 @@ export default function MarketingPage() {
   }
 
   async function deleteCampaign(campaign) {
-    if (!confirm(`Delete campaign "${campaign.name}"?`)) return;
+    if (!confirm(t('marketing.deleteConfirm', { name: campaign.name }))) return;
     try {
       const res = await fetch(`/api/marketing/${campaign.id}`, {
         method: 'DELETE',
         headers: headers(),
       });
-      if (!res.ok) throw new Error('Failed to delete');
-      setSuccess('Campaign deleted');
+      if (!res.ok) throw new Error(t('errors.failedToDelete'));
+      setSuccess(t('marketing.campaignDeleted'));
       if (showDetail?.id === campaign.id) setShowDetail(null);
       fetchCampaigns();
       setTimeout(() => setSuccess(''), 3000);
@@ -217,8 +219,8 @@ export default function MarketingPage() {
           segment: campaign.segment,
         }),
       });
-      if (!res.ok) throw new Error('Failed to duplicate');
-      setSuccess('Campaign duplicated');
+      if (!res.ok) throw new Error(t('marketing.failedToDuplicate'));
+      setSuccess(t('marketing.campaignDuplicated'));
       fetchCampaigns();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -250,13 +252,13 @@ export default function MarketingPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
         <div className="flex items-center gap-3">
           <a href="/dashboard" className="text-white text-2xl hover:opacity-70">&larr;</a>
-          <h1 className="text-2xl font-bold text-white">Email Marketing</h1>
+          <h1 className="text-2xl font-bold text-white">{t('marketing.title')}</h1>
         </div>
         <button
           onClick={openCreateModal}
           className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:opacity-90 shadow"
         >
-          + New Campaign
+          {t('marketing.newCampaign')}
         </button>
       </div>
 
@@ -274,19 +276,19 @@ export default function MarketingPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Total Campaigns</p>
+          <p className="text-gray-500 text-xs">{t('marketing.totalCampaigns')}</p>
           <p className="text-xl font-bold text-gray-900">{stats.total}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Sent</p>
+          <p className="text-gray-500 text-xs">{t('status.sent')}</p>
           <p className="text-xl font-bold text-green-600">{stats.sent}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Drafts</p>
+          <p className="text-gray-500 text-xs">{t('marketing.drafts')}</p>
           <p className="text-xl font-bold text-gray-600">{stats.drafts}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">Total Emails Sent</p>
+          <p className="text-gray-500 text-xs">{t('marketing.totalEmailsSent')}</p>
           <p className="text-xl font-bold text-blue-600">{stats.totalSent}</p>
         </div>
       </div>
@@ -301,7 +303,7 @@ export default function MarketingPage() {
               filter === f ? 'bg-amber-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
             }`}
           >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
+            {f === 'all' ? t('common.all') : f === 'draft' ? t('status.draft') : f === 'scheduled' ? t('status.scheduled') : t('status.sent')}
           </button>
         ))}
       </div>
@@ -312,9 +314,9 @@ export default function MarketingPage() {
           <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
-          <p className="text-gray-500 mb-2">No campaigns yet</p>
+          <p className="text-gray-500 mb-2">{t('marketing.noCampaigns')}</p>
           <button onClick={openCreateModal} className="text-amber-600 hover:text-amber-700 font-medium text-sm">
-            Create your first campaign
+            {t('marketing.createFirstCampaign')}
           </button>
         </div>
       ) : (
@@ -340,11 +342,11 @@ export default function MarketingPage() {
                   </div>
                   <p className="text-sm text-gray-600 mt-0.5">{c.subject}</p>
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {SEGMENTS.find(s => s.value === c.segment)?.label || 'All'}
-                    {c.recipient_count ? ` · ${c.recipient_count} recipients` : ''}
-                    {c.sent_count ? ` · ${c.sent_count} sent` : ''}
+                    {SEGMENTS.find(s => s.value === c.segment)?.label || t('common.all')}
+                    {c.recipient_count ? ` · ${c.recipient_count} ${t('marketing.recipients')}` : ''}
+                    {c.sent_count ? ` · ${c.sent_count} ${t('marketing.sentCount')}` : ''}
                     {' · '}{formatShortDate(c.created_at)}
-                    {c.scheduled_at && c.status === 'scheduled' ? ` · Scheduled: ${formatDate(c.scheduled_at)}` : ''}
+                    {c.scheduled_at && c.status === 'scheduled' ? ` · ${t('status.scheduled')}: ${formatDate(c.scheduled_at)}` : ''}
                   </p>
                 </div>
                 <div className="flex items-center gap-1 flex-shrink-0">
@@ -352,7 +354,7 @@ export default function MarketingPage() {
                     <button
                       onClick={e => { e.stopPropagation(); sendCampaign(c); }}
                       disabled={sending === c.id}
-                      title="Send now"
+                      title={t('marketing.sendNow')}
                       className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
                     >
                       {sending === c.id ? (
@@ -366,7 +368,7 @@ export default function MarketingPage() {
                   )}
                   <button
                     onClick={e => { e.stopPropagation(); duplicateCampaign(c); }}
-                    title="Duplicate"
+                    title={t('marketing.duplicate')}
                     className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -375,7 +377,7 @@ export default function MarketingPage() {
                   </button>
                   <button
                     onClick={e => { e.stopPropagation(); deleteCampaign(c); }}
-                    title="Delete"
+                    title={t('common.delete')}
                     className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -394,14 +396,14 @@ export default function MarketingPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowCreate(false)}>
           <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl my-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900">New Campaign</h2>
+              <h2 className="text-lg font-bold text-gray-900">{t('marketing.newCampaign')}</h2>
               <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
 
             <div className="space-y-4">
               {/* Campaign Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Campaign Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('marketing.campaignName')}</label>
                 <input
                   type="text"
                   value={formName}
@@ -413,21 +415,21 @@ export default function MarketingPage() {
 
               {/* Template Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Template Type</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('marketing.templateType')}</label>
                 <div className="grid grid-cols-2 gap-2">
-                  {TEMPLATES.map(t => (
+                  {TEMPLATES.map(tmpl => (
                     <button
-                      key={t.value}
+                      key={tmpl.value}
                       type="button"
-                      onClick={() => handleTemplateChange(t.value)}
+                      onClick={() => handleTemplateChange(tmpl.value)}
                       className={`p-2 rounded-lg text-left border transition ${
-                        formTemplate === t.value
+                        formTemplate === tmpl.value
                           ? 'border-amber-500 bg-amber-50'
                           : 'border-gray-200 hover:border-gray-300'
                       }`}
                     >
-                      <span className={`text-xs px-2 py-0.5 rounded-full ${t.color}`}>{t.label}</span>
-                      <p className="text-xs text-gray-500 mt-1">{t.desc}</p>
+                      <span className={`text-xs px-2 py-0.5 rounded-full ${tmpl.color}`}>{tmpl.label}</span>
+                      <p className="text-xs text-gray-500 mt-1">{tmpl.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -435,7 +437,7 @@ export default function MarketingPage() {
 
               {/* Audience Segment */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Audience</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('marketing.audience')}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {SEGMENTS.map(s => (
                     <button
@@ -457,7 +459,7 @@ export default function MarketingPage() {
 
               {/* Subject */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Subject</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('marketing.emailSubject')}</label>
                 <input
                   type="text"
                   value={formSubject}
@@ -469,39 +471,39 @@ export default function MarketingPage() {
 
               {/* Content */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Email Content</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('marketing.emailContent')}</label>
                 <textarea
                   value={formContent}
                   onChange={e => setFormContent(e.target.value)}
                   rows={8}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none"
                 />
-                <p className="text-xs text-gray-400 mt-1">Your company info and unsubscribe link will be added automatically.</p>
+                <p className="text-xs text-gray-400 mt-1">{t('marketing.companyInfoAdded')}</p>
               </div>
 
               {/* Schedule */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Schedule Send (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('marketing.scheduleSend')}</label>
                 <input
                   type="datetime-local"
                   value={formSchedule}
                   onChange={e => setFormSchedule(e.target.value)}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                 />
-                <p className="text-xs text-gray-400 mt-1">Leave empty to save as draft and send manually.</p>
+                <p className="text-xs text-gray-400 mt-1">{t('marketing.leaveEmptyForDraft')}</p>
               </div>
             </div>
 
             <div className="flex gap-2 mt-6">
               <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={createCampaign}
                 disabled={creating || !formName || !formSubject || !formContent}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50 text-sm"
               >
-                {creating ? 'Creating...' : formSchedule ? 'Schedule Campaign' : 'Save as Draft'}
+                {creating ? t('common.creating') : formSchedule ? t('marketing.scheduleCampaign') : t('marketing.saveAsDraft')}
               </button>
             </div>
           </div>
@@ -528,44 +530,44 @@ export default function MarketingPage() {
             {/* Details */}
             <div className="space-y-3 mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 w-20">Type:</span>
+                <span className="text-sm text-gray-500 w-20">{t('common.type')}:</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  TEMPLATES.find(t => t.value === showDetail.template_type)?.color || 'bg-gray-100 text-gray-600'
+                  TEMPLATES.find(tmpl => tmpl.value === showDetail.template_type)?.color || 'bg-gray-100 text-gray-600'
                 }`}>
                   {showDetail.template_type || 'promotional'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 w-20">Audience:</span>
+                <span className="text-sm text-gray-500 w-20">{t('marketing.audience')}:</span>
                 <span className="text-sm font-medium text-gray-900">
-                  {SEGMENTS.find(s => s.value === showDetail.segment)?.label || 'All Customers'}
+                  {SEGMENTS.find(s => s.value === showDetail.segment)?.label || t('customers.allCustomers')}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 w-20">Subject:</span>
+                <span className="text-sm text-gray-500 w-20">{t('marketing.subject')}:</span>
                 <span className="text-sm font-medium text-gray-900">{showDetail.subject}</span>
               </div>
               {showDetail.recipient_count > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 w-20">Recipients:</span>
+                  <span className="text-sm text-gray-500 w-20">{t('marketing.recipients')}:</span>
                   <span className="text-sm text-gray-900">{showDetail.recipient_count}</span>
                 </div>
               )}
               {showDetail.sent_count > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 w-20">Sent:</span>
+                  <span className="text-sm text-gray-500 w-20">{t('status.sent')}:</span>
                   <span className="text-sm text-green-600 font-medium">{showDetail.sent_count}</span>
                 </div>
               )}
               {showDetail.sent_at && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 w-20">Sent at:</span>
+                  <span className="text-sm text-gray-500 w-20">{t('marketing.sentAt')}:</span>
                   <span className="text-sm text-gray-900">{formatDate(showDetail.sent_at)}</span>
                 </div>
               )}
               {showDetail.scheduled_at && showDetail.status === 'scheduled' && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 w-20">Scheduled:</span>
+                  <span className="text-sm text-gray-500 w-20">{t('status.scheduled')}:</span>
                   <span className="text-sm text-blue-600 font-medium">{formatDate(showDetail.scheduled_at)}</span>
                 </div>
               )}
@@ -573,7 +575,7 @@ export default function MarketingPage() {
 
             {/* Content Preview */}
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <p className="text-xs text-gray-400 uppercase mb-2">Email Preview</p>
+              <p className="text-xs text-gray-400 uppercase mb-2">{t('marketing.emailPreview')}</p>
               <div className="text-sm text-gray-700 whitespace-pre-line">{showDetail.content}</div>
             </div>
 
@@ -585,20 +587,20 @@ export default function MarketingPage() {
                   disabled={sending === showDetail.id}
                   className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm font-medium hover:bg-green-700 disabled:opacity-50"
                 >
-                  {sending === showDetail.id ? 'Sending...' : 'Send Now'}
+                  {sending === showDetail.id ? t('common.sending') : t('marketing.sendNow')}
                 </button>
               )}
               <button
                 onClick={() => duplicateCampaign(showDetail)}
                 className="flex-1 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100"
               >
-                Duplicate
+                {t('marketing.duplicate')}
               </button>
               <button
                 onClick={() => { deleteCampaign(showDetail); }}
                 className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100"
               >
-                Delete
+                {t('common.delete')}
               </button>
             </div>
           </div>

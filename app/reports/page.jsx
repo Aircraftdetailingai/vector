@@ -1,14 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-
-const RANGES = {
-  week: { label: 'This Week', days: 7 },
-  month: { label: 'This Month', days: 30 },
-  quarter: { label: 'This Quarter', days: 90 },
-  year: { label: 'This Year', days: 365 },
-  custom: { label: 'Custom', days: 0 },
-};
+import { useTranslation } from '@/lib/i18n';
 
 const COLORS = [
   '#f59e0b', '#3b82f6', '#10b981', '#ef4444', '#8b5cf6',
@@ -27,8 +20,8 @@ function formatMonth(str) {
 }
 
 // CSS bar chart
-function BarChart({ data, valueKey, labelKey, formatValue, color }) {
-  if (!data || data.length === 0) return <p className="text-gray-400 text-sm text-center py-6">No data</p>;
+function BarChart({ data, valueKey, labelKey, formatValue, color, noDataLabel }) {
+  if (!data || data.length === 0) return <p className="text-gray-400 text-sm text-center py-6">{noDataLabel}</p>;
   const max = Math.max(...data.map(d => d[valueKey] || 0), 1);
   return (
     <div className="space-y-2">
@@ -51,10 +44,10 @@ function BarChart({ data, valueKey, labelKey, formatValue, color }) {
 }
 
 // CSS pie chart using conic-gradient
-function PieChart({ data, valueKey, labelKey }) {
-  if (!data || data.length === 0) return <p className="text-gray-400 text-sm text-center py-6">No data</p>;
+function PieChart({ data, valueKey, labelKey, noDataLabel }) {
+  if (!data || data.length === 0) return <p className="text-gray-400 text-sm text-center py-6">{noDataLabel}</p>;
   const total = data.reduce((sum, d) => sum + (d[valueKey] || 0), 0);
-  if (total === 0) return <p className="text-gray-400 text-sm text-center py-6">No data</p>;
+  if (total === 0) return <p className="text-gray-400 text-sm text-center py-6">{noDataLabel}</p>;
 
   let cumulative = 0;
   const segments = data.map((item, i) => {
@@ -89,8 +82,8 @@ function PieChart({ data, valueKey, labelKey }) {
 }
 
 // Revenue timeline chart (vertical bars)
-function TimelineChart({ data }) {
-  if (!data || data.length === 0) return <p className="text-gray-400 text-sm text-center py-6">No data</p>;
+function TimelineChart({ data, noDataLabel }) {
+  if (!data || data.length === 0) return <p className="text-gray-400 text-sm text-center py-6">{noDataLabel}</p>;
   const max = Math.max(...data.map(d => d.revenue || 0), 1);
   return (
     <div className="flex items-end gap-1 h-40">
@@ -113,8 +106,8 @@ function TimelineChart({ data }) {
 }
 
 // Customer acquisition line (step bars)
-function AcquisitionChart({ data }) {
-  if (!data || data.length === 0) return <p className="text-gray-400 text-sm text-center py-6">No data</p>;
+function AcquisitionChart({ data, noDataLabel }) {
+  if (!data || data.length === 0) return <p className="text-gray-400 text-sm text-center py-6">{noDataLabel}</p>;
   const max = Math.max(...data.map(d => d.count || 0), 1);
   return (
     <div className="flex items-end gap-1 h-32">
@@ -135,12 +128,21 @@ function AcquisitionChart({ data }) {
 
 export default function ReportsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [report, setReport] = useState(null);
   const [range, setRange] = useState('month');
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [error, setError] = useState(null);
+
+  const RANGES = {
+    week: { label: t('reports.thisWeek'), days: 7 },
+    month: { label: t('reports.thisMonth'), days: 30 },
+    quarter: { label: t('reports.thisQuarter'), days: 90 },
+    year: { label: t('reports.thisYear'), days: 365 },
+    custom: { label: t('reports.custom'), days: 0 },
+  };
 
   const getDateRange = () => {
     if (range === 'custom' && customStart && customEnd) {
@@ -174,10 +176,10 @@ export default function ReportsPage() {
         const data = await res.json();
         setReport(data);
       } else {
-        setError('Failed to load report');
+        setError(t('reports.failedToLoad'));
       }
     } catch (err) {
-      setError('Failed to load report');
+      setError(t('reports.failedToLoad'));
     } finally {
       setLoading(false);
     }
@@ -185,7 +187,7 @@ export default function ReportsPage() {
 
   const exportCSV = () => {
     if (!report?.exportData?.length) return;
-    const headers = ['Date', 'Customer', 'Email', 'Aircraft', 'Status', 'Amount', 'Paid At'];
+    const headers = [t('common.date'), t('common.customer'), t('common.email'), t('common.aircraft'), t('common.status'), t('common.amount'), t('reports.paidAt')];
     const rows = report.exportData.map(r => [
       r.date ? new Date(r.date).toLocaleDateString() : '',
       r.customer,
@@ -213,7 +215,7 @@ export default function ReportsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
         <div className="flex items-center gap-3">
           <a href="/dashboard" className="text-white text-2xl hover:opacity-70">&larr;</a>
-          <h1 className="text-2xl font-bold text-white">Reports</h1>
+          <h1 className="text-2xl font-bold text-white">{t('reports.title')}</h1>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           {Object.entries(RANGES).map(([key, { label }]) => (
@@ -234,7 +236,7 @@ export default function ReportsPage() {
             disabled={!report?.exportData?.length}
             className="px-4 py-1.5 rounded-lg text-sm font-medium bg-green-600 text-white hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed"
           >
-            Export CSV
+            {t('reports.exportCsv')}
           </button>
         </div>
       </div>
@@ -248,7 +250,7 @@ export default function ReportsPage() {
             onChange={(e) => setCustomStart(e.target.value)}
             className="px-3 py-1.5 rounded-lg text-sm bg-white/10 text-white border border-white/20 [color-scheme:dark]"
           />
-          <span className="text-white">to</span>
+          <span className="text-white">{t('common.to')}</span>
           <input
             type="date"
             value={customEnd}
@@ -262,7 +264,7 @@ export default function ReportsPage() {
       {loading && (
         <div className="text-white text-center py-16">
           <div className="inline-block w-8 h-8 border-2 border-white/30 border-t-white rounded-full animate-spin mb-3" />
-          <p>Loading report...</p>
+          <p>{t('reports.loadingReport')}</p>
         </div>
       )}
       {error && <p className="text-red-400 text-center py-8">{error}</p>}
@@ -273,84 +275,85 @@ export default function ReportsPage() {
           {/* Summary Cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <div className="bg-white rounded-lg p-3 shadow">
-              <p className="text-gray-500 text-xs">Total Revenue</p>
+              <p className="text-gray-500 text-xs">{t('reports.totalRevenue')}</p>
               <p className="text-xl font-bold text-gray-900">{formatCurrency(s?.totalRevenue)}</p>
             </div>
             <div className="bg-white rounded-lg p-3 shadow">
-              <p className="text-gray-500 text-xs">Quotes Sent</p>
+              <p className="text-gray-500 text-xs">{t('reports.quotesSent')}</p>
               <p className="text-xl font-bold text-blue-600">{s?.totalQuotes || 0}</p>
             </div>
             <div className="bg-white rounded-lg p-3 shadow">
-              <p className="text-gray-500 text-xs">Jobs Paid</p>
+              <p className="text-gray-500 text-xs">{t('reports.jobsPaid')}</p>
               <p className="text-xl font-bold text-green-600">{s?.totalPaid || 0}</p>
             </div>
             <div className="bg-white rounded-lg p-3 shadow">
-              <p className="text-gray-500 text-xs">Avg Job Value</p>
+              <p className="text-gray-500 text-xs">{t('reports.avgJobValue')}</p>
               <p className="text-xl font-bold text-amber-600">{formatCurrency(s?.avgJobValue)}</p>
             </div>
             <div className="bg-white rounded-lg p-3 shadow">
-              <p className="text-gray-500 text-xs">Conversion Rate</p>
+              <p className="text-gray-500 text-xs">{t('reports.conversionRate')}</p>
               <p className="text-xl font-bold text-purple-600">{(s?.conversionRate || 0).toFixed(0)}%</p>
             </div>
             <div className="bg-white rounded-lg p-3 shadow">
-              <p className="text-gray-500 text-xs">Pending Revenue</p>
+              <p className="text-gray-500 text-xs">{t('reports.pendingRevenue')}</p>
               <p className="text-xl font-bold text-red-500">{formatCurrency(s?.pendingRevenue)}</p>
             </div>
           </div>
 
           {/* Revenue Timeline */}
           <div className="bg-white rounded-lg p-4 shadow">
-            <h2 className="font-semibold text-gray-800 mb-3">Revenue by Month</h2>
-            <TimelineChart data={report.revenueTimeline} />
+            <h2 className="font-semibold text-gray-800 mb-3">{t('reports.revenueByMonth')}</h2>
+            <TimelineChart data={report.revenueTimeline} noDataLabel={t('reports.noData')} />
           </div>
 
           {/* Two column: Service Types + Aircraft Revenue */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             {/* Jobs by Service Type (Pie) */}
             <div className="bg-white rounded-lg p-4 shadow">
-              <h2 className="font-semibold text-gray-800 mb-3">Jobs by Service Type</h2>
-              <PieChart data={report.jobsByService} valueKey="count" labelKey="name" />
+              <h2 className="font-semibold text-gray-800 mb-3">{t('reports.jobsByService')}</h2>
+              <PieChart data={report.jobsByService} valueKey="count" labelKey="name" noDataLabel={t('reports.noData')} />
             </div>
 
             {/* Revenue by Aircraft Type (Bar) */}
             <div className="bg-white rounded-lg p-4 shadow">
-              <h2 className="font-semibold text-gray-800 mb-3">Revenue by Aircraft</h2>
+              <h2 className="font-semibold text-gray-800 mb-3">{t('reports.revenueByAircraft')}</h2>
               <BarChart
                 data={report.revenueByAircraft}
                 valueKey="revenue"
                 labelKey="name"
                 formatValue={formatCurrency}
+                noDataLabel={t('reports.noData')}
               />
             </div>
           </div>
 
           {/* Customer Acquisition */}
           <div className="bg-white rounded-lg p-4 shadow">
-            <h2 className="font-semibold text-gray-800 mb-3">New Customers by Month</h2>
-            <AcquisitionChart data={report.customerAcquisition} />
+            <h2 className="font-semibold text-gray-800 mb-3">{t('reports.newCustomersByMonth')}</h2>
+            <AcquisitionChart data={report.customerAcquisition} noDataLabel={t('reports.noData')} />
           </div>
 
           {/* Data Table */}
           <div className="bg-white rounded-lg p-4 shadow overflow-x-auto">
             <div className="flex justify-between items-center mb-3">
-              <h2 className="font-semibold text-gray-800">All Quotes ({report.exportData?.length || 0})</h2>
+              <h2 className="font-semibold text-gray-800">{t('reports.allQuotes')} ({report.exportData?.length || 0})</h2>
               <button
                 onClick={exportCSV}
                 disabled={!report?.exportData?.length}
                 className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-40"
               >
-                Export CSV
+                {t('reports.exportCsv')}
               </button>
             </div>
             {report.exportData?.length > 0 ? (
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-gray-500">
-                    <th className="py-2 pr-3">Date</th>
-                    <th className="py-2 pr-3">Customer</th>
-                    <th className="py-2 pr-3">Aircraft</th>
-                    <th className="py-2 pr-3">Status</th>
-                    <th className="py-2 text-right">Amount</th>
+                    <th className="py-2 pr-3">{t('common.date')}</th>
+                    <th className="py-2 pr-3">{t('common.customer')}</th>
+                    <th className="py-2 pr-3">{t('common.aircraft')}</th>
+                    <th className="py-2 pr-3">{t('common.status')}</th>
+                    <th className="py-2 text-right">{t('common.amount')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -375,10 +378,10 @@ export default function ReportsPage() {
                 </tbody>
               </table>
             ) : (
-              <p className="text-gray-400 text-center py-6">No quotes in this period</p>
+              <p className="text-gray-400 text-center py-6">{t('reports.noQuotesInPeriod')}</p>
             )}
             {report.exportData?.length > 50 && (
-              <p className="text-xs text-gray-400 mt-2 text-center">Showing 50 of {report.exportData.length} rows. Export CSV for full data.</p>
+              <p className="text-xs text-gray-400 mt-2 text-center">{t('reports.showingOf')} {report.exportData.length} {t('reports.exportForFull')}</p>
             )}
           </div>
         </div>

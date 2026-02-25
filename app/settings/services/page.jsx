@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { currencySymbol } from '@/lib/formatPrice';
+import { useTranslation } from '@/lib/i18n';
 
 const HOURS_FIELD_OPTIONS = {
   ext_wash_hours: 'Exterior Wash Time',
@@ -38,6 +39,7 @@ const DEFAULT_ADDON_FEES = [
 
 export default function ServicesPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [services, setServices] = useState([]);
   const [packages, setPackages] = useState([]);
   const [addonFees, setAddonFees] = useState([]);
@@ -390,10 +392,10 @@ export default function ServicesPage() {
       {/* Header */}
       <header className="flex justify-between items-center mb-6 text-white">
         <div className="flex items-center space-x-4">
-          <a href="/settings" className="text-gray-400 hover:text-white">&larr; Settings</a>
-          <h1 className="text-2xl font-bold">Services, Packages & Fees</h1>
+          <a href="/settings" className="text-gray-400 hover:text-white">&larr; {t('nav.settings')}</a>
+          <h1 className="text-2xl font-bold">{t('nav.services')}</h1>
         </div>
-        <a href="/dashboard" className="text-amber-400 hover:underline">Dashboard</a>
+        <a href="/dashboard" className="text-amber-400 hover:underline">{t('nav.dashboard')}</a>
       </header>
 
       {/* Info Banner */}
@@ -410,7 +412,7 @@ export default function ServicesPage() {
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <div>
-              <h2 className="text-lg font-semibold">Services</h2>
+              <h2 className="text-lg font-semibold">{t('nav.services')}</h2>
               <p className="text-sm text-gray-500">Drag to packages on the right</p>
             </div>
             <div className="flex gap-2">
@@ -483,7 +485,7 @@ export default function ServicesPage() {
             {/* Package Builder */}
             {showPackageBuilder && (
               <div className="mb-4 p-4 border-2 border-dashed border-green-400 rounded-lg bg-green-50">
-                <h3 className="font-medium mb-3">New Package</h3>
+                <h3 className="font-medium mb-3">{t('common.create')} Package</h3>
                 <input type="text" placeholder="Package name (e.g., Quick Turn)" value={newPackage.name}
                   onChange={(e) => setNewPackage({ ...newPackage, name: e.target.value })} className="w-full border rounded px-3 py-2 mb-3" />
                 {/* Drop Zone */}
@@ -519,9 +521,9 @@ export default function ServicesPage() {
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
-                  <button onClick={() => setShowPackageBuilder(false)} className="px-4 py-2 border rounded">Cancel</button>
+                  <button onClick={() => setShowPackageBuilder(false)} className="px-4 py-2 border rounded">{t('common.cancel')}</button>
                   <button onClick={addPackage} disabled={saving || !newPackage.name || newPackage.service_ids.length === 0}
-                    className="px-4 py-2 bg-green-500 text-white rounded disabled:opacity-50">Save Package</button>
+                    className="px-4 py-2 bg-green-500 text-white rounded disabled:opacity-50">{t('common.save')}</button>
                 </div>
               </div>
             )}
@@ -582,7 +584,7 @@ export default function ServicesPage() {
       <div className="bg-white rounded-lg shadow-lg overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center">
           <div>
-            <h2 className="text-lg font-semibold">Add-on Fees</h2>
+            <h2 className="text-lg font-semibold">{t('settings.addonFees')}</h2>
             <p className="text-sm text-gray-500">Flat or percentage surcharges added on top of service pricing (hazmat, after-hours, rush, etc.)</p>
           </div>
           <div className="flex gap-2">
@@ -636,16 +638,16 @@ export default function ServicesPage() {
       {/* Add Service Modal */}
       {showServiceModal && (
         <Modal onClose={() => { setShowServiceModal(false); setError(''); }}>
-          <h3 className="text-lg font-semibold mb-4">Add Service</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('common.add')} {t('nav.services')}</h3>
           {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Service Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
               <input type="text" value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })}
                 placeholder="e.g., Full Interior Detail" className="w-full border rounded-lg px-3 py-2" autoFocus />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
               <textarea value={newService.description} onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                 placeholder="What's included?" rows={2} className="w-full border rounded-lg px-3 py-2 resize-y min-h-[60px]" />
             </div>
@@ -689,9 +691,9 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setShowServiceModal(false)} className="px-4 py-2 border rounded-lg">Cancel</button>
+            <button onClick={() => setShowServiceModal(false)} className="px-4 py-2 border rounded-lg">{t('common.cancel')}</button>
             <button onClick={addService} disabled={saving || !newService.name || !newService.hourly_rate}
-              className="px-4 py-2 bg-amber-500 text-white rounded-lg disabled:opacity-50">Add Service</button>
+              className="px-4 py-2 bg-amber-500 text-white rounded-lg disabled:opacity-50">{t('common.add')}</button>
           </div>
         </Modal>
       )}
@@ -699,16 +701,16 @@ export default function ServicesPage() {
       {/* Edit Service Modal */}
       {editingService && (
         <Modal onClose={() => { setEditingService(null); setError(''); }}>
-          <h3 className="text-lg font-semibold mb-4">Edit Service</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('common.edit')} {t('nav.services')}</h3>
           {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Service Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
               <input type="text" value={editingService.name} onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
               <textarea value={editingService.description || ''} onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
                 rows={2} className="w-full border rounded-lg px-3 py-2 resize-y min-h-[60px]" />
             </div>
@@ -752,8 +754,8 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setEditingService(null)} className="px-4 py-2 border rounded-lg">Cancel</button>
-            <button onClick={updateService} disabled={saving} className="px-4 py-2 bg-amber-500 text-white rounded-lg disabled:opacity-50">Save</button>
+            <button onClick={() => setEditingService(null)} className="px-4 py-2 border rounded-lg">{t('common.cancel')}</button>
+            <button onClick={updateService} disabled={saving} className="px-4 py-2 bg-amber-500 text-white rounded-lg disabled:opacity-50">{t('common.save')}</button>
           </div>
         </Modal>
       )}
@@ -761,7 +763,7 @@ export default function ServicesPage() {
       {/* Edit Package Modal */}
       {editingPackage && (
         <Modal onClose={() => setEditingPackage(null)}>
-          <h3 className="text-lg font-semibold mb-4">Edit Package</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('common.edit')} Package</h3>
           <div className="space-y-4">
             <input type="text" placeholder="Package name" value={editingPackage.name}
               onChange={(e) => setEditingPackage({ ...editingPackage, name: e.target.value })} className="w-full border rounded-lg px-3 py-2" />
@@ -807,8 +809,8 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setEditingPackage(null)} className="px-4 py-2 border rounded-lg">Cancel</button>
-            <button onClick={updatePackage} disabled={saving} className="px-4 py-2 bg-green-500 text-white rounded-lg disabled:opacity-50">Save</button>
+            <button onClick={() => setEditingPackage(null)} className="px-4 py-2 border rounded-lg">{t('common.cancel')}</button>
+            <button onClick={updatePackage} disabled={saving} className="px-4 py-2 bg-green-500 text-white rounded-lg disabled:opacity-50">{t('common.save')}</button>
           </div>
         </Modal>
       )}
@@ -816,16 +818,16 @@ export default function ServicesPage() {
       {/* Add Addon Fee Modal */}
       {showAddonModal && (
         <Modal onClose={() => { setShowAddonModal(false); setError(''); }}>
-          <h3 className="text-lg font-semibold mb-4">Add Fee</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('common.add')}</h3>
           {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fee Name *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
               <input type="text" value={newAddon.name} onChange={(e) => setNewAddon({ ...newAddon, name: e.target.value })}
                 placeholder="e.g., After Hours" className="w-full border rounded-lg px-3 py-2" autoFocus />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
               <input type="text" value={newAddon.description} onChange={(e) => setNewAddon({ ...newAddon, description: e.target.value })}
                 placeholder="Optional description" className="w-full border rounded-lg px-3 py-2" />
             </div>
@@ -843,7 +845,7 @@ export default function ServicesPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount *</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.amount')} *</label>
               <div className="relative">
                 {newAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-gray-400">$</span>}
                 <input type="number" value={newAddon.amount} onChange={(e) => setNewAddon({ ...newAddon, amount: e.target.value })}
@@ -854,9 +856,9 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setShowAddonModal(false)} className="px-4 py-2 border rounded-lg">Cancel</button>
+            <button onClick={() => setShowAddonModal(false)} className="px-4 py-2 border rounded-lg">{t('common.cancel')}</button>
             <button onClick={addAddonFee} disabled={saving || !newAddon.name}
-              className="px-4 py-2 bg-orange-500 text-white rounded-lg disabled:opacity-50">Add Fee</button>
+              className="px-4 py-2 bg-orange-500 text-white rounded-lg disabled:opacity-50">{t('common.add')}</button>
           </div>
         </Modal>
       )}
@@ -864,16 +866,16 @@ export default function ServicesPage() {
       {/* Edit Addon Fee Modal */}
       {editingAddon && (
         <Modal onClose={() => { setEditingAddon(null); setError(''); }}>
-          <h3 className="text-lg font-semibold mb-4">Edit Fee</h3>
+          <h3 className="text-lg font-semibold mb-4">{t('common.edit')}</h3>
           {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fee Name</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')}</label>
               <input type="text" value={editingAddon.name} onChange={(e) => setEditingAddon({ ...editingAddon, name: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.description')}</label>
               <input type="text" value={editingAddon.description || ''} onChange={(e) => setEditingAddon({ ...editingAddon, description: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2" />
             </div>
@@ -891,7 +893,7 @@ export default function ServicesPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.amount')}</label>
               <div className="relative">
                 {editingAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-gray-400">$</span>}
                 <input type="number" value={editingAddon.amount || ''} onChange={(e) => setEditingAddon({ ...editingAddon, amount: e.target.value })}
@@ -901,8 +903,8 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setEditingAddon(null)} className="px-4 py-2 border rounded-lg">Cancel</button>
-            <button onClick={updateAddonFee} disabled={saving} className="px-4 py-2 bg-orange-500 text-white rounded-lg disabled:opacity-50">Save</button>
+            <button onClick={() => setEditingAddon(null)} className="px-4 py-2 border rounded-lg">{t('common.cancel')}</button>
+            <button onClick={updateAddonFee} disabled={saving} className="px-4 py-2 bg-orange-500 text-white rounded-lg disabled:opacity-50">{t('common.save')}</button>
           </div>
         </Modal>
       )}

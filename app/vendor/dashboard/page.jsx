@@ -4,9 +4,11 @@ import { useRouter } from 'next/navigation';
 import DataTable from '@/components/DataTable';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
+import { useTranslation } from '@/lib/i18n';
 
 export default function VendorDashboardPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
@@ -47,7 +49,7 @@ export default function VendorDashboardPage() {
   };
 
   if (loading) {
-    return <LoadingSpinner message="Loading vendor dashboard..." />;
+    return <LoadingSpinner message={t('dashboard.loadingDashboard')} />;
   }
 
   if (!data) {
@@ -59,10 +61,10 @@ export default function VendorDashboardPage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
           </div>
-          <h2 className="text-lg font-bold text-gray-900 mb-2">Failed to load dashboard</h2>
+          <h2 className="text-lg font-bold text-gray-900 mb-2">{t('reports.failedToLoad')}</h2>
           <p className="text-gray-500 text-sm mb-4">Please check your connection and try again.</p>
           <button onClick={() => window.location.reload()} className="px-5 py-2.5 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600">
-            Retry
+            {t('common.retry')}
           </button>
         </div>
       </div>
@@ -79,7 +81,7 @@ export default function VendorDashboardPage() {
           <div className="flex items-center gap-3">
             <span className="text-2xl">&#9992;</span>
             <div>
-              <h1 className="font-bold text-xl">Vector Vendor Portal</h1>
+              <h1 className="font-bold text-xl">{t('dashboard.title')} Vendor Portal</h1>
               <p className="text-blue-200 text-sm">{vendor.company_name}</p>
             </div>
           </div>
@@ -91,7 +93,7 @@ export default function VendorDashboardPage() {
               {tierBenefits.name} Tier
             </span>
             <button onClick={handleLogout} className="text-sm text-blue-200 hover:text-white">
-              Logout
+              {t('common.logout')}
             </button>
           </div>
         </div>
@@ -99,17 +101,23 @@ export default function VendorDashboardPage() {
         {/* Tabs */}
         <div className="max-w-7xl mx-auto px-4">
           <nav className="flex gap-1">
-            {['overview', 'products', 'orders', 'analytics', 'settings'].map((tab) => (
+            {[
+              { key: 'overview', label: 'Overview' },
+              { key: 'products', label: t('nav.products') },
+              { key: 'orders', label: 'Orders' },
+              { key: 'analytics', label: t('nav.analytics') },
+              { key: 'settings', label: t('nav.settings') },
+            ].map((tabItem) => (
               <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
+                key={tabItem.key}
+                onClick={() => setActiveTab(tabItem.key)}
                 className={`px-4 py-3 text-sm font-medium capitalize transition-colors ${
-                  activeTab === tab
+                  activeTab === tabItem.key
                     ? 'bg-white text-gray-900 rounded-t-lg'
                     : 'text-blue-200 hover:text-white'
                 }`}
               >
-                {tab}
+                {tabItem.label}
               </button>
             ))}
           </nav>
@@ -139,16 +147,16 @@ export default function VendorDashboardPage() {
                 sub="Ready for payout"
               />
               <StatCard
-                label="Products"
+                label={t('nav.products')}
                 value={stats.activeProducts}
-                sub={`${stats.pendingProducts} pending approval`}
+                sub={`${stats.pendingProducts} ${t('status.pending').toLowerCase()} approval`}
               />
             </div>
 
             <div className="grid md:grid-cols-2 gap-6">
               {/* Top Products */}
               <div className="bg-white rounded-lg shadow p-6">
-                <h3 className="font-semibold mb-4">Top Products</h3>
+                <h3 className="font-semibold mb-4">Top {t('nav.products')}</h3>
                 {topProducts.length === 0 ? (
                   <p className="text-gray-500 text-sm">No products yet</p>
                 ) : (
@@ -199,14 +207,14 @@ export default function VendorDashboardPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold text-lg">{tierBenefits.name} Tier Benefits</h3>
-                  <p className="text-amber-100 text-sm">{tierBenefits.commission}% commission to Vector</p>
+                  <p className="text-amber-100 text-sm">{tierBenefits.commission}% commission to {t('dashboard.title')}</p>
                 </div>
                 {vendor.commission_tier !== 'partner' && (
                   <button
                     onClick={() => setActiveTab('settings')}
                     className="px-4 py-2 bg-white text-amber-600 rounded font-medium text-sm hover:bg-amber-50"
                   >
-                    Upgrade Tier
+                    {t('settings.upgrade')} Tier
                   </button>
                 )}
               </div>
@@ -241,6 +249,7 @@ function StatCard({ label, value, sub, highlight }) {
 }
 
 function VendorProducts() {
+  const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -350,12 +359,12 @@ function VendorProducts() {
     setShowModal(true);
   };
 
-  if (loading) return <div className="text-gray-500">Loading products...</div>;
+  if (loading) return <div className="text-gray-500">{t('products.loadingProducts')}</div>;
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-xl font-semibold">Products</h2>
+        <h2 className="text-xl font-semibold">{t('nav.products')}</h2>
         <button
           onClick={() => {
             setEditingProduct(null);
@@ -364,13 +373,13 @@ function VendorProducts() {
           }}
           className="px-4 py-2 bg-amber-500 text-white rounded-lg font-medium"
         >
-          + Add Product
+          {t('products.addProduct')}
         </button>
       </div>
 
       {products.length === 0 ? (
         <div className="bg-white rounded-lg p-8 text-center">
-          <p className="text-gray-500">No products yet. Add your first product!</p>
+          <p className="text-gray-500">{t('products.noProducts')}</p>
         </div>
       ) : (
         <div className="bg-white rounded-lg shadow overflow-hidden">
@@ -378,9 +387,9 @@ function VendorProducts() {
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Product</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Category</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Price</th>
-                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Status</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">{t('common.category')}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">{t('common.price')}</th>
+                <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">{t('common.status')}</th>
                 <th className="px-4 py-3 text-left text-sm font-medium text-gray-500">Sales</th>
                 <th className="px-4 py-3"></th>
               </tr>
@@ -405,8 +414,8 @@ function VendorProducts() {
                   </td>
                   <td className="px-4 py-3 text-sm">{p.sales || 0}</td>
                   <td className="px-4 py-3 text-right">
-                    <button onClick={() => openEdit(p)} className="text-blue-600 text-sm mr-3">Edit</button>
-                    <button onClick={() => handleDelete(p.id)} className="text-red-600 text-sm">Delete</button>
+                    <button onClick={() => openEdit(p)} className="text-blue-600 text-sm mr-3">{t('common.edit')}</button>
+                    <button onClick={() => handleDelete(p.id)} className="text-red-600 text-sm">{t('common.delete')}</button>
                   </td>
                 </tr>
               ))}
@@ -420,11 +429,11 @@ function VendorProducts() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">
-              {editingProduct ? 'Edit Product' : 'Add Product'}
+              {editingProduct ? t('products.editProduct') : t('products.addProductTitle')}
             </h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">Name *</label>
+                <label className="block text-sm font-medium mb-1">{t('common.name')} *</label>
                 <input
                   type="text"
                   value={form.name}
@@ -434,7 +443,7 @@ function VendorProducts() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium mb-1">Description</label>
+                <label className="block text-sm font-medium mb-1">{t('common.description')}</label>
                 <textarea
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -444,7 +453,7 @@ function VendorProducts() {
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">Category</label>
+                  <label className="block text-sm font-medium mb-1">{t('common.category')}</label>
                   <select
                     value={form.category}
                     onChange={(e) => setForm({ ...form, category: e.target.value })}
@@ -456,7 +465,7 @@ function VendorProducts() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Price *</label>
+                  <label className="block text-sm font-medium mb-1">{t('common.price')} *</label>
                   <input
                     type="number"
                     step="0.01"
@@ -478,7 +487,7 @@ function VendorProducts() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-1">Inventory</label>
+                  <label className="block text-sm font-medium mb-1">{t('nav.inventory')}</label>
                   <input
                     type="number"
                     value={form.inventory_count}
@@ -509,9 +518,9 @@ function VendorProducts() {
                 </select>
               </div>
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded">Cancel</button>
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 border rounded">{t('common.cancel')}</button>
                 <button type="submit" disabled={saving} className="px-4 py-2 bg-amber-500 text-white rounded disabled:opacity-50">
-                  {saving ? 'Saving...' : editingProduct ? 'Save' : 'Add Product'}
+                  {saving ? t('common.saving') : editingProduct ? t('common.save') : t('products.addProductTitle')}
                 </button>
               </div>
             </form>
@@ -523,6 +532,7 @@ function VendorProducts() {
 }
 
 function VendorOrders() {
+  const { t } = useTranslation();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -590,7 +600,7 @@ function VendorOrders() {
     },
     {
       id: 'customer',
-      header: 'Customer',
+      header: t('common.customer'),
       accessorFn: (row) => row.detailers?.company_name || row.customer_name || '-',
       cell: ({ getValue, row }) => (
         <div>
@@ -603,12 +613,12 @@ function VendorOrders() {
     },
     {
       id: 'quantity',
-      header: 'Qty',
+      header: t('common.quantity'),
       accessorKey: 'quantity',
     },
     {
       id: 'total',
-      header: 'Total',
+      header: t('common.total'),
       accessorKey: 'total',
       cell: ({ getValue }) => <span className="font-semibold">{currencySymbol()}{formatPrice(getValue())}</span>,
     },
@@ -626,7 +636,7 @@ function VendorOrders() {
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('common.status'),
       accessorKey: 'status',
       cell: ({ getValue }) => {
         const status = getValue();
@@ -644,7 +654,7 @@ function VendorOrders() {
     },
     {
       id: 'date',
-      header: 'Date',
+      header: t('common.date'),
       accessorKey: 'created_at',
       cell: ({ getValue }) => formatDate(getValue()),
     },
@@ -669,7 +679,7 @@ function VendorOrders() {
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       cell: ({ row }) => {
         const order = row.original;
         return (
@@ -700,9 +710,9 @@ function VendorOrders() {
         );
       },
     },
-  ], []);
+  ], [t]);
 
-  if (loading) return <div className="text-gray-500">Loading orders...</div>;
+  if (loading) return <div className="text-gray-500">{t('common.loading')}</div>;
 
   return (
     <div>
@@ -713,8 +723,8 @@ function VendorOrders() {
           onChange={(e) => setFilter(e.target.value)}
           className="border rounded px-3 py-2"
         >
-          <option value="all">All Orders</option>
-          <option value="pending">Pending</option>
+          <option value="all">{t('common.all')} Orders</option>
+          <option value="pending">{t('status.pending')}</option>
           <option value="shipped">Shipped</option>
           <option value="delivered">Delivered</option>
         </select>
@@ -731,9 +741,11 @@ function VendorOrders() {
 }
 
 function VendorAnalytics({ stats }) {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Analytics</h2>
+      <h2 className="text-xl font-semibold">{t('nav.analytics')}</h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-lg p-4 shadow">
@@ -745,7 +757,7 @@ function VendorAnalytics({ stats }) {
           <p className="text-2xl font-bold">{stats.totalClicks.toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
-          <p className="text-gray-500 text-sm">Conversion Rate</p>
+          <p className="text-gray-500 text-sm">{t('reports.conversionRate')}</p>
           <p className="text-2xl font-bold">{stats.conversionRate}%</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
@@ -785,6 +797,7 @@ function VendorAnalytics({ stats }) {
 }
 
 function VendorSettings({ vendor, onUpdate }) {
+  const { t } = useTranslation();
   const [form, setForm] = useState({
     company_name: vendor.company_name || '',
     contact_name: '',
@@ -833,11 +846,11 @@ function VendorSettings({ vendor, onUpdate }) {
         body: JSON.stringify(form),
       });
       if (res.ok) {
-        setMessage('Settings saved!');
+        setMessage(t('settings.saved'));
         onUpdate();
       }
     } catch (err) {
-      setMessage('Failed to save');
+      setMessage(t('settings.saveFailed'));
     } finally {
       setSaving(false);
       setTimeout(() => setMessage(''), 3000);
@@ -864,7 +877,7 @@ function VendorSettings({ vendor, onUpdate }) {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-semibold">Settings</h2>
+      <h2 className="text-xl font-semibold">{t('nav.settings')}</h2>
 
       {/* Commission Tiers */}
       <div className="bg-white rounded-lg p-6 shadow">
@@ -881,7 +894,7 @@ function VendorSettings({ vendor, onUpdate }) {
             >
               <h4 className="font-semibold">{tier.name}</h4>
               <p className="text-2xl font-bold text-amber-600">{tier.commission}%</p>
-              <p className="text-xs text-gray-500 mb-3">commission to Vector</p>
+              <p className="text-xs text-gray-500 mb-3">commission to {t('dashboard.title')}</p>
               <ul className="text-xs space-y-1 mb-4">
                 {tier.benefits.map((b, i) => (
                   <li key={i}>&#10003; {b}</li>
@@ -905,13 +918,13 @@ function VendorSettings({ vendor, onUpdate }) {
 
       {/* Company Info */}
       <div className="bg-white rounded-lg p-6 shadow">
-        <h3 className="font-semibold mb-4">Company Information</h3>
+        <h3 className="font-semibold mb-4">{t('settings.companyInfo')}</h3>
         {message && (
           <div className="mb-4 p-2 bg-green-100 text-green-700 rounded text-sm">{message}</div>
         )}
         <div className="space-y-4">
           <div>
-            <label className="block text-sm font-medium mb-1">Company Name</label>
+            <label className="block text-sm font-medium mb-1">{t('settings.companyName')}</label>
             <input
               type="text"
               value={form.company_name}
@@ -920,7 +933,7 @@ function VendorSettings({ vendor, onUpdate }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Contact Name</label>
+            <label className="block text-sm font-medium mb-1">Contact {t('common.name')}</label>
             <input
               type="text"
               value={form.contact_name}
@@ -938,7 +951,7 @@ function VendorSettings({ vendor, onUpdate }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Description</label>
+            <label className="block text-sm font-medium mb-1">{t('common.description')}</label>
             <textarea
               value={form.description}
               onChange={(e) => setForm({ ...form, description: e.target.value })}
@@ -947,7 +960,7 @@ function VendorSettings({ vendor, onUpdate }) {
             />
           </div>
           <div>
-            <label className="block text-sm font-medium mb-1">Payout Email (PayPal)</label>
+            <label className="block text-sm font-medium mb-1">Payout {t('common.email')} (PayPal)</label>
             <input
               type="email"
               value={form.payout_email}
@@ -961,7 +974,7 @@ function VendorSettings({ vendor, onUpdate }) {
             disabled={saving}
             className="px-4 py-2 bg-amber-500 text-white rounded disabled:opacity-50"
           >
-            {saving ? 'Saving...' : 'Save Changes'}
+            {saving ? t('common.saving') : t('common.save')}
           </button>
         </div>
       </div>

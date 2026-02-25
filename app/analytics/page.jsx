@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
+import { useTranslation } from '@/lib/i18n';
 
 // --- Pure CSS chart components ---
 
@@ -79,6 +80,7 @@ function StatCard({ label, value, sub, icon }) {
 
 export default function AnalyticsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [days, setDays] = useState(90);
@@ -122,7 +124,7 @@ export default function AnalyticsPage() {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 text-white">
         <div className="flex items-center space-x-4">
           <a href="/dashboard" className="text-2xl hover:text-amber-400">&#8592;</a>
-          <h1 className="text-xl sm:text-2xl font-bold">Analytics</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{t('nav.analytics')}</h1>
         </div>
         <div className="flex items-center gap-2">
           {[
@@ -154,9 +156,9 @@ export default function AnalyticsPage() {
         <div className="space-y-6 max-w-6xl mx-auto">
           {/* Top stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon="💰" label="Revenue" value={`${currencySymbol()}${totalRevenue.toLocaleString()}`} sub={`Last ${days} days`} />
-            <StatCard icon="📊" label="Conversion" value={`${conversionRate}%`} sub={`${data.funnel.totalPaid} of ${data.funnel.totalCreated} quotes`} />
-            <StatCard icon="📋" label="Avg Job Value" value={`${currencySymbol()}${avgJobValue.toLocaleString()}`} sub={`${totalJobs} jobs`} />
+            <StatCard icon="💰" label={t('reports.totalRevenue')} value={`${currencySymbol()}${totalRevenue.toLocaleString()}`} sub={`Last ${days} days`} />
+            <StatCard icon="📊" label={t('reports.conversionRate')} value={`${conversionRate}%`} sub={`${data.funnel.totalPaid} of ${data.funnel.totalCreated} quotes`} />
+            <StatCard icon="📋" label={t('reports.avgJobValue')} value={`${currencySymbol()}${avgJobValue.toLocaleString()}`} sub={`${totalJobs} jobs`} />
             <StatCard icon="🔄" label="Retention" value={`${data.retention.retentionRate}%`} sub={`${data.retention.repeatCustomers} repeat of ${data.retention.totalCustomers}`} />
           </div>
 
@@ -164,15 +166,15 @@ export default function AnalyticsPage() {
           <div className="bg-white/5 border border-white/10 rounded-xl p-5">
             <h2 className="text-sm font-semibold text-white mb-4">Quote Funnel</h2>
             <div className="flex items-center">
-              <FunnelStep label="Created" value={data.funnel.totalCreated} total={data.funnel.totalCreated} color="text-gray-300" />
+              <FunnelStep label={t('dashboard.quoteCreated')} value={data.funnel.totalCreated} total={data.funnel.totalCreated} color="text-gray-300" />
               <span className="text-gray-600 mx-1">›</span>
-              <FunnelStep label="Sent" value={data.funnel.totalSent} total={data.funnel.totalCreated} color="text-blue-400" />
+              <FunnelStep label={t('status.sent')} value={data.funnel.totalSent} total={data.funnel.totalCreated} color="text-blue-400" />
               <span className="text-gray-600 mx-1">›</span>
-              <FunnelStep label="Viewed" value={data.funnel.totalViewed} total={data.funnel.totalCreated} color="text-amber-400" />
+              <FunnelStep label={t('status.viewed')} value={data.funnel.totalViewed} total={data.funnel.totalCreated} color="text-amber-400" />
               <span className="text-gray-600 mx-1">›</span>
-              <FunnelStep label="Paid" value={data.funnel.totalPaid} total={data.funnel.totalCreated} color="text-green-400" />
+              <FunnelStep label={t('status.paid')} value={data.funnel.totalPaid} total={data.funnel.totalCreated} color="text-green-400" />
               <span className="text-gray-600 mx-1">›</span>
-              <FunnelStep label="Completed" value={data.funnel.totalCompleted} total={data.funnel.totalCreated} color="text-purple-400" />
+              <FunnelStep label={t('status.completed')} value={data.funnel.totalCompleted} total={data.funnel.totalCreated} color="text-purple-400" />
             </div>
           </div>
 
@@ -180,7 +182,7 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Conversion Rate Trend */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-white mb-1">Conversion Rate</h2>
+              <h2 className="text-sm font-semibold text-white mb-1">{t('reports.conversionRate')}</h2>
               <p className="text-xs text-gray-500 mb-4">Weekly quote-to-paid percentage</p>
               {data.conversionTrend.length > 0 ? (
                 <BarChart
@@ -193,13 +195,13 @@ export default function AnalyticsPage() {
                   color="blue"
                 />
               ) : (
-                <p className="text-gray-500 text-sm text-center py-10">No data yet</p>
+                <p className="text-gray-500 text-sm text-center py-10">{t('reports.noData')}</p>
               )}
             </div>
 
             {/* Avg Job Value Trend */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-white mb-1">Avg Job Value</h2>
+              <h2 className="text-sm font-semibold text-white mb-1">{t('reports.avgJobValue')}</h2>
               <p className="text-xs text-gray-500 mb-4">Weekly average per completed job</p>
               {data.valueTrend.filter(w => w.avgValue > 0).length > 0 ? (
                 <BarChart
@@ -218,8 +220,8 @@ export default function AnalyticsPage() {
 
             {/* Revenue Trend */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-              <h2 className="text-sm font-semibold text-white mb-1">Monthly Revenue</h2>
-              <p className="text-xs text-gray-500 mb-4">Total revenue by month</p>
+              <h2 className="text-sm font-semibold text-white mb-1">{t('reports.revenueByMonth')}</h2>
+              <p className="text-xs text-gray-500 mb-4">{t('reports.totalRevenue')} by month</p>
               {data.revenueTrend.length > 0 ? (
                 <BarChart
                   data={data.revenueTrend.map(m => {
@@ -245,7 +247,7 @@ export default function AnalyticsPage() {
 
           {/* Top Services */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-5">
-            <h2 className="text-sm font-semibold text-white mb-1">Top Services by Revenue</h2>
+            <h2 className="text-sm font-semibold text-white mb-1">Top {t('common.services')} by Revenue</h2>
             <p className="text-xs text-gray-500 mb-4">Your highest-earning services</p>
             {data.topServices.length > 0 ? (
               <div className="space-y-3">
@@ -269,11 +271,11 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
               <p className="text-3xl font-bold text-white">{data.retention.totalCustomers}</p>
-              <p className="text-xs text-gray-400 mt-1">Total Customers</p>
+              <p className="text-xs text-gray-400 mt-1">Total {t('nav.customers')}</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
               <p className="text-3xl font-bold text-green-400">{data.retention.repeatCustomers}</p>
-              <p className="text-xs text-gray-400 mt-1">Repeat Customers</p>
+              <p className="text-xs text-gray-400 mt-1">Repeat {t('nav.customers')}</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
               <p className="text-3xl font-bold text-amber-400">{data.retention.retentionRate}%</p>
@@ -291,7 +293,7 @@ export default function AnalyticsPage() {
           )}
         </div>
       ) : (
-        <div className="text-center text-gray-400 py-20">Failed to load analytics data</div>
+        <div className="text-center text-gray-400 py-20">{t('reports.failedToLoad')}</div>
       )}
     </div>
   );

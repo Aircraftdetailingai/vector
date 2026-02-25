@@ -1,10 +1,11 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslation } from '@/lib/i18n';
 
 const TYPE_CONFIG = {
-  quote: { icon: '📄', label: 'Quote', color: 'text-blue-400' },
-  customer: { icon: '👤', label: 'Customer', color: 'text-green-400' },
-  aircraft: { icon: '✈️', label: 'Aircraft', color: 'text-amber-400' },
+  quote: { icon: '📄', labelKey: 'search.quote', color: 'text-blue-400' },
+  customer: { icon: '👤', labelKey: 'common.customer', color: 'text-green-400' },
+  aircraft: { icon: '✈️', labelKey: 'common.aircraft', color: 'text-amber-400' },
 };
 
 const STATUS_BADGES = {
@@ -31,6 +32,7 @@ function saveRecent(term) {
 }
 
 export default function GlobalSearch() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
@@ -153,7 +155,7 @@ export default function GlobalSearch() {
         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
-        <span className="hidden sm:inline">Search</span>
+        <span className="hidden sm:inline">{t('common.search')}</span>
         <kbd className="hidden sm:inline text-[10px] bg-white/10 px-1.5 py-0.5 rounded font-mono">⌘K</kbd>
       </button>
     );
@@ -176,7 +178,7 @@ export default function GlobalSearch() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="Search quotes, customers, aircraft..."
+              placeholder={t('search.placeholder')}
               className="flex-1 bg-transparent text-white placeholder-gray-400 py-4 text-sm outline-none"
             />
             {loading && (
@@ -192,7 +194,7 @@ export default function GlobalSearch() {
             {/* Recent searches */}
             {showRecent && (
               <div className="px-3 py-2">
-                <p className="text-xs text-gray-500 px-1 mb-1">Recent</p>
+                <p className="text-xs text-gray-500 px-1 mb-1">{t('search.recent')}</p>
                 {recentSearches.map((term, i) => (
                   <button
                     key={term}
@@ -213,7 +215,7 @@ export default function GlobalSearch() {
             {/* Search results */}
             {query.length >= 2 && !loading && results.length === 0 && (
               <div className="py-8 text-center text-gray-400 text-sm">
-                No results for &ldquo;{query}&rdquo;
+                {t('search.noResultsFor')} &ldquo;{query}&rdquo;
               </div>
             )}
 
@@ -226,7 +228,7 @@ export default function GlobalSearch() {
                   const config = TYPE_CONFIG[type];
                   return (
                     <div key={type} className="mb-2">
-                      <p className="text-xs text-gray-500 px-1 mb-1 uppercase tracking-wider">{config.label}s</p>
+                      <p className="text-xs text-gray-500 px-1 mb-1 uppercase tracking-wider">{t(config.labelKey)}s</p>
                       {typed.map((result) => {
                         const globalIdx = results.indexOf(result);
                         return (
@@ -263,9 +265,9 @@ export default function GlobalSearch() {
           {/* Footer hint */}
           {(results.length > 0 || showRecent) && (
             <div className="flex items-center gap-4 px-4 py-2 border-t border-white/10 text-[10px] text-gray-500">
-              <span><kbd className="bg-white/10 px-1 rounded">↑↓</kbd> navigate</span>
-              <span><kbd className="bg-white/10 px-1 rounded">↵</kbd> select</span>
-              <span><kbd className="bg-white/10 px-1 rounded">esc</kbd> close</span>
+              <span><kbd className="bg-white/10 px-1 rounded">↑↓</kbd> {t('search.navigate')}</span>
+              <span><kbd className="bg-white/10 px-1 rounded">↵</kbd> {t('search.select')}</span>
+              <span><kbd className="bg-white/10 px-1 rounded">esc</kbd> {t('search.closeTip')}</span>
             </div>
           )}
         </div>

@@ -1,9 +1,11 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 
 export default function AddTeamMemberPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [form, setForm] = useState({
@@ -44,7 +46,7 @@ export default function AddTeamMemberPage() {
       });
 
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to add member');
+      if (!res.ok) throw new Error(data.error || t('errors.failedToCreate'));
 
       router.push('/team');
     } catch (err) {
@@ -59,7 +61,7 @@ export default function AddTeamMemberPage() {
       {/* Header */}
       <header className="flex items-center space-x-3 mb-6">
         <a href="/team" className="text-white text-2xl">&#8592;</a>
-        <h1 className="text-2xl font-bold text-white">Add Team Member</h1>
+        <h1 className="text-2xl font-bold text-white">{t('team.addFirst')}</h1>
       </header>
 
       <div className="max-w-lg mx-auto">
@@ -71,7 +73,7 @@ export default function AddTeamMemberPage() {
           )}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.name')} *</label>
             <input
               type="text"
               name="name"
@@ -84,20 +86,20 @@ export default function AddTeamMemberPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Type *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.type')} *</label>
             <select
               name="type"
               value={form.type}
               onChange={handleChange}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
             >
-              <option value="employee">Employee</option>
-              <option value="contractor">Contractor</option>
+              <option value="employee">{t('team.employee')}</option>
+              <option value="contractor">{t('team.contractor')}</option>
             </select>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Role *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('team.role')} *</label>
             <select
               name="role"
               value={form.role}
@@ -108,16 +110,16 @@ export default function AddTeamMemberPage() {
               }}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
             >
-              <option value="manager">Manager</option>
-              <option value="lead_tech">Lead Tech</option>
-              <option value="employee">Employee</option>
-              <option value="contractor">Contractor</option>
+              <option value="manager">{t('team.manager')}</option>
+              <option value="lead_tech">{t('team.leadTech')}</option>
+              <option value="employee">{t('team.employee')}</option>
+              <option value="contractor">{t('team.contractor')}</option>
             </select>
             <p className="text-xs text-gray-500 mt-1">Role determines default permissions. Owner can customize in Team Permissions.</p>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.email')}</label>
             <input
               type="email"
               name="email"
@@ -129,7 +131,7 @@ export default function AddTeamMemberPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.phone')}</label>
             <input
               type="tel"
               name="phone"
@@ -177,13 +179,13 @@ export default function AddTeamMemberPage() {
               disabled={loading}
               className="flex-1 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium disabled:opacity-50"
             >
-              {loading ? 'Adding...' : 'Add Team Member'}
+              {loading ? t('common.creating') : t('team.addFirst')}
             </button>
             <a
               href="/team"
               className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-center"
             >
-              Cancel
+              {t('common.cancel')}
             </a>
           </div>
         </form>

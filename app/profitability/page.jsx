@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ExportGate from '@/components/ExportGate';
 import { currencySymbol } from '@/lib/formatPrice';
+import { useTranslation } from '@/lib/i18n';
 
 export default function ProfitabilityPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState(90);
   const [stats, setStats] = useState(null);
@@ -35,10 +37,10 @@ export default function ProfitabilityPage() {
         const data = await res.json();
         setStats(data);
       } else {
-        setError('Failed to load statistics');
+        setError(t('profitability.failedToLoadStats'));
       }
     } catch (err) {
-      setError('Failed to load statistics');
+      setError(t('profitability.failedToLoadStats'));
     } finally {
       setLoading(false);
     }
@@ -57,7 +59,7 @@ export default function ProfitabilityPage() {
       <header className="text-white flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <a href="/dashboard" className="text-2xl">&#8592;</a>
-          <h1 className="text-2xl font-bold">Profitability</h1>
+          <h1 className="text-2xl font-bold">{t('profitability.title')}</h1>
         </div>
         <div className="flex items-center gap-3">
           <ExportGate plan={userPlan}>
@@ -83,7 +85,7 @@ export default function ProfitabilityPage() {
               disabled={!stats}
               className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded px-3 py-1 disabled:opacity-50 text-sm"
             >
-              Export CSV
+              {t('reports.exportCsv')}
             </button>
           </ExportGate>
           <select
@@ -91,81 +93,81 @@ export default function ProfitabilityPage() {
             onChange={(e) => setPeriod(parseInt(e.target.value))}
             className="bg-white/10 text-white border border-white/20 rounded px-3 py-1"
           >
-            <option value={30} className="text-gray-900">Last 30 days</option>
-            <option value={90} className="text-gray-900">Last 90 days</option>
-            <option value={180} className="text-gray-900">Last 6 months</option>
-            <option value={365} className="text-gray-900">Last year</option>
+            <option value={30} className="text-gray-900">{t('profitability.last30Days')}</option>
+            <option value={90} className="text-gray-900">{t('profitability.last90Days')}</option>
+            <option value={180} className="text-gray-900">{t('profitability.last6Months')}</option>
+            <option value={365} className="text-gray-900">{t('profitability.lastYear')}</option>
           </select>
         </div>
       </header>
 
       {loading ? (
-        <div className="text-white text-center py-12">Loading statistics...</div>
+        <div className="text-white text-center py-12">{t('profitability.loadingStats')}</div>
       ) : error ? (
         <div className="text-red-400 text-center py-12">{error}</div>
       ) : !stats || stats.overall.totalJobs === 0 ? (
         <div className="bg-white rounded-lg p-8 text-center">
-          <p className="text-xl font-semibold mb-2">No completed jobs yet</p>
-          <p className="text-gray-500 mb-4">Complete jobs and log your actual hours to track profitability.</p>
-          <a href="/dashboard" className="text-amber-600 underline">Go to Dashboard</a>
+          <p className="text-xl font-semibold mb-2">{t('profitability.noCompletedJobs')}</p>
+          <p className="text-gray-500 mb-4">{t('profitability.completeJobsToTrack')}</p>
+          <a href="/dashboard" className="text-amber-600 underline">{t('profitability.goToDashboard')}</a>
         </div>
       ) : (
         <div className="space-y-4">
           {/* Overall Stats */}
           <div className="bg-white rounded-lg p-4 shadow">
-            <h2 className="font-semibold text-lg mb-3">Overall Performance</h2>
+            <h2 className="font-semibold text-lg mb-3">{t('profitability.overallPerformance')}</h2>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-3 bg-gray-50 rounded">
                 <p className="text-2xl font-bold text-amber-600">{stats.overall.totalJobs}</p>
-                <p className="text-sm text-gray-500">Jobs Completed</p>
+                <p className="text-sm text-gray-500">{t('profitability.jobsCompleted')}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
                 <p className="text-2xl font-bold text-green-600">{formatCurrency(stats.overall.totalRevenue)}</p>
-                <p className="text-sm text-gray-500">Total Revenue</p>
+                <p className="text-sm text-gray-500">{t('profitability.totalRevenue')}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
                 <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.overall.totalProfit)}</p>
-                <p className="text-sm text-gray-500">Total Profit</p>
+                <p className="text-sm text-gray-500">{t('profitability.totalProfit')}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
                 <p className="text-2xl font-bold text-purple-600">{formatPercent(stats.overall.avgMargin)}</p>
-                <p className="text-sm text-gray-500">Avg Margin</p>
+                <p className="text-sm text-gray-500">{t('profitability.avgMargin')}</p>
               </div>
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
               <div className="text-center p-3 bg-gray-50 rounded">
                 <p className="text-xl font-semibold">{stats.overall.totalHours.toFixed(1)}</p>
-                <p className="text-sm text-gray-500">Total Hours</p>
+                <p className="text-sm text-gray-500">{t('profitability.totalHours')}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
                 <p className="text-xl font-semibold">{formatCurrency(stats.overall.avgRevenuePerJob)}</p>
-                <p className="text-sm text-gray-500">Avg Revenue/Job</p>
+                <p className="text-sm text-gray-500">{t('profitability.avgRevenuePerJob')}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
                 <p className="text-xl font-semibold">{formatCurrency(stats.overall.avgProfitPerJob)}</p>
-                <p className="text-sm text-gray-500">Avg Profit/Job</p>
+                <p className="text-sm text-gray-500">{t('profitability.avgProfitPerJob')}</p>
               </div>
               <div className="text-center p-3 bg-gray-50 rounded">
                 <p className="text-xl font-semibold">{stats.overall.avgHoursPerJob.toFixed(1)}h</p>
-                <p className="text-sm text-gray-500">Avg Hours/Job</p>
+                <p className="text-sm text-gray-500">{t('profitability.avgHoursPerJob')}</p>
               </div>
             </div>
           </div>
 
           {/* Cost Breakdown */}
           <div className="bg-white rounded-lg p-4 shadow">
-            <h2 className="font-semibold text-lg mb-3">Cost Breakdown</h2>
+            <h2 className="font-semibold text-lg mb-3">{t('profitability.costBreakdown')}</h2>
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Labor Cost</span>
+                <span className="text-gray-600">{t('profitability.laborCost')}</span>
                 <span className="font-semibold">{formatCurrency(stats.overall.totalLaborCost)}</span>
               </div>
               <div className="flex justify-between items-center">
-                <span className="text-gray-600">Product/Material Cost</span>
+                <span className="text-gray-600">{t('profitability.productMaterialCost')}</span>
                 <span className="font-semibold">{formatCurrency(stats.overall.totalProductCost)}</span>
               </div>
               <div className="border-t pt-2 flex justify-between items-center">
-                <span className="font-medium">Total Costs</span>
+                <span className="font-medium">{t('profitability.totalCosts')}</span>
                 <span className="font-bold">{formatCurrency(stats.overall.totalLaborCost + stats.overall.totalProductCost)}</span>
               </div>
             </div>
@@ -174,7 +176,7 @@ export default function ProfitabilityPage() {
           {/* Service Rankings */}
           {stats.serviceRankings && stats.serviceRankings.length > 0 && (
             <div className="bg-white rounded-lg p-4 shadow">
-              <h2 className="font-semibold text-lg mb-3">Service Profitability Rankings</h2>
+              <h2 className="font-semibold text-lg mb-3">{t('profitability.serviceProfitabilityRankings')}</h2>
               <div className="space-y-2">
                 {stats.serviceRankings.map((svc, idx) => (
                   <div
@@ -192,12 +194,12 @@ export default function ProfitabilityPage() {
                       </span>
                       <div>
                         <p className="font-medium">{svc.service_name}</p>
-                        <p className="text-xs text-gray-500">{svc.jobCount} jobs</p>
+                        <p className="text-xs text-gray-500">{svc.jobCount} {t('profitability.jobs')}</p>
                       </div>
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-green-600">{formatCurrency(svc.totalProfit)}</p>
-                      <p className="text-xs text-gray-500">{formatPercent(svc.avgMargin)} margin</p>
+                      <p className="text-xs text-gray-500">{formatPercent(svc.avgMargin)} {t('profitability.margin')}</p>
                     </div>
                   </div>
                 ))}
@@ -208,16 +210,16 @@ export default function ProfitabilityPage() {
           {/* Monthly Trend */}
           {stats.monthlyTrend && stats.monthlyTrend.length > 0 && (
             <div className="bg-white rounded-lg p-4 shadow">
-              <h2 className="font-semibold text-lg mb-3">Monthly Trend</h2>
+              <h2 className="font-semibold text-lg mb-3">{t('profitability.monthlyTrend')}</h2>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b text-gray-500">
-                      <th className="text-left py-2">Month</th>
-                      <th className="text-right py-2">Jobs</th>
-                      <th className="text-right py-2">Revenue</th>
-                      <th className="text-right py-2">Profit</th>
-                      <th className="text-right py-2">Margin</th>
+                      <th className="text-left py-2">{t('profitability.month')}</th>
+                      <th className="text-right py-2">{t('nav.jobs')}</th>
+                      <th className="text-right py-2">{t('profitability.revenue')}</th>
+                      <th className="text-right py-2">{t('profitability.profit')}</th>
+                      <th className="text-right py-2">{t('profitability.margin')}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -240,14 +242,14 @@ export default function ProfitabilityPage() {
           <div className="bg-white rounded-lg p-4 shadow">
             <div className="flex justify-between items-center">
               <div>
-                <h3 className="font-semibold">Job History</h3>
-                <p className="text-sm text-gray-500">View and manage completed jobs</p>
+                <h3 className="font-semibold">{t('profitability.jobHistory')}</h3>
+                <p className="text-sm text-gray-500">{t('profitability.viewAndManageJobs')}</p>
               </div>
               <a
                 href="/jobs"
                 className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
               >
-                View Jobs
+                {t('profitability.viewJobs')}
               </a>
             </div>
           </div>

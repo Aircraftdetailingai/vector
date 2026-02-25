@@ -1,9 +1,11 @@
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 
 export default function VendorLoginPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [isRegister, setIsRegister] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -35,7 +37,7 @@ export default function VendorLoginPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.error || 'An error occurred');
+        setError(data.error || t('errors.somethingWentWrong'));
         return;
       }
 
@@ -49,7 +51,7 @@ export default function VendorLoginPage() {
         router.push('/vendor/dashboard');
       }
     } catch (err) {
-      setError('Network error. Please try again.');
+      setError(t('errors.networkError', { error: err.message }));
     } finally {
       setLoading(false);
     }
@@ -61,7 +63,7 @@ export default function VendorLoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white flex items-center justify-center gap-2">
-            <span>&#9992;</span> Vector
+            <span>&#9992;</span> {t('dashboard.title')}
           </h1>
           <p className="text-blue-200 mt-2">Vendor Portal</p>
         </div>
@@ -89,7 +91,7 @@ export default function VendorLoginPage() {
               <>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Company Name *
+                    {t('settings.companyName')} *
                   </label>
                   <input
                     type="text"
@@ -102,7 +104,7 @@ export default function VendorLoginPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Contact Name
+                    Contact {t('common.name')}
                   </label>
                   <input
                     type="text"
@@ -129,7 +131,7 @@ export default function VendorLoginPage() {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email *
+                {t('common.email')} *
               </label>
               <input
                 type="email"
@@ -161,7 +163,7 @@ export default function VendorLoginPage() {
               disabled={loading}
               className="w-full py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-lg hover:opacity-90 disabled:opacity-50"
             >
-              {loading ? 'Please wait...' : isRegister ? 'Submit Application' : 'Login'}
+              {loading ? t('common.processing') : isRegister ? t('common.submit') : t('common.login')}
             </button>
           </form>
 
@@ -194,7 +196,7 @@ export default function VendorLoginPage() {
         {/* Back link */}
         <div className="text-center mt-6">
           <a href="/login" className="text-blue-200 hover:text-white text-sm">
-            &larr; Back to main site
+            &larr; {t('common.back')} to main site
           </a>
         </div>
       </div>

@@ -2,8 +2,10 @@
 import { useState, useEffect } from 'react';
 import { EquipmentTeaser } from './EquipmentROI';
 import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
+import { useTranslation } from '@/lib/i18n';
 
 export default function UpgradeModal({ isOpen, onClose, detailerId, existingServices = [] }) {
+  const { t } = useTranslation();
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState(false);
@@ -56,7 +58,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
       if (res.ok && data.valid) {
         setPromoResult(data);
       } else {
-        setPromoError(data.error || 'Invalid promo code');
+        setPromoError(data.error || t('upgrade.invalidPromo'));
       }
     } catch (err) {
       setPromoError('Failed to validate code');
@@ -104,7 +106,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full mx-auto mb-4"></div>
-            <p className="text-gray-500">Analyzing your usage...</p>
+            <p className="text-gray-500">{t('upgrade.analyzingUsage')}</p>
           </div>
         ) : analysis ? (
           <>
@@ -112,12 +114,12 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h2 className="text-xl font-bold text-gray-900">
-                  {analysis.recommendation === 'strong' ? '🚀 Time to Upgrade!' :
-                   analysis.recommendation === 'moderate' ? '📈 Consider Upgrading' :
-                   '✨ Your Plan Status'}
+                  {analysis.recommendation === 'strong' ? `🚀 ${t('upgrade.timeToUpgrade')}` :
+                   analysis.recommendation === 'moderate' ? `📈 ${t('upgrade.considerUpgrading')}` :
+                   `✨ ${t('upgrade.yourPlanStatus')}`}
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
-                  Current plan: <span className="font-medium capitalize">{analysis.currentTier}</span>
+                  {t('upgrade.currentPlan')} <span className="font-medium capitalize">{analysis.currentTier}</span>
                 </p>
               </div>
               <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-2xl">
@@ -143,7 +145,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
             {/* Usage Stats */}
             <div className="grid grid-cols-2 gap-4 mb-6">
               <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">Quotes This Month</p>
+                <p className="text-xs sm:text-sm text-gray-500 uppercase tracking-wide">{t('upgrade.quotesThisMonth')}</p>
                 <p className="text-2xl font-bold">
                   {analysis.stats.quotesThisMonth}
                   <span className="text-sm font-normal text-gray-500">
@@ -162,15 +164,15 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                 )}
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Avg Monthly Revenue</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">{t('upgrade.avgMonthlyRevenue')}</p>
                 <p className="text-2xl font-bold">${analysis.stats.avgMonthlyRevenue.toLocaleString()}</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Current Fee Rate</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">{t('upgrade.currentFeeRate')}</p>
                 <p className="text-2xl font-bold">{(analysis.stats.feeRate * 100).toFixed(0)}%</p>
               </div>
               <div className="bg-gray-50 p-3 rounded-lg">
-                <p className="text-xs text-gray-500 uppercase tracking-wide">Fees This Month</p>
+                <p className="text-xs text-gray-500 uppercase tracking-wide">{t('upgrade.feesThisMonth')}</p>
                 <p className="text-2xl font-bold">{currencySymbol()}{formatPrice(analysis.stats.feesThisMonth)}</p>
               </div>
             </div>
@@ -181,10 +183,10 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                 <div className="flex justify-between items-center mb-4">
                   <div>
                     <p className="font-semibold text-lg">{analysis.savings.nextTierName}</p>
-                    <p className="text-gray-500">${analysis.savings.nextTierPrice}/month</p>
+                    <p className="text-gray-500">${analysis.savings.nextTierPrice}{t('common.perMonth')}</p>
                   </div>
                   <div className="text-right">
-                    <p className="text-xs text-gray-500">Platform fee</p>
+                    <p className="text-xs text-gray-500">{t('invoices.platformFee')}</p>
                     <p className="font-bold text-green-600">
                       {(analysis.savings.targetMonthlyFees / analysis.stats.avgMonthlyRevenue * 100).toFixed(0)}%
                       <span className="text-gray-400 text-sm ml-1">
@@ -198,10 +200,10 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                   <>
                     <div className="bg-green-50 border border-green-200 rounded-lg p-3 text-center">
                       <p className="text-green-800 font-medium">
-                        You'd save <span className="text-xl font-bold">{currencySymbol()}{formatPrice(analysis.savings.netMonthlySavings)}</span>/month
+                        {t('upgrade.youdSave')} <span className="text-xl font-bold">{currencySymbol()}{formatPrice(analysis.savings.netMonthlySavings)}</span>{t('common.perMonth')}
                       </p>
                       <p className="text-green-600 text-sm">
-                        That's ${formatPrice(analysis.savings.netMonthlySavings * 12)}/year!
+                        That's ${formatPrice(analysis.savings.netMonthlySavings * 12)}{t('common.perYear')}!
                       </p>
                     </div>
                     {/* Equipment ROI Teaser */}
@@ -213,7 +215,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                 ) : (
                   <div className="bg-gray-50 rounded-lg p-3 text-center">
                     <p className="text-gray-600 text-sm">
-                      Upgrade pays for itself at ${formatPriceWhole(analysis.savings.breakevenRevenue)}/month revenue
+                      {t('upgrade.upgradePaysSelf')} ${formatPriceWhole(analysis.savings.breakevenRevenue)}{t('common.perMonth')} {t('upgrade.revenue')}
                     </p>
                   </div>
                 )}
@@ -227,7 +229,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                   onClick={() => setShowPromo(!showPromo)}
                   className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
                 >
-                  {showPromo ? '- Hide promo code' : '+ Have a promo code?'}
+                  {showPromo ? `- ${t('upgrade.hidePromoCode')}` : `+ ${t('upgrade.havePromoCode')}`}
                 </button>
                 {showPromo && (
                   <div className="mt-2 flex items-center gap-2">
@@ -241,11 +243,11 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                       }}
                       onBlur={() => validatePromo(promoCode)}
                       onKeyDown={(e) => e.key === 'Enter' && validatePromo(promoCode)}
-                      placeholder="Enter code"
+                      placeholder={t('upgrade.enterCode')}
                       className="px-3 py-1.5 border rounded text-sm w-36"
                     />
                     {promoValidating && (
-                      <span className="text-xs text-gray-400">Checking...</span>
+                      <span className="text-xs text-gray-400">{t('upgrade.checking')}</span>
                     )}
                     {promoResult && (
                       <span className="text-xs text-green-600 font-medium">
@@ -271,7 +273,7 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                 onClick={onClose}
                 className="flex-1 px-4 py-3 border rounded-lg text-gray-700 hover:bg-gray-50"
               >
-                Maybe Later
+                {t('upgrade.maybeLater')}
               </button>
               {analysis.nextTier && (
                 <button
@@ -279,15 +281,15 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                   disabled={upgrading}
                   className="flex-1 px-4 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-semibold hover:opacity-90 disabled:opacity-50"
                 >
-                  {upgrading ? 'Processing...' : `Upgrade to ${analysis.savings?.nextTierName}`}
+                  {upgrading ? t('common.processing') : `${t('upgrade.upgradeTo')} ${analysis.savings?.nextTierName}`}
                 </button>
               )}
             </div>
           </>
         ) : (
           <div className="text-center py-8">
-            <p className="text-red-500">Failed to load upgrade analysis</p>
-            <button onClick={onClose} className="mt-4 text-gray-600 underline">Close</button>
+            <p className="text-red-500">{t('reports.failedToLoad')}</p>
+            <button onClick={onClose} className="mt-4 text-gray-600 underline">{t('common.close')}</button>
           </div>
         )}
       </div>

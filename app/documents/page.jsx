@@ -1,15 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-
-const CATEGORIES = [
-  { value: 'all', label: 'All Documents' },
-  { value: 'insurance', label: 'Insurance' },
-  { value: 'licenses', label: 'Licenses' },
-  { value: 'contracts', label: 'Contracts' },
-  { value: 'sops', label: 'SOPs' },
-  { value: 'other', label: 'Other' },
-];
+import { useTranslation } from '@/lib/i18n';
 
 const CATEGORY_COLORS = {
   insurance: 'bg-blue-100 text-blue-700',
@@ -65,16 +57,17 @@ function daysUntilExpiry(d) {
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
 
-function ExpiryBadge({ expiresAt }) {
+function ExpiryBadge({ expiresAt, t }) {
   const days = daysUntilExpiry(expiresAt);
   if (days === null) return null;
-  if (days < 0) return <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">Expired</span>;
-  if (days <= 30) return <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">Expires in {days}d</span>;
-  return <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">Valid</span>;
+  if (days < 0) return <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">{t('status.expired')}</span>;
+  if (days <= 30) return <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">{t('documents.expiresIn')} {days}d</span>;
+  return <span className="text-xs px-2 py-0.5 rounded-full bg-green-100 text-green-700 font-medium">{t('documents.valid')}</span>;
 }
 
 export default function DocumentsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const fileInputRef = useRef(null);
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -100,6 +93,15 @@ export default function DocumentsPage() {
   const [editNotes, setEditNotes] = useState('');
   const [saving, setSaving] = useState(false);
 
+  const CATEGORIES = [
+    { value: 'all', label: t('common.all') + ' ' + t('documents.title') },
+    { value: 'insurance', label: t('documents.insurance') },
+    { value: 'licenses', label: t('documents.licenses') },
+    { value: 'contracts', label: t('documents.contracts') },
+    { value: 'sops', label: t('documents.sops') },
+    { value: 'other', label: t('documents.other') },
+  ];
+
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     if (!token) { router.push('/login'); return; }
@@ -117,7 +119,7 @@ export default function DocumentsPage() {
       const data = await res.json();
       setDocuments(data.documents || []);
     } catch (err) {
-      setError('Failed to load documents');
+      setError(t('errors.failedToFetch'));
     } finally {
       setLoading(false);
     }
@@ -137,7 +139,7 @@ export default function DocumentsPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 10 * 1024 * 1024) {
-      setError('File too large. Maximum 10MB.');
+      setError(t('documents.fileTooLarge'));
       return;
     }
     setUploadFile(file);
@@ -164,7 +166,7 @@ export default function DocumentsPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Upload failed');
       setShowUpload(false);
-      setSuccess('Document uploaded');
+      setSuccess(t('documents.uploaded'));
       fetchDocuments();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -214,7 +216,7 @@ export default function DocumentsPage() {
       });
       if (!res.ok) throw new Error('Failed to update');
       setShowEdit(null);
-      setSuccess('Document updated');
+      setSuccess(t('documents.updated'));
       fetchDocuments();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -232,7 +234,7 @@ export default function DocumentsPage() {
         headers: authHeaders(),
       });
       if (!res.ok) throw new Error('Failed to delete');
-      setSuccess('Document deleted');
+      setSuccess(t('documents.deleted'));
       fetchDocuments();
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
@@ -267,13 +269,13 @@ export default function DocumentsPage() {
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
         <div className="flex items-center gap-3">
           <a href="/dashboard" className="text-white text-2xl hover:opacity-70">&larr;</a>
-          <h1 className="text-2xl font-bold text-white">Documents</h1>
+          <h1 className="text-2xl font-bold text-white">{t('documents.title')}</h1>
         </div>
         <button
           onClick={openUploadModal}
           className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:opacity-90 shadow"
         >
-          + Upload Document
+          {t('documents.uploadDocument')}
         </button>
       </div>
 
@@ -292,7 +294,7 @@ export default function DocumentsPage() {
       {expiringSoon.length > 0 && (
         <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 mb-4">
           <p className="text-amber-800 font-medium text-sm">
-            {expiringSoon.length} document{expiringSoon.length > 1 ? 's' : ''} expiring soon or expired
+            {expiringSoon.length} {t('documents.expiringSoon')}
           </p>
           <div className="mt-1 space-y-0.5">
             {expiringSoon.map(d => {
@@ -352,9 +354,9 @@ export default function DocumentsPage() {
           <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
           </svg>
-          <p className="text-gray-500 mb-2">No documents found</p>
+          <p className="text-gray-500 mb-2">{t('documents.noDocuments')}</p>
           <button onClick={openUploadModal} className="text-amber-600 hover:text-amber-700 font-medium text-sm">
-            Upload your first document
+            {t('documents.uploadFirst')}
           </button>
         </div>
       ) : (
@@ -378,7 +380,7 @@ export default function DocumentsPage() {
                         <span className={`text-xs px-2 py-0.5 rounded-full ${CATEGORY_COLORS[doc.category] || CATEGORY_COLORS.other}`}>
                           {doc.category || 'other'}
                         </span>
-                        <ExpiryBadge expiresAt={doc.expires_at} />
+                        <ExpiryBadge expiresAt={doc.expires_at} t={t} />
                       </div>
                       <p className="text-sm text-gray-500 mt-0.5">
                         {doc.file_name || 'File'}
@@ -388,7 +390,7 @@ export default function DocumentsPage() {
                       {doc.notes && <p className="text-xs text-gray-400 mt-1 truncate">{doc.notes}</p>}
                       {doc.expires_at && (
                         <p className={`text-xs mt-1 ${days < 0 ? 'text-red-500' : days <= 30 ? 'text-amber-500' : 'text-gray-400'}`}>
-                          {days < 0 ? 'Expired' : 'Expires'} {formatDate(doc.expires_at)}
+                          {days < 0 ? t('status.expired') : t('documents.expiresIn')} {formatDate(doc.expires_at)}
                         </p>
                       )}
                     </div>
@@ -397,7 +399,7 @@ export default function DocumentsPage() {
                     <button
                       onClick={() => downloadDocument(doc)}
                       disabled={downloading === doc.id}
-                      title="Download"
+                      title={t('common.download')}
                       className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
                     >
                       {downloading === doc.id ? (
@@ -410,7 +412,7 @@ export default function DocumentsPage() {
                     </button>
                     <button
                       onClick={() => openEditModal(doc)}
-                      title="Edit"
+                      title={t('common.edit')}
                       className="p-2 text-gray-400 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -419,7 +421,7 @@ export default function DocumentsPage() {
                     </button>
                     <button
                       onClick={() => deleteDocument(doc)}
-                      title="Delete"
+                      title={t('common.delete')}
                       className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -439,7 +441,7 @@ export default function DocumentsPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowUpload(false)}>
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900">Upload Document</h2>
+              <h2 className="text-lg font-bold text-gray-900">{t('documents.uploadDocument')}</h2>
               <button onClick={() => setShowUpload(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
 
@@ -457,15 +459,15 @@ export default function DocumentsPage() {
                   </svg>
                   <p className="text-sm font-medium text-gray-900">{uploadFile.name}</p>
                   <p className="text-xs text-gray-500">{formatFileSize(uploadFile.size)}</p>
-                  <p className="text-xs text-amber-600 mt-1">Click to change file</p>
+                  <p className="text-xs text-amber-600 mt-1">{t('documents.clickToChange')}</p>
                 </div>
               ) : (
                 <div>
                   <svg className="w-8 h-8 text-gray-400 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                   </svg>
-                  <p className="text-sm text-gray-600">Click to select a file</p>
-                  <p className="text-xs text-gray-400 mt-1">PDF, DOC, images, etc. Max 10MB</p>
+                  <p className="text-sm text-gray-600">{t('documents.clickToSelect')}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t('documents.maxSize')}</p>
                 </div>
               )}
               <input
@@ -479,7 +481,7 @@ export default function DocumentsPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Document Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('documents.documentName')}</label>
                 <input
                   type="text"
                   value={uploadName}
@@ -490,7 +492,7 @@ export default function DocumentsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.category')}</label>
                 <div className="grid grid-cols-5 gap-1">
                   {CATEGORIES.filter(c => c.value !== 'all').map(cat => (
                     <button
@@ -510,7 +512,7 @@ export default function DocumentsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Date (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('documents.expirationDate')}</label>
                 <input
                   type="date"
                   value={uploadExpiry}
@@ -520,7 +522,7 @@ export default function DocumentsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes (optional)</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('documents.notesOptional')}</label>
                 <textarea
                   value={uploadNotes}
                   onChange={e => setUploadNotes(e.target.value)}
@@ -533,14 +535,14 @@ export default function DocumentsPage() {
 
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowUpload(false)} className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={handleUpload}
                 disabled={!uploadFile || uploading}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50 text-sm"
               >
-                {uploading ? 'Uploading...' : 'Upload'}
+                {uploading ? t('common.uploading') || 'Uploading...' : t('common.upload')}
               </button>
             </div>
           </div>
@@ -552,13 +554,13 @@ export default function DocumentsPage() {
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setShowEdit(null)}>
           <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900">Edit Document</h2>
+              <h2 className="text-lg font-bold text-gray-900">{t('documents.editDocument')}</h2>
               <button onClick={() => setShowEdit(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Document Name</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('documents.documentName')}</label>
                 <input
                   type="text"
                   value={editName}
@@ -568,7 +570,7 @@ export default function DocumentsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.category')}</label>
                 <div className="grid grid-cols-5 gap-1">
                   {CATEGORIES.filter(c => c.value !== 'all').map(cat => (
                     <button
@@ -588,7 +590,7 @@ export default function DocumentsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Expiration Date</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('documents.expirationDate')}</label>
                 <input
                   type="date"
                   value={editExpiry}
@@ -598,7 +600,7 @@ export default function DocumentsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.notes')}</label>
                 <textarea
                   value={editNotes}
                   onChange={e => setEditNotes(e.target.value)}
@@ -610,14 +612,14 @@ export default function DocumentsPage() {
 
             <div className="flex gap-2 mt-4">
               <button onClick={() => setShowEdit(null)} className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={saveEdit}
                 disabled={saving}
                 className="flex-1 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-medium hover:opacity-90 disabled:opacity-50 text-sm"
               >
-                {saving ? 'Saving...' : 'Save Changes'}
+                {saving ? t('common.saving') : t('documents.saveChanges')}
               </button>
             </div>
           </div>

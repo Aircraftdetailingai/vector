@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 import {
   ROLES,
   PERMISSION_LABELS,
@@ -23,6 +24,7 @@ const editableRoles = ROLES.filter(r => r.value !== 'owner');
 
 export default function TeamPermissionsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [permissions, setPermissions] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -98,13 +100,13 @@ export default function TeamPermissionsPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        setError(data.error || 'Failed to save');
+        setError(data.error || t('errors.failedToSave'));
         return;
       }
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err) {
-      setError('Failed to save permissions');
+      setError(t('errors.failedToSave'));
     } finally {
       setSaving(false);
     }
@@ -113,7 +115,7 @@ export default function TeamPermissionsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 flex items-center justify-center">
-        <div className="text-white text-lg">Loading permissions...</div>
+        <div className="text-white text-lg">{t('common.loading')}</div>
       </div>
     );
   }
@@ -125,7 +127,7 @@ export default function TeamPermissionsPage() {
         <div className="flex items-center space-x-3">
           <a href="/team" className="text-white text-2xl">&#8592;</a>
           <div>
-            <h1 className="text-2xl font-bold text-white">Team Permissions</h1>
+            <h1 className="text-2xl font-bold text-white">{t('nav.permissions')}</h1>
             <p className="text-white/60 text-sm">Control what each role can see and do</p>
           </div>
         </div>
@@ -145,7 +147,7 @@ export default function TeamPermissionsPage() {
                 : 'bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50'
             }`}
           >
-            {saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}
+            {saving ? t('common.saving') : saved ? t('settings.saved') : t('common.save')}
           </button>
         </div>
       </header>
@@ -159,7 +161,7 @@ export default function TeamPermissionsPage() {
         <table className="w-full min-w-[700px]">
           <thead>
             <tr className="border-b-2 border-gray-200">
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 w-[220px]">Permission</th>
+              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 w-[220px]">{t('nav.permissions')}</th>
               {ROLES.map(role => (
                 <th key={role.value} className="px-3 py-3 text-center text-sm font-semibold text-gray-700">
                   <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${

@@ -1,32 +1,33 @@
 "use client";
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 
 const ACTIONS = [
   {
     id: 'new-quote',
-    label: 'New Quote',
+    labelKey: 'quickActions.newQuote',
     icon: '&#128196;',
     href: '/dashboard',
     color: 'bg-amber-500 hover:bg-amber-600',
   },
   {
     id: 'add-customer',
-    label: 'Add Customer',
+    labelKey: 'quickActions.addCustomer',
     icon: '&#128100;',
     href: '/customers',
     color: 'bg-blue-500 hover:bg-blue-600',
   },
   {
     id: 'log-time',
-    label: 'Log Time',
+    labelKey: 'quickActions.logTime',
     icon: '&#9201;',
     href: '/time-log',
     color: 'bg-emerald-500 hover:bg-emerald-600',
   },
   {
     id: 'add-equipment',
-    label: 'Add Equipment',
+    labelKey: 'quickActions.addEquipment',
     icon: '&#128295;',
     href: '/equipment',
     color: 'bg-purple-500 hover:bg-purple-600',
@@ -37,6 +38,7 @@ const ACTIONS = [
 const HIDDEN_PATHS = ['/login', '/signup', '/onboarding', '/feedback', '/q/', '/portal/', '/quote-request/'];
 
 export default function QuickActionsMenu() {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [visible, setVisible] = useState(false);
   const menuRef = useRef(null);
@@ -109,7 +111,7 @@ export default function QuickActionsMenu() {
             style={{ transitionDelay: open ? `${i * 40}ms` : '0ms' }}
           >
             <span className="text-lg" dangerouslySetInnerHTML={{ __html: action.icon }} />
-            <span className="text-sm whitespace-nowrap">{action.label}</span>
+            <span className="text-sm whitespace-nowrap">{t(action.labelKey)}</span>
           </button>
         ))}
       </div>
@@ -122,8 +124,8 @@ export default function QuickActionsMenu() {
             ? 'bg-gray-700 hover:bg-gray-600 rotate-45'
             : 'bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700'
         }`}
-        aria-label="Quick actions"
-        title="Quick Actions (Cmd+Shift+A)"
+        aria-label={t('quickActions.title')}
+        title={t('quickActions.title') + ' (Cmd+Shift+A)'}
       >
         <svg
           className="w-7 h-7 text-white transition-transform duration-200"

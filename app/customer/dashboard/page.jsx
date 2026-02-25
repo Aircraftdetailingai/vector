@@ -2,9 +2,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DataTable from '@/components/DataTable';
+import { useTranslation } from '@/lib/i18n';
 
 export default function CustomerDashboardPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [loading, setLoading] = useState(true);
   const [customer, setCustomer] = useState(null);
   const [data, setData] = useState(null);
@@ -157,12 +159,12 @@ export default function CustomerDashboardPage() {
     },
     {
       id: 'company',
-      header: 'Company',
+      header: t('settings.companyName'),
       accessorFn: (row) => row.detailers?.company_name || '-',
     },
     {
       id: 'services',
-      header: 'Services',
+      header: t('common.services'),
       accessorFn: (row) => {
         if (row.services && Array.isArray(row.services)) {
           return row.services.map(s => s.name || s).join(', ');
@@ -185,7 +187,7 @@ export default function CustomerDashboardPage() {
     },
     {
       id: 'status',
-      header: 'Status',
+      header: t('common.status'),
       accessorKey: 'status',
       cell: ({ getValue }) => (
         <span className={`px-2 py-1 rounded-full text-xs capitalize ${getStatusBadge(getValue())}`}>
@@ -195,7 +197,7 @@ export default function CustomerDashboardPage() {
     },
     {
       id: 'date',
-      header: 'Date',
+      header: t('common.date'),
       accessorKey: 'created_at',
       cell: ({ getValue }) => formatDate(getValue()),
     },
@@ -206,12 +208,12 @@ export default function CustomerDashboardPage() {
     },
     {
       id: 'email',
-      header: 'Customer Email',
+      header: t('common.email'),
       accessorKey: 'customer_email',
     },
     {
       id: 'phone',
-      header: 'Customer Phone',
+      header: t('common.phone'),
       accessorKey: 'customer_phone',
     },
     {
@@ -234,7 +236,7 @@ export default function CustomerDashboardPage() {
     },
     {
       id: 'notes',
-      header: 'Notes',
+      header: t('common.notes'),
       accessorKey: 'notes',
       cell: ({ getValue }) => (
         <span className="truncate max-w-[150px] block" title={getValue()}>
@@ -244,7 +246,7 @@ export default function CustomerDashboardPage() {
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: t('common.actions'),
       cell: ({ row }) => {
         const quote = row.original;
         if (quote.status === 'sent' || quote.status === 'viewed') {
@@ -261,7 +263,7 @@ export default function CustomerDashboardPage() {
         return null;
       },
     },
-  ], []);
+  ], [t]);
 
   // All quotes for the table
   const allQuotes = useMemo(() => {
@@ -273,7 +275,7 @@ export default function CustomerDashboardPage() {
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full mx-auto"></div>
-          <p className="mt-4 text-gray-500">Loading your dashboard...</p>
+          <p className="mt-4 text-gray-500">{t('dashboard.loadingDashboard')}</p>
         </div>
       </div>
     );
@@ -297,9 +299,9 @@ export default function CustomerDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
-                <span>&#9992;</span> Vector
+                <span>&#9992;</span> {t('dashboard.title')}
               </h1>
-              <p className="text-blue-200 text-sm mt-1">Customer Portal</p>
+              <p className="text-blue-200 text-sm mt-1">{t('common.customer')} Portal</p>
             </div>
             <div className="flex items-center gap-4">
               <div className="text-right">
@@ -310,7 +312,7 @@ export default function CustomerDashboardPage() {
                 onClick={handleLogout}
                 className="px-4 py-2 bg-white/10 rounded-lg hover:bg-white/20"
               >
-                Logout
+                {t('common.logout')}
               </button>
             </div>
           </div>
@@ -329,11 +331,11 @@ export default function CustomerDashboardPage() {
             <p className="text-2xl font-bold text-blue-600">{data?.stats?.upcomingAppointments || 0}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-500">Completed Jobs</p>
+            <p className="text-sm text-gray-500">{t('status.completed')} Jobs</p>
             <p className="text-2xl font-bold text-green-600">{data?.stats?.completedJobs || 0}</p>
           </div>
           <div className="bg-white rounded-lg shadow p-4">
-            <p className="text-sm text-gray-500">Total Quotes</p>
+            <p className="text-sm text-gray-500">{t('customers.totalQuotes')}</p>
             <p className="text-2xl font-bold">{data?.stats?.totalQuotes || 0}</p>
           </div>
         </div>
@@ -342,17 +344,24 @@ export default function CustomerDashboardPage() {
       {/* Tabs */}
       <div className="max-w-7xl mx-auto px-4 mt-6">
         <div className="flex border-b bg-white rounded-t-lg overflow-x-auto">
-          {['overview', 'quotes', 'appointments', 'photos', 'messages', 'receipts'].map(tab => (
+          {[
+            { key: 'overview', label: 'Overview' },
+            { key: 'quotes', label: t('nav.quotes') },
+            { key: 'appointments', label: 'Appointments' },
+            { key: 'photos', label: 'Photos' },
+            { key: 'messages', label: 'Messages' },
+            { key: 'receipts', label: 'Receipts' },
+          ].map(tabItem => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
+              key={tabItem.key}
+              onClick={() => setActiveTab(tabItem.key)}
               className={`px-6 py-3 font-medium capitalize border-b-2 -mb-px whitespace-nowrap ${
-                activeTab === tab
+                activeTab === tabItem.key
                   ? 'border-amber-500 text-amber-600'
                   : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
-              {tab}
+              {tabItem.label}
             </button>
           ))}
         </div>
@@ -370,7 +379,7 @@ export default function CustomerDashboardPage() {
                   tableId="customer"
                   data={data.activeQuotes}
                   columns={quoteColumns}
-                  emptyMessage="No active quotes"
+                  emptyMessage={t('quotes.noQuotes')}
                 />
               </div>
             )}
@@ -406,7 +415,7 @@ export default function CustomerDashboardPage() {
             {!data?.activeQuotes?.length && !data?.upcomingJobs?.length && (
               <div className="bg-white rounded-lg shadow p-12 text-center">
                 <div className="text-6xl mb-4">&#9992;</div>
-                <h2 className="text-xl font-semibold text-gray-700">Welcome to Vector</h2>
+                <h2 className="text-xl font-semibold text-gray-700">Welcome to {t('dashboard.title')}</h2>
                 <p className="text-gray-500 mt-2">Your quotes and appointments will appear here.</p>
               </div>
             )}
@@ -418,7 +427,7 @@ export default function CustomerDashboardPage() {
             tableId="customer"
             data={allQuotes}
             columns={quoteColumns}
-            emptyMessage="No quotes yet"
+            emptyMessage={t('quotes.noQuotes')}
           />
         )}
 
@@ -471,7 +480,7 @@ export default function CustomerDashboardPage() {
                           <p className="text-xs text-gray-400">{formatDate(job.completed_at || job.scheduled_date)}</p>
                         </div>
                         <span className="px-2 py-1 bg-emerald-100 text-emerald-800 rounded-full text-xs">
-                          Completed
+                          {t('status.completed')}
                         </span>
                       </div>
                       {job.media && job.media.length > 0 ? (
@@ -592,7 +601,7 @@ export default function CustomerDashboardPage() {
                         disabled={sendingMessage || !newMessage.trim()}
                         className="px-6 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
                       >
-                        Send
+                        {t('common.send')}
                       </button>
                     </div>
                   </div>
@@ -609,7 +618,7 @@ export default function CustomerDashboardPage() {
         {activeTab === 'receipts' && (
           <div className="bg-white rounded-lg shadow">
             <div className="p-4 border-b">
-              <h2 className="font-semibold text-lg">Receipts & Invoices</h2>
+              <h2 className="font-semibold text-lg">{t('invoices.title')}</h2>
             </div>
             {data?.receipts?.length > 0 ? (
               <div className="divide-y">
@@ -626,7 +635,7 @@ export default function CustomerDashboardPage() {
                       <div className="text-right">
                         <p className="text-xl font-bold text-green-600">{formatCurrency(receipt.amount)}</p>
                         <span className="inline-block mt-1 px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">
-                          Paid
+                          {t('status.paid')}
                         </span>
                       </div>
                     </div>

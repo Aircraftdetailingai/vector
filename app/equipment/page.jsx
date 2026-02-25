@@ -3,42 +3,11 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 import LoadingSpinner from '@/components/LoadingSpinner';
-
-const CATEGORY_LABELS = {
-  polisher: 'Polisher',
-  extractor: 'Extractor',
-  pressure_washer: 'Pressure Washer',
-  vacuum: 'Vacuum',
-  steamer: 'Steamer',
-  lighting: 'Lighting',
-  lift: 'Lift/Ladder',
-  generator: 'Generator',
-  compressor: 'Compressor',
-  other: 'Other',
-};
-
-const STATUS_OPTIONS = [
-  { value: 'active', label: 'Active', color: 'bg-green-100 text-green-700' },
-  { value: 'needs_repair', label: 'Needs Repair', color: 'bg-red-100 text-red-700' },
-  { value: 'retired', label: 'Retired', color: 'bg-gray-100 text-gray-600' },
-];
-
-const STATUS_COLORS = {
-  active: 'bg-green-100 text-green-700',
-  needs_repair: 'bg-red-100 text-red-700',
-  maintenance: 'bg-amber-100 text-amber-700',
-  retired: 'bg-gray-100 text-gray-600',
-};
-
-const STATUS_LABELS = {
-  active: 'Active',
-  needs_repair: 'Needs Repair',
-  maintenance: 'In Maintenance',
-  retired: 'Retired',
-};
+import { useTranslation } from '@/lib/i18n';
 
 export default function EquipmentPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [equipment, setEquipment] = useState([]);
   const [categories, setCategories] = useState([]);
   const [stats, setStats] = useState(null);
@@ -64,6 +33,39 @@ export default function EquipmentPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState('');
   const [scrapeError, setScrapeError] = useState('');
+
+  const CATEGORY_LABELS = {
+    polisher: t('equipment.polisher'),
+    extractor: t('equipment.extractor'),
+    pressure_washer: t('equipment.pressureWasher'),
+    vacuum: t('equipment.vacuum'),
+    steamer: t('equipment.steamer'),
+    lighting: t('equipment.lighting'),
+    lift: t('equipment.liftLadder'),
+    generator: t('equipment.generator'),
+    compressor: t('equipment.compressor'),
+    other: t('equipment.other'),
+  };
+
+  const STATUS_OPTIONS = [
+    { value: 'active', label: t('common.active'), color: 'bg-green-100 text-green-700' },
+    { value: 'needs_repair', label: t('status.needsRepair'), color: 'bg-red-100 text-red-700' },
+    { value: 'retired', label: t('status.retired'), color: 'bg-gray-100 text-gray-600' },
+  ];
+
+  const STATUS_COLORS = {
+    active: 'bg-green-100 text-green-700',
+    needs_repair: 'bg-red-100 text-red-700',
+    maintenance: 'bg-amber-100 text-amber-700',
+    retired: 'bg-gray-100 text-gray-600',
+  };
+
+  const STATUS_LABELS = {
+    active: t('common.active'),
+    needs_repair: t('status.needsRepair'),
+    maintenance: t('status.inMaintenance'),
+    retired: t('status.retired'),
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -256,7 +258,7 @@ export default function EquipmentPage() {
   };
 
   const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this equipment?')) return;
+    if (!confirm(t('equipment.deleteConfirm'))) return;
 
     const token = localStorage.getItem('vector_token');
     try {
@@ -315,7 +317,7 @@ export default function EquipmentPage() {
   );
 
   if (loading) {
-    return <LoadingSpinner message="Loading equipment..." />;
+    return <LoadingSpinner message={t('equipment.loadingEquipment')} />;
   }
 
   return (
@@ -324,15 +326,15 @@ export default function EquipmentPage() {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 text-white">
         <div className="flex items-center space-x-4">
           <a href="/dashboard" className="text-2xl hover:text-amber-400">&#8592;</a>
-          <h1 className="text-2xl font-bold">Equipment Tracker</h1>
+          <h1 className="text-2xl font-bold">{t('equipment.title')}</h1>
         </div>
         <div className="flex items-center gap-3">
-          <a href="/products" className="text-sm text-white/70 hover:text-white underline">Inventory</a>
+          <a href="/products" className="text-sm text-white/70 hover:text-white underline">{t('products.title')}</a>
           <button
             onClick={() => handleOpenModal()}
             className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium rounded-lg hover:opacity-90"
           >
-            + Add Equipment
+            {t('equipment.addEquipment')}
           </button>
         </div>
       </header>
@@ -342,25 +344,25 @@ export default function EquipmentPage() {
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
             <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">Total Investment</p>
+              <p className="text-gray-500 text-xs">{t('equipment.totalInvestment')}</p>
               <p className="text-2xl font-bold text-gray-900">{currencySymbol()}{formatPriceWhole(stats.totalInvestment)}</p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">Active Equipment</p>
+              <p className="text-gray-500 text-xs">{t('equipment.activeEquipment')}</p>
               <p className="text-2xl font-bold text-green-600">{stats.activeCount || 0}</p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">Total Jobs Done</p>
+              <p className="text-gray-500 text-xs">{t('equipment.totalJobsDone')}</p>
               <p className="text-2xl font-bold text-blue-600">{stats.totalJobs}</p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">Avg Cost/Job</p>
+              <p className="text-gray-500 text-xs">{t('equipment.avgCostPerJob')}</p>
               <p className="text-2xl font-bold text-purple-600">
                 {stats.avgCostPerJob ? `${currencySymbol()}${formatPriceWhole(stats.avgCostPerJob)}` : '-'}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">Needs Attention</p>
+              <p className="text-gray-500 text-xs">{t('equipment.needsAttention')}</p>
               <p className={`text-2xl font-bold ${(stats.needsAttention || 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
                 {stats.needsAttention || 0}
               </p>
@@ -371,7 +373,7 @@ export default function EquipmentPage() {
         {/* Maintenance Alerts */}
         {attentionItems.length > 0 && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-red-900 mb-2">Needs Attention</h3>
+            <h3 className="font-semibold text-red-900 mb-2">{t('equipment.needsAttention')}</h3>
             <div className="space-y-2">
               {attentionItems.map((item) => {
                 const maintDays = daysUntil(item.next_maintenance);
@@ -388,16 +390,16 @@ export default function EquipmentPage() {
                     </div>
                     <div className="text-right">
                       {item.maintenance_overdue && (
-                        <p className="text-xs font-medium text-red-600">Maintenance overdue by {Math.abs(maintDays)} days</p>
+                        <p className="text-xs font-medium text-red-600">{t('equipment.maintenanceOverdue')} {Math.abs(maintDays)} {t('common.days')}</p>
                       )}
                       {item.maintenance_due && !item.maintenance_overdue && (
-                        <p className="text-xs font-medium text-amber-600">Maintenance due in {maintDays} days</p>
+                        <p className="text-xs font-medium text-amber-600">{t('equipment.maintenanceDueIn')} {maintDays} {t('common.days')}</p>
                       )}
                       <button
                         onClick={() => handleOpenModal(item)}
                         className="text-xs text-blue-600 hover:underline"
                       >
-                        Update
+                        {t('common.update')}
                       </button>
                     </div>
                   </div>
@@ -410,7 +412,7 @@ export default function EquipmentPage() {
         {/* ROI Leaderboard */}
         {sortedByROI.length > 0 && (
           <div className="bg-gradient-to-r from-emerald-50 to-green-50 border border-emerald-200 rounded-lg p-4 mb-6">
-            <h3 className="font-semibold text-emerald-900 mb-3">Best ROI Equipment</h3>
+            <h3 className="font-semibold text-emerald-900 mb-3">{t('equipment.bestRoi')}</h3>
             <div className="space-y-2">
               {sortedByROI.slice(0, 3).map((item, idx) => (
                 <div key={item.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
@@ -419,13 +421,13 @@ export default function EquipmentPage() {
                     <div>
                       <p className="font-medium text-gray-900">{item.name}</p>
                       <p className="text-xs text-gray-500">
-                        {item.brand && `${item.brand} `}{item.model && `${item.model} - `}{item.jobs_completed} jobs
+                        {item.brand && `${item.brand} `}{item.model && `${item.model} - `}{item.jobs_completed} {t('equipment.jobs')}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
-                    <p className="font-bold text-emerald-600">{currencySymbol()}{formatPriceWhole(item.cost_per_job)}/job</p>
-                    <p className="text-xs text-gray-400">{currencySymbol()}{formatPriceWhole(item.purchase_price)} invested</p>
+                    <p className="font-bold text-emerald-600">{currencySymbol()}{formatPriceWhole(item.cost_per_job)}{t('equipment.perJob')}</p>
+                    <p className="text-xs text-gray-400">{currencySymbol()}{formatPriceWhole(item.purchase_price)} {t('growth.invested')}</p>
                   </div>
                 </div>
               ))}
@@ -436,11 +438,11 @@ export default function EquipmentPage() {
         {/* Filter Tabs */}
         <div className="flex space-x-2 mb-4 overflow-x-auto">
           {[
-            { key: 'all', label: 'All' },
-            { key: 'active', label: 'Active' },
-            { key: 'needs_repair', label: 'Needs Repair' },
-            { key: 'maintenance_due', label: 'Maintenance Due' },
-            { key: 'retired', label: 'Retired' },
+            { key: 'all', label: t('common.all') },
+            { key: 'active', label: t('common.active') },
+            { key: 'needs_repair', label: t('status.needsRepair') },
+            { key: 'maintenance_due', label: t('equipment.nextMaintenance') },
+            { key: 'retired', label: t('status.retired') },
           ].map((f) => (
             <button
               key={f.key}
@@ -462,18 +464,18 @@ export default function EquipmentPage() {
             {equipment.length === 0 ? (
               <>
                 <span className="text-4xl">&#128295;</span>
-                <h3 className="text-xl font-semibold mt-4">No equipment yet</h3>
+                <h3 className="text-xl font-semibold mt-4">{t('equipment.loadingEquipment').replace('Loading equipment...', t('common.noResults'))}</h3>
                 <p className="text-gray-500 mt-2">Add your tools and equipment to track usage, maintenance, and ROI</p>
                 <button
                   onClick={() => handleOpenModal()}
                   className="mt-4 px-4 py-2 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600"
                 >
-                  Add Your First Equipment
+                  {t('equipment.addFirst')}
                 </button>
               </>
             ) : (
               <>
-                <p className="text-gray-500">No equipment matching this filter</p>
+                <p className="text-gray-500">{t('common.noResults')}</p>
               </>
             )}
           </div>
@@ -483,7 +485,7 @@ export default function EquipmentPage() {
               <div key={category} className="bg-white rounded-lg shadow overflow-hidden">
                 <div className="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
                   <h3 className="font-semibold text-gray-700">{CATEGORY_LABELS[category] || category}</h3>
-                  <span className="text-xs text-gray-400">{items.length} item{items.length !== 1 ? 's' : ''}</span>
+                  <span className="text-xs text-gray-400">{items.length} {t('common.items')}</span>
                 </div>
                 <div className="divide-y">
                   {items.map((item) => {
@@ -510,12 +512,12 @@ export default function EquipmentPage() {
                               </span>
                               {item.maintenance_overdue && (
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
-                                  Overdue
+                                  {t('equipment.overdueBadge')}
                                 </span>
                               )}
                               {item.maintenance_due && !item.maintenance_overdue && (
                                 <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
-                                  Maintenance Soon
+                                  {t('equipment.maintenanceSoon')}
                                 </span>
                               )}
                             </div>
@@ -533,11 +535,11 @@ export default function EquipmentPage() {
                                 <span>{currencySymbol()}{formatPriceWhole(item.purchase_price)}</span>
                               )}
                               {item.purchase_date && (
-                                <span>Bought {formatDate(item.purchase_date)}</span>
+                                <span>{t('equipment.bought')} {formatDate(item.purchase_date)}</span>
                               )}
-                              <span className="font-medium text-blue-600">{item.jobs_completed || 0} jobs</span>
+                              <span className="font-medium text-blue-600">{item.jobs_completed || 0} {t('equipment.jobs')}</span>
                               {item.cost_per_job && (
-                                <span className="text-emerald-600 font-medium">{currencySymbol()}{formatPriceWhole(item.cost_per_job)}/job</span>
+                                <span className="text-emerald-600 font-medium">{currencySymbol()}{formatPriceWhole(item.cost_per_job)}{t('equipment.perJob')}</span>
                               )}
                             </div>
 
@@ -546,8 +548,8 @@ export default function EquipmentPage() {
                               {item.warranty_expiry && (
                                 <span className={warrantyDays > 0 ? 'text-green-600' : 'text-gray-400'}>
                                   {warrantyDays > 0
-                                    ? `Warranty: ${warrantyDays} days left`
-                                    : 'Warranty expired'}
+                                    ? `${t('equipment.warrantyLeft')} ${warrantyDays} ${t('common.days')} ${t('crew.left')}`
+                                    : t('equipment.warrantyExpired')}
                                 </span>
                               )}
                               {item.next_maintenance && (
@@ -557,8 +559,8 @@ export default function EquipmentPage() {
                                   'text-gray-500'
                                 }>
                                   {maintDays < 0
-                                    ? `Maintenance overdue (${Math.abs(maintDays)}d)`
-                                    : `Next maintenance: ${formatDate(item.next_maintenance)}`}
+                                    ? `${t('equipment.maintenanceOverdue')} (${Math.abs(maintDays)}d)`
+                                    : `${t('equipment.nextMaintenance')}: ${formatDate(item.next_maintenance)}`}
                                 </span>
                               )}
                             </div>
@@ -576,19 +578,19 @@ export default function EquipmentPage() {
                               className="px-2.5 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded font-medium"
                               title="Log a completed job"
                             >
-                              +1 Job
+                              {t('equipment.addOneJob')}
                             </button>
                             <button
                               onClick={() => handleOpenModal(item)}
                               className="px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded"
                             >
-                              Edit
+                              {t('common.edit')}
                             </button>
                             <button
                               onClick={() => handleDelete(item.id)}
                               className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded"
                             >
-                              Delete
+                              {t('common.delete')}
                             </button>
                           </div>
                         </div>
@@ -608,7 +610,7 @@ export default function EquipmentPage() {
           <div className="bg-white rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-center">
               <h2 className="text-lg font-semibold">
-                {editingItem ? 'Edit Equipment' : 'Add Equipment'}
+                {editingItem ? t('equipment.editEquipment') : t('equipment.addEquipment')}
               </h2>
               <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
             </div>
@@ -616,7 +618,7 @@ export default function EquipmentPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Product Link Auto-fill */}
               <div className="bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 rounded-lg p-3">
-                <label className="block text-sm font-semibold text-amber-800 mb-1.5">Paste Product Link</label>
+                <label className="block text-sm font-semibold text-amber-800 mb-1.5">{t('equipment.pasteProductLink')}</label>
                 <div className="flex gap-2">
                   <input
                     type="url"
@@ -642,13 +644,13 @@ export default function EquipmentPage() {
                 <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-2">
                   <img src={formData.image_url} alt="Product" className="w-16 h-16 rounded-lg object-cover border" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500">Product image detected</p>
+                    <p className="text-xs text-gray-500">{t('equipment.productImageDetected')}</p>
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, image_url: '' })}
                       className="text-xs text-red-500 hover:text-red-700"
                     >
-                      Remove image
+                      {t('equipment.removeImage')}
                     </button>
                   </div>
                 </div>
@@ -656,13 +658,13 @@ export default function EquipmentPage() {
 
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Equipment Name *</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('equipment.equipmentName')} *</label>
                 <input
                   type="text"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   required
-                  placeholder="e.g., Rupes LHR21 Mark III"
+                  placeholder={t('equipment.namePlaceholder')}
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 />
               </div>
@@ -670,22 +672,22 @@ export default function EquipmentPage() {
               {/* Brand + Model */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('equipment.brand')}</label>
                   <input
                     type="text"
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-                    placeholder="e.g., Rupes"
+                    placeholder={t('equipment.brandPlaceholder')}
                     className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Model</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('equipment.model')}</label>
                   <input
                     type="text"
                     value={formData.model}
                     onChange={(e) => setFormData({ ...formData, model: e.target.value })}
-                    placeholder="e.g., LHR21 Mark III"
+                    placeholder={t('equipment.modelPlaceholder')}
                     className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                   />
                 </div>
@@ -694,7 +696,7 @@ export default function EquipmentPage() {
               {/* Category + Status */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.category')}</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -712,7 +714,7 @@ export default function EquipmentPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.status')}</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -728,7 +730,7 @@ export default function EquipmentPage() {
               {/* Purchase Price + Date */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Cost ($)</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('equipment.purchaseCost')}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -739,7 +741,7 @@ export default function EquipmentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Purchase Date</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('equipment.purchaseDate')}</label>
                   <input
                     type="date"
                     value={formData.purchaseDate}
@@ -752,7 +754,7 @@ export default function EquipmentPage() {
               {/* Warranty + Next Maintenance */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Warranty Expires</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('equipment.warrantyExpires')}</label>
                   <input
                     type="date"
                     value={formData.warrantyExpiry}
@@ -761,7 +763,7 @@ export default function EquipmentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Next Maintenance</label>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">{t('equipment.nextMaintenance')}</label>
                   <input
                     type="date"
                     value={formData.nextMaintenance}
@@ -773,12 +775,12 @@ export default function EquipmentPage() {
 
               {/* Maintenance Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Maintenance Notes</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{t('equipment.maintenanceNotes')}</label>
                 <textarea
                   value={formData.maintenanceNotes}
                   onChange={(e) => setFormData({ ...formData, maintenanceNotes: e.target.value })}
                   rows={2}
-                  placeholder="Maintenance schedule, repair history, parts to order..."
+                  placeholder={t('equipment.maintenancePlaceholder')}
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none"
                 />
               </div>
@@ -789,14 +791,14 @@ export default function EquipmentPage() {
                   onClick={handleCloseModal}
                   className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
                 >
-                  Cancel
+                  {t('common.cancel')}
                 </button>
                 <button
                   type="submit"
                   disabled={saving || !formData.name}
                   className="px-4 py-2 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600 disabled:opacity-50"
                 >
-                  {saving ? 'Saving...' : editingItem ? 'Update Equipment' : 'Add Equipment'}
+                  {saving ? t('common.saving') : editingItem ? t('equipment.editEquipment') : t('equipment.addEquipment')}
                 </button>
               </div>
             </form>

@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 
 const CATEGORY_LABELS = {
   visibility: 'Visibility',
@@ -18,6 +19,7 @@ const STATUS_STYLES = {
 
 export default function RewardsPage() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [rewards, setRewards] = useState([]);
   const [points, setPoints] = useState({ available: 0, lifetime: 0 });
   const [redemptions, setRedemptions] = useState([]);
@@ -74,13 +76,13 @@ export default function RewardsPage() {
       if (res.ok && data.success) {
         setPoints({ ...points, available: data.newBalance });
         setRedemptions([data.redemption, ...redemptions]);
-        setMessage({ type: 'success', text: `Successfully redeemed ${reward.name}! We'll be in touch soon.` });
+        setMessage({ type: 'success', text: t('rewards.redeemSuccess', { name: reward.name }) });
         setShowConfirm(null);
       } else {
-        setMessage({ type: 'error', text: data.error || 'Failed to redeem reward' });
+        setMessage({ type: 'error', text: data.error || t('rewards.failedToRedeem') });
       }
     } catch (err) {
-      setMessage({ type: 'error', text: 'Network error. Please try again.' });
+      setMessage({ type: 'error', text: t('rewards.networkError') });
     } finally {
       setRedeeming(null);
     }
@@ -89,7 +91,7 @@ export default function RewardsPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 flex items-center justify-center">
-        <div className="text-white text-xl">Loading rewards...</div>
+        <div className="text-white text-xl">{t('rewards.loadingRewards')}</div>
       </div>
     );
   }
@@ -101,11 +103,11 @@ export default function RewardsPage() {
         <div className="flex items-center space-x-2 text-2xl font-bold">
           <span>&#9992;</span>
           <span>Vector</span>
-          <span className="text-lg font-medium">- Rewards</span>
+          <span className="text-lg font-medium">- {t('rewards.title')}</span>
         </div>
         <div className="space-x-4 text-sm">
-          <a href="/dashboard" className="underline">Dashboard</a>
-          <a href="/settings" className="underline">Settings</a>
+          <a href="/dashboard" className="underline">{t('nav.dashboard')}</a>
+          <a href="/settings" className="underline">{t('nav.settings')}</a>
         </div>
       </header>
 
@@ -114,10 +116,10 @@ export default function RewardsPage() {
         <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-lg p-6 text-white shadow-lg">
           <div className="flex justify-between items-center">
             <div>
-              <p className="text-amber-100 text-sm">Available Points</p>
+              <p className="text-amber-100 text-sm">{t('rewards.availablePoints')}</p>
               <p className="text-4xl font-bold">{points.available.toLocaleString()}</p>
               <p className="text-amber-200 text-sm mt-1">
-                {points.lifetime.toLocaleString()} lifetime points earned
+                {t('rewards.lifetimePointsEarned', { count: points.lifetime.toLocaleString() })}
               </p>
             </div>
             <div className="text-6xl opacity-50">&#9733;</div>
@@ -135,8 +137,8 @@ export default function RewardsPage() {
         {/* Available Rewards */}
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b">
-            <h2 className="text-xl font-semibold">Available Rewards</h2>
-            <p className="text-gray-500 text-sm">Redeem your points for exclusive rewards</p>
+            <h2 className="text-xl font-semibold">{t('rewards.availableRewards')}</h2>
+            <p className="text-gray-500 text-sm">{t('rewards.redeemDescription')}</p>
           </div>
 
           <div className="divide-y">
@@ -155,18 +157,18 @@ export default function RewardsPage() {
                       <p className="text-gray-600 text-sm">{reward.description}</p>
                     </div>
                     <div className="text-right ml-4">
-                      <p className="text-amber-600 font-bold text-lg">{reward.points.toLocaleString()} pts</p>
+                      <p className="text-amber-600 font-bold text-lg">{reward.points.toLocaleString()} {t('rewards.pts')}</p>
                       {canAfford ? (
                         <button
                           onClick={() => setShowConfirm(reward)}
                           disabled={redeeming === reward.id}
                           className="mt-2 px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded hover:bg-amber-600 disabled:opacity-50"
                         >
-                          {redeeming === reward.id ? 'Processing...' : 'Redeem'}
+                          {redeeming === reward.id ? t('common.processing') : t('rewards.redeem')}
                         </button>
                       ) : (
                         <p className="mt-2 text-gray-400 text-sm">
-                          Need {(reward.points - points.available).toLocaleString()} more
+                          {t('rewards.needMore', { count: (reward.points - points.available).toLocaleString() })}
                         </p>
                       )}
                     </div>
@@ -181,7 +183,7 @@ export default function RewardsPage() {
         {redemptions.length > 0 && (
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b">
-              <h2 className="text-xl font-semibold">Redemption History</h2>
+              <h2 className="text-xl font-semibold">{t('rewards.redemptionHistory')}</h2>
             </div>
 
             <div className="divide-y">
@@ -194,7 +196,7 @@ export default function RewardsPage() {
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-amber-600 font-medium">-{r.points_spent.toLocaleString()} pts</p>
+                    <p className="text-amber-600 font-medium">-{r.points_spent.toLocaleString()} {t('rewards.pts')}</p>
                     <span className={`text-xs px-2 py-0.5 rounded ${STATUS_STYLES[r.status] || 'bg-gray-100'}`}>
                       {r.status}
                     </span>
@@ -207,31 +209,31 @@ export default function RewardsPage() {
 
         {/* How to Earn More */}
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-900 mb-3">How to Earn More Points</h3>
+          <h3 className="font-semibold text-blue-900 mb-3">{t('rewards.howToEarnMore')}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-amber-500">&#9733;</span>
-              <span className="text-blue-800">2 points per $1 booked</span>
+              <span className="text-blue-800">{t('rewards.earnPerDollar')}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-amber-500">&#9733;</span>
-              <span className="text-blue-800">100 points for first payment</span>
+              <span className="text-blue-800">{t('rewards.earnFirstPayment')}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-amber-500">&#9733;</span>
-              <span className="text-blue-800">25 points for first quote</span>
+              <span className="text-blue-800">{t('rewards.earnFirstQuote')}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-amber-500">&#9733;</span>
-              <span className="text-blue-800">20 points per tip completed</span>
+              <span className="text-blue-800">{t('rewards.earnPerTip')}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-amber-500">&#9733;</span>
-              <span className="text-blue-800">10 points for logging products</span>
+              <span className="text-blue-800">{t('rewards.earnLogProducts')}</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-amber-500">&#9733;</span>
-              <span className="text-blue-800">50 points for profile completion</span>
+              <span className="text-blue-800">{t('rewards.earnProfileCompletion')}</span>
             </div>
           </div>
         </div>
@@ -241,30 +243,30 @@ export default function RewardsPage() {
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold mb-2">Confirm Redemption</h3>
+            <h3 className="text-lg font-semibold mb-2">{t('rewards.confirmRedemption')}</h3>
             <p className="text-gray-600 mb-4">
-              Redeem <strong>{showConfirm.points.toLocaleString()} points</strong> for:
+              {t('rewards.redeemPoints', { points: showConfirm.points.toLocaleString() })}
             </p>
             <div className="bg-gray-50 rounded-lg p-4 mb-4">
               <p className="font-semibold">{showConfirm.name}</p>
               <p className="text-sm text-gray-500">{showConfirm.description}</p>
             </div>
             <p className="text-sm text-gray-500 mb-4">
-              Your new balance will be {(points.available - showConfirm.points).toLocaleString()} points.
+              {t('rewards.newBalance', { balance: (points.available - showConfirm.points).toLocaleString() })}
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirm(null)}
                 className="px-4 py-2 border rounded-lg hover:bg-gray-50"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
               <button
                 onClick={() => handleRedeem(showConfirm)}
                 disabled={redeeming}
                 className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
               >
-                {redeeming ? 'Processing...' : 'Confirm Redemption'}
+                {redeeming ? t('common.processing') : t('rewards.confirmRedemption')}
               </button>
             </div>
           </div>

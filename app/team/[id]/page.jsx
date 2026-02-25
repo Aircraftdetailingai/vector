@@ -2,10 +2,12 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useTranslation } from '@/lib/i18n';
 
 export default function TeamMemberPage() {
   const router = useRouter();
   const params = useParams();
+  const { t } = useTranslation();
   const [member, setMember] = useState(null);
   const [entries, setEntries] = useState([]);
   const [stats, setStats] = useState({ total_hours: 0, total_pay: 0 });
@@ -37,7 +39,7 @@ export default function TeamMemberPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to fetch');
+      if (!res.ok) throw new Error(data.error || t('errors.failedToFetch'));
       setMember(data.member);
       setEntries(data.time_entries || []);
       setStats(data.stats || { total_hours: 0, total_pay: 0 });
@@ -62,7 +64,7 @@ export default function TeamMemberPage() {
         body: JSON.stringify(editForm),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update');
+      if (!res.ok) throw new Error(data.error || t('errors.failedToUpdate'));
       setMember(data);
       setEditing(false);
     } catch (err) {
@@ -82,7 +84,7 @@ export default function TeamMemberPage() {
       });
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || 'Failed to delete');
+        throw new Error(data.error || t('errors.failedToDelete'));
       }
       router.push('/team');
     } catch (err) {
@@ -106,7 +108,7 @@ export default function TeamMemberPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to add entry');
+      if (!res.ok) throw new Error(data.error || t('errors.failedToCreate'));
       setShowAddEntry(false);
       setEntryForm({ date: new Date().toISOString().split('T')[0], hours_worked: '', service_type: '', notes: '' });
       fetchMember(token);
@@ -135,7 +137,7 @@ export default function TeamMemberPage() {
     .reduce((sum, e) => sum + parseFloat(e.hours_worked || 0), 0);
 
   if (loading) {
-    return <LoadingSpinner message="Loading team member..." />;
+    return <LoadingSpinner message={t('team.loadingTeam')} />;
   }
 
   if (error && !member) {
@@ -143,7 +145,7 @@ export default function TeamMemberPage() {
       <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
         <header className="flex items-center space-x-3 mb-6">
           <a href="/team" className="text-white text-2xl">&#8592;</a>
-          <h1 className="text-2xl font-bold text-white">Team Member</h1>
+          <h1 className="text-2xl font-bold text-white">{t('team.title')}</h1>
         </header>
         <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-200">{error}</div>
       </div>
@@ -169,7 +171,7 @@ export default function TeamMemberPage() {
               onClick={() => setEditing(true)}
               className="px-3 py-1.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors text-sm"
             >
-              Edit
+              {t('common.edit')}
             </button>
           ) : (
             <>
@@ -178,13 +180,13 @@ export default function TeamMemberPage() {
                 disabled={saving}
                 className="px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm disabled:opacity-50"
               >
-                {saving ? 'Saving...' : 'Save'}
+                {saving ? t('common.saving') : t('common.save')}
               </button>
               <button
                 onClick={() => { setEditing(false); setEditForm(member); }}
                 className="px-3 py-1.5 bg-white/10 text-white rounded-lg hover:bg-white/20 transition-colors text-sm"
               >
-                Cancel
+                {t('common.cancel')}
               </button>
             </>
           )}
@@ -192,7 +194,7 @@ export default function TeamMemberPage() {
             onClick={handleDelete}
             className="px-3 py-1.5 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors text-sm"
           >
-            Delete
+            {t('common.delete')}
           </button>
         </div>
       </header>
@@ -204,19 +206,19 @@ export default function TeamMemberPage() {
       {/* Stats Row */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
         <div className="bg-white/10 rounded-lg p-3 text-center">
-          <p className="text-white/60 text-xs">Total Hours</p>
+          <p className="text-white/60 text-xs">{t('team.totalHours')}</p>
           <p className="text-white text-xl font-bold">{stats.total_hours.toFixed(1)}</p>
         </div>
         <div className="bg-white/10 rounded-lg p-3 text-center">
-          <p className="text-white/60 text-xs">Total Pay</p>
+          <p className="text-white/60 text-xs">{t('team.totalPay')}</p>
           <p className="text-white text-xl font-bold">${stats.total_pay.toFixed(2)}</p>
         </div>
         <div className="bg-white/10 rounded-lg p-3 text-center">
-          <p className="text-white/60 text-xs">This Week</p>
+          <p className="text-white/60 text-xs">{t('reports.thisWeek')}</p>
           <p className="text-white text-xl font-bold">{weekHours.toFixed(1)}h</p>
         </div>
         <div className="bg-white/10 rounded-lg p-3 text-center">
-          <p className="text-white/60 text-xs">This Month</p>
+          <p className="text-white/60 text-xs">{t('reports.thisMonth')}</p>
           <p className="text-white text-xl font-bold">{monthHours.toFixed(1)}h</p>
         </div>
       </div>
@@ -227,7 +229,7 @@ export default function TeamMemberPage() {
         {editing ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Name</label>
+              <label className="block text-sm text-gray-600 mb-1">{t('common.name')}</label>
               <input
                 type="text"
                 value={editForm.name || ''}
@@ -236,18 +238,18 @@ export default function TeamMemberPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Type</label>
+              <label className="block text-sm text-gray-600 mb-1">{t('common.type')}</label>
               <select
                 value={editForm.type || 'employee'}
                 onChange={e => setEditForm({ ...editForm, type: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
               >
-                <option value="employee">Employee</option>
-                <option value="contractor">Contractor</option>
+                <option value="employee">{t('team.employee')}</option>
+                <option value="contractor">{t('team.contractor')}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Email</label>
+              <label className="block text-sm text-gray-600 mb-1">{t('common.email')}</label>
               <input
                 type="email"
                 value={editForm.email || ''}
@@ -256,7 +258,7 @@ export default function TeamMemberPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Phone</label>
+              <label className="block text-sm text-gray-600 mb-1">{t('common.phone')}</label>
               <input
                 type="tel"
                 value={editForm.phone || ''}
@@ -285,37 +287,37 @@ export default function TeamMemberPage() {
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Status</label>
+              <label className="block text-sm text-gray-600 mb-1">{t('common.status')}</label>
               <select
                 value={editForm.status || 'active'}
                 onChange={e => setEditForm({ ...editForm, status: e.target.value })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
               >
-                <option value="active">Active</option>
-                <option value="inactive">Inactive</option>
+                <option value="active">{t('common.active')}</option>
+                <option value="inactive">{t('common.inactive')}</option>
               </select>
             </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-500">Email</p>
+              <p className="text-sm text-gray-500">{t('common.email')}</p>
               <p className="text-gray-900">{member.email || '-'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Phone</p>
+              <p className="text-sm text-gray-500">{t('common.phone')}</p>
               <p className="text-gray-900">{member.phone || '-'}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Hourly Pay</p>
-              <p className="text-gray-900">${parseFloat(member.hourly_pay || 0).toFixed(2)}/hr</p>
+              <p className="text-gray-900">${parseFloat(member.hourly_pay || 0).toFixed(2)}{t('common.perHour')}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">PIN Code</p>
               <p className="text-gray-900">{member.pin_code || 'Not set'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Status</p>
+              <p className="text-sm text-gray-500">{t('common.status')}</p>
               <p className="text-gray-900 capitalize">{member.status}</p>
             </div>
             <div>
@@ -334,7 +336,7 @@ export default function TeamMemberPage() {
             onClick={() => setShowAddEntry(!showAddEntry)}
             className="px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
           >
-            {showAddEntry ? 'Cancel' : '+ Add Entry'}
+            {showAddEntry ? t('common.cancel') : '+ Add Entry'}
           </button>
         </div>
 
@@ -343,7 +345,7 @@ export default function TeamMemberPage() {
           <form onSubmit={handleAddEntry} className="bg-gray-50 rounded-lg p-4 mb-4 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Date</label>
+                <label className="block text-sm text-gray-600 mb-1">{t('common.date')}</label>
                 <input
                   type="date"
                   value={entryForm.date}
@@ -353,7 +355,7 @@ export default function TeamMemberPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Hours</label>
+                <label className="block text-sm text-gray-600 mb-1">{t('team.hours')}</label>
                 <input
                   type="number"
                   step="0.25"
@@ -376,13 +378,13 @@ export default function TeamMemberPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Notes</label>
+                <label className="block text-sm text-gray-600 mb-1">{t('common.notes')}</label>
                 <input
                   type="text"
                   value={entryForm.notes}
                   onChange={e => setEntryForm({ ...entryForm, notes: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
-                  placeholder="Optional notes"
+                  placeholder={t('common.optional')}
                 />
               </div>
             </div>
@@ -390,7 +392,7 @@ export default function TeamMemberPage() {
               type="submit"
               className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
             >
-              Save Entry
+              {t('common.save')}
             </button>
           </form>
         )}
@@ -402,12 +404,12 @@ export default function TeamMemberPage() {
             <table className="w-full">
               <thead>
                 <tr className="text-left text-sm text-gray-500 border-b">
-                  <th className="pb-2 font-medium">Date</th>
-                  <th className="pb-2 font-medium">Hours</th>
-                  <th className="pb-2 font-medium hidden sm:table-cell">Service</th>
-                  <th className="pb-2 font-medium hidden md:table-cell">Notes</th>
+                  <th className="pb-2 font-medium">{t('common.date')}</th>
+                  <th className="pb-2 font-medium">{t('team.hours')}</th>
+                  <th className="pb-2 font-medium hidden sm:table-cell">{t('common.services')}</th>
+                  <th className="pb-2 font-medium hidden md:table-cell">{t('common.notes')}</th>
                   <th className="pb-2 font-medium">Pay</th>
-                  <th className="pb-2 font-medium">Approved</th>
+                  <th className="pb-2 font-medium">{t('status.approved')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -428,7 +430,7 @@ export default function TeamMemberPage() {
                           ? 'bg-green-100 text-green-700'
                           : 'bg-yellow-100 text-yellow-700'
                       }`}>
-                        {entry.approved ? 'Yes' : 'Pending'}
+                        {entry.approved ? t('common.yes') : t('status.pending')}
                       </span>
                     </td>
                   </tr>
