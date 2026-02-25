@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
+import { logActivity, ACTIVITY } from '@/lib/activity-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -117,6 +118,18 @@ export async function POST(request) {
   if (insertError) {
     console.error('Feedback insert error:', insertError);
     return Response.json({ error: 'Failed to save feedback' }, { status: 500 });
+  }
+
+  // Log activity
+  if (quote.client_email) {
+    logActivity({
+      detailer_id: quote.detailer_id,
+      customer_email: quote.client_email,
+      activity_type: ACTIVITY.FEEDBACK_RECEIVED,
+      summary: `Feedback received: ${parseInt(rating)} star${parseInt(rating) !== 1 ? 's' : ''}${comment ? ' with comment' : ''}`,
+      details: { rating: parseInt(rating), has_comment: !!comment },
+      quote_id: quote.id,
+    });
   }
 
   return Response.json({ success: true, id: feedback.id });

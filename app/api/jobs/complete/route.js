@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { verifyToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
+import { logActivity, ACTIVITY } from '@/lib/activity-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -140,6 +141,20 @@ export async function POST(request) {
         completion_notes: notes,
       })
       .eq('id', quote_id);
+
+    // Log activity
+    const clientEmail = quote.customer_email || quote.client_email;
+    if (clientEmail) {
+      const aircraft = quote.aircraft_model || quote.aircraft_type || 'Aircraft';
+      logActivity({
+        detailer_id: user.id,
+        customer_email: clientEmail,
+        activity_type: ACTIVITY.JOB_COMPLETED,
+        summary: `Job completed for ${aircraft}`,
+        details: { aircraft, amount: quote.total_price, actual_hours: parseFloat(actual_hours) || quote.total_hours },
+        quote_id: quote_id,
+      });
+    }
 
     // Update customer stats
     if (quote.customer_email) {

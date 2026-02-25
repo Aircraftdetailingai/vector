@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { sendQuoteSentEmail } from '@/lib/email';
 import { sendQuoteSms } from '@/lib/sms';
 import { hasPremiumAccess } from '@/lib/pricing-tiers';
+import { logActivity, ACTIVITY } from '@/lib/activity-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -240,6 +241,20 @@ export async function POST(request, { params }) {
     } catch (e) {
       console.error('SMS send error:', e);
     }
+  }
+
+  // Log activity
+  if (clientEmail) {
+    const aircraft = updated?.aircraft_model || updated?.aircraft_type || 'Aircraft';
+    const amount = updated?.total_price ? `$${Number(updated.total_price).toLocaleString()}` : '';
+    logActivity({
+      detailer_id: user.id,
+      customer_email: clientEmail,
+      activity_type: ACTIVITY.QUOTE_SENT,
+      summary: `Quote sent for ${aircraft} ${amount}`.trim(),
+      details: { aircraft, amount: updated?.total_price },
+      quote_id: id,
+    });
   }
 
   return new Response(JSON.stringify({

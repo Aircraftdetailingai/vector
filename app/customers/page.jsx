@@ -395,8 +395,8 @@ export default function CustomersPage() {
                     </div>
 
                     {/* Customer Info */}
-                    <div className="col-span-3">
-                      <p className="font-medium text-gray-900">{customer.name || 'No name'}</p>
+                    <div className="col-span-3 cursor-pointer" onClick={() => customer.id && router.push(`/customers/${customer.id}`)}>
+                      <p className="font-medium text-gray-900 hover:text-amber-600">{customer.name || 'No name'}</p>
                       <p className="text-xs text-gray-500">{customer.email}</p>
                       {customer.company_name && (
                         <p className="text-xs text-gray-400">{customer.company_name}</p>
@@ -435,14 +435,22 @@ export default function CustomersPage() {
                       {formatDate(customer.last_service_date)}
                     </div>
 
-                    {/* Mobile checkbox */}
-                    <div className="col-span-1 sm:hidden">
+                    {/* View / Mobile checkbox */}
+                    <div className="col-span-1 flex items-center justify-end">
+                      {customer.id && (
+                        <button
+                          onClick={() => router.push(`/customers/${customer.id}`)}
+                          className="hidden sm:inline-flex text-xs text-amber-600 hover:text-amber-700 font-medium"
+                        >
+                          View
+                        </button>
+                      )}
                       {customer.id && (
                         <input
                           type="checkbox"
                           checked={selectedIds.has(customer.id)}
                           onChange={() => toggleSelect(customer.id)}
-                          className="w-4 h-4 rounded border-gray-300 text-amber-500"
+                          className="w-4 h-4 rounded border-gray-300 text-amber-500 sm:hidden"
                         />
                       )}
                     </div>

@@ -5,6 +5,7 @@ import { notifyQuotePaid } from '@/lib/push';
 import { sendPaymentConfirmationSms } from '@/lib/sms';
 import { hasPremiumAccess, PLATFORM_FEES } from '@/lib/pricing-tiers';
 import { notifyPaymentReceived } from '@/lib/notifications';
+import { logActivity, ACTIVITY } from '@/lib/activity-log';
 
 export const dynamic = 'force-dynamic';
 
@@ -131,6 +132,19 @@ export async function POST(request) {
             } catch (e) {
               console.error('Payment confirmation SMS error:', e);
             }
+          }
+          // Log activity
+          const clientEmail = quote.client_email || quote.customer_email;
+          if (clientEmail) {
+            const aircraft = quote.aircraft_model || quote.aircraft_type || 'Aircraft';
+            logActivity({
+              detailer_id: quote.detailer_id,
+              customer_email: clientEmail,
+              activity_type: ACTIVITY.PAYMENT_RECEIVED,
+              summary: `Payment received $${Number(quote.total_price || 0).toLocaleString()} for ${aircraft}`,
+              details: { aircraft, amount: quote.total_price },
+              quote_id: quoteId,
+            });
           }
         }
       }
