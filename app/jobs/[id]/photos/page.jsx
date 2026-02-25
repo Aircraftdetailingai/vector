@@ -165,6 +165,58 @@ export default function JobPhotosPage() {
         </a>
       </header>
 
+      {/* Contact Card */}
+      {quote && (quote.poc_name || quote.emergency_contact_name || quote.client_name) && (
+        <div className="max-w-2xl mx-auto mb-4">
+          <div className="bg-white rounded-xl p-4 shadow">
+            <div className="flex items-center justify-between mb-2">
+              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Contacts</h3>
+              {quote.contact_notes && (
+                <span className="text-xs text-gray-400" title={quote.contact_notes}>Notes &#9432;</span>
+              )}
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Point of Contact */}
+              {(quote.poc_name || quote.client_name) && (
+                <div className="bg-gray-50 rounded-lg p-3">
+                  <p className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                    {quote.poc_role ? `${quote.poc_role} (POC)` : 'Point of Contact'}
+                  </p>
+                  <p className="text-sm font-medium text-gray-900">{quote.poc_name || quote.client_name}</p>
+                  <div className="mt-1 space-y-0.5">
+                    {(quote.poc_phone || quote.client_phone) && (
+                      <a href={`tel:${quote.poc_phone || quote.client_phone}`} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline">
+                        <span>&#9742;</span> {quote.poc_phone || quote.client_phone}
+                      </a>
+                    )}
+                    {(quote.poc_email || quote.client_email) && (
+                      <a href={`mailto:${quote.poc_email || quote.client_email}`} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline">
+                        <span>&#9993;</span> {quote.poc_email || quote.client_email}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )}
+              {/* Emergency Contact */}
+              {quote.emergency_contact_name && (
+                <div className="bg-red-50 rounded-lg p-3 border border-red-100">
+                  <p className="text-xs font-semibold text-red-600 uppercase mb-1">Emergency Contact</p>
+                  <p className="text-sm font-medium text-gray-900">{quote.emergency_contact_name}</p>
+                  {quote.emergency_contact_phone && (
+                    <a href={`tel:${quote.emergency_contact_phone}`} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline mt-1">
+                      <span>&#9742;</span> {quote.emergency_contact_phone}
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+            {quote.contact_notes && (
+              <p className="mt-2 text-xs text-gray-500 bg-gray-50 rounded p-2">{quote.contact_notes}</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {error && (
         <div className="bg-red-100 border border-red-300 text-red-700 px-4 py-3 rounded mb-4">
           {error}

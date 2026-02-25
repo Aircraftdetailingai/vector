@@ -915,6 +915,34 @@ export default function QuotesPage() {
               {completeModal.client_name && ` - ${completeModal.client_name}`}
             </p>
 
+            {/* Contact Info */}
+            {(completeModal.poc_name || completeModal.emergency_contact_name) && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg text-sm space-y-2">
+                {completeModal.poc_name && (
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="font-medium">{completeModal.poc_name}</span>
+                      {completeModal.poc_role && <span className="text-gray-500 ml-1">({completeModal.poc_role})</span>}
+                    </div>
+                    {completeModal.poc_phone && (
+                      <a href={`tel:${completeModal.poc_phone}`} className="text-blue-600 hover:underline">{completeModal.poc_phone}</a>
+                    )}
+                  </div>
+                )}
+                {completeModal.emergency_contact_name && (
+                  <div className="flex items-center justify-between pt-1 border-t">
+                    <div>
+                      <span className="text-xs text-red-600 font-semibold uppercase">Emergency: </span>
+                      <span className="font-medium">{completeModal.emergency_contact_name}</span>
+                    </div>
+                    {completeModal.emergency_contact_phone && (
+                      <a href={`tel:${completeModal.emergency_contact_phone}`} className="text-blue-600 hover:underline">{completeModal.emergency_contact_phone}</a>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
+
             <div className="space-y-4">
               {/* Per-Service Hours Breakdown */}
               {serviceHours.length > 0 ? (
