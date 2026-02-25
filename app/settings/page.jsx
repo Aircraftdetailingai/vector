@@ -49,6 +49,7 @@ function SettingsContent() {
   const [minimumFee, setMinimumFee] = useState(0);
   const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
   const [newLocation, setNewLocation] = useState('');
+  const [homeAirport, setHomeAirport] = useState('');
 
   // Platform fee pass-through
   const [passFeeToCustomer, setPassFeeToCustomer] = useState(false);
@@ -97,6 +98,7 @@ function SettingsContent() {
     setQuoteDisplayPref(u.quote_display_preference || 'package');
     setEfficiencyFactor(u.efficiency_factor || 1.0);
     setLaborRate(u.default_labor_rate || 25);
+    setHomeAirport(u.home_airport || '');
       setEmailNotifs({
         quoteCreated: u.notification_settings?.quoteCreated || false,
         quoteSent: u.notification_settings?.quoteSent || false,
@@ -415,6 +417,20 @@ function SettingsContent() {
     setUser(newUser);
   };
 
+  const saveHomeAirport = async (code) => {
+    await fetch('/api/user/home-airport', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('vector_token')}`,
+      },
+      body: JSON.stringify({ home_airport: code }),
+    });
+    const newUser = { ...user, home_airport: code };
+    localStorage.setItem('vector_user', JSON.stringify(newUser));
+    setUser(newUser);
+  };
+
   const saveNotifications = async (settings) => {
     await fetch('/api/user/notification-settings', {
       method: 'POST',
@@ -574,6 +590,7 @@ function SettingsContent() {
       if (pendingChanges.has('efficiencyFactor')) promises.push(saveEfficiencyFactor(efficiencyFactor));
       if (pendingChanges.has('minimumFee')) promises.push(saveMinimumFee(parseFloat(minimumFee) || 0, minimumFeeLocations));
       if (pendingChanges.has('currency')) promises.push(saveCurrency(currency));
+      if (pendingChanges.has('homeAirport')) promises.push(saveHomeAirport(homeAirport.toUpperCase().trim()));
       if (pendingChanges.has('passFee')) promises.push(savePassFee(passFeeToCustomer));
       if (pendingChanges.has('quoteDisplay')) promises.push(saveQuoteDisplayPref(quoteDisplayPref));
       if (pendingChanges.has('notifications')) {
@@ -1100,6 +1117,23 @@ function SettingsContent() {
             {minimumFeeLocations.length === 0 && (
               <p className="text-xs text-gray-400 italic">Minimum fee will apply to all locations</p>
             )}
+          </div>
+        </div>
+
+        {/* Home Airport */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Home Airport</h3>
+          <p className="text-sm text-gray-500 mb-3">Set your primary airport for weather forecasts and job-day alerts on the dashboard.</p>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              value={homeAirport}
+              onChange={(e) => { setHomeAirport(e.target.value.toUpperCase()); markDirty('homeAirport'); }}
+              placeholder="e.g. KJFK, LAX, KTEB"
+              className="border rounded px-3 py-2 w-40 uppercase text-sm"
+              maxLength={4}
+            />
+            <span className="text-xs text-gray-400 self-center">ICAO or IATA code</span>
           </div>
         </div>
 

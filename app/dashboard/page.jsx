@@ -11,6 +11,7 @@ import { useToast } from '../../components/Toast.jsx';
 import { formatPrice, formatPriceWhole, currencySymbol } from '../../lib/formatPrice';
 import { calculateProductEstimates } from '../../lib/product-calculator';
 import DashboardTour from '../../components/DashboardTour.jsx';
+import WeatherWidget from '../../components/WeatherWidget.jsx';
 
 const categoryLabels = {
   piston: 'Pistons',
@@ -1623,6 +1624,7 @@ function DashboardContent() {
         <div data-tour="quick-stats">
           <QuickStats stats={quickStats} onNewQuote={() => window.scrollTo({ top: 0, behavior: 'smooth' })} />
         </div>
+        <WeatherWidget />
         <FreeUsageBar user={user} />
         <LowStockAlert />
         <RecentQuotes quotes={recentQuotes} />
