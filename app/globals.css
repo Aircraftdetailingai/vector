@@ -17,3 +17,22 @@
 .animate-slide-in {
   animation: slide-in 0.3s ease-out;
 }
+
+/* Force hide Vercel toolbar */
+[data-vercel-toolbar],
+#vercel-toolbar,
+#__vercel_toolbar,
+.vercel-toolbar,
+div[class*="vercel"],
+iframe[src*="vercel"] {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+  z-index: -9999 !important;
+}
+
+/* Also hide any fixed positioned elements from Vercel */
+body > div[style*="position: fixed"]:last-of-type {
+  display: none !important;
+}
