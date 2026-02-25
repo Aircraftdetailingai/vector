@@ -202,7 +202,7 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
               <div key={q.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{q.client_name || 'Customer'}</p>
-                  <p className="text-xs text-gray-500">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &#183; ${(q.total_price || 0).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &#183; {currencySymbol()}{(q.total_price || 0).toLocaleString()}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-amber-600 font-medium">{formatExpiry(q.valid_until)}</span>
@@ -231,7 +231,7 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
               <div key={q.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
                 <div>
                   <p className="text-sm font-medium text-gray-900">{q.client_name || 'Customer'}</p>
-                  <p className="text-xs text-gray-500">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &#183; ${(q.total_price || 0).toLocaleString()}</p>
+                  <p className="text-xs text-gray-500">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &#183; {currencySymbol()}{(q.total_price || 0).toLocaleString()}</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-red-500">{formatExpiry(q.valid_until)}</span>
@@ -289,22 +289,22 @@ function QuickStats({ stats, onNewQuote }) {
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
           <p className="text-gray-500 text-xs">This Week</p>
-          <p className="text-xl font-bold text-gray-900">${(stats.weekRevenue || 0).toLocaleString()}</p>
+          <p className="text-xl font-bold text-gray-900">{currencySymbol()}{(stats.weekRevenue || 0).toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
           <p className="text-gray-500 text-xs">This Month</p>
-          <p className="text-xl font-bold text-gray-900">${(stats.monthRevenue || 0).toLocaleString()}</p>
+          <p className="text-xl font-bold text-gray-900">{currencySymbol()}{(stats.monthRevenue || 0).toLocaleString()}</p>
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
           <p className="text-gray-500 text-xs">Outstanding</p>
           <p className="text-xl font-bold text-red-500">{stats.outstandingInvoices || 0}</p>
           {stats.outstandingTotal > 0 && (
-            <p className="text-xs text-gray-400">${(stats.outstandingTotal || 0).toLocaleString()}</p>
+            <p className="text-xs text-gray-400">{currencySymbol()}{(stats.outstandingTotal || 0).toLocaleString()}</p>
           )}
         </div>
         <div className="bg-white rounded-lg p-3 shadow">
           <p className="text-gray-500 text-xs">Avg Job Value</p>
-          <p className="text-xl font-bold text-green-600">${formatPriceWhole(stats.avgJobValue)}</p>
+          <p className="text-xl font-bold text-green-600">{currencySymbol()}{formatPriceWhole(stats.avgJobValue)}</p>
         </div>
         {stats.avgRating !== null && stats.avgRating !== undefined && (
           <div className="bg-white rounded-lg p-3 shadow">
@@ -369,7 +369,7 @@ function QuickStats({ stats, onNewQuote }) {
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
-                    <span className="font-medium text-gray-900">${(item.price || 0).toLocaleString()}</span>
+                    <span className="font-medium text-gray-900">{currencySymbol()}{(item.price || 0).toLocaleString()}</span>
                     <span className="text-xs text-gray-400 w-14 text-right">{timeAgo(item.date)}</span>
                   </div>
                 </div>
@@ -438,7 +438,7 @@ function RecentQuotes({ quotes, onViewQuote }) {
               <span className={`text-xs px-2 py-1 rounded-full ${statusColors[quote.status] || 'bg-gray-100 text-gray-600'}`}>
                 {quote.status || 'draft'}
               </span>
-              <span className="font-bold text-gray-900">${formatPriceWhole(quote.total_price)}</span>
+              <span className="font-bold text-gray-900">{currencySymbol()}{formatPriceWhole(quote.total_price)}</span>
             </div>
           </a>
         ))}
@@ -483,7 +483,7 @@ function UpcomingRecurring({ recurring }) {
               </p>
             </div>
             <div className="text-right">
-              <p className="font-bold text-gray-900">${formatPriceWhole(item.total_price)}</p>
+              <p className="font-bold text-gray-900">{currencySymbol()}{formatPriceWhole(item.total_price)}</p>
               <p className="text-xs text-amber-600">
                 {item.next_service_date ? new Date(item.next_service_date).toLocaleDateString() : 'No date'}
               </p>
@@ -1228,10 +1228,10 @@ function DashboardContent() {
                             <span className="text-xs text-gray-500 block">{svc.description}</span>
                           )}
                           <span className="text-xs text-gray-400">
-                            {hours.toFixed(1)}h @ ${svc.hourly_rate}/hr
+                            {hours.toFixed(1)}h @ {currencySymbol()}{svc.hourly_rate}/hr
                           </span>
                         </div>
-                        <span className="font-bold text-lg">${formatPriceWhole(price)}</span>
+                        <span className="font-bold text-lg">{currencySymbol()}{formatPriceWhole(price)}</span>
                       </div>
                     );
                   })}
@@ -1281,10 +1281,10 @@ function DashboardContent() {
                             <div className="text-right">
                               {disc > 0 && (
                                 <span className="text-sm text-gray-400 line-through block">
-                                  ${formatPriceWhole(servicesValue)}
+                                  {currencySymbol()}{formatPriceWhole(servicesValue)}
                                 </span>
                               )}
-                              <span className="font-bold text-xl text-green-600">${formatPriceWhole(packagePrice)}</span>
+                              <span className="font-bold text-xl text-green-600">{currencySymbol()}{formatPriceWhole(packagePrice)}</span>
                             </div>
                           </div>
                         </div>
@@ -1305,7 +1305,7 @@ function DashboardContent() {
                   const isChecked = selectedAddons[addon.id] || false;
                   const displayAmount = addon.fee_type === 'percent'
                     ? `+${addon.amount}%`
-                    : `+$${addon.amount}`;
+                    : `+${currencySymbol()}${addon.amount}`;
                   return (
                     <div
                       key={addon.id}
@@ -1349,8 +1349,8 @@ function DashboardContent() {
               {minimumFee > 0 && (
                 <p className="text-xs text-gray-500 mt-1">
                   {minimumFeeLocations.length > 0
-                    ? `Minimum fee of $${minimumFee.toFixed(2)} applies at: ${minimumFeeLocations.join(', ')}`
-                    : `Minimum call out fee: $${minimumFee.toFixed(2)}`
+                    ? `Minimum fee of ${currencySymbol()}${minimumFee.toFixed(2)} applies at: ${minimumFeeLocations.join(', ')}`
+                    : `Minimum call out fee: ${currencySymbol()}${minimumFee.toFixed(2)}`
                   }
                 </p>
               )}
@@ -1391,9 +1391,9 @@ function DashboardContent() {
                       <li key={svc.id} className="flex justify-between text-sm">
                         <div>
                           <span className="text-gray-300">{svc.name}</span>
-                          <span className="text-xs text-gray-500 block">{hours.toFixed(1)}h x ${svc.hourly_rate}/hr</span>
+                          <span className="text-xs text-gray-500 block">{hours.toFixed(1)}h x {currencySymbol()}{svc.hourly_rate}/hr</span>
                         </div>
-                        <span>${formatPriceWhole(price)}</span>
+                        <span>{currencySymbol()}{formatPriceWhole(price)}</span>
                       </li>
                     );
                   })}
@@ -1403,7 +1403,7 @@ function DashboardContent() {
                 {selectedPackage && discountPercent > 0 && (
                   <div className="flex justify-between text-sm text-green-400 mb-1">
                     <span>{selectedPackage.name} ({discountPercent}% off)</span>
-                    <span>-${formatPriceWhole(discountAmount)}</span>
+                    <span>-{currencySymbol()}{formatPriceWhole(discountAmount)}</span>
                   </div>
                 )}
                 {selectedPackage && discountPercent === 0 && (
@@ -1428,7 +1428,7 @@ function DashboardContent() {
                   {addonsTotal > 0 && (
                     <div className="flex justify-between text-sm text-gray-400">
                       <span>Subtotal</span>
-                      <span>${formatPriceWhole(afterDifficulty)}</span>
+                      <span>{currencySymbol()}{formatPriceWhole(afterDifficulty)}</span>
                     </div>
                   )}
 
@@ -1436,7 +1436,7 @@ function DashboardContent() {
                   {addonFeeItems.map((a) => (
                     <div key={a.id} className="flex justify-between text-sm text-orange-400">
                       <span>{a.name} {a.fee_type === 'percent' ? `(${a.amount}%)` : ''}</span>
-                      <span>+${formatPriceWhole(a.calculated)}</span>
+                      <span>+{currencySymbol()}{formatPriceWhole(a.calculated)}</span>
                     </div>
                   ))}
 
@@ -1445,11 +1445,11 @@ function DashboardContent() {
                     <>
                       <div className="flex justify-between text-sm text-gray-500 line-through">
                         <span>Calculated</span>
-                        <span>${formatPrice(calculatedPrice)}</span>
+                        <span>{currencySymbol()}{formatPrice(calculatedPrice)}</span>
                       </div>
                       <div className="flex justify-between text-sm text-amber-400">
                         <span>Minimum Fee Applied</span>
-                        <span>${formatPrice(minimumFee)}</span>
+                        <span>{currencySymbol()}{formatPrice(minimumFee)}</span>
                       </div>
                     </>
                   )}
@@ -1457,13 +1457,13 @@ function DashboardContent() {
                   {/* Minimum check indicator */}
                   {minimumFee > 0 && !isMinimumApplied && calculatedPrice > 0 && (
                     <div className="text-xs text-green-400">
-                      Minimum (${minimumFee}): &#10003; Met
+                      Minimum ({currencySymbol()}{minimumFee}): &#10003; Met
                     </div>
                   )}
 
                   <div className="flex justify-between text-xl font-bold pt-1">
                     <span>Total</span>
-                    <span>${formatPrice(totalPrice)}</span>
+                    <span>{currencySymbol()}{formatPrice(totalPrice)}</span>
                   </div>
 
                   {/* Profit preview (internal only) */}
@@ -1471,11 +1471,11 @@ function DashboardContent() {
                     <div className="mt-2 pt-2 border-t border-gray-600/50 space-y-1">
                       <div className="flex justify-between text-xs text-gray-400">
                         <span>Product Cost</span>
-                        <span>-${formatPrice(estimatedProductCost)}</span>
+                        <span>-{currencySymbol()}{formatPrice(estimatedProductCost)}</span>
                       </div>
                       <div className="flex justify-between text-sm font-semibold text-green-400">
                         <span>Est. Profit</span>
-                        <span>${formatPrice(estimatedProfit)}
+                        <span>{currencySymbol()}{formatPrice(estimatedProfit)}
                           <span className="text-xs font-normal ml-1">({totalPrice > 0 ? ((estimatedProfit / totalPrice) * 100).toFixed(0) : 0}%)</span>
                         </span>
                       </div>

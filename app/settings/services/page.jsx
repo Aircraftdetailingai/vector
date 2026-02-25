@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { currencySymbol } from '@/lib/formatPrice';
 
 const HOURS_FIELD_OPTIONS = {
   ext_wash_hours: 'Exterior Wash Time',
@@ -619,7 +620,7 @@ export default function ServicesPage() {
                   </div>
                   <div className="mt-2">
                     <span className="text-xl font-bold text-orange-600">
-                      {fee.fee_type === 'percent' ? `${fee.amount}%` : `$${fee.amount}`}
+                      {fee.fee_type === 'percent' ? `${fee.amount}%` : `${currencySymbol()}${fee.amount}`}
                     </span>
                     <span className="text-xs text-gray-500 ml-2">
                       {fee.fee_type === 'percent' ? 'of subtotal' : 'flat fee'}

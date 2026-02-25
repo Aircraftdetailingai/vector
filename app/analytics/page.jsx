@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { formatPriceWhole } from '@/lib/formatPrice';
+import { formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 
 // --- Pure CSS chart components ---
 
@@ -154,9 +154,9 @@ export default function AnalyticsPage() {
         <div className="space-y-6 max-w-6xl mx-auto">
           {/* Top stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <StatCard icon="💰" label="Revenue" value={`$${totalRevenue.toLocaleString()}`} sub={`Last ${days} days`} />
+            <StatCard icon="💰" label="Revenue" value={`${currencySymbol()}${totalRevenue.toLocaleString()}`} sub={`Last ${days} days`} />
             <StatCard icon="📊" label="Conversion" value={`${conversionRate}%`} sub={`${data.funnel.totalPaid} of ${data.funnel.totalCreated} quotes`} />
-            <StatCard icon="📋" label="Avg Job Value" value={`$${avgJobValue.toLocaleString()}`} sub={`${totalJobs} jobs`} />
+            <StatCard icon="📋" label="Avg Job Value" value={`${currencySymbol()}${avgJobValue.toLocaleString()}`} sub={`${totalJobs} jobs`} />
             <StatCard icon="🔄" label="Retention" value={`${data.retention.retentionRate}%`} sub={`${data.retention.repeatCustomers} repeat of ${data.retention.totalCustomers}`} />
           </div>
 
@@ -224,7 +224,7 @@ export default function AnalyticsPage() {
                 <BarChart
                   data={data.revenueTrend.map(m => {
                     const [y, mo] = m.month.split('-');
-                    return { ...m, label: new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short' }), display: `$${m.revenue.toLocaleString()}` };
+                    return { ...m, label: new Date(y, mo - 1).toLocaleDateString('en-US', { month: 'short' }), display: `${currencySymbol()}${m.revenue.toLocaleString()}` };
                   })}
                   valueKey="revenue"
                   labelKey="label"
@@ -255,7 +255,7 @@ export default function AnalyticsPage() {
                     label={svc.name}
                     value={svc.revenue}
                     max={data.topServices[0]?.revenue || 1}
-                    suffix="$"
+                    suffix={currencySymbol()}
                     color={i === 0 ? 'amber' : i < 3 ? 'blue' : 'purple'}
                   />
                 ))}

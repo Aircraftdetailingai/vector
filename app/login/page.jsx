@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { setUserCurrency } from '@/lib/currency';
 
 export default function Page() {
   const router = useRouter();
@@ -44,6 +45,7 @@ export default function Page() {
         if (typeof window !== 'undefined') {
           localStorage.setItem('vector_token', data.token);
           localStorage.setItem('vector_user', JSON.stringify(data.user));
+          setUserCurrency(data.user?.currency || 'USD');
           console.log('Saved to localStorage');
           console.log('Stored token:', localStorage.getItem('vector_token')?.substring(0, 20) + '...');
           console.log('Stored user:', localStorage.getItem('vector_user'));

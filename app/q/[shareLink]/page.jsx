@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams } from 'next/navigation';
 import { PLATFORM_FEES } from '@/lib/pricing-tiers';
 import { formatPrice } from '@/lib/formatPrice';
+import { getCurrencySymbol } from '@/lib/currency';
 
 // Friendly error messages for payment declines
 const PAYMENT_ERROR_MESSAGES = {
@@ -49,6 +50,7 @@ export default function QuoteViewPage() {
     }
   }, [params.shareLink]);
 
+  const sym = getCurrencySymbol(detailer?.currency || 'USD');
   const isExpired = quote && new Date() > new Date(quote.valid_until);
   const isPaid = quote && (quote.status === 'paid' || quote.status === 'approved');
 
@@ -241,7 +243,7 @@ export default function QuoteViewPage() {
               </div>
               <div className="flex justify-between pt-2 border-t">
                 <span className="text-gray-800 font-semibold">Total Paid:</span>
-                <span className="font-bold text-lg">${formatPrice(quote.total_price)}</span>
+                <span className="font-bold text-lg">{sym}{formatPrice(quote.total_price)}</span>
               </div>
             </div>
           </div>
@@ -326,7 +328,7 @@ export default function QuoteViewPage() {
                 {quote.line_items.map((item, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-gray-700">{item.description}</span>
-                    <span className="text-gray-900">${formatPrice(item.amount)}</span>
+                    <span className="text-gray-900">{sym}{formatPrice(item.amount)}</span>
                   </div>
                 ))}
               </div>
@@ -336,11 +338,11 @@ export default function QuoteViewPage() {
               <div className="pt-3 border-t space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">Labor</span>
-                  <span className="text-gray-900">${formatPrice(parseFloat(quote.labor_total) || parseFloat(quote.total_price) * 0.7)}</span>
+                  <span className="text-gray-900">{sym}{formatPrice(parseFloat(quote.labor_total) || parseFloat(quote.total_price) * 0.7)}</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">Products & Materials</span>
-                  <span className="text-gray-900">${formatPrice(parseFloat(quote.products_total) || parseFloat(quote.total_price) * 0.3)}</span>
+                  <span className="text-gray-900">{sym}{formatPrice(parseFloat(quote.products_total) || parseFloat(quote.total_price) * 0.3)}</span>
                 </div>
               </div>
             )}
@@ -361,7 +363,7 @@ export default function QuoteViewPage() {
                     <span className="text-gray-700">
                       {fee.name} {fee.fee_type === 'percent' ? `(${fee.amount}%)` : ''}
                     </span>
-                    <span className="text-gray-900">+${formatPrice(fee.calculated)}</span>
+                    <span className="text-gray-900">+{sym}{formatPrice(fee.calculated)}</span>
                   </div>
                 ))}
               </div>
@@ -381,12 +383,12 @@ export default function QuoteViewPage() {
                   {passFee && serviceFee > 0 && (
                     <div className="flex justify-between text-sm pt-2">
                       <span className="text-gray-500">Service Fee ({Math.round(feeRate * 100)}%)</span>
-                      <span className="text-gray-700">+${formatPrice(serviceFee)}</span>
+                      <span className="text-gray-700">+{sym}{formatPrice(serviceFee)}</span>
                     </div>
                   )}
                   <div className="flex justify-between pt-3 border-t">
                     <span className="text-gray-800 font-semibold">Total:</span>
-                    <span className="font-bold text-2xl text-[#1e3a5f]">${formatPrice(displayTotal)}</span>
+                    <span className="font-bold text-2xl text-[#1e3a5f]">{sym}{formatPrice(displayTotal)}</span>
                   </div>
                 </>
               );

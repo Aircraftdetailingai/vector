@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import ExportGate from '@/components/ExportGate';
+import { currencySymbol } from '@/lib/formatPrice';
 
 export default function ProfitabilityPage() {
   const router = useRouter();
@@ -44,7 +45,7 @@ export default function ProfitabilityPage() {
   };
 
   const formatCurrency = (val) => {
-    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
+    return currencySymbol() + (val || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
 
   const formatPercent = (val) => {
@@ -67,12 +68,12 @@ export default function ProfitabilityPage() {
                   `Profitability Report - Last ${period} days`,
                   `Generated: ${new Date().toISOString().split('T')[0]}`,
                   '',
-                  `Total Revenue,$${stats.totalRevenue?.toFixed(2) || '0.00'}`,
+                  `Total Revenue,${currencySymbol()}${stats.totalRevenue?.toFixed(2) || '0.00'}`,
                   `Total Jobs,${stats.totalJobs || 0}`,
-                  `Avg Job Value,$${stats.avgJobValue?.toFixed(2) || '0.00'}`,
-                  `Material Costs,$${stats.materialCosts?.toFixed(2) || '0.00'}`,
-                  `Platform Fees,$${stats.platformFees?.toFixed(2) || '0.00'}`,
-                  `Effective Hourly Rate,$${stats.effectiveHourlyRate?.toFixed(2) || '0.00'}`,
+                  `Avg Job Value,${currencySymbol()}${stats.avgJobValue?.toFixed(2) || '0.00'}`,
+                  `Material Costs,${currencySymbol()}${stats.materialCosts?.toFixed(2) || '0.00'}`,
+                  `Platform Fees,${currencySymbol()}${stats.platformFees?.toFixed(2) || '0.00'}`,
+                  `Effective Hourly Rate,${currencySymbol()}${stats.effectiveHourlyRate?.toFixed(2) || '0.00'}`,
                 ];
                 const blob = new Blob([lines.join('\n')], { type: 'text/csv' });
                 const a = document.createElement('a'); a.href = URL.createObjectURL(blob);

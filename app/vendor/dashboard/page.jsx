@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DataTable from '@/components/DataTable';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { formatPrice, formatPriceWhole } from '@/lib/formatPrice';
+import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 
 export default function VendorDashboardPage() {
   const router = useRouter();
@@ -124,18 +124,18 @@ export default function VendorDashboardPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <StatCard
                 label="Total Sales"
-                value={`$${formatPriceWhole(stats.totalSales)}`}
+                value={`${currencySymbol()}${formatPriceWhole(stats.totalSales)}`}
                 sub="All time"
               />
               <StatCard
                 label="Your Earnings"
-                value={`$${formatPriceWhole(stats.vendorEarnings)}`}
+                value={`${currencySymbol()}${formatPriceWhole(stats.vendorEarnings)}`}
                 sub={`${100 - stats.commissionRate}% of sales`}
                 highlight
               />
               <StatCard
                 label="Available Balance"
-                value={`$${formatPriceWhole(stats.currentBalance)}`}
+                value={`${currencySymbol()}${formatPriceWhole(stats.currentBalance)}`}
                 sub="Ready for payout"
               />
               <StatCard

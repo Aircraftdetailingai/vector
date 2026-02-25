@@ -145,25 +145,25 @@ export default function EquipmentPage() {
     setScrapeError('');
     const token = localStorage.getItem('vector_token');
     try {
-      const res = await fetch('/api/equipment/scrape', {
+      const res = await fetch('/api/scrape-product', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ url }),
+        body: JSON.stringify({ url, type: 'equipment' }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to extract product info');
-      const p = data.product;
       setFormData(prev => ({
         ...prev,
-        name: p.name || prev.name,
-        brand: p.brand || prev.brand,
-        model: p.model || prev.model,
-        purchasePrice: p.price || prev.purchasePrice,
-        product_url: p.product_url || url,
-        image_url: p.image_url || prev.image_url,
+        name: data.name || prev.name,
+        brand: data.brand || prev.brand,
+        model: data.model || prev.model,
+        category: data.category || prev.category,
+        purchasePrice: data.price ? String(data.price) : prev.purchasePrice,
+        product_url: url,
+        image_url: data.imageUrl || prev.image_url,
       }));
     } catch (err) {
       setScrapeError(err.message);

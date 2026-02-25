@@ -2,6 +2,8 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { DEFAULT_PRODUCT_RATIOS, SERVICE_TYPE_LABELS } from '../../lib/product-calculator';
+import { setUserCurrency } from '@/lib/currency';
+import { currencySymbol } from '@/lib/formatPrice';
 
 const DEFAULT_ADDON_FEES = [
   { name: 'Hazmat Fee', description: 'Hazardous material handling surcharge', fee_type: 'flat', amount: 250 },
@@ -291,6 +293,7 @@ function SettingsContent() {
       if (res.ok) {
         const data = await res.json();
         setCurrency(data.currency || 'USD');
+        setUserCurrency(data.currency || 'USD');
         setCurrencies(data.currencies || []);
       }
     } catch (err) {
@@ -312,6 +315,7 @@ function SettingsContent() {
       });
       if (res.ok) {
         setCurrency(code);
+        setUserCurrency(code);
         // Update local storage
         const stored = localStorage.getItem('vector_user');
         if (stored) {
@@ -1139,7 +1143,7 @@ function SettingsContent() {
                   </div>
                   <div className="mt-2">
                     <span className="text-xl font-bold text-amber-600">
-                      {fee.fee_type === 'percent' ? `${fee.amount}%` : `$${fee.amount}`}
+                      {fee.fee_type === 'percent' ? `${fee.amount}%` : `${currencySymbol()}${fee.amount}`}
                     </span>
                     <span className="text-xs text-gray-500 ml-2">
                       {fee.fee_type === 'percent' ? 'of subtotal' : 'flat fee'}

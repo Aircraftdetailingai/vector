@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
+import { currencySymbol } from '@/lib/formatPrice';
 
 export default function ROIDashboard({ compact = false }) {
   const [metrics, setMetrics] = useState(null);
@@ -195,12 +196,12 @@ export default function ROIDashboard({ compact = false }) {
                 <div>
                   <p className="font-medium text-gray-900">{b.label}</p>
                   <p className="text-sm text-gray-500">
-                    Platform avg: {b.format === 'percent' ? `${b.average}%` : b.format === 'currency' ? `$${b.average.toLocaleString()}` : `${b.average} min`}
+                    Platform avg: {b.format === 'percent' ? `${b.average}%` : b.format === 'currency' ? `${currencySymbol()}${b.average.toLocaleString()}` : `${b.average} min`}
                   </p>
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-gray-900">
-                    {b.format === 'percent' ? `${b.yours}%` : b.format === 'currency' ? `$${b.yours?.toLocaleString() || 0}` : b.yours !== null ? `${b.yours} min` : '-'}
+                    {b.format === 'percent' ? `${b.yours}%` : b.format === 'currency' ? `${currencySymbol()}${b.yours?.toLocaleString() || 0}` : b.yours !== null ? `${b.yours} min` : '-'}
                   </p>
                   {b.better && (
                     <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">

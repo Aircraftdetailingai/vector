@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import DataTable from '@/components/DataTable';
 import LoadingSpinner from '@/components/LoadingSpinner';
-import { formatPrice, formatPriceWhole } from '@/lib/formatPrice';
+import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 import ExportGate from '@/components/ExportGate';
 
 const statusColors = {
@@ -471,7 +471,7 @@ export default function QuotesPage() {
       header: 'Quote Total',
       accessorKey: 'total_price',
       cell: ({ getValue }) => (
-        <span className="font-semibold">${formatPrice(getValue())}</span>
+        <span className="font-semibold">{currencySymbol()}{formatPrice(getValue())}</span>
       ),
     },
     {
@@ -480,7 +480,7 @@ export default function QuotesPage() {
       accessorFn: (row) => getProductCost(row),
       cell: ({ getValue }) => {
         const cost = getValue();
-        return cost > 0 ? <span className="text-red-600">${formatPrice(cost)}</span> : <span className="text-gray-400">-</span>;
+        return cost > 0 ? <span className="text-red-600">{currencySymbol()}{formatPrice(cost)}</span> : <span className="text-gray-400">-</span>;
       },
     },
     {
@@ -498,7 +498,7 @@ export default function QuotesPage() {
         const margin = revenue > 0 ? ((profit / revenue) * 100).toFixed(0) : 0;
         return (
           <div>
-            <span className={`font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>${formatPrice(profit)}</span>
+            <span className={`font-semibold ${profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>{currencySymbol()}{formatPrice(profit)}</span>
             <span className="text-xs text-gray-400 ml-1">({margin}%)</span>
           </div>
         );
@@ -723,11 +723,11 @@ export default function QuotesPage() {
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
           <p className="text-gray-500 text-sm">Revenue</p>
-          <p className="text-2xl font-bold text-blue-600">${formatPriceWhole(stats.revenue)}</p>
+          <p className="text-2xl font-bold text-blue-600">{currencySymbol()}{formatPriceWhole(stats.revenue)}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
           <p className="text-gray-500 text-sm">Gross Profit</p>
-          <p className="text-2xl font-bold text-green-600">${formatPriceWhole(stats.revenue - stats.productCost)}</p>
+          <p className="text-2xl font-bold text-green-600">{currencySymbol()}{formatPriceWhole(stats.revenue - stats.productCost)}</p>
           {stats.revenue > 0 && (
             <p className="text-xs text-gray-400">{((1 - stats.productCost / stats.revenue) * 100).toFixed(0)}% margin</p>
           )}
@@ -945,12 +945,12 @@ export default function QuotesPage() {
                       className="text-sm text-amber-600 hover:underline"
                     >+ Add Product</button>
                     {selectedProducts.length > 0 && completionData.product_cost && (
-                      <p className="text-xs text-gray-500 mt-1">Estimated material cost: ${completionData.product_cost}</p>
+                      <p className="text-xs text-gray-500 mt-1">Estimated material cost: {currencySymbol()}{completionData.product_cost}</p>
                     )}
                   </div>
                 ) : (
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-500">$</span>
+                    <span className="text-sm text-gray-500">{currencySymbol()}</span>
                     <input
                       type="number"
                       step="0.01"
@@ -1100,7 +1100,7 @@ export default function QuotesPage() {
 
             <div className="bg-gray-50 p-3 rounded mb-4">
               <p className="text-sm text-gray-600">
-                <strong>Current Quote Total:</strong> ${formatPrice(changeOrderModal.total_price)}
+                <strong>Current Quote Total:</strong> {currencySymbol()}{formatPrice(changeOrderModal.total_price)}
               </p>
             </div>
 
@@ -1126,7 +1126,7 @@ export default function QuotesPage() {
                       className="flex-1 border rounded px-3 py-2"
                     />
                     <div className="flex items-center">
-                      <span className="mr-1">$</span>
+                      <span className="mr-1">{currencySymbol()}</span>
                       <input
                         type="number"
                         step="0.01"
@@ -1165,14 +1165,14 @@ export default function QuotesPage() {
                 <div className="flex justify-between text-sm mb-1">
                   <span>Additional Amount:</span>
                   <span className="font-semibold">
-                    ${formatPrice(changeOrderData.services
+                    {currencySymbol()}{formatPrice(changeOrderData.services
                       .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0))}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-bold">
                   <span>New Total:</span>
                   <span>
-                    ${formatPrice((parseFloat(changeOrderModal.total_price) || 0) +
+                    {currencySymbol()}{formatPrice((parseFloat(changeOrderModal.total_price) || 0) +
                       changeOrderData.services.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0))}
                   </span>
                 </div>
