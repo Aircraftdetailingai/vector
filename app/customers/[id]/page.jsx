@@ -1,24 +1,33 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 const ACTIVITY_CONFIG = {
-  quote_created: { icon: '+', color: 'bg-blue-500', label: 'Quote Created' },
-  quote_sent: { icon: '\u2192', color: 'bg-indigo-500', label: 'Quote Sent' },
-  quote_viewed: { icon: '\u25C9', color: 'bg-purple-500', label: 'Quote Viewed' },
-  quote_expired: { icon: '\u2717', color: 'bg-gray-500', label: 'Quote Expired' },
-  payment_received: { icon: '$', color: 'bg-green-500', label: 'Payment Received' },
-  payment_failed: { icon: '!', color: 'bg-red-500', label: 'Payment Failed' },
-  refund_issued: { icon: '\u21A9', color: 'bg-red-400', label: 'Refund Issued' },
-  job_completed: { icon: '\u2713', color: 'bg-emerald-500', label: 'Job Completed' },
-  job_scheduled: { icon: '\uD83D\uDCC5', color: 'bg-amber-500', label: 'Job Scheduled' },
-  invoice_created: { icon: '#', color: 'bg-blue-400', label: 'Invoice Created' },
-  invoice_emailed: { icon: '\u2709', color: 'bg-blue-300', label: 'Invoice Emailed' },
-  note_added: { icon: '\uD83D\uDCDD', color: 'bg-gray-400', label: 'Note Added' },
-  feedback_received: { icon: '\u2605', color: 'bg-amber-400', label: 'Feedback Received' },
-  customer_created: { icon: '\u263A', color: 'bg-teal-500', label: 'Customer Created' },
+  quote_created: { icon: '+', color: 'bg-blue-500', label: 'Quote Created', group: 'quotes' },
+  quote_sent: { icon: '\u2192', color: 'bg-indigo-500', label: 'Quote Sent', group: 'quotes' },
+  quote_viewed: { icon: '\u25C9', color: 'bg-purple-500', label: 'Quote Viewed', group: 'quotes' },
+  quote_expired: { icon: '\u2717', color: 'bg-gray-500', label: 'Quote Expired', group: 'quotes' },
+  payment_received: { icon: '$', color: 'bg-green-500', label: 'Payment', group: 'payments' },
+  payment_failed: { icon: '!', color: 'bg-red-500', label: 'Payment Failed', group: 'payments' },
+  refund_issued: { icon: '\u21A9', color: 'bg-red-400', label: 'Refund', group: 'payments' },
+  job_completed: { icon: '\u2713', color: 'bg-emerald-500', label: 'Job Done', group: 'jobs' },
+  job_scheduled: { icon: '\uD83D\uDCC5', color: 'bg-amber-500', label: 'Scheduled', group: 'jobs' },
+  invoice_created: { icon: '#', color: 'bg-blue-400', label: 'Invoice', group: 'payments' },
+  invoice_emailed: { icon: '\u2709', color: 'bg-blue-300', label: 'Invoice Sent', group: 'payments' },
+  note_added: { icon: '\uD83D\uDCDD', color: 'bg-gray-400', label: 'Note', group: 'notes' },
+  feedback_received: { icon: '\u2605', color: 'bg-amber-400', label: 'Feedback', group: 'feedback' },
+  customer_created: { icon: '\u263A', color: 'bg-teal-500', label: 'Created', group: 'other' },
 };
+
+const FILTER_TABS = [
+  { key: 'all', label: 'All' },
+  { key: 'quotes', label: 'Quotes' },
+  { key: 'payments', label: 'Payments' },
+  { key: 'jobs', label: 'Jobs' },
+  { key: 'notes', label: 'Notes' },
+  { key: 'feedback', label: 'Feedback' },
+];
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -30,6 +39,7 @@ export default function CustomerDetailPage() {
   const [activity, setActivity] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('activity');
+  const [activityFilter, setActivityFilter] = useState('all');
   const [newNote, setNewNote] = useState('');
   const [noteSaving, setNoteSaving] = useState(false);
   const [editingNote, setEditingNote] = useState(null);
@@ -174,13 +184,35 @@ export default function CustomerDetailPage() {
     return formatDate(dateStr);
   };
 
-  // Group activity by date
-  const groupedActivity = activity.reduce((acc, item) => {
-    const date = formatDate(item.date);
-    if (!acc[date]) acc[date] = [];
-    acc[date].push(item);
-    return acc;
-  }, {});
+  // Filter + group activity by date
+  const filteredActivity = useMemo(() => {
+    if (activityFilter === 'all') return activity;
+    return activity.filter(item => {
+      const config = ACTIVITY_CONFIG[item.type];
+      return config && config.group === activityFilter;
+    });
+  }, [activity, activityFilter]);
+
+  const groupedActivity = useMemo(() => {
+    return filteredActivity.reduce((acc, item) => {
+      const date = formatDate(item.date);
+      if (!acc[date]) acc[date] = [];
+      acc[date].push(item);
+      return acc;
+    }, {});
+  }, [filteredActivity]);
+
+  // Count events per filter group
+  const filterCounts = useMemo(() => {
+    const counts = { all: activity.length, quotes: 0, payments: 0, jobs: 0, notes: 0, feedback: 0, other: 0 };
+    for (const item of activity) {
+      const config = ACTIVITY_CONFIG[item.type];
+      if (config && counts[config.group] !== undefined) {
+        counts[config.group]++;
+      }
+    }
+    return counts;
+  }, [activity]);
 
   if (loading) {
     return <LoadingSpinner message="Loading customer..." />;
@@ -209,6 +241,12 @@ export default function CustomerDetailPage() {
           <h1 className="text-2xl font-bold">{customer.name || 'Customer'}</h1>
           <p className="text-sm text-white/60">{customer.email}</p>
         </div>
+        <a
+          href={`/quotes?search=${encodeURIComponent(customer.email)}`}
+          className="px-4 py-2 bg-white/10 text-white text-sm rounded-lg hover:bg-white/20"
+        >
+          View Quotes
+        </a>
       </header>
 
       <div className="max-w-5xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -305,47 +343,89 @@ export default function CustomerDetailPage() {
                     : 'text-white/60 hover:text-white hover:bg-white/10'
                 }`}
               >
-                {tab === 'activity' ? `Activity (${activity.length})` : `Notes (${notes.length})`}
+                {tab === 'activity' ? `Timeline (${activity.length})` : `Notes (${notes.length})`}
               </button>
             ))}
           </div>
 
           {/* Activity Timeline */}
           {activeTab === 'activity' && (
-            <div className="bg-white rounded-lg shadow">
-              {activity.length === 0 ? (
-                <div className="p-8 text-center text-gray-400 text-sm">
-                  No activity yet. Events will appear here when you send quotes, receive payments, etc.
-                </div>
-              ) : (
-                <div className="p-4">
-                  {Object.entries(groupedActivity).map(([date, items]) => (
-                    <div key={date} className="mb-6 last:mb-0">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 sticky top-0 bg-white">{date}</p>
-                      <div className="relative pl-6 border-l-2 border-gray-100 space-y-4">
-                        {items.map(item => {
-                          const config = ACTIVITY_CONFIG[item.type] || { icon: '\u25CF', color: 'bg-gray-400', label: item.type };
-                          return (
-                            <div key={item.id} className="relative">
-                              {/* Dot */}
-                              <div className={`absolute -left-[25px] w-3 h-3 rounded-full ${config.color} ring-2 ring-white`} />
-                              <div className="flex items-start justify-between gap-2">
-                                <div>
-                                  <p className="text-sm text-gray-800">{item.summary}</p>
-                                  <p className="text-xs text-gray-400 mt-0.5">{formatTime(item.date)}</p>
+            <div className="space-y-3">
+              {/* Filter bar */}
+              <div className="flex gap-1.5 overflow-x-auto pb-1">
+                {FILTER_TABS.map(f => {
+                  const count = filterCounts[f.key] || 0;
+                  return (
+                    <button
+                      key={f.key}
+                      onClick={() => setActivityFilter(f.key)}
+                      className={`px-3 py-1.5 rounded-full text-xs font-medium whitespace-nowrap transition-colors ${
+                        activityFilter === f.key
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'bg-white/90 text-gray-600 hover:bg-white'
+                      }`}
+                    >
+                      {f.label}{count > 0 ? ` (${count})` : ''}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Timeline */}
+              <div className="bg-white rounded-lg shadow">
+                {filteredActivity.length === 0 ? (
+                  <div className="p-8 text-center text-gray-400 text-sm">
+                    {activityFilter === 'all'
+                      ? 'No activity yet. Events will appear here when you send quotes, receive payments, etc.'
+                      : `No ${activityFilter} activity found.`}
+                  </div>
+                ) : (
+                  <div className="p-4">
+                    {Object.entries(groupedActivity).map(([date, items]) => (
+                      <div key={date} className="mb-6 last:mb-0">
+                        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 sticky top-0 bg-white z-10 py-1">{date}</p>
+                        <div className="relative pl-8 border-l-2 border-gray-100 space-y-4">
+                          {items.map(item => {
+                            const config = ACTIVITY_CONFIG[item.type] || { icon: '\u25CF', color: 'bg-gray-400', label: item.type, group: 'other' };
+                            const amount = item.details?.amount;
+                            return (
+                              <div key={item.id} className="relative group">
+                                {/* Icon circle */}
+                                <div className={`absolute -left-[33px] w-4 h-4 rounded-full ${config.color} ring-3 ring-white flex items-center justify-center`}>
+                                  <span className="text-white text-[8px] font-bold leading-none">{config.icon}</span>
                                 </div>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium whitespace-nowrap ${config.color} text-white`}>
-                                  {config.label}
-                                </span>
+
+                                <div className="bg-gray-50 rounded-lg px-3 py-2.5 group-hover:bg-gray-100 transition-colors">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <div className="flex-1 min-w-0">
+                                      <p className="text-sm text-gray-800">{item.summary}</p>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <span className="text-[10px] text-gray-400">{formatTime(item.date)}</span>
+                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${config.color} text-white`}>
+                                          {config.label}
+                                        </span>
+                                      </div>
+                                    </div>
+                                    {amount && parseFloat(amount) > 0 && (
+                                      <span className={`text-sm font-bold whitespace-nowrap ${
+                                        item.type === 'refund_issued' ? 'text-red-500' :
+                                        item.type === 'payment_received' ? 'text-green-600' :
+                                        'text-gray-600'
+                                      }`}>
+                                        {item.type === 'refund_issued' ? '-' : ''}${Number(amount).toLocaleString()}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
                               </div>
-                            </div>
-                          );
-                        })}
+                            );
+                          })}
+                        </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           )}
 
