@@ -208,6 +208,43 @@ export default function JobsPage() {
                 </div>
               </div>
 
+              {/* Linked Products */}
+              {job.quotes?.linked_products && job.quotes.linked_products.length > 0 && (
+                <div className="mt-3 pt-3 border-t">
+                  <p className="text-xs font-semibold text-blue-700 mb-1">Products for this job</p>
+                  <div className="flex flex-wrap gap-1">
+                    {job.quotes.linked_products.map((p, i) => (
+                      <span key={i} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                        {p.product_name}{p.quantity > 0 ? ` (${p.quantity.toFixed(1)} ${p.unit || ''})` : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Linked Equipment */}
+              {job.quotes?.linked_equipment && job.quotes.linked_equipment.length > 0 && (
+                <div className={`mt-${job.quotes?.linked_products?.length > 0 ? '2' : '3'} ${!job.quotes?.linked_products?.length ? 'pt-3 border-t' : ''}`}>
+                  <p className="text-xs font-semibold text-purple-700 mb-1">Equipment for this job</p>
+                  <div className="flex flex-wrap gap-1">
+                    {job.quotes.linked_equipment.map((e, i) => (
+                      <span key={i} className="text-xs bg-purple-50 text-purple-700 px-2 py-0.5 rounded">
+                        {e.equipment_name}{e.brand ? ` (${e.brand})` : ''}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Line items / services */}
+              {job.quotes?.line_items && job.quotes.line_items.length > 0 && (
+                <div className="mt-2">
+                  <p className="text-xs text-gray-400">
+                    {job.quotes.line_items.map(li => li.description || li.service).join(', ')}
+                  </p>
+                </div>
+              )}
+
               {job.notes && (
                 <p className="text-sm text-gray-500 mt-2 italic">"{job.notes}"</p>
               )}

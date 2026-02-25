@@ -46,6 +46,19 @@ export default function ServicesPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
+  // Products & equipment lists (for linking)
+  const [allProducts, setAllProducts] = useState([]);
+  const [allEquipment, setAllEquipment] = useState([]);
+
+  // Service product/equipment links for currently editing service
+  const [linkedProducts, setLinkedProducts] = useState([]);
+  const [linkedEquipment, setLinkedEquipment] = useState([]);
+  const [linkLoading, setLinkLoading] = useState(false);
+
+  // All links for badge counts
+  const [allProductLinks, setAllProductLinks] = useState([]);
+  const [allEquipmentLinks, setAllEquipmentLinks] = useState([]);
+
   // Service form
   const [showServiceModal, setShowServiceModal] = useState(false);
   const [editingService, setEditingService] = useState(null);
@@ -80,10 +93,12 @@ export default function ServicesPage() {
   const fetchData = async () => {
     const token = localStorage.getItem('vector_token');
     try {
-      const [svcRes, pkgRes, feeRes] = await Promise.all([
+      const [svcRes, pkgRes, feeRes, prodRes, equipRes] = await Promise.all([
         fetch('/api/services', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/packages', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/addon-fees', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/products', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        fetch('/api/equipment', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
       ]);
       if (svcRes.ok) {
         const data = await svcRes.json();
@@ -97,6 +112,21 @@ export default function ServicesPage() {
         const data = await feeRes.json();
         setAddonFees(data.fees || []);
       }
+      if (prodRes?.ok) {
+        const data = await prodRes.json();
+        setAllProducts(data.products || []);
+      }
+      if (equipRes?.ok) {
+        const data = await equipRes.json();
+        setAllEquipment(data.equipment || []);
+      }
+      // Fetch all service links for badge counts
+      const [spRes, seRes] = await Promise.all([
+        fetch('/api/services/products', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        fetch('/api/services/equipment', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+      ]);
+      if (spRes?.ok) { const d = await spRes.json(); setAllProductLinks(d.links || []); }
+      if (seRes?.ok) { const d = await seRes.json(); setAllEquipmentLinks(d.links || []); }
     } catch (err) {
       console.error('Failed to fetch:', err);
     } finally {
@@ -106,6 +136,107 @@ export default function ServicesPage() {
 
   const getToken = () => localStorage.getItem('vector_token');
   const getServiceById = (id) => services.find(s => s.id === id);
+  const getServiceLinkCount = (svcId) => {
+    const pCount = allProductLinks.filter(l => l.service_id === svcId).length;
+    const eCount = allEquipmentLinks.filter(l => l.service_id === svcId).length;
+    return pCount + eCount;
+  };
+
+  // ---- Service Linking ----
+  const fetchServiceLinks = async (serviceId) => {
+    const token = getToken();
+    setLinkLoading(true);
+    try {
+      const [prodRes, equipRes] = await Promise.all([
+        fetch(`/api/services/products?service_id=${serviceId}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        fetch(`/api/services/equipment?service_id=${serviceId}`, { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+      ]);
+      if (prodRes?.ok) {
+        const data = await prodRes.json();
+        setLinkedProducts(data.links || []);
+      } else {
+        setLinkedProducts([]);
+      }
+      if (equipRes?.ok) {
+        const data = await equipRes.json();
+        setLinkedEquipment(data.links || []);
+      } else {
+        setLinkedEquipment([]);
+      }
+    } catch (err) {
+      console.error('Failed to fetch service links:', err);
+      setLinkedProducts([]);
+      setLinkedEquipment([]);
+    } finally {
+      setLinkLoading(false);
+    }
+  };
+
+  const addProductLink = async (serviceId, productId) => {
+    const token = getToken();
+    try {
+      const res = await fetch('/api/services/products', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ service_id: serviceId, product_id: productId, quantity_per_hour: 1 }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLinkedProducts(prev => [...prev, data.link]);
+      }
+    } catch (err) { console.error('Failed to link product:', err); }
+  };
+
+  const updateProductLink = async (linkId, updates) => {
+    const token = getToken();
+    try {
+      const res = await fetch('/api/services/products', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id: linkId, ...updates }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLinkedProducts(prev => prev.map(l => l.id === linkId ? data.link : l));
+      }
+    } catch (err) { console.error('Failed to update link:', err); }
+  };
+
+  const removeProductLink = async (linkId) => {
+    const token = getToken();
+    try {
+      await fetch(`/api/services/products?id=${linkId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      setLinkedProducts(prev => prev.filter(l => l.id !== linkId));
+    } catch (err) { console.error('Failed to remove link:', err); }
+  };
+
+  const addEquipmentLink = async (serviceId, equipmentId) => {
+    const token = getToken();
+    try {
+      const res = await fetch('/api/services/equipment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ service_id: serviceId, equipment_id: equipmentId }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLinkedEquipment(prev => [...prev, data.link]);
+      }
+    } catch (err) { console.error('Failed to link equipment:', err); }
+  };
+
+  const removeEquipmentLink = async (linkId) => {
+    const token = getToken();
+    try {
+      await fetch(`/api/services/equipment?id=${linkId}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+      setLinkedEquipment(prev => prev.filter(l => l.id !== linkId));
+    } catch (err) { console.error('Failed to remove link:', err); }
+  };
+
+  const openEditService = (svc) => {
+    setEditingService({ ...svc });
+    fetchServiceLinks(svc.id);
+  };
 
   // ---- Service CRUD ----
   const addService = async () => {
@@ -442,7 +573,14 @@ export default function ServicesPage() {
                       <div>
                         <p className="font-medium">{svc.name}</p>
                         {svc.description && <p className="text-xs text-gray-500">{svc.description}</p>}
-                        <p className="text-[10px] text-gray-400">{HOURS_FIELD_OPTIONS[svc.hours_field] || 'Ext Wash (default)'}</p>
+                        <p className="text-[10px] text-gray-400">
+                          {HOURS_FIELD_OPTIONS[svc.hours_field] || 'Ext Wash (default)'}
+                          {getServiceLinkCount(svc.id) > 0 && (
+                            <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-medium">
+                              {getServiceLinkCount(svc.id)} linked
+                            </span>
+                          )}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
@@ -453,7 +591,7 @@ export default function ServicesPage() {
                           <p className="text-[10px] text-gray-400">${svc.product_cost_per_hour} product/hr</p>
                         )}
                       </div>
-                      <button onClick={() => setEditingService({ ...svc })} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded">&#9998;</button>
+                      <button onClick={() => openEditService(svc)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded">&#9998;</button>
                       <button onClick={() => deleteService(svc)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">&#128465;</button>
                     </div>
                   </div>
@@ -700,7 +838,7 @@ export default function ServicesPage() {
 
       {/* Edit Service Modal */}
       {editingService && (
-        <Modal onClose={() => { setEditingService(null); setError(''); }}>
+        <Modal onClose={() => { setEditingService(null); setLinkedProducts([]); setLinkedEquipment([]); setError(''); }}>
           <h3 className="text-lg font-semibold mb-4">{t('common.edit')} {t('nav.services')}</h3>
           {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <div className="space-y-4">
@@ -752,9 +890,112 @@ export default function ServicesPage() {
                   placeholder="e.g., 1oz IronX, 2oz ceramic per hour" rows={2} className="w-full border rounded-lg px-3 py-2 resize-y min-h-[40px]" />
               </div>
             </div>
+
+            {/* Linked Products Section */}
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-1">Products Needed</p>
+              <p className="text-xs text-gray-400 mb-3">Link inventory products to auto-populate on quotes and jobs</p>
+              {linkLoading ? (
+                <p className="text-xs text-gray-400 py-2">Loading links...</p>
+              ) : (
+                <>
+                  {linkedProducts.length > 0 && (
+                    <div className="space-y-2 mb-3">
+                      {linkedProducts.map(link => (
+                        <div key={link.id} className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{link.products?.name}</p>
+                            <p className="text-[10px] text-gray-500">{link.products?.category} &middot; {currencySymbol()}{link.products?.cost_per_unit}/{link.products?.unit}</p>
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <input
+                              type="number"
+                              step="0.1"
+                              value={link.quantity_per_hour || ''}
+                              onChange={(e) => {
+                                const val = e.target.value;
+                                setLinkedProducts(prev => prev.map(l => l.id === link.id ? { ...l, quantity_per_hour: val } : l));
+                              }}
+                              onBlur={(e) => updateProductLink(link.id, { quantity_per_hour: parseFloat(e.target.value) || 0 })}
+                              className="w-16 border rounded px-1.5 py-1 text-xs text-right"
+                              title="Quantity per hour"
+                            />
+                            <span className="text-[10px] text-gray-500">/hr</span>
+                          </div>
+                          <button onClick={() => removeProductLink(link.id)} className="text-red-400 hover:text-red-600 text-sm">&times;</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {allProducts.length > 0 ? (
+                    <select
+                      onChange={(e) => {
+                        const pid = e.target.value;
+                        if (pid && !linkedProducts.some(l => l.product_id === pid)) {
+                          addProductLink(editingService.id, pid);
+                        }
+                        e.target.value = '';
+                      }}
+                      className="w-full border rounded-lg px-3 py-2 text-sm"
+                    >
+                      <option value="">+ Link a product...</option>
+                      {allProducts.filter(p => !linkedProducts.some(l => l.product_id === p.id)).map(p => (
+                        <option key={p.id} value={p.id}>{p.name} ({p.current_quantity} {p.unit})</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <a href="/products" className="text-xs text-amber-600 hover:underline">Add products to inventory first</a>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Linked Equipment Section */}
+            <div className="border-t pt-4">
+              <p className="text-sm font-medium text-gray-700 mb-1">Tools / Equipment Needed</p>
+              <p className="text-xs text-gray-400 mb-3">Link tools your crew needs for this service</p>
+              {linkLoading ? (
+                <p className="text-xs text-gray-400 py-2">Loading links...</p>
+              ) : (
+                <>
+                  {linkedEquipment.length > 0 && (
+                    <div className="space-y-2 mb-3">
+                      {linkedEquipment.map(link => (
+                        <div key={link.id} className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium text-gray-900 truncate">{link.equipment?.name}</p>
+                            <p className="text-[10px] text-gray-500">{link.equipment?.brand} {link.equipment?.model}</p>
+                          </div>
+                          <button onClick={() => removeEquipmentLink(link.id)} className="text-red-400 hover:text-red-600 text-sm">&times;</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                  {allEquipment.length > 0 ? (
+                    <select
+                      onChange={(e) => {
+                        const eid = e.target.value;
+                        if (eid && !linkedEquipment.some(l => l.equipment_id === eid)) {
+                          addEquipmentLink(editingService.id, eid);
+                        }
+                        e.target.value = '';
+                      }}
+                      className="w-full border rounded-lg px-3 py-2 text-sm"
+                    >
+                      <option value="">+ Link equipment...</option>
+                      {allEquipment.filter(eq => !linkedEquipment.some(l => l.equipment_id === eq.id)).map(eq => (
+                        <option key={eq.id} value={eq.id}>{eq.name}{eq.brand ? ` (${eq.brand})` : ''}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <a href="/equipment" className="text-xs text-amber-600 hover:underline">Add equipment first</a>
+                  )}
+                </>
+              )}
+            </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setEditingService(null)} className="px-4 py-2 border rounded-lg">{t('common.cancel')}</button>
+            <button onClick={() => { setEditingService(null); setLinkedProducts([]); setLinkedEquipment([]); }} className="px-4 py-2 border rounded-lg">{t('common.cancel')}</button>
             <button onClick={updateService} disabled={saving} className="px-4 py-2 bg-amber-500 text-white rounded-lg disabled:opacity-50">{t('common.save')}</button>
           </div>
         </Modal>

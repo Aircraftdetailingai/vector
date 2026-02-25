@@ -19,7 +19,7 @@ export async function GET(request) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - parseInt(period));
 
-  const { data: jobs, error } = await supabase
+  let { data: jobs, error } = await supabase
     .from('job_completions')
     .select(`
       *,
@@ -27,12 +27,35 @@ export async function GET(request) {
         aircraft_model,
         aircraft_type,
         client_name,
-        services
+        services,
+        line_items,
+        linked_products,
+        linked_equipment
       )
     `)
     .eq('detailer_id', user.id)
     .gte('completed_at', startDate.toISOString())
     .order('completed_at', { ascending: false });
+
+  // If the query failed due to missing columns (linked_products/linked_equipment), retry without them
+  if (error && error.message?.includes('does not exist')) {
+    const retry = await supabase
+      .from('job_completions')
+      .select(`
+        *,
+        quotes (
+          aircraft_model,
+          aircraft_type,
+          client_name,
+          services
+        )
+      `)
+      .eq('detailer_id', user.id)
+      .gte('completed_at', startDate.toISOString())
+      .order('completed_at', { ascending: false });
+    jobs = retry.data;
+    error = retry.error;
+  }
 
   if (error) {
     console.error('Failed to fetch jobs:', error);

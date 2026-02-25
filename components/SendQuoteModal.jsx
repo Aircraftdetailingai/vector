@@ -137,6 +137,8 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       customer_company: effectiveCompany || null,
       airport: quote?.airport || null,
       product_estimates: quote?.productEstimates || [],
+      linked_products: quote?.linkedProducts || [],
+      linked_equipment: quote?.linkedEquipment || [],
       poc_name: pocName || null,
       poc_phone: pocPhone || null,
       poc_email: pocEmail || null,

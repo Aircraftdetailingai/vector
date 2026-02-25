@@ -579,6 +579,10 @@ function DashboardContent() {
   const [airport, setAirport] = useState('');
   const [customProductRatios, setCustomProductRatios] = useState(null);
 
+  // Service-linked products & equipment
+  const [serviceProductLinks, setServiceProductLinks] = useState([]);
+  const [serviceEquipmentLinks, setServiceEquipmentLinks] = useState([]);
+
   const categoryLabels = {
     piston: t('categories.piston'),
     turboprop: t('categories.turboprop'),
@@ -660,7 +664,7 @@ function DashboardContent() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // All fetches in parallel for speed
-      const [stripeRes, servicesRes, packagesRes, minFeeRes, tipRes, statsRes, quotesRes, addonsRes, recurringRes, productRatiosRes] = await Promise.allSettled([
+      const [stripeRes, servicesRes, packagesRes, minFeeRes, tipRes, statsRes, quotesRes, addonsRes, recurringRes, productRatiosRes, svcProdRes, svcEquipRes] = await Promise.allSettled([
         fetch('/api/stripe/status', { headers }),
         fetch('/api/services', { headers }),
         fetch('/api/packages', { headers }),
@@ -671,6 +675,8 @@ function DashboardContent() {
         fetch('/api/addon-fees', { headers }),
         fetch('/api/recurring?status=active', { headers }),
         fetch('/api/user/product-ratios', { headers }),
+        fetch('/api/services/products', { headers }),
+        fetch('/api/services/equipment', { headers }),
       ]);
 
       // Process Stripe status
@@ -735,6 +741,18 @@ function DashboardContent() {
       if (productRatiosRes.status === 'fulfilled' && productRatiosRes.value.ok) {
         const data = await productRatiosRes.value.json();
         if (data.ratios) setCustomProductRatios(data.ratios);
+      }
+
+      // Process service-linked products
+      if (svcProdRes.status === 'fulfilled' && svcProdRes.value.ok) {
+        const data = await svcProdRes.value.json();
+        setServiceProductLinks(data.links || []);
+      }
+
+      // Process service-linked equipment
+      if (svcEquipRes.status === 'fulfilled' && svcEquipRes.value.ok) {
+        const data = await svcEquipRes.value.json();
+        setServiceEquipmentLinks(data.links || []);
       }
     };
 
@@ -888,11 +906,11 @@ function DashboardContent() {
   const minimumFeeApplies = () => {
     if (minimumFee <= 0) return false;
     if (calculatedPrice >= minimumFee) return false;
-    if (minimumFeeLocations.length > 0) {
-      if (!jobLocation) return false;
+    if (minimumFeeLocations.length > 0 && jobLocation) {
       const normalizedJob = jobLocation.toUpperCase().trim();
       return minimumFeeLocations.some(loc => normalizedJob.includes(loc.toUpperCase().trim()));
     }
+    // Apply minimum if no location restrictions, or no job location specified yet
     return true;
   };
 
@@ -980,6 +998,29 @@ function DashboardContent() {
         addonsTotal,
         airport,
         productEstimates,
+        linkedProducts: serviceProductLinks.filter(l => selectedServicesList.some(s => s.id === l.service_id)).map(l => {
+          const svc = selectedServicesList.find(s => s.id === l.service_id);
+          const hours = svc ? getHoursForService(svc) : 0;
+          return {
+            product_id: l.product_id,
+            product_name: l.products?.name,
+            unit: l.products?.unit,
+            quantity: l.fixed_quantity > 0 ? l.fixed_quantity : (l.quantity_per_hour || 0) * hours,
+            cost_per_unit: l.products?.cost_per_unit || 0,
+          };
+        }),
+        linkedEquipment: (() => {
+          const eqLinks = serviceEquipmentLinks.filter(l => selectedServicesList.some(s => s.id === l.service_id));
+          const unique = [];
+          const seen = new Set();
+          for (const l of eqLinks) {
+            if (!seen.has(l.equipment_id)) {
+              seen.add(l.equipment_id);
+              unique.push({ equipment_id: l.equipment_id, equipment_name: l.equipment?.name, brand: l.equipment?.brand });
+            }
+          }
+          return unique;
+        })(),
       }
     : null;
 
@@ -1502,22 +1543,22 @@ function DashboardContent() {
                     </div>
                   ))}
 
-                  {/* Minimum fee */}
+                  {/* Minimum fee adjustment */}
                   {isMinimumApplied && (
                     <>
-                      <div className="flex justify-between text-sm text-gray-500 line-through">
-                        <span>{t('dashboard.calculated')}</span>
+                      <div className="flex justify-between text-sm text-gray-400">
+                        <span>Subtotal</span>
                         <span>{currencySymbol()}{formatPrice(calculatedPrice)}</span>
                       </div>
                       <div className="flex justify-between text-sm text-amber-400">
-                        <span>{t('dashboard.minimumFeeApplied')}</span>
-                        <span>{currencySymbol()}{formatPrice(minimumFee)}</span>
+                        <span>Minimum adjustment</span>
+                        <span>+{currencySymbol()}{formatPrice(minimumFee - calculatedPrice)}</span>
                       </div>
                     </>
                   )}
 
-                  {/* Minimum check indicator */}
-                  {minimumFee > 0 && !isMinimumApplied && calculatedPrice > 0 && (
+                  {/* Minimum check indicator - only show when actually met */}
+                  {minimumFee > 0 && !isMinimumApplied && calculatedPrice >= minimumFee && (
                     <div className="text-xs text-green-400">
                       Minimum ({currencySymbol()}{minimumFee}): &#10003; Met
                     </div>
@@ -1545,7 +1586,7 @@ function DashboardContent() {
                   )}
 
                   {/* Product usage estimates */}
-                  {productEstimates.length > 0 && (
+                  {productEstimates.length > 0 ? (
                     <div className="mt-2 pt-2 border-t border-gray-600/50">
                       <p className="text-xs text-gray-400 mb-1">{t('dashboard.estimatedProducts')}</p>
                       <div className="space-y-0.5">
@@ -1561,7 +1602,64 @@ function DashboardContent() {
                         {selectedAircraft.surface_area_sqft ? ` (~${Number(selectedAircraft.surface_area_sqft).toLocaleString()} sqft)` : ''}
                       </p>
                     </div>
+                  ) : selectedServicesList.length > 0 && (
+                    <div className="mt-2 pt-2 border-t border-gray-600/50">
+                      <p className="text-xs text-gray-500">{t('dashboard.noProductsAssigned')}</p>
+                    </div>
                   )}
+
+                  {/* Auto-populated Products Needed from service links */}
+                  {(() => {
+                    const selectedIds = selectedServicesList.map(s => s.id);
+                    const neededProducts = serviceProductLinks.filter(l => selectedIds.includes(l.service_id));
+                    if (neededProducts.length === 0) return null;
+                    return (
+                      <div className="mt-2 pt-2 border-t border-gray-600/50">
+                        <p className="text-xs text-blue-400 font-medium mb-1">Products Needed</p>
+                        <div className="space-y-0.5">
+                          {neededProducts.map(link => {
+                            const svc = selectedServicesList.find(s => s.id === link.service_id);
+                            const hours = svc ? getHoursForService(svc) : 0;
+                            const qty = link.fixed_quantity > 0 ? link.fixed_quantity : (link.quantity_per_hour || 0) * hours;
+                            return (
+                              <div key={link.id} className="flex justify-between text-xs">
+                                <span className="text-gray-300 truncate">{link.products?.name}</span>
+                                <span className="text-blue-300 ml-2">{qty > 0 ? qty.toFixed(1) : '-'} {link.products?.unit}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })()}
+
+                  {/* Auto-populated Equipment Needed from service links */}
+                  {(() => {
+                    const selectedIds = selectedServicesList.map(s => s.id);
+                    const neededEquip = serviceEquipmentLinks.filter(l => selectedIds.includes(l.service_id));
+                    if (neededEquip.length === 0) return null;
+                    // Deduplicate by equipment_id
+                    const unique = [];
+                    const seen = new Set();
+                    for (const link of neededEquip) {
+                      if (!seen.has(link.equipment_id)) {
+                        seen.add(link.equipment_id);
+                        unique.push(link);
+                      }
+                    }
+                    return (
+                      <div className="mt-2 pt-2 border-t border-gray-600/50">
+                        <p className="text-xs text-purple-400 font-medium mb-1">Equipment Needed</p>
+                        <div className="space-y-0.5">
+                          {unique.map(link => (
+                            <div key={link.id} className="text-xs text-gray-300">
+                              {link.equipment?.name}{link.equipment?.brand ? ` (${link.equipment.brand})` : ''}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })()}
                 </div>
 
                 <button
