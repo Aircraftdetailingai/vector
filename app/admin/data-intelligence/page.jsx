@@ -724,15 +724,31 @@ export default function DataIntelligencePage() {
                 <table className="w-full text-sm">
                   <thead className="bg-gray-50 border-b">
                     <tr>
-                      <th className="px-3 py-3 text-left">Service Type</th>
-                      <th className="px-3 py-3 text-left">Details</th>
+                      <th className="px-3 py-3 text-left">Date</th>
+                      <th className="px-3 py-3 text-left">Aircraft</th>
+                      <th className="px-3 py-3 text-left">Service</th>
+                      <th className="px-3 py-3 text-right">Old</th>
+                      <th className="px-3 py-3 text-right">New</th>
+                      <th className="px-3 py-3 text-left">Reason</th>
+                      <th className="px-3 py-3 text-left">Updated By</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y">
                     {history.map((h) => (
                       <tr key={h.id} className="hover:bg-gray-50">
-                        <td className="px-3 py-3 font-medium text-gray-900">{h.hours_field_label}</td>
-                        <td className="px-3 py-3 text-gray-600 text-sm">{h.reason || '-'}</td>
+                        <td className="px-3 py-3 text-gray-500 whitespace-nowrap">
+                          {h.created_at ? new Date(h.created_at).toLocaleDateString() : '-'}
+                        </td>
+                        <td className="px-3 py-3 font-medium text-gray-900">{h.aircraft_name || '-'}</td>
+                        <td className="px-3 py-3 text-gray-700">{h.hours_field_label}</td>
+                        <td className="px-3 py-3 text-right font-mono text-gray-400">
+                          {h.old_value != null ? `${parseFloat(h.old_value).toFixed(1)}h` : '-'}
+                        </td>
+                        <td className="px-3 py-3 text-right font-mono font-semibold text-amber-600">
+                          {h.new_value != null ? `${parseFloat(h.new_value).toFixed(1)}h` : '-'}
+                        </td>
+                        <td className="px-3 py-3 text-gray-600 text-sm max-w-xs truncate">{h.reason || '-'}</td>
+                        <td className="px-3 py-3 text-gray-500 text-xs">{h.updated_by || '-'}</td>
                       </tr>
                     ))}
                   </tbody>

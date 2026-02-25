@@ -54,20 +54,35 @@ export async function GET(request) {
       groups[key].values.push(parseFloat(log.actual_hours) || 0);
     }
 
-    // Upsert into hours_averages (uses actual DB columns: aircraft_model, service_type, sample_count)
+    // Upsert into hours_averages with full computed stats
     let processed = 0;
 
     for (const group of Object.values(groups)) {
-      const count = group.values.length;
+      const values = group.values.sort((a, b) => a - b);
+      const count = values.length;
+      const sum = values.reduce((a, b) => a + b, 0);
+      const avg = sum / count;
+      const min = values[0];
+      const max = values[count - 1];
+      const squaredDiffs = values.map(v => Math.pow(v - avg, 2));
+      const stddev = Math.sqrt(squaredDiffs.reduce((a, b) => a + b, 0) / count);
+
+      const row = {
+        aircraft_id: group.aircraft_id,
+        aircraft_model: group.aircraft_model,
+        service_type: group.service_type,
+        avg_actual_hours: Math.round(avg * 100) / 100,
+        min_actual_hours: Math.round(min * 100) / 100,
+        max_actual_hours: Math.round(max * 100) / 100,
+        sample_count: count,
+        stddev_hours: Math.round(stddev * 100) / 100,
+        last_calculated_at: new Date().toISOString(),
+      };
 
       const { error: upsertError } = await supabase
         .from('hours_averages')
-        .upsert({
-          aircraft_model: group.aircraft_model,
-          service_type: group.service_type,
-          sample_count: count,
-        }, {
-          onConflict: 'aircraft_model,service_type',
+        .upsert(row, {
+          onConflict: 'aircraft_id,service_type',
         });
 
       if (upsertError) {

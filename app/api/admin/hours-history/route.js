@@ -53,11 +53,11 @@ export async function GET(request) {
     const limit = parseInt(searchParams.get('limit')) || 50;
     const offset = parseInt(searchParams.get('offset')) || 0;
 
-    // Query default_hours_updates - uses actual columns: id, service_type, reason
+    // Query default_hours_updates with structured columns
     const { data: updates, error } = await supabase
       .from('default_hours_updates')
       .select('*')
-      .order('id', { ascending: false })
+      .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1);
 
     if (error) {
@@ -65,12 +65,34 @@ export async function GET(request) {
       return Response.json({ error: 'Failed to fetch history' }, { status: 500 });
     }
 
-    const history = (updates || []).map(u => ({
-      id: u.id,
-      service_type: u.service_type,
-      hours_field_label: HOURS_FIELD_LABELS[u.service_type] || u.service_type,
-      reason: u.reason || '',
-    }));
+    // Get aircraft names for display
+    const aircraftIds = [...new Set((updates || []).map(u => u.aircraft_id).filter(Boolean))];
+    let aircraftMap = {};
+    if (aircraftIds.length > 0) {
+      const { data: aircraftList } = await supabase
+        .from('aircraft')
+        .select('id, manufacturer, model')
+        .in('id', aircraftIds);
+      if (aircraftList) {
+        aircraftList.forEach(a => { aircraftMap[a.id] = a; });
+      }
+    }
+
+    const history = (updates || []).map(u => {
+      const aircraft = aircraftMap[u.aircraft_id];
+      return {
+        id: u.id,
+        aircraft_id: u.aircraft_id,
+        aircraft_name: aircraft ? `${aircraft.manufacturer} ${aircraft.model}` : 'Unknown',
+        service_type: u.service_type,
+        hours_field_label: HOURS_FIELD_LABELS[u.service_type] || u.service_type,
+        old_value: u.old_value,
+        new_value: u.new_value,
+        reason: u.reason || '',
+        updated_by: u.updated_by || '',
+        created_at: u.created_at,
+      };
+    });
 
     return Response.json({ history, total: history.length });
   } catch (err) {

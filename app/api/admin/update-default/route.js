@@ -84,11 +84,15 @@ export async function POST(request) {
         .update({ [hours_field]: newVal })
         .eq('id', aircraft_id);
 
-      // Log the change to audit trail (uses service_type column name)
+      // Log the change to audit trail
       try {
         await supabase.from('default_hours_updates').insert({
+          aircraft_id,
           service_type: hours_field,
-          reason: `${aircraft.manufacturer} ${aircraft.model}: ${oldValue}h -> ${newVal}h | By: ${user.email} | ${update.reason || reason}`,
+          old_value: oldValue,
+          new_value: newVal,
+          reason: update.reason || reason || '',
+          updated_by: user.email,
         });
       } catch (e) {
         console.error('Failed to log audit:', e);
