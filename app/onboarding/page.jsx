@@ -5,6 +5,30 @@ import { useRouter } from 'next/navigation';
 import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
+const LANGUAGES = [
+  { code: 'en', label: 'English', flag: '\u{1F1FA}\u{1F1F8}' },
+  { code: 'es', label: 'Spanish', flag: '\u{1F1EA}\u{1F1F8}' },
+  { code: 'pt', label: 'Portuguese', flag: '\u{1F1E7}\u{1F1F7}' },
+  { code: 'fr', label: 'French', flag: '\u{1F1EB}\u{1F1F7}' },
+  { code: 'de', label: 'German', flag: '\u{1F1E9}\u{1F1EA}' },
+  { code: 'it', label: 'Italian', flag: '\u{1F1EE}\u{1F1F9}' },
+  { code: 'nl', label: 'Dutch', flag: '\u{1F1F3}\u{1F1F1}' },
+  { code: 'ja', label: 'Japanese', flag: '\u{1F1EF}\u{1F1F5}' },
+  { code: 'zh', label: 'Chinese (Simplified)', flag: '\u{1F1E8}\u{1F1F3}' },
+];
+
+const CURRENCIES = [
+  { code: 'USD', symbol: '$', label: 'US Dollar' },
+  { code: 'EUR', symbol: '\u20AC', label: 'Euro' },
+  { code: 'GBP', symbol: '\u00A3', label: 'British Pound' },
+  { code: 'CAD', symbol: 'C$', label: 'Canadian Dollar' },
+  { code: 'AUD', symbol: 'A$', label: 'Australian Dollar' },
+  { code: 'JPY', symbol: '\u00A5', label: 'Japanese Yen' },
+  { code: 'CHF', symbol: 'CHF', label: 'Swiss Franc' },
+  { code: 'MXN', symbol: 'MX$', label: 'Mexican Peso' },
+  { code: 'BRL', symbol: 'R$', label: 'Brazilian Real' },
+];
+
 const COMMON_SERVICES = [
   { name: 'Exterior Wash', description: 'Full exterior aircraft wash and dry', hours_field: 'ext_wash_hours', defaultRate: 85 },
   { name: 'Interior Detail', description: 'Full interior cleaning and detailing', hours_field: 'int_detail_hours', defaultRate: 85 },
@@ -52,6 +76,8 @@ export default function OnboardingPage() {
   // Step 5: Preferences
   const [minimumFee, setMinimumFee] = useState('');
   const [passFee, setPassFee] = useState(false);
+  const [language, setLanguage] = useState('en');
+  const [currency, setCurrency] = useState('USD');
 
   // Step 6: Test quote
   const [manufacturers, setManufacturers] = useState([]);
@@ -230,6 +256,8 @@ export default function OnboardingPage() {
           action: 'save_preferences',
           minimum_fee: minimumFee,
           pass_fee_to_customer: passFee,
+          preferred_language: language,
+          preferred_currency: currency,
         }),
       });
       // Fetch manufacturers for test quote step
@@ -575,14 +603,43 @@ export default function OnboardingPage() {
           {/* Step 4: Preferences */}
           {step === 4 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Pricing Preferences</h2>
-              <p className="text-sm text-gray-500 mb-6">Fine-tune how your pricing works</p>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">Preferences</h2>
+              <p className="text-sm text-gray-500 mb-6">Set your language, currency, and pricing preferences</p>
 
-              <div className="space-y-6">
+              <div className="space-y-5">
+                {/* Language & Currency */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Language</label>
+                    <select
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    >
+                      {LANGUAGES.map(l => (
+                        <option key={l.code} value={l.code}>{l.flag} {l.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+                    <select
+                      value={currency}
+                      onChange={(e) => setCurrency(e.target.value)}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                    >
+                      {CURRENCIES.map(c => (
+                        <option key={c.code} value={c.code}>{c.symbol} {c.code} — {c.label}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Minimum fee */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Callout Fee</label>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-500">$</span>
+                    <span className="text-gray-500">{CURRENCIES.find(c => c.code === currency)?.symbol || '$'}</span>
                     <input
                       type="number"
                       value={minimumFee}
@@ -596,6 +653,7 @@ export default function OnboardingPage() {
                   </p>
                 </div>
 
+                {/* Pass fee toggle */}
                 <div className="p-4 bg-gray-50 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>

@@ -105,12 +105,20 @@ export async function POST(request) {
 
     // Save preferences
     if (action === 'save_preferences') {
-      const { minimum_fee, pass_fee_to_customer } = body;
+      const { minimum_fee, pass_fee_to_customer, preferred_language, preferred_currency } = body;
       const updates = { onboarding_step: 5 };
       if (minimum_fee !== undefined) updates.minimum_callout_fee = parseFloat(minimum_fee) || 0;
       if (pass_fee_to_customer !== undefined) updates.pass_fee_to_customer = pass_fee_to_customer;
+      if (preferred_language) updates.preferred_language = preferred_language;
+      if (preferred_currency) updates.preferred_currency = preferred_currency;
 
-      await supabase.from('detailers').update(updates).eq('id', user.id);
+      // Use column-stripping retry for new columns
+      const { error: updateErr } = await supabase.from('detailers').update(updates).eq('id', user.id);
+      if (updateErr && updateErr.message?.includes('column')) {
+        delete updates.preferred_language;
+        delete updates.preferred_currency;
+        await supabase.from('detailers').update(updates).eq('id', user.id);
+      }
       return Response.json({ success: true });
     }
 
