@@ -4,6 +4,12 @@ import { AIRCRAFT_DATA } from '@/lib/aircraft-data';
 
 export const dynamic = 'force-dynamic';
 
+const ADMIN_EMAILS = [
+  'brett@aircraftdetailing.ai',
+  'admin@aircraftdetailing.ai',
+  'brett@shinyjets.com',
+];
+
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -11,10 +17,17 @@ function getSupabase() {
   return createClient(url, key);
 }
 
+async function isAdmin(request) {
+  const user = await getAuthUser(request);
+  if (!user) return null;
+  if (!ADMIN_EMAILS.includes(user.email?.toLowerCase())) return null;
+  return user;
+}
+
 // POST - Seed the aircraft database with all built-in aircraft data
 export async function POST(request) {
   try {
-    const user = await getAuthUser(request);
+    const user = await isAdmin(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }

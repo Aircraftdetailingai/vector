@@ -3,6 +3,12 @@ import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
+const ADMIN_EMAILS = [
+  'brett@aircraftdetailing.ai',
+  'admin@aircraftdetailing.ai',
+  'brett@shinyjets.com',
+];
+
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
@@ -10,10 +16,17 @@ function getSupabase() {
   return createClient(url, key);
 }
 
+async function isAdmin(request) {
+  const user = await getAuthUser(request);
+  if (!user) return null;
+  if (!ADMIN_EMAILS.includes(user.email?.toLowerCase())) return null;
+  return user;
+}
+
 // GET - List all aircraft (admin only)
 export async function GET(request) {
   try {
-    const user = await getAuthUser(request);
+    const user = await isAdmin(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -55,7 +68,7 @@ export async function GET(request) {
 // POST - Add new aircraft (admin only)
 export async function POST(request) {
   try {
-    const user = await getAuthUser(request);
+    const user = await isAdmin(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -145,7 +158,7 @@ export async function POST(request) {
 // PUT - Update aircraft
 export async function PUT(request) {
   try {
-    const user = await getAuthUser(request);
+    const user = await isAdmin(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -182,7 +195,7 @@ export async function PUT(request) {
 // DELETE - Remove aircraft
 export async function DELETE(request) {
   try {
-    const user = await getAuthUser(request);
+    const user = await isAdmin(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
