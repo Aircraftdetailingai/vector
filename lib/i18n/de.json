@@ -162,6 +162,7 @@
     "jobLocation": "Auftragsort",
     "quoteSummary": "Angebotsübersicht",
     "estimatedProducts": "Geschätzte Produkte",
+    "noProductsAssigned": "Keine Produkte diesem Service zugewiesen",
     "startNewQuote": "Neues Angebot erstellen",
     "sendToClient": "An Kunden senden",
     "enterAirport": "Flughafen eingeben zum Senden",

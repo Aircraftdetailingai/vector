@@ -162,6 +162,7 @@
     "jobLocation": "作業場所",
     "quoteSummary": "見積もりサマリー",
     "estimatedProducts": "推定使用製品",
+    "noProductsAssigned": "このサービスに割り当てられた製品はありません",
     "startNewQuote": "新しい見積書を作成",
     "sendToClient": "クライアントに送信",
     "enterAirport": "送信するには空港を入力",

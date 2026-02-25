@@ -162,6 +162,7 @@
     "jobLocation": "Opdrachtlocatie",
     "quoteSummary": "Offertesamenvatting",
     "estimatedProducts": "Geschatte producten",
+    "noProductsAssigned": "Geen producten toegewezen aan deze service",
     "startNewQuote": "Nieuwe offerte starten",
     "sendToClient": "Naar klant versturen",
     "enterAirport": "Voer luchthaven in om te versturen",

@@ -162,6 +162,7 @@
     "jobLocation": "作业地点",
     "quoteSummary": "报价摘要",
     "estimatedProducts": "预估产品用量",
+    "noProductsAssigned": "此服务未分配任何产品",
     "startNewQuote": "创建新报价",
     "sendToClient": "发送给客户",
     "enterAirport": "输入机场代码以发送",

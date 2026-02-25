@@ -162,6 +162,7 @@
     "jobLocation": "Sede del lavoro",
     "quoteSummary": "Riepilogo preventivo",
     "estimatedProducts": "Prodotti stimati",
+    "noProductsAssigned": "Nessun prodotto assegnato a questo servizio",
     "startNewQuote": "Nuovo preventivo",
     "sendToClient": "Invia al cliente",
     "enterAirport": "Inserisci aeroporto per inviare",
