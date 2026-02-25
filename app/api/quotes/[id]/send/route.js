@@ -166,12 +166,28 @@ export async function POST(request, { params }) {
     return new Response(JSON.stringify({ error: updErr.message }), { status: 500 });
   }
 
-  // Fetch detailer info for email
+  // Fetch detailer info for email (includes currency for proper formatting)
   const { data: detailer } = await supabase
     .from('detailers')
-    .select('id, name, email, phone, company, plan, notification_settings, sms_enabled')
+    .select('id, name, email, phone, company, plan, notification_settings, sms_enabled, currency')
     .eq('id', user.id)
     .single();
+
+  // Fetch customer's preferred language (if they have one saved)
+  let customerLanguage = null;
+  if (clientEmail) {
+    try {
+      const { data: customer } = await supabase
+        .from('customers')
+        .select('customer_language')
+        .eq('detailer_id', user.id)
+        .eq('email', clientEmail.toLowerCase().trim())
+        .maybeSingle();
+      if (customer?.customer_language) customerLanguage = customer.customer_language;
+    } catch (e) {
+      // Column may not exist yet — ignore
+    }
+  }
 
   // Use request origin for the quote link (works in both dev and prod)
   const origin = request.headers.get('origin') || request.headers.get('referer')?.replace(/\/[^/]*$/, '') || 'https://app.vectorav.ai';
@@ -193,6 +209,7 @@ export async function POST(request, { params }) {
         const result = await sendQuoteSentEmail({
           quote: emailQuote,
           detailer,
+          language: customerLanguage,
         });
         emailSent = result.success;
         if (!result.success) {
