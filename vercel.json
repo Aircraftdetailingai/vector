@@ -1,4 +1,5 @@
 {
+  "toolbar": false,
   "crons": [
     { "path": "/api/cron/drip", "schedule": "0 9 * * *" },
     { "path": "/api/cron/followups", "schedule": "0 10 * * *" },
