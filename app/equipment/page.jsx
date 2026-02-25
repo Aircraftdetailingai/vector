@@ -634,7 +634,7 @@ export default function EquipmentPage() {
                 {scrapeError && (
                   <p className="text-xs text-red-600 mt-1">{scrapeError}</p>
                 )}
-                <p className="text-xs text-amber-600 mt-1">Supports Amazon, Home Depot, Grainger, Detail King, Rupes, Autogeek &amp; more</p>
+                <p className="text-xs text-amber-600 mt-1">Supports Amazon, Home Depot, Grainger, Detail King, Rupes, Autogeek, Fly Shiny, Real Clean Aviation, Skygeek, Aircraft Spruce, Chief Aircraft, Nuvite &amp; more</p>
               </div>
 
               {/* Image preview from scrape */}

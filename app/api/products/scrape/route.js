@@ -55,6 +55,12 @@ export async function POST(request) {
       'chemicalguys.com': 'Chemical Guys',
       'psdetail.com': 'P&S Detail Products',
       'pfrproducts.com': 'P&S Detail Products',
+      'flyshiny.com': 'Fly Shiny',
+      'realcleanaviation.com': 'Real Clean Aviation',
+      'skygeek.com': 'Skygeek',
+      'aircraftspruce.com': 'Aircraft Spruce',
+      'chiefaircraft.com': 'Chief Aircraft',
+      'nuvitechemical.com': 'Nuvite',
     };
     result.supplier = supplierMap[hostname] || hostname;
 
@@ -107,6 +113,18 @@ export async function POST(request) {
       extractDetailKing(html, result);
     } else if (hostname.includes('autogeek')) {
       extractAutogeek(html, result);
+    } else if (hostname.includes('flyshiny')) {
+      extractAviationSupplier(html, result, 'Fly Shiny');
+    } else if (hostname.includes('realcleanaviation')) {
+      extractAviationSupplier(html, result, 'Real Clean Aviation');
+    } else if (hostname.includes('skygeek')) {
+      extractAviationSupplier(html, result, 'Skygeek');
+    } else if (hostname.includes('aircraftspruce')) {
+      extractAviationSupplier(html, result, 'Aircraft Spruce');
+    } else if (hostname.includes('chiefaircraft')) {
+      extractAviationSupplier(html, result, 'Chief Aircraft');
+    } else if (hostname.includes('nuvite')) {
+      extractAviationSupplier(html, result, 'Nuvite');
     }
 
     // 4. Generic price fallback
@@ -229,6 +247,31 @@ function extractAutogeek(html, result) {
   }
 }
 
+// Aviation supplier generic extractor
+function extractAviationSupplier(html, result, supplier) {
+  result.supplier = supplier;
+  // Many aviation e-commerce sites use standard Shopify/WooCommerce patterns
+  if (!result.brand) {
+    // Try vendor/brand from common e-commerce patterns
+    const brandMatch = html.match(/class=["'][^"']*(?:product-vendor|brand)[^"']*["'][^>]*>([^<]+)/i)
+      || html.match(/itemprop=["']brand["'][^>]*>([^<]+)/i)
+      || html.match(/itemprop=["']brand["'][^>]*content=["']([^"']+)["']/i);
+    if (brandMatch) result.brand = cleanText(brandMatch[1]);
+  }
+  if (!result.price) {
+    // Shopify money format
+    const priceMatch = html.match(/class=["'][^"']*(?:product-price|current-price|ProductMeta__Price)[^"']*["'][^>]*>\s*\$?([\d,.]+)/i)
+      || html.match(/class=["']money["'][^>]*>\s*\$?([\d,.]+)/i);
+    if (priceMatch) result.price = parseFloat(priceMatch[1].replace(',', ''));
+  }
+  if (!result.image) {
+    // Try product image patterns
+    const imgMatch = html.match(/class=["'][^"']*product-(?:featured-)?image[^"']*["'][^>]*src=["']([^"']+)["']/i)
+      || html.match(/id=["']ProductPhoto["'][^>]*src=["']([^"']+)["']/i);
+    if (imgMatch) result.image = imgMatch[1].startsWith('//') ? 'https:' + imgMatch[1] : imgMatch[1];
+  }
+}
+
 // Category detection from product text
 function guessCategory(text) {
   const t = text.toLowerCase();
@@ -260,6 +303,8 @@ function guessBrand(text) {
     'Sonax', 'Collinite', 'Optimum', 'CarPro', 'Gtechniq', 'Koch Chemie',
     '3M', 'Angelwax', 'Auto Finesse', 'Gyeon', 'Detail King',
     'Malco', 'Presta', 'Lake Country', 'Buff and Shine',
+    'Nuvite', 'Fly Shiny', 'Real Clean', 'Zip-Chem', 'Aero-Sense',
+    'Pratt & Whitney', 'Turbine', 'Brulin', 'Celeste',
   ];
   for (const b of brands) {
     if (text.toLowerCase().includes(b.toLowerCase())) return b;

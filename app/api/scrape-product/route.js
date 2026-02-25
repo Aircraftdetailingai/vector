@@ -118,6 +118,13 @@ function detectSite(url) {
   if (hostname.includes('sonax')) return 'Sonax';
   if (hostname.includes('carpro')) return 'CarPro';
   if (hostname.includes('koch-chemie')) return 'Koch-Chemie';
+  // Aviation suppliers
+  if (hostname.includes('flyshiny')) return 'Fly Shiny';
+  if (hostname.includes('realcleanaviation')) return 'Real Clean Aviation';
+  if (hostname.includes('skygeek')) return 'Skygeek';
+  if (hostname.includes('aircraftspruce')) return 'Aircraft Spruce';
+  if (hostname.includes('chiefaircraft')) return 'Chief Aircraft';
+  if (hostname.includes('nuvitechemical') || hostname.includes('nuvite')) return 'Nuvite';
   return null;
 }
 
@@ -135,7 +142,8 @@ function extractBrand(name, html, jsonLd, siteDetected) {
 
   // Site-detected brand
   if (siteDetected && ['Chemical Guys', 'Rupes', 'P&S', 'IGL Coatings', 'Gtechniq', 'Flex',
-    "Griot's Garage", 'Collinite', "Meguiar's", '3M', 'Sonax', 'CarPro', 'Koch-Chemie'].includes(siteDetected)) {
+    "Griot's Garage", 'Collinite', "Meguiar's", '3M', 'Sonax', 'CarPro', 'Koch-Chemie',
+    'Fly Shiny', 'Real Clean Aviation', 'Nuvite'].includes(siteDetected)) {
     return siteDetected;
   }
 
@@ -145,6 +153,7 @@ function extractBrand(name, html, jsonLd, siteDetected) {
     'Collinite', 'Sonax', 'CarPro', 'Koch-Chemie', "Griot's", 'Adam\'s', '3M',
     'Flex', 'Milwaukee', 'DeWalt', 'Makita', 'Bosch', 'Karcher', 'Sun Joe',
     'Greenworks', 'Rigid', 'Ryobi', 'Craftsman',
+    'Nuvite', 'Fly Shiny', 'Real Clean', 'Pratt & Whitney', 'Zip-Chem', 'Aero-Sense',
   ];
   if (name) {
     for (const brand of knownBrands) {
@@ -275,7 +284,7 @@ export async function POST(request) {
     // Clean up name - remove site suffix
     if (name) {
       name = name
-        .replace(/\s*[\|\-\u2013\u2014]\s*(Detail King|Autogeek|Amazon\.com|Chemical Guys|Home Depot|Grainger|Lowe's).*$/i, '')
+        .replace(/\s*[\|\-\u2013\u2014]\s*(Detail King|Autogeek|Amazon\.com|Chemical Guys|Home Depot|Grainger|Lowe's|Fly Shiny|Real Clean Aviation|Skygeek|Aircraft Spruce|Chief Aircraft|Nuvite).*$/i, '')
         .replace(/\s*:\s*Amazon\.com.*$/i, '')
         .trim();
     }

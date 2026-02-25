@@ -146,6 +146,53 @@ const SITE_EXTRACTORS = {
     return { name: title, price, image, brand, model: extractModel(html) };
   },
 
+  flyshiny: (html) => {
+    const title = getMeta(html, 'og:title') || html.match(/<h1[^>]*>([^<]+)/i)?.[1]?.trim();
+    const image = getMeta(html, 'og:image');
+    const price = extractPrice(html);
+    const brand = extractBrand(html) || 'Fly Shiny';
+    return { name: title, price, image, brand, model: extractModel(html) };
+  },
+
+  realcleanaviation: (html) => {
+    const title = getMeta(html, 'og:title') || html.match(/<h1[^>]*>([^<]+)/i)?.[1]?.trim();
+    const image = getMeta(html, 'og:image');
+    const price = extractPrice(html);
+    const brand = extractBrand(html) || 'Real Clean Aviation';
+    return { name: title, price, image, brand, model: extractModel(html) };
+  },
+
+  skygeek: (html) => {
+    const title = getMeta(html, 'og:title') || html.match(/<h1[^>]*>([^<]+)/i)?.[1]?.trim();
+    const image = getMeta(html, 'og:image');
+    const price = extractPrice(html);
+    const brand = extractBrand(html);
+    return { name: title, price, image, brand, model: extractModel(html) };
+  },
+
+  aircraftspruce: (html) => {
+    const title = getMeta(html, 'og:title') || html.match(/<h1[^>]*>([^<]+)/i)?.[1]?.trim();
+    const image = getMeta(html, 'og:image');
+    const price = extractPrice(html);
+    const brand = extractBrand(html);
+    return { name: title, price, image, brand, model: extractModel(html) };
+  },
+
+  chiefaircraft: (html) => {
+    const title = getMeta(html, 'og:title') || html.match(/<h1[^>]*>([^<]+)/i)?.[1]?.trim();
+    const image = getMeta(html, 'og:image');
+    const price = extractPrice(html);
+    const brand = extractBrand(html);
+    return { name: title, price, image, brand, model: extractModel(html) };
+  },
+
+  nuvite: (html) => {
+    const title = getMeta(html, 'og:title') || html.match(/<h1[^>]*>([^<]+)/i)?.[1]?.trim();
+    const image = getMeta(html, 'og:image');
+    const price = extractPrice(html);
+    return { name: title, price, image, brand: 'Nuvite', model: extractModel(html) };
+  },
+
   generic: (html) => {
     const title = getMeta(html, 'og:title')
       || getMeta(html, 'twitter:title')
@@ -165,6 +212,12 @@ function detectSite(url) {
   if (hostname.includes('detailking')) return 'detailking';
   if (hostname.includes('rupes')) return 'rupes';
   if (hostname.includes('autogeek')) return 'autogeek';
+  if (hostname.includes('flyshiny')) return 'flyshiny';
+  if (hostname.includes('realcleanaviation')) return 'realcleanaviation';
+  if (hostname.includes('skygeek')) return 'skygeek';
+  if (hostname.includes('aircraftspruce')) return 'aircraftspruce';
+  if (hostname.includes('chiefaircraft')) return 'chiefaircraft';
+  if (hostname.includes('nuvite')) return 'nuvite';
   return 'generic';
 }
 
@@ -173,7 +226,7 @@ function cleanName(name) {
   if (!name) return null;
   // Remove site suffixes
   return name
-    .replace(/\s*[-|]\s*(Amazon\.com|Home Depot|Grainger|Detail King|Rupes|Autogeek).*$/i, '')
+    .replace(/\s*[-|]\s*(Amazon\.com|Home Depot|Grainger|Detail King|Rupes|Autogeek|Fly Shiny|Real Clean Aviation|Skygeek|Aircraft Spruce|Chief Aircraft|Nuvite).*$/i, '')
     .replace(/\s*[-|]\s*The Home Depot.*$/i, '')
     .replace(/&amp;/g, '&')
     .replace(/&#39;/g, "'")
