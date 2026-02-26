@@ -57,7 +57,7 @@ export default function AddTeamMemberPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
       {/* Header */}
       <header className="flex items-center space-x-3 mb-6">
         <a href="/team" className="text-white text-2xl">&#8592;</a>
