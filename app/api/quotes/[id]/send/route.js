@@ -195,6 +195,7 @@ export async function POST(request, { params }) {
   let emailSent = false;
   let emailError = null;
   let smsSent = false;
+  let smsError = null;
 
   // Send email to customer
   if (clientEmail) {
@@ -251,6 +252,7 @@ export async function POST(request, { params }) {
         companyName: detailer.company || detailer.name || '',
       });
       smsSent = smsResult.success;
+      if (!smsResult.success) smsError = smsResult.error;
       console.log('SMS result:', JSON.stringify(smsResult));
 
       if (smsSent) {
@@ -268,10 +270,13 @@ export async function POST(request, { params }) {
         await supabase.from('scheduled_followups').insert(followups);
       }
     } catch (e) {
-      console.error('SMS send error:', e);
+      console.error('=== SMS EXCEPTION in quote send ===', e.message || e);
+      smsError = e.message || 'SMS send exception';
     }
   } else {
-    console.log('SMS skipped:', !smsChecks.hasPremium ? 'not premium' : !smsChecks.smsEnabled ? 'sms disabled' : 'no phone number');
+    const reason = !smsChecks.hasPremium ? 'not premium' : !smsChecks.smsEnabled ? 'sms disabled' : 'no phone number';
+    console.log(`=== SMS SKIPPED === reason: ${reason}`, JSON.stringify(smsChecks));
+    smsError = reason;
   }
 
   // Log activity
@@ -294,5 +299,6 @@ export async function POST(request, { params }) {
     emailSent,
     emailError: emailError || undefined,
     smsSent,
+    smsError: smsError || undefined,
   }), { status: 200 });
 }

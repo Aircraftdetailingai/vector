@@ -329,7 +329,7 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
         warnings.push(`Email failed: ${sendResult.emailError}`);
       }
       if (effectivePhone && sendResult.smsSent === false) {
-        warnings.push('SMS was not sent (check Twilio config or plan)');
+        warnings.push(`SMS failed: ${sendResult.smsError || 'check Twilio config or plan'}`);
       }
       if (warnings.length > 0) {
         setError(`Quote sent. ${warnings.join('. ')}`);

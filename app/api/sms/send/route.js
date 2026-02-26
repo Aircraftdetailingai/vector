@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
-import { sendSms } from '@/lib/sms';
+import { sendSms, formatPhoneE164 } from '@/lib/sms';
 import { hasPremiumAccess } from '@/lib/pricing-tiers';
 
 export const dynamic = 'force-dynamic';
@@ -37,6 +37,7 @@ export async function POST(request) {
     return Response.json({ error: 'to and body are required' }, { status: 400 });
   }
 
+  console.log('=== SMS ROUTE CALLED === to:', to);
   const result = await sendSms({ to, body, from: detailer.twilio_phone || undefined });
 
   return Response.json(result, { status: result.success ? 200 : 500 });
