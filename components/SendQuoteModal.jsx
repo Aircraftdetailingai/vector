@@ -5,7 +5,7 @@ import { formatPrice, currencySymbol } from "@/lib/formatPrice";
 import { useToast } from "./Toast";
 import { useTranslation } from '@/lib/i18n';
 
-export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
+export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user }) {
   const { t } = useTranslation();
   const { success: toastSuccess, error: toastError } = useToast();
   const [clientName, setClientName] = useState("");
@@ -701,7 +701,11 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
               type="button"
               onClick={() => {
                 setSuccess(false);
-                onClose();
+                if (onSuccess) {
+                  onSuccess();
+                } else {
+                  onClose();
+                }
               }}
               className="px-4 py-2 rounded bg-gradient-to-r from-amber-500 to-amber-600 text-white"
             >

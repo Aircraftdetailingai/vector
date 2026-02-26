@@ -1016,6 +1016,23 @@ function DashboardContent() {
     setModalOpen(false);
   };
 
+  const resetQuoteForm = () => {
+    setSelectedAircraft(null);
+    setSelectedServices({});
+    setSelectedPackage(null);
+    setSelectedManufacturer('');
+    setSelectedCategory('');
+    setModelSearch('');
+    setAccessDifficulty(1.0);
+    setQuoteNotes('');
+    setJobLocation('');
+    setAirport('');
+    setSelectedAddons({});
+    setCustomProductRatios(null);
+    setModalOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const laborTotal = totalPrice - estimatedProductCost;
   const productsTotal = estimatedProductCost;
 
@@ -1741,6 +1758,7 @@ function DashboardContent() {
         <SendQuoteModal
           isOpen={isModalOpen}
           onClose={closeSendModal}
+          onSuccess={resetQuoteForm}
           quote={{
             aircraft: quoteData.aircraft,
             selectedServices: quoteData.selectedServices,
