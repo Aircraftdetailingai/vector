@@ -45,6 +45,22 @@ export async function GET(request) {
       .single();
 
     const mode = detailer?.stripe_mode || 'test';
+
+    // Log key info for debugging connection issues
+    const keyRaw = mode === 'live'
+      ? (process.env.STRIPE_LIVE_SECRET_KEY || process.env.STRIPE_SECRET_KEY)
+      : (process.env.STRIPE_TEST_SECRET_KEY || process.env.STRIPE_SECRET_KEY);
+    const keyTrimmed = keyRaw?.trim();
+    console.log('=== Stripe Status Debug ===', {
+      mode,
+      keyExists: !!keyTrimmed,
+      keyLength: keyTrimmed?.length || 0,
+      keyPrefix: keyTrimmed?.substring(0, 8) || 'MISSING',
+      keyHasWhitespace: keyRaw !== keyTrimmed,
+      keyHasQuotes: keyRaw?.includes('"') || keyRaw?.includes("'"),
+      stripeAccountId: detailer?.stripe_account_id || 'NONE',
+    });
+
     const stripe = createStripeClient(mode);
 
     if (!stripe) {
@@ -81,7 +97,13 @@ export async function GET(request) {
       email: account.email,
     }), { status: 200 });
   } catch (err) {
-    console.error('Stripe status error:', err);
+    console.error('=== Stripe Status Error ===', {
+      message: err.message,
+      type: err.type,
+      code: err.code,
+      statusCode: err.statusCode,
+      raw: err.rawType,
+    });
     return new Response(JSON.stringify({
       connected: false,
       status: 'ERROR',
