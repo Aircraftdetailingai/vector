@@ -583,6 +583,10 @@ function DashboardContent() {
   const [serviceProductLinks, setServiceProductLinks] = useState([]);
   const [serviceEquipmentLinks, setServiceEquipmentLinks] = useState([]);
 
+  // Analytics data for dashboard charts
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [upcomingJobs, setUpcomingJobs] = useState([]);
+
   const categoryLabels = {
     piston: t('categories.piston'),
     turboprop: t('categories.turboprop'),
@@ -642,6 +646,23 @@ function DashboardContent() {
     setUser(parsedUser);
     setLoading(false);
 
+    // Refresh user data from server to get latest plan/permissions
+    const refreshUser = async () => {
+      try {
+        const res = await fetch('/api/user/me', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setUser(data.user);
+            localStorage.setItem('vector_user', JSON.stringify(data.user));
+          }
+        }
+      } catch (e) {}
+    };
+    refreshUser();
+
     // Check onboarding status
     const checkOnboarding = async () => {
       try {
@@ -664,7 +685,7 @@ function DashboardContent() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // All fetches in parallel for speed
-      const [stripeRes, servicesRes, packagesRes, minFeeRes, tipRes, statsRes, quotesRes, addonsRes, recurringRes, productRatiosRes, svcProdRes, svcEquipRes] = await Promise.allSettled([
+      const [stripeRes, servicesRes, packagesRes, minFeeRes, tipRes, statsRes, quotesRes, addonsRes, recurringRes, productRatiosRes, svcProdRes, svcEquipRes, analyticsRes, upcomingRes] = await Promise.allSettled([
         fetch('/api/stripe/status', { headers }),
         fetch('/api/services', { headers }),
         fetch('/api/packages', { headers }),
@@ -677,6 +698,8 @@ function DashboardContent() {
         fetch('/api/user/product-ratios', { headers }),
         fetch('/api/services/products', { headers }),
         fetch('/api/services/equipment', { headers }),
+        fetch('/api/analytics?days=90', { headers }),
+        fetch('/api/quotes?status=paid,scheduled,in_progress&has_date=true&limit=10&sort=scheduled_date&order=asc', { headers }),
       ]);
 
       // Process Stripe status
@@ -753,6 +776,25 @@ function DashboardContent() {
       if (svcEquipRes.status === 'fulfilled' && svcEquipRes.value.ok) {
         const data = await svcEquipRes.value.json();
         setServiceEquipmentLinks(data.links || []);
+      }
+
+      // Process analytics data
+      if (analyticsRes.status === 'fulfilled' && analyticsRes.value.ok) {
+        const data = await analyticsRes.value.json();
+        setAnalyticsData(data);
+      }
+
+      // Process upcoming jobs
+      if (upcomingRes.status === 'fulfilled' && upcomingRes.value.ok) {
+        const data = await upcomingRes.value.json();
+        const now = new Date();
+        const in7days = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+        const upcoming = (data.quotes || []).filter(q => {
+          if (!q.scheduled_date) return false;
+          const d = new Date(q.scheduled_date);
+          return d >= now && d <= in7days;
+        });
+        setUpcomingJobs(upcoming.slice(0, 5));
       }
     };
 

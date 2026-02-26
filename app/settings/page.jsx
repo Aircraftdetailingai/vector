@@ -110,8 +110,18 @@ function SettingsContent() {
       router.push('/login');
       return;
     }
-    const u = JSON.parse(stored);
+    let u = JSON.parse(stored);
     setUser(u);
+    // Refresh user data from server to get latest plan/permissions
+    fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.user) {
+          setUser(data.user);
+          localStorage.setItem('vector_user', JSON.stringify(data.user));
+        }
+      })
+      .catch(() => {});
     setPriceReminder(u.price_reminder_months || 6);
     setQuoteDisplayPref(u.quote_display_preference || 'package');
     setEfficiencyFactor(u.efficiency_factor || 1.0);

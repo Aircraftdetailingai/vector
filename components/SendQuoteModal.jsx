@@ -44,7 +44,8 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
   // Close when not open
   if (!isOpen) return null;
 
-  const isBusiness = user?.plan === "business" || user?.plan === "enterprise" || user?.is_admin;
+  const ADMIN_EMAILS = ['brett@aircraftdetailing.ai', 'admin@aircraftdetailing.ai', 'brett@shinyjets.com'];
+  const isBusiness = user?.plan === "business" || user?.plan === "enterprise" || user?.is_admin || ADMIN_EMAILS.includes(user?.email?.toLowerCase());
   const requiresSms = method === "sms" || method === "both";
   const requiresEmail = method === "email" || method === "both";
 

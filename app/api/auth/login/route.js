@@ -90,7 +90,7 @@ export async function POST(request) {
       name: data.name,
       phone: data.phone,
       company: data.company,
-      plan: isAdmin ? (data.plan === 'enterprise' ? 'enterprise' : data.plan || 'enterprise') : data.plan,
+      plan: isAdmin ? 'enterprise' : (data.plan || 'free'),
       is_admin: isAdmin,
       status: data.status,
       rates: data.rates || {},
@@ -99,6 +99,7 @@ export async function POST(request) {
       quote_display_preference: data.quote_display_preference || 'package',
       efficiency_factor: data.efficiency_factor || 1.0,
       default_labor_rate: data.default_labor_rate || 25,
+      sms_enabled: isAdmin ? true : (data.sms_enabled !== false),
     };
     return new Response(
       JSON.stringify({ token, user, must_change_password: data.must_change_password }),
