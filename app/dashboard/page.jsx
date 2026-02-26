@@ -852,6 +852,11 @@ function DashboardContent() {
         setAccessDifficulty(1.0);
         setQuoteNotes('');
         setJobLocation('');
+        setAirport('');
+        // Auto-scroll to services section
+        setTimeout(() => {
+          document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' });
+        }, 100);
       }
     } catch (err) {
       console.error('Failed to fetch aircraft details:', err);
@@ -948,8 +953,8 @@ function DashboardContent() {
   const minimumFeeApplies = () => {
     if (minimumFee <= 0) return false;
     if (calculatedPrice >= minimumFee) return false;
-    if (minimumFeeLocations.length > 0 && jobLocation) {
-      const normalizedJob = jobLocation.toUpperCase().trim();
+    if (minimumFeeLocations.length > 0 && airport) {
+      const normalizedJob = airport.toUpperCase().trim();
       return minimumFeeLocations.some(loc => normalizedJob.includes(loc.toUpperCase().trim()));
     }
     // Apply minimum if no location restrictions, or no job location specified yet
@@ -1071,7 +1076,7 @@ function DashboardContent() {
   }
 
   return (
-    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 pb-24 text-gray-900">
+    <div className="min-h-screen overflow-y-auto bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 pb-40 text-gray-900">
       <DashboardTour />
       {/* Header */}
       <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-1 bg-gradient-to-b from-[#0f172a] via-[#0f172a] to-transparent flex justify-between items-center text-white">
@@ -1153,10 +1158,8 @@ function DashboardContent() {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-4" data-tour="quote-builder">
-        {/* Left column */}
-        <div className="flex-1">
-          {/* Aircraft Selection */}
+      <div className="max-w-3xl mx-auto" data-tour="quote-builder">
+          {/* 1. Select Aircraft */}
           <div className="bg-white rounded-lg p-4 mb-4 shadow">
             <h3 className="font-semibold mb-3 text-lg">{t('dashboard.selectAircraft')}</h3>
 
@@ -1222,21 +1225,21 @@ function DashboardContent() {
                     ) : (
                       <div className="divide-y">
                         {filteredModels.map((aircraft) => (
-                      <div
-                        key={aircraft.id}
-                        onClick={() => handleSelectAircraft(aircraft)}
-                        className={`p-3 cursor-pointer hover:bg-gray-50 flex justify-between items-center ${
-                          selectedAircraft?.id === aircraft.id ? 'bg-amber-50 border-l-4 border-amber-500' : ''
-                        }`}
-                      >
-                        <div>
-                          <p className="font-medium">{aircraft.manufacturer} {aircraft.model}</p>
-                          <p className="text-sm text-gray-500">{categoryLabels[aircraft.category]} • {aircraft.seats} {t('dashboard.seats')}</p>
-                        </div>
-                        {selectedAircraft?.id === aircraft.id && (
-                          <span className="text-amber-500">&#10003;</span>
-                        )}
-                      </div>
+                          <div
+                            key={aircraft.id}
+                            onClick={() => handleSelectAircraft(aircraft)}
+                            className={`p-3 cursor-pointer hover:bg-gray-50 flex justify-between items-center ${
+                              selectedAircraft?.id === aircraft.id ? 'bg-amber-50 border-l-4 border-amber-500' : ''
+                            }`}
+                          >
+                            <div>
+                              <p className="font-medium">{aircraft.manufacturer} {aircraft.model}</p>
+                              <p className="text-sm text-gray-500">{categoryLabels[aircraft.category]} \u2022 {aircraft.seats} {t('dashboard.seats')}</p>
+                            </div>
+                            {selectedAircraft?.id === aircraft.id && (
+                              <span className="text-amber-500">&#10003;</span>
+                            )}
+                          </div>
                         ))}
                       </div>
                     )}
@@ -1246,88 +1249,9 @@ function DashboardContent() {
             })()}
           </div>
 
-          {/* Aircraft Details & Surface Area */}
+          {/* 2. Select Services (auto-scroll target) */}
           {selectedAircraft && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-              <div className="flex justify-between items-start">
-                <div>
-                  <h4 className="font-semibold text-blue-900">{selectedAircraft.manufacturer} {selectedAircraft.model}</h4>
-                  <p className="text-blue-700 text-sm">{categoryLabels[selectedAircraft.category]}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-blue-600">{t('dashboard.surfaceArea')}</p>
-                  <p className="text-2xl font-bold text-blue-900">{selectedAircraft.surface_area_sqft?.toLocaleString()} {t('dashboard.sqft')}</p>
-                </div>
-              </div>
-              <div className="mt-2 grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-blue-700">
-                <div>{t('dashboard.wingspan')}: {selectedAircraft.wingspan_ft} {t('dashboard.ft')}</div>
-                <div>{t('dashboard.length')}: {selectedAircraft.length_ft} {t('dashboard.ft')}</div>
-                <div>{t('serviceTypes.extWash')}: {selectedAircraft.ext_wash_hours || 0}{t('common.hrs')}</div>
-                <div>{t('serviceTypes.intDetail')}: {selectedAircraft.int_detail_hours || 0}{t('common.hrs')}</div>
-              </div>
-              <div className="mt-1 grid grid-cols-2 md:grid-cols-4 gap-4 text-xs text-blue-600">
-                <div>{t('serviceTypes.wax')}: {selectedAircraft.wax_hours || 0}{t('common.hrs')}</div>
-                <div>{t('serviceTypes.polish')}: {selectedAircraft.polish_hours || 0}{t('common.hrs')}</div>
-                <div>{t('serviceTypes.ceramic')}: {selectedAircraft.ceramic_hours || 0}{t('common.hrs')}</div>
-                <div>{t('serviceTypes.leather')}: {selectedAircraft.leather_hours || 0}{t('common.hrs')}</div>
-              </div>
-            </div>
-          )}
-
-          {/* Airport */}
-          {selectedAircraft && (
-            <div className="bg-white rounded-lg p-4 mb-4 shadow">
-              <h3 className="font-semibold mb-2">{t('common.airport')} <span className="text-red-500">*</span></h3>
-              <input
-                type="text"
-                value={airport}
-                onChange={(e) => setAirport(e.target.value.toUpperCase())}
-                placeholder={t('dashboard.airportPlaceholder')}
-                maxLength={6}
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 uppercase font-mono tracking-wider"
-              />
-              {airport && airport.length < 3 && (
-                <p className="text-xs text-red-500 mt-1">Enter a valid airport code</p>
-              )}
-            </div>
-          )}
-
-          {/* Access Difficulty Multiplier */}
-          {selectedAircraft && (
-            <div className="bg-white rounded-lg p-4 mb-4 shadow">
-              <div className="flex justify-between items-center mb-2">
-                <h3 className="font-semibold">{t('dashboard.accessDifficulty')}</h3>
-                <span className="text-lg font-bold text-amber-600">{accessDifficulty.toFixed(2)}x</span>
-              </div>
-              <p className="text-sm text-gray-600 mb-3">
-                Adjust for hangar access, location, or special requirements.
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[
-                  { value: 1.0, label: t('dashboard.standard'), desc: t('dashboard.easyAccess') },
-                  { value: 1.15, label: t('dashboard.moderate'), desc: t('dashboard.limitedAccess') },
-                  { value: 1.3, label: t('dashboard.difficult'), desc: t('dashboard.remoteOrTight') },
-                  { value: 1.5, label: t('dashboard.extreme'), desc: t('dashboard.specialEquipment') },
-                ].map((opt) => (
-                  <button
-                    key={opt.value}
-                    onClick={() => setAccessDifficulty(opt.value)}
-                    className={`py-3 px-2 rounded text-sm font-medium transition-colors min-h-[44px] ${
-                      accessDifficulty === opt.value
-                        ? 'bg-amber-500 text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Services section */}
-          {selectedAircraft && (
-            <div className="bg-white rounded-lg p-4 shadow">
+            <div id="services-section" className="bg-white rounded-lg p-4 mb-4 shadow">
               <h3 className="font-semibold text-lg mb-3">{t('common.services')}</h3>
 
               {availableServices.length === 0 ? (
@@ -1433,9 +1357,42 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Add-on Fees */}
+          {/* 3. Access Difficulty Multiplier */}
+          {selectedAircraft && (
+            <div className="bg-white rounded-lg p-4 mb-4 shadow">
+              <div className="flex justify-between items-center mb-2">
+                <h3 className="font-semibold">{t('dashboard.accessDifficulty')}</h3>
+                <span className="text-lg font-bold text-amber-600">{accessDifficulty.toFixed(2)}x</span>
+              </div>
+              <p className="text-sm text-gray-600 mb-3">
+                Adjust for hangar access, location, or special requirements.
+              </p>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {[
+                  { value: 1.0, label: t('dashboard.standard'), desc: t('dashboard.easyAccess') },
+                  { value: 1.15, label: t('dashboard.moderate'), desc: t('dashboard.limitedAccess') },
+                  { value: 1.3, label: t('dashboard.difficult'), desc: t('dashboard.remoteOrTight') },
+                  { value: 1.5, label: t('dashboard.extreme'), desc: t('dashboard.specialEquipment') },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    onClick={() => setAccessDifficulty(opt.value)}
+                    className={`py-3 px-2 rounded text-sm font-medium transition-colors min-h-[44px] ${
+                      accessDifficulty === opt.value
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    {opt.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 4. Add-on Fees */}
           {selectedAircraft && availableAddons.length > 0 && (
-            <div className="bg-white rounded-lg p-4 mt-4 shadow">
+            <div className="bg-white rounded-lg p-4 mb-4 shadow">
               <h3 className="font-semibold mb-3">{t('dashboard.addonFees')}</h3>
               <div className="space-y-2">
                 {availableAddons.map((addon) => {
@@ -1472,17 +1429,21 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Job Location */}
+          {/* 5. Service Location (Airport Code) - single field */}
           {selectedAircraft && (
-            <div className="bg-white rounded-lg p-4 mt-4 shadow">
-              <h3 className="font-semibold mb-2">{t('dashboard.jobLocation')}</h3>
+            <div className="bg-white rounded-lg p-4 mb-4 shadow">
+              <h3 className="font-semibold mb-2">{t('dashboard.jobLocation')} ({t('common.airport')})</h3>
               <input
                 type="text"
-                value={jobLocation}
-                onChange={(e) => setJobLocation(e.target.value)}
+                value={airport}
+                onChange={(e) => { const v = e.target.value.toUpperCase(); setAirport(v); setJobLocation(v); }}
                 placeholder={t('dashboard.airportPlaceholder')}
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                maxLength={6}
+                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 uppercase font-mono tracking-wider"
               />
+              {airport && airport.length < 3 && (
+                <p className="text-xs text-red-500 mt-1">Enter a valid airport code</p>
+              )}
               {minimumFee > 0 && (
                 <p className="text-xs text-gray-500 mt-1">
                   {minimumFeeLocations.length > 0
@@ -1494,9 +1455,9 @@ function DashboardContent() {
             </div>
           )}
 
-          {/* Quote Notes */}
+          {/* 6. Notes */}
           {selectedAircraft && (
-            <div className="bg-white rounded-lg p-4 mt-4 shadow">
+            <div className="bg-white rounded-lg p-4 mb-4 shadow">
               <h3 className="font-semibold mb-2">{t('common.notes')}</h3>
               <textarea
                 value={quoteNotes}
@@ -1507,230 +1468,274 @@ function DashboardContent() {
               />
             </div>
           )}
-        </div>
 
-        {/* Right column - Quote summary */}
-        <div className="w-full lg:w-80">
-          <div className="lg:sticky lg:top-16 bg-[#0f172a] text-white rounded-lg p-4 shadow-lg">
-            <h3 className="text-lg font-semibold mb-3">{t('dashboard.quoteSummary')}</h3>
-            {selectedAircraft ? (
-              <>
-                <p className="mb-1 font-medium">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
-                <p className="text-sm text-gray-400 mb-1">{categoryLabels[selectedAircraft.category]}</p>
-                {airport && <p className="text-sm text-amber-400 mb-3">{airport}</p>}
+          {/* Aircraft Details (collapsible accordion) */}
+          {selectedAircraft && (
+            <details className="mb-4 group">
+              <summary className="bg-blue-50 border border-blue-200 rounded-lg p-3 cursor-pointer text-sm font-semibold text-blue-900 hover:bg-blue-100 list-none flex justify-between items-center [&::-webkit-details-marker]:hidden">
+                <span>Aircraft Details \u2014 {selectedAircraft.manufacturer} {selectedAircraft.model}</span>
+                <span className="text-blue-400 text-xs transition-transform group-open:rotate-180">&#9660;</span>
+              </summary>
+              <div className="bg-blue-50 border border-blue-200 border-t-0 rounded-b-lg p-4">
+                <div className="flex justify-between items-start mb-2">
+                  <p className="text-sm text-blue-700">{categoryLabels[selectedAircraft.category]}</p>
+                  <div className="text-right">
+                    <p className="text-xs text-blue-600">{t('dashboard.surfaceArea')}</p>
+                    <p className="text-lg font-bold text-blue-900">{selectedAircraft.surface_area_sqft?.toLocaleString()} {t('dashboard.sqft')}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm text-blue-700">
+                  <div>{t('dashboard.wingspan')}: {selectedAircraft.wingspan_ft} {t('dashboard.ft')}</div>
+                  <div>{t('dashboard.length')}: {selectedAircraft.length_ft} {t('dashboard.ft')}</div>
+                  <div>{t('serviceTypes.extWash')}: {selectedAircraft.ext_wash_hours || 0}{t('common.hrs')}</div>
+                  <div>{t('serviceTypes.intDetail')}: {selectedAircraft.int_detail_hours || 0}{t('common.hrs')}</div>
+                </div>
+                <div className="mt-1 grid grid-cols-2 md:grid-cols-4 gap-3 text-xs text-blue-600">
+                  <div>{t('serviceTypes.wax')}: {selectedAircraft.wax_hours || 0}{t('common.hrs')}</div>
+                  <div>{t('serviceTypes.polish')}: {selectedAircraft.polish_hours || 0}{t('common.hrs')}</div>
+                  <div>{t('serviceTypes.ceramic')}: {selectedAircraft.ceramic_hours || 0}{t('common.hrs')}</div>
+                  <div>{t('serviceTypes.leather')}: {selectedAircraft.leather_hours || 0}{t('common.hrs')}</div>
+                </div>
+              </div>
+            </details>
+          )}
 
-                {/* Service line items */}
-                <ul className="mb-3 space-y-1">
-                  {selectedServicesList.map((svc) => {
-                    const hours = getHoursForService(svc);
-                    const price = getServicePrice(svc);
-                    return (
-                      <li key={svc.id} className="flex justify-between text-sm">
-                        <div>
-                          <span className="text-gray-300">{svc.name}</span>
-                          <span className="text-xs text-gray-500 block">{hours.toFixed(1)}{t('common.hrs')} x {currencySymbol()}{svc.hourly_rate}{t('common.perHour')}</span>
-                        </div>
-                        <span>{currencySymbol()}{formatPriceWhole(price)}</span>
-                      </li>
-                    );
-                  })}
-                </ul>
+          {/* 7. Quote Summary (bottom section) */}
+          {selectedAircraft && (
+            <div className="bg-[#0f172a] text-white rounded-lg p-6 mb-4 shadow-lg">
+              <h3 className="text-lg font-semibold mb-3">{t('dashboard.quoteSummary')}</h3>
+              <p className="mb-1 font-medium">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
+              <p className="text-sm text-gray-400 mb-1">{categoryLabels[selectedAircraft.category]}</p>
+              {airport && <p className="text-sm text-amber-400 mb-3">{airport}</p>}
 
-                {/* Package discount */}
-                {selectedPackage && discountPercent > 0 && (
-                  <div className="flex justify-between text-sm text-green-400 mb-1">
-                    <span>{selectedPackage.name} ({discountPercent}% off)</span>
-                    <span>-{currencySymbol()}{formatPriceWhole(discountAmount)}</span>
+              {/* Service line items */}
+              <ul className="mb-3 space-y-1">
+                {selectedServicesList.map((svc) => {
+                  const hours = getHoursForService(svc);
+                  const price = getServicePrice(svc);
+                  return (
+                    <li key={svc.id} className="flex justify-between text-sm">
+                      <div>
+                        <span className="text-gray-300">{svc.name}</span>
+                        <span className="text-xs text-gray-500 block">{hours.toFixed(1)}{t('common.hrs')} x {currencySymbol()}{svc.hourly_rate}{t('common.perHour')}</span>
+                      </div>
+                      <span>{currencySymbol()}{formatPriceWhole(price)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+
+              {/* Package discount */}
+              {selectedPackage && discountPercent > 0 && (
+                <div className="flex justify-between text-sm text-green-400 mb-1">
+                  <span>{selectedPackage.name} ({discountPercent}% off)</span>
+                  <span>-{currencySymbol()}{formatPriceWhole(discountAmount)}</span>
+                </div>
+              )}
+              {selectedPackage && discountPercent === 0 && (
+                <div className="text-xs text-gray-500 mb-1">
+                  Package: {selectedPackage.name}
+                </div>
+              )}
+
+              <div className="border-t border-gray-600 pt-3 space-y-1">
+                <div className="flex justify-between text-sm text-gray-400">
+                  <span>{t('dashboard.estHours')}</span>
+                  <span>{totalHours.toFixed(1)}{t('common.hrs')}</span>
+                </div>
+                {accessDifficulty !== 1.0 && (
+                  <div className="flex justify-between text-xs text-gray-500">
+                    <span>{t('dashboard.difficultyMultiplier')}</span>
+                    <span>{accessDifficulty.toFixed(2)}x</span>
                   </div>
                 )}
-                {selectedPackage && discountPercent === 0 && (
-                  <div className="text-xs text-gray-500 mb-1">
-                    Package: {selectedPackage.name}
-                  </div>
-                )}
 
-                <div className="border-t border-gray-600 pt-3 space-y-1">
+                {/* Subtotal before addons */}
+                {addonsTotal > 0 && (
                   <div className="flex justify-between text-sm text-gray-400">
-                    <span>{t('dashboard.estHours')}</span>
-                    <span>{totalHours.toFixed(1)}{t('common.hrs')}</span>
+                    <span>{t('common.subtotal')}</span>
+                    <span>{currencySymbol()}{formatPriceWhole(afterDifficulty)}</span>
                   </div>
-                  {accessDifficulty !== 1.0 && (
-                    <div className="flex justify-between text-xs text-gray-500">
-                      <span>{t('dashboard.difficultyMultiplier')}</span>
-                      <span>{accessDifficulty.toFixed(2)}x</span>
-                    </div>
-                  )}
+                )}
 
-                  {/* Subtotal before addons */}
-                  {addonsTotal > 0 && (
+                {/* Addon fee lines */}
+                {addonFeeItems.map((a) => (
+                  <div key={a.id} className="flex justify-between text-sm text-orange-400">
+                    <span>{a.name} {a.fee_type === 'percent' ? `(${a.amount}%)` : ''}</span>
+                    <span>+{currencySymbol()}{formatPriceWhole(a.calculated)}</span>
+                  </div>
+                ))}
+
+                {/* Minimum fee adjustment */}
+                {isMinimumApplied && (
+                  <>
                     <div className="flex justify-between text-sm text-gray-400">
-                      <span>{t('common.subtotal')}</span>
-                      <span>{currencySymbol()}{formatPriceWhole(afterDifficulty)}</span>
+                      <span>Subtotal</span>
+                      <span>{currencySymbol()}{formatPrice(calculatedPrice)}</span>
                     </div>
-                  )}
-
-                  {/* Addon fee lines */}
-                  {addonFeeItems.map((a) => (
-                    <div key={a.id} className="flex justify-between text-sm text-orange-400">
-                      <span>{a.name} {a.fee_type === 'percent' ? `(${a.amount}%)` : ''}</span>
-                      <span>+{currencySymbol()}{formatPriceWhole(a.calculated)}</span>
+                    <div className="flex justify-between text-sm text-amber-400">
+                      <span>Minimum adjustment</span>
+                      <span>+{currencySymbol()}{formatPrice(minimumFee - calculatedPrice)}</span>
                     </div>
-                  ))}
+                  </>
+                )}
 
-                  {/* Minimum fee adjustment */}
-                  {isMinimumApplied && (
-                    <>
-                      <div className="flex justify-between text-sm text-gray-400">
-                        <span>Subtotal</span>
-                        <span>{currencySymbol()}{formatPrice(calculatedPrice)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm text-amber-400">
-                        <span>Minimum adjustment</span>
-                        <span>+{currencySymbol()}{formatPrice(minimumFee - calculatedPrice)}</span>
-                      </div>
-                    </>
-                  )}
-
-                  {/* Minimum check indicator - only show when actually met */}
-                  {minimumFee > 0 && !isMinimumApplied && calculatedPrice >= minimumFee && (
-                    <div className="text-xs text-green-400">
-                      Minimum ({currencySymbol()}{minimumFee}): &#10003; Met
-                    </div>
-                  )}
-
-                  <div className="flex justify-between text-xl font-bold pt-1">
-                    <span>{t('common.total')}</span>
-                    <span>{currencySymbol()}{formatPrice(totalPrice)}</span>
+                {/* Minimum check indicator */}
+                {minimumFee > 0 && !isMinimumApplied && calculatedPrice >= minimumFee && (
+                  <div className="text-xs text-green-400">
+                    Minimum ({currencySymbol()}{minimumFee}): &#10003; Met
                   </div>
+                )}
 
-                  {/* Profit preview (internal only) */}
-                  {estimatedProductCost > 0 && totalPrice > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-600/50 space-y-1">
-                      <div className="flex justify-between text-xs text-gray-400">
-                        <span>{t('dashboard.productCost')}</span>
-                        <span>-{currencySymbol()}{formatPrice(estimatedProductCost)}</span>
-                      </div>
-                      <div className="flex justify-between text-sm font-semibold text-green-400">
-                        <span>{t('dashboard.estProfit')}</span>
-                        <span>{currencySymbol()}{formatPrice(estimatedProfit)}
-                          <span className="text-xs font-normal ml-1">({totalPrice > 0 ? ((estimatedProfit / totalPrice) * 100).toFixed(0) : 0}%)</span>
-                        </span>
+                <div className="flex justify-between text-xl font-bold pt-1">
+                  <span>{t('common.total')}</span>
+                  <span>{currencySymbol()}{formatPrice(totalPrice)}</span>
+                </div>
+
+                {/* Profit preview (internal only) */}
+                {estimatedProductCost > 0 && totalPrice > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-600/50 space-y-1">
+                    <div className="flex justify-between text-xs text-gray-400">
+                      <span>{t('dashboard.productCost')}</span>
+                      <span>-{currencySymbol()}{formatPrice(estimatedProductCost)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm font-semibold text-green-400">
+                      <span>{t('dashboard.estProfit')}</span>
+                      <span>{currencySymbol()}{formatPrice(estimatedProfit)}
+                        <span className="text-xs font-normal ml-1">({totalPrice > 0 ? ((estimatedProfit / totalPrice) * 100).toFixed(0) : 0}%)</span>
+                      </span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Product usage estimates */}
+                {productEstimates.length > 0 ? (
+                  <div className="mt-2 pt-2 border-t border-gray-600/50">
+                    <p className="text-xs text-gray-400 mb-1">{t('dashboard.estimatedProducts')}</p>
+                    <div className="space-y-0.5">
+                      {productEstimates.map(e => (
+                        <div key={e.product_name} className="flex justify-between text-xs">
+                          <span className="text-gray-300">{e.product_name}</span>
+                          <span className="text-amber-400">{e.amount}{e.unit}</span>
+                        </div>
+                      ))}
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {selectedAircraft.manufacturer} {selectedAircraft.model}
+                      {selectedAircraft.surface_area_sqft ? ` (~${Number(selectedAircraft.surface_area_sqft).toLocaleString()} sqft)` : ''}
+                    </p>
+                  </div>
+                ) : selectedServicesList.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-600/50">
+                    <p className="text-xs text-gray-500">{t('dashboard.noProductsAssigned')}</p>
+                  </div>
+                )}
+
+                {/* Auto-populated Products Needed from service links */}
+                {(() => {
+                  const selectedIds = selectedServicesList.map(s => s.id);
+                  const neededProducts = serviceProductLinks.filter(l => selectedIds.includes(l.service_id));
+                  if (neededProducts.length === 0) return null;
+                  return (
+                    <div className="mt-2 pt-2 border-t border-gray-600/50">
+                      <p className="text-xs text-blue-400 font-medium mb-1">Products Needed</p>
+                      <div className="space-y-0.5">
+                        {neededProducts.map(link => {
+                          const svc = selectedServicesList.find(s => s.id === link.service_id);
+                          const hours = svc ? getHoursForService(svc) : 0;
+                          const qty = link.fixed_quantity > 0 ? link.fixed_quantity : (link.quantity_per_hour || 0) * hours;
+                          return (
+                            <div key={link.id} className="flex justify-between text-xs">
+                              <span className="text-gray-300 truncate">{link.products?.name}</span>
+                              <span className="text-blue-300 ml-2">{qty > 0 ? qty.toFixed(1) : '-'} {link.products?.unit}</span>
+                            </div>
+                          );
+                        })}
                       </div>
                     </div>
-                  )}
+                  );
+                })()}
 
-                  {/* Product usage estimates */}
-                  {productEstimates.length > 0 ? (
+                {/* Auto-populated Equipment Needed from service links */}
+                {(() => {
+                  const selectedIds = selectedServicesList.map(s => s.id);
+                  const neededEquip = serviceEquipmentLinks.filter(l => selectedIds.includes(l.service_id));
+                  if (neededEquip.length === 0) return null;
+                  const unique = [];
+                  const seen = new Set();
+                  for (const link of neededEquip) {
+                    if (!seen.has(link.equipment_id)) {
+                      seen.add(link.equipment_id);
+                      unique.push(link);
+                    }
+                  }
+                  return (
                     <div className="mt-2 pt-2 border-t border-gray-600/50">
-                      <p className="text-xs text-gray-400 mb-1">{t('dashboard.estimatedProducts')}</p>
+                      <p className="text-xs text-purple-400 font-medium mb-1">Equipment Needed</p>
                       <div className="space-y-0.5">
-                        {productEstimates.map(e => (
-                          <div key={e.product_name} className="flex justify-between text-xs">
-                            <span className="text-gray-300">{e.product_name}</span>
-                            <span className="text-amber-400">{e.amount}{e.unit}</span>
+                        {unique.map(link => (
+                          <div key={link.id} className="text-xs text-gray-300">
+                            {link.equipment?.name}{link.equipment?.brand ? ` (${link.equipment.brand})` : ''}
                           </div>
                         ))}
                       </div>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {selectedAircraft.manufacturer} {selectedAircraft.model}
-                        {selectedAircraft.surface_area_sqft ? ` (~${Number(selectedAircraft.surface_area_sqft).toLocaleString()} sqft)` : ''}
-                      </p>
                     </div>
-                  ) : selectedServicesList.length > 0 && (
-                    <div className="mt-2 pt-2 border-t border-gray-600/50">
-                      <p className="text-xs text-gray-500">{t('dashboard.noProductsAssigned')}</p>
-                    </div>
-                  )}
-
-                  {/* Auto-populated Products Needed from service links */}
-                  {(() => {
-                    const selectedIds = selectedServicesList.map(s => s.id);
-                    const neededProducts = serviceProductLinks.filter(l => selectedIds.includes(l.service_id));
-                    if (neededProducts.length === 0) return null;
-                    return (
-                      <div className="mt-2 pt-2 border-t border-gray-600/50">
-                        <p className="text-xs text-blue-400 font-medium mb-1">Products Needed</p>
-                        <div className="space-y-0.5">
-                          {neededProducts.map(link => {
-                            const svc = selectedServicesList.find(s => s.id === link.service_id);
-                            const hours = svc ? getHoursForService(svc) : 0;
-                            const qty = link.fixed_quantity > 0 ? link.fixed_quantity : (link.quantity_per_hour || 0) * hours;
-                            return (
-                              <div key={link.id} className="flex justify-between text-xs">
-                                <span className="text-gray-300 truncate">{link.products?.name}</span>
-                                <span className="text-blue-300 ml-2">{qty > 0 ? qty.toFixed(1) : '-'} {link.products?.unit}</span>
-                              </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    );
-                  })()}
-
-                  {/* Auto-populated Equipment Needed from service links */}
-                  {(() => {
-                    const selectedIds = selectedServicesList.map(s => s.id);
-                    const neededEquip = serviceEquipmentLinks.filter(l => selectedIds.includes(l.service_id));
-                    if (neededEquip.length === 0) return null;
-                    // Deduplicate by equipment_id
-                    const unique = [];
-                    const seen = new Set();
-                    for (const link of neededEquip) {
-                      if (!seen.has(link.equipment_id)) {
-                        seen.add(link.equipment_id);
-                        unique.push(link);
-                      }
-                    }
-                    return (
-                      <div className="mt-2 pt-2 border-t border-gray-600/50">
-                        <p className="text-xs text-purple-400 font-medium mb-1">Equipment Needed</p>
-                        <div className="space-y-0.5">
-                          {unique.map(link => (
-                            <div key={link.id} className="text-xs text-gray-300">
-                              {link.equipment?.name}{link.equipment?.brand ? ` (${link.equipment.brand})` : ''}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })()}
-                </div>
-
-                <button
-                  type="button"
-                  onClick={openSendModal}
-                  disabled={totalPrice === 0 || !airport || airport.length < 3}
-                  className="w-full mt-4 px-4 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {!airport || airport.length < 3 ? t('dashboard.enterAirport') : t('dashboard.sendToClient')}
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSelectedAircraft(null);
-                    setSelectedServices({});
-                    setSelectedPackage(null);
-                    setSelectedAddons({});
-                    setAccessDifficulty(1.0);
-                    setQuoteNotes('');
-                    setJobLocation('');
-                    setAirport('');
-                    setModelSearch('');
-                  }}
-                  className="w-full mt-2 px-4 py-3 rounded-lg border border-gray-500 text-gray-300 hover:bg-gray-800 text-sm min-h-[44px]"
-                >
-                  {t('dashboard.startNewQuote')}
-                </button>
-              </>
-            ) : (
-              <div className="text-gray-400 text-center py-8">
-                <p>{t('dashboard.selectAircraftToBuild')}</p>
+                  );
+                })()}
               </div>
-            )}
+
+              <button
+                type="button"
+                onClick={openSendModal}
+                disabled={totalPrice === 0 || !airport || airport.length < 3}
+                className="w-full mt-4 px-4 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px]"
+              >
+                {!airport || airport.length < 3 ? t('dashboard.enterAirport') : t('dashboard.sendToClient')}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedAircraft(null);
+                  setSelectedServices({});
+                  setSelectedPackage(null);
+                  setSelectedAddons({});
+                  setAccessDifficulty(1.0);
+                  setQuoteNotes('');
+                  setJobLocation('');
+                  setAirport('');
+                  setModelSearch('');
+                }}
+                className="w-full mt-2 px-4 py-3 rounded-lg border border-gray-500 text-gray-300 hover:bg-gray-800 text-sm min-h-[44px]"
+              >
+                {t('dashboard.startNewQuote')}
+              </button>
+            </div>
+          )}
+      </div>
+
+      {/* Sticky footer bar - always visible when building a quote */}
+      {selectedAircraft && selectedServicesList.length > 0 && (
+        <div className="fixed bottom-0 left-0 right-0 bg-[#0f172a]/95 backdrop-blur-sm border-t border-white/10 px-4 py-3 z-50 shadow-2xl">
+          <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-white font-medium text-sm truncate">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
+              <p className="text-gray-400 text-xs">{selectedServicesList.length} service{selectedServicesList.length !== 1 ? 's' : ''} &#183; {totalHours.toFixed(1)}{t('common.hrs')}</p>
+            </div>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <span className="text-white text-xl sm:text-2xl font-bold">{currencySymbol()}{formatPrice(totalPrice)}</span>
+              <button
+                type="button"
+                onClick={openSendModal}
+                disabled={totalPrice === 0 || !airport || airport.length < 3}
+                className="px-4 sm:px-6 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[44px] whitespace-nowrap"
+              >
+                {!airport || airport.length < 3 ? t('dashboard.enterAirport') : t('dashboard.sendToClient')}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {isModalOpen && quoteData && (
         <SendQuoteModal
