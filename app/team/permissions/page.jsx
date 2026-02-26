@@ -114,7 +114,7 @@ export default function TeamPermissionsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 flex items-center justify-center">
+      <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 flex items-center justify-center">
         <div className="text-white text-lg">{t('common.loading')}</div>
       </div>
     );
