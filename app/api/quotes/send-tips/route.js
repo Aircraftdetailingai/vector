@@ -92,7 +92,7 @@ export async function POST(request) {
 
               <p>Looking forward to making your aircraft shine!</p>
 
-              <p><em>- ${detailer?.name || detailer?.company || 'Your Detailer'}</em></p>
+              <p><em>- ${detailer?.name || detailer?.company || 'your detailing professional'}</em></p>
             `
           })
         });

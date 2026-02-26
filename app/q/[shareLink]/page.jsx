@@ -334,8 +334,8 @@ export default function QuoteViewPage() {
               </ul>
             </div>
 
-            {/* Pricing based on detailer preference */}
-            {detailer?.quote_display_preference === 'full_breakdown' && quote.line_items && (
+            {/* Pricing based on detailer preference - hide breakdown when minimum fee applies */}
+            {!quote.minimum_fee_applied && detailer?.quote_display_preference === 'full_breakdown' && quote.line_items && (
               <div className="pt-3 border-t space-y-2">
                 {quote.line_items.map((item, i) => (
                   <div key={i} className="flex justify-between text-sm">
@@ -346,7 +346,7 @@ export default function QuoteViewPage() {
               </div>
             )}
 
-            {detailer?.quote_display_preference === 'labor_products' && (
+            {!quote.minimum_fee_applied && detailer?.quote_display_preference === 'labor_products' && (
               <div className="pt-3 border-t space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-gray-700">Labor</span>

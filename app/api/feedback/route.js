@@ -59,7 +59,7 @@ export async function GET(request) {
     },
     detailer: {
       name: detailer?.name,
-      company: detailer?.company || detailer?.name || 'Your Detailer',
+      company: detailer?.company || detailer?.name || 'your detailing professional',
     },
   });
 }
