@@ -316,9 +316,23 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
       const link = `${window.location.origin}/q/${share_link}`;
       setQuoteLink(link);
       setSuccess(true);
-      toastSuccess(t('success.sent'));
+
+      // Build status message
+      const statusParts = [];
+      if (sendResult.emailSent) statusParts.push('Email sent');
+      if (sendResult.smsSent) statusParts.push('SMS sent');
+      toastSuccess(statusParts.length > 0 ? statusParts.join(' + ') : t('success.sent'));
+
+      // Show warnings for failures
+      const warnings = [];
       if (sendResult.emailSent === false && sendResult.emailError) {
-        setError(`Quote sent but email failed: ${sendResult.emailError}`);
+        warnings.push(`Email failed: ${sendResult.emailError}`);
+      }
+      if (effectivePhone && sendResult.smsSent === false) {
+        warnings.push('SMS was not sent (check Twilio config or plan)');
+      }
+      if (warnings.length > 0) {
+        setError(`Quote sent. ${warnings.join('. ')}`);
       }
     } catch (err) {
       if (err.message !== "QUOTE_LIMIT") {
@@ -366,8 +380,8 @@ export default function SendQuoteModal({ isOpen, onClose, quote, user }) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50">
-      <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
+    <div className="modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50">
+      <div className="modal-content bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
         {!success ? (
           <div>
             <h2 className="text-xl font-semibold mb-2">{t('dashboard.sendToClient')}</h2>

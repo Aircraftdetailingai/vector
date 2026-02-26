@@ -230,8 +230,19 @@ export async function POST(request, { params }) {
   }
 
   // Send SMS for business plan
-  if (hasPremiumAccess(detailer?.plan, detailer?.is_admin) && detailer?.sms_enabled !== false && clientPhone) {
+  const smsChecks = {
+    hasPremium: hasPremiumAccess(detailer?.plan, detailer?.is_admin),
+    smsEnabled: detailer?.sms_enabled !== false,
+    hasPhone: !!clientPhone,
+    plan: detailer?.plan,
+    isAdmin: detailer?.is_admin,
+    smsEnabledRaw: detailer?.sms_enabled,
+  };
+  console.log('SMS gate checks:', JSON.stringify(smsChecks));
+
+  if (smsChecks.hasPremium && smsChecks.smsEnabled && smsChecks.hasPhone) {
     try {
+      console.log(`SMS: Sending to ${clientPhone} for quote ${id}`);
       const smsResult = await sendQuoteSms({
         clientPhone,
         clientName,
@@ -240,6 +251,7 @@ export async function POST(request, { params }) {
         companyName: detailer.company || detailer.name || '',
       });
       smsSent = smsResult.success;
+      console.log('SMS result:', JSON.stringify(smsResult));
 
       if (smsSent) {
         // Schedule follow-ups
@@ -258,6 +270,8 @@ export async function POST(request, { params }) {
     } catch (e) {
       console.error('SMS send error:', e);
     }
+  } else {
+    console.log('SMS skipped:', !smsChecks.hasPremium ? 'not premium' : !smsChecks.smsEnabled ? 'sms disabled' : 'no phone number');
   }
 
   // Log activity
