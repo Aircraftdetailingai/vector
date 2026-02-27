@@ -41,7 +41,7 @@ export async function GET(request) {
 
     let query = supabase
       .from('service_products')
-      .select('*, products(id, name, category, unit, cost_per_unit, current_quantity, image_url), services!inner(detailer_id)')
+      .select('*, products(id, name, category, unit, cost_per_unit, image_url), services!inner(detailer_id)')
       .eq('services.detailer_id', user.id);
 
     if (serviceId) {
@@ -102,7 +102,7 @@ export async function POST(request) {
     const { data: link, error } = await supabase
       .from('service_products')
       .upsert(row, { onConflict: 'service_id,product_id' })
-      .select('*, products(id, name, category, unit, cost_per_unit, current_quantity, image_url)')
+      .select('*, products(id, name, category, unit, cost_per_unit, image_url)')
       .single();
 
     if (error) {
@@ -150,7 +150,7 @@ export async function PUT(request) {
       .from('service_products')
       .update(updates)
       .eq('id', id)
-      .select('*, products(id, name, category, unit, cost_per_unit, current_quantity, image_url)')
+      .select('*, products(id, name, category, unit, cost_per_unit, image_url)')
       .single();
 
     if (error) return Response.json({ error: error.message }, { status: 500 });

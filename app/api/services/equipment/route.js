@@ -41,7 +41,7 @@ export async function GET(request) {
 
     let query = supabase
       .from('service_equipment')
-      .select('*, equipment(id, name, category, brand, model, status, image_url), services!inner(detailer_id)')
+      .select('*, equipment(id, name, brand, model, status, image_url), services!inner(detailer_id)')
       .eq('services.detailer_id', user.id);
 
     if (serviceId) {
@@ -99,7 +99,7 @@ export async function POST(request) {
     const { data: link, error } = await supabase
       .from('service_equipment')
       .upsert(row, { onConflict: 'service_id,equipment_id' })
-      .select('*, equipment(id, name, category, brand, model, status, image_url)')
+      .select('*, equipment(id, name, brand, model, status, image_url)')
       .single();
 
     if (error) {

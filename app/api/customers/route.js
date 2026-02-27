@@ -32,9 +32,9 @@ export async function GET(request) {
     try {
       let query = supabase
         .from('customers')
-        .select('id, name, email, phone, company_name, notes, tags, poc_name, poc_phone, poc_email, poc_role, emergency_contact_name, emergency_contact_phone, contact_notes, created_at, updated_at')
+        .select('id, name, email, phone, company_name, notes, tags, poc_name, poc_phone, poc_email, poc_role, emergency_contact_name, emergency_contact_phone, contact_notes, created_at')
         .eq('detailer_id', user.id)
-        .order('updated_at', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(limit);
 
       if (q) {
@@ -163,7 +163,7 @@ export async function POST(request) {
 
       if (existing) {
         // Update existing customer
-        const updates = { updated_at: new Date().toISOString() };
+        const updates = {};
         if (name) updates.name = name;
         if (phone !== undefined) updates.phone = phone;
         if (company_name !== undefined) updates.company_name = company_name;
