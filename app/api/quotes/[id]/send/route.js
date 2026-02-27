@@ -8,6 +8,8 @@ import { logActivity, ACTIVITY } from '@/lib/activity-log';
 
 export const dynamic = 'force-dynamic';
 
+const ADMIN_EMAILS = ['brett@aircraftdetailing.ai', 'admin@aircraftdetailing.ai', 'brett@shinyjets.com'];
+
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
@@ -255,14 +257,16 @@ export async function POST(request, { params }) {
   if (!detailer) {
     console.error('=== SMS BLOCKED: detailer is null (fetch failed). SMS cannot proceed. ===');
   }
+  const isAdminEmail = ADMIN_EMAILS.includes(detailer?.email?.toLowerCase());
   const smsChecks = {
     detailerExists: !!detailer,
-    hasPremium: hasPremiumAccess(detailer?.plan, detailer?.is_admin),
+    hasPremium: hasPremiumAccess(detailer?.plan, detailer?.is_admin) || isAdminEmail,
     smsEnabled: detailer?.sms_enabled !== false,
     hasPhone: !!clientPhone,
     clientPhone: clientPhone || 'NONE',
     plan: detailer?.plan || 'UNKNOWN',
     isAdmin: detailer?.is_admin,
+    isAdminEmail,
     smsEnabledRaw: detailer?.sms_enabled,
     hasTwilioSid: !!process.env.TWILIO_ACCOUNT_SID,
     hasTwilioToken: !!process.env.TWILIO_AUTH_TOKEN,
