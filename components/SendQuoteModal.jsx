@@ -701,7 +701,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
             {requiresSms && isBusiness && effectiveName && effectivePhone && (
               <div className="mb-3">
                 <div className="bg-green-100 text-green-800 p-3 rounded text-sm whitespace-pre-line">
-                  {`${effectiveName.split(' ')[0]}, ${user?.company || user?.name || ''} has your ${aircraftName || 'aircraft'} quote ready! View details: ${quoteLink || '[link]'}`}
+                  {`Hi ${effectiveName.split(' ')[0]}, your ${aircraftName || 'aircraft'} quote is ready! View: ${quoteLink || '[link]'} - ${user?.company || user?.name || ''}`}
                 </div>
               </div>
             )}
