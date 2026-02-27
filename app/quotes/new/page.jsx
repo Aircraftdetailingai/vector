@@ -6,7 +6,6 @@ import LoadingSpinner from '../../../components/LoadingSpinner.jsx';
 import { useToast } from '../../../components/Toast.jsx';
 import { formatPrice, formatPriceWhole, currencySymbol } from '../../../lib/formatPrice';
 import { calculateProductEstimates } from '../../../lib/product-calculator';
-import { useTranslation } from '@/lib/i18n';
 
 const categoryOrder = ['piston', 'turboprop', 'light_jet', 'midsize_jet', 'super_midsize_jet', 'large_jet', 'helicopter'];
 
@@ -21,9 +20,18 @@ const HOURS_FIELD_OPTIONS = {
   brightwork_hours: 'Brightwork',
 };
 
+const categoryLabels = {
+  piston: 'Pistons',
+  turboprop: 'Turboprops',
+  light_jet: 'Light Jets',
+  midsize_jet: 'Midsize Jets',
+  super_midsize_jet: 'Super Midsize',
+  large_jet: 'Large Jets',
+  helicopter: 'Helicopters',
+};
+
 function NewQuoteContent() {
   const router = useRouter();
-  const { t } = useTranslation();
   const { success: toastSuccess } = useToast();
 
   const [user, setUser] = useState(null);
@@ -51,16 +59,6 @@ function NewQuoteContent() {
   const [customProductRatios, setCustomProductRatios] = useState(null);
   const [serviceProductLinks, setServiceProductLinks] = useState([]);
   const [serviceEquipmentLinks, setServiceEquipmentLinks] = useState([]);
-
-  const categoryLabels = {
-    piston: t('categories.piston'),
-    turboprop: t('categories.turboprop'),
-    light_jet: t('categories.lightJet'),
-    midsize_jet: t('categories.midsizeJet'),
-    super_midsize_jet: t('categories.superMidsizeJet'),
-    large_jet: t('categories.largeJet'),
-    helicopter: t('categories.helicopter'),
-  };
 
   // Fetch manufacturers on mount
   useEffect(() => {
@@ -360,7 +358,7 @@ function NewQuoteContent() {
     : null;
 
   if (loading) {
-    return <LoadingSpinner message={t('dashboard.loadingDashboard')} />;
+    return <LoadingSpinner message="Loading..." />;
   }
 
   // Filter models by search and category
@@ -389,15 +387,15 @@ function NewQuoteContent() {
       <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-4 bg-gradient-to-b from-[#0f172a] via-[#0f172a] to-transparent flex justify-between items-center text-white">
         <div className="flex items-center gap-3">
           <a href="/dashboard" className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
-            <span>&#8592;</span> {t('nav.dashboard') || 'Dashboard'}
+            <span>&#8592;</span> Dashboard
           </a>
           <span className="text-gray-500">|</span>
-          <h1 className="text-xl font-bold">{t('quickActions.newQuote')}</h1>
+          <h1 className="text-xl font-bold">New Quote</h1>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <a href="/quotes" className="text-gray-300 hover:text-white">{t('nav.quotes')}</a>
-          <a href="/customers" className="text-gray-300 hover:text-white">{t('nav.customers')}</a>
-          <a href="/settings" className="text-gray-300 hover:text-white">{t('nav.settings')}</a>
+          <a href="/quotes" className="text-gray-300 hover:text-white">Quotes</a>
+          <a href="/customers" className="text-gray-300 hover:text-white">Customers</a>
+          <a href="/settings" className="text-gray-300 hover:text-white">Settings</a>
         </div>
       </header>
 
@@ -407,15 +405,15 @@ function NewQuoteContent() {
           <div className="flex items-center">
             <span className="text-blue-600 text-xl mr-3">&#9432;</span>
             <div>
-              <p className="text-blue-800 font-medium">{t('dashboard.setupServiceMenu')}</p>
-              <p className="text-blue-700 text-sm">{t('dashboard.addServicesDesc')}</p>
+              <p className="text-blue-800 font-medium">Set up your service menu</p>
+              <p className="text-blue-700 text-sm">Add services you offer to start building quotes.</p>
             </div>
           </div>
           <a
             href="/settings/services"
             className="px-4 py-3 rounded bg-blue-500 text-white font-medium hover:bg-blue-600 min-h-[44px] whitespace-nowrap"
           >
-            {t('dashboard.addServicesToStart')}
+            Add services to get started
           </a>
         </div>
       )}
@@ -423,17 +421,17 @@ function NewQuoteContent() {
       <div className="max-w-3xl mx-auto">
           {/* 1. Select Aircraft */}
           <div className="bg-white rounded-lg p-4 mb-4 shadow">
-            <h3 className="font-semibold mb-3 text-lg">{t('dashboard.selectAircraft')}</h3>
+            <h3 className="font-semibold mb-3 text-lg">Select Aircraft</h3>
 
             {/* Manufacturer Dropdown */}
             <div className="mb-3">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('dashboard.manufacturer')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Manufacturer</label>
               <select
                 value={selectedManufacturer}
                 onChange={(e) => setSelectedManufacturer(e.target.value)}
                 className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-base"
               >
-                <option value="">{t('dashboard.allManufacturers')}</option>
+                <option value="">All Manufacturers</option>
                 {manufacturers.map(m => (
                   <option key={m} value={m}>{m}</option>
                 ))}
@@ -445,7 +443,7 @@ function NewQuoteContent() {
               <div className="mb-3">
                 <input
                   type="text"
-                  placeholder={t('dashboard.searchModels')}
+                  placeholder="Search models..."
                   value={modelSearch}
                   onChange={(e) => setModelSearch(e.target.value)}
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 text-base"
@@ -460,7 +458,7 @@ function NewQuoteContent() {
                   onClick={() => setSelectedCategory('')}
                   className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[32px] ${!selectedCategory ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'}`}
                 >
-                  {t('dashboard.allCategories')}
+                  All Categories
                 </button>
                 {categoryOrder.filter(c => models.some(m => m.category === c)).map(cat => (
                   <button
@@ -501,18 +499,18 @@ function NewQuoteContent() {
                   </div>
                 ))}
                 {filteredModels.length === 0 && (
-                  <p className="text-sm text-gray-400 text-center py-4">{t('dashboard.noModelsFound')}</p>
+                  <p className="text-sm text-gray-400 text-center py-4">No models found</p>
                 )}
               </div>
             ) : (
-              <p className="text-sm text-gray-400 text-center py-4">{t('dashboard.chooseManufacturer')}</p>
+              <p className="text-sm text-gray-400 text-center py-4">Choose a manufacturer to see available models</p>
             )}
           </div>
 
           {/* Tail Number */}
           {selectedAircraft && (
             <div className="bg-white rounded-lg p-4 mb-4 shadow">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('dashboard.tailNumber')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tail Number (N-number)</label>
               <input
                 type="text"
                 value={tailNumber}
@@ -526,7 +524,7 @@ function NewQuoteContent() {
           {/* 2. Select Services */}
           {selectedAircraft && (
             <div id="services-section" className="bg-white rounded-lg p-4 mb-4 shadow">
-              <h3 className="font-semibold mb-3 text-lg">{t('dashboard.selectServices')}</h3>
+              <h3 className="font-semibold mb-3 text-lg">Select Services</h3>
 
               {/* Individual Services */}
               <div className="space-y-2 mb-4">
@@ -564,7 +562,7 @@ function NewQuoteContent() {
               {/* Packages */}
               {availablePackages.length > 0 && (
                 <div>
-                  <h4 className="font-medium text-sm text-gray-700 mb-2">{t('dashboard.packages')}</h4>
+                  <h4 className="font-medium text-sm text-gray-700 mb-2">Packages</h4>
                   <div className="space-y-2">
                     {availablePackages.map(pkg => {
                       const isSelected = selectedPackage?.id === pkg.id;
@@ -582,7 +580,7 @@ function NewQuoteContent() {
                             <p className="font-medium text-gray-900 text-sm">{pkg.name}</p>
                             <p className="text-xs text-gray-400">{pkg.service_ids?.length || 0} services &middot; {pkg.discount_percent}% off</p>
                           </div>
-                          {isSelected && <span className="text-green-600 font-bold text-sm">{t('common.selected')}</span>}
+                          {isSelected && <span className="text-green-600 font-bold text-sm">Selected</span>}
                         </button>
                       );
                     })}
@@ -595,13 +593,13 @@ function NewQuoteContent() {
           {/* 3. Access Difficulty */}
           {selectedAircraft && selectedServicesList.length > 0 && (
             <div className="bg-white rounded-lg p-4 mb-4 shadow">
-              <h3 className="font-semibold mb-3 text-sm">{t('dashboard.accessDifficulty')}</h3>
+              <h3 className="font-semibold mb-3 text-sm">Access Difficulty</h3>
               <div className="grid grid-cols-4 gap-2">
                 {[
-                  { label: t('dashboard.standard'), value: 1.0 },
-                  { label: t('dashboard.moderate'), value: 1.15 },
-                  { label: t('dashboard.difficult'), value: 1.3 },
-                  { label: t('dashboard.extreme'), value: 1.5 },
+                  { label: 'Standard', value: 1.0 },
+                  { label: 'Moderate', value: 1.15 },
+                  { label: 'Difficult', value: 1.3 },
+                  { label: 'Extreme', value: 1.5 },
                 ].map(opt => (
                   <button
                     key={opt.value}
@@ -624,7 +622,7 @@ function NewQuoteContent() {
           {/* 4. Add-on Fees */}
           {selectedAircraft && selectedServicesList.length > 0 && availableAddons.length > 0 && (
             <div className="bg-white rounded-lg p-4 mb-4 shadow">
-              <h3 className="font-semibold mb-3 text-sm">{t('dashboard.addonFees')}</h3>
+              <h3 className="font-semibold mb-3 text-sm">Add-on Fees</h3>
               <div className="space-y-2">
                 {availableAddons.map(addon => {
                   const isSelected = !!selectedAddons[addon.id];
@@ -657,7 +655,7 @@ function NewQuoteContent() {
           {/* 5. Airport / Job Location */}
           {selectedAircraft && selectedServicesList.length > 0 && (
             <div className="bg-white rounded-lg p-4 mb-4 shadow">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('dashboard.airportCode')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Airport Code</label>
               <input
                 type="text"
                 value={airport}
@@ -671,11 +669,11 @@ function NewQuoteContent() {
           {/* 6. Notes */}
           {selectedAircraft && selectedServicesList.length > 0 && (
             <div className="bg-white rounded-lg p-4 mb-4 shadow">
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('dashboard.notes')}</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
               <textarea
                 value={quoteNotes}
                 onChange={(e) => setQuoteNotes(e.target.value)}
-                placeholder={t('dashboard.notesPlaceholder')}
+                placeholder="Add notes for this quote (visible to customer)..."
                 rows={3}
                 className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 text-base"
               />
@@ -685,7 +683,7 @@ function NewQuoteContent() {
           {/* 7. Aircraft Details Accordion */}
           {selectedAircraft && (
             <details className="bg-white rounded-lg p-4 mb-4 shadow">
-              <summary className="font-semibold text-sm cursor-pointer text-gray-700">{t('dashboard.aircraftDetails')}</summary>
+              <summary className="font-semibold text-sm cursor-pointer text-gray-700">Aircraft Details</summary>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-gray-600">
                 <div><span className="text-gray-400">Type:</span> {selectedAircraft.category}</div>
                 <div><span className="text-gray-400">Model:</span> {selectedAircraft.manufacturer} {selectedAircraft.model}</div>
@@ -702,7 +700,7 @@ function NewQuoteContent() {
           {/* 8. Quote Summary */}
           {selectedAircraft && selectedServicesList.length > 0 && (
             <div className="bg-[#1e293b] rounded-lg p-4 mb-4 shadow text-white">
-              <h3 className="font-bold text-lg mb-3">{t('dashboard.quoteSummary')}</h3>
+              <h3 className="font-bold text-lg mb-3">Quote Summary</h3>
 
               {/* Line items */}
               <div className="space-y-1 mb-3">
@@ -726,14 +724,14 @@ function NewQuoteContent() {
 
               {/* Subtotal */}
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">{t('dashboard.subtotal')}</span>
+                <span className="text-gray-400">Subtotal</span>
                 <span>{currencySymbol()}{formatPrice(afterDiscount)}</span>
               </div>
 
               {/* Difficulty */}
               {accessDifficulty > 1 && (
                 <div className="flex justify-between text-sm text-amber-400 mb-1">
-                  <span>{t('dashboard.accessDifficulty')} ({accessDifficulty}x)</span>
+                  <span>Access Difficulty ({accessDifficulty}x)</span>
                   <span>+{currencySymbol()}{formatPrice(afterDifficulty - afterDiscount)}</span>
                 </div>
               )}
@@ -749,7 +747,7 @@ function NewQuoteContent() {
               {/* Minimum fee */}
               {isMinimumApplied && (
                 <div className="flex justify-between text-sm text-yellow-400 mb-1">
-                  <span>{t('dashboard.minimumFeeApplied')}</span>
+                  <span>Minimum Fee Applied</span>
                   <span>{currencySymbol()}{formatPrice(minimumFee)}</span>
                 </div>
               )}
@@ -758,7 +756,7 @@ function NewQuoteContent() {
 
               {/* Total */}
               <div className="flex justify-between text-xl font-bold">
-                <span>{t('dashboard.total')}</span>
+                <span>Total</span>
                 <span className="text-amber-400">{currencySymbol()}{formatPrice(totalPrice)}</span>
               </div>
 
@@ -766,11 +764,11 @@ function NewQuoteContent() {
               {estimatedProductCost > 0 && (
                 <div className="mt-3 pt-3 border-t border-white/10">
                   <div className="flex justify-between text-xs text-gray-400 mb-1">
-                    <span>{t('dashboard.estProductCost')}</span>
+                    <span>Est. Product Cost</span>
                     <span>-{currencySymbol()}{formatPrice(estimatedProductCost)}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-gray-300">{t('dashboard.estProfit')}</span>
+                    <span className="text-gray-300">Est. Profit</span>
                     <span className="text-green-400 font-bold">{currencySymbol()}{formatPrice(estimatedProfit)}</span>
                   </div>
                 </div>
@@ -779,7 +777,7 @@ function NewQuoteContent() {
               {/* Product estimates */}
               {productEstimates.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-white/10">
-                  <p className="text-xs text-gray-400 mb-1">{t('dashboard.estimatedProducts')}</p>
+                  <p className="text-xs text-gray-400 mb-1">Estimated Products</p>
                   {productEstimates.map((pe, i) => (
                     <div key={i} className="flex justify-between text-xs text-gray-300">
                       <span>{pe.name}</span>
@@ -792,7 +790,7 @@ function NewQuoteContent() {
               {/* Linked Products */}
               {quoteData?.linkedProducts?.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-white/10">
-                  <p className="text-xs text-gray-400 mb-1">{t('dashboard.productsNeeded')}</p>
+                  <p className="text-xs text-gray-400 mb-1">Products Needed</p>
                   {quoteData.linkedProducts.map((p, i) => (
                     <div key={i} className="flex justify-between text-xs text-gray-300">
                       <span>{p.product_name}</span>
@@ -805,7 +803,7 @@ function NewQuoteContent() {
               {/* Linked Equipment */}
               {quoteData?.linkedEquipment?.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-white/10">
-                  <p className="text-xs text-gray-400 mb-1">{t('dashboard.equipmentNeeded')}</p>
+                  <p className="text-xs text-gray-400 mb-1">Equipment Needed</p>
                   {quoteData.linkedEquipment.map((e, i) => (
                     <div key={i} className="text-xs text-gray-300">
                       {e.equipment_name} {e.brand && <span className="text-gray-500">({e.brand})</span>}
@@ -821,7 +819,7 @@ function NewQuoteContent() {
                 disabled={totalPrice === 0 || !airport || airport.length < 3}
                 className="w-full mt-4 px-6 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-base min-h-[48px]"
               >
-                {!airport || airport.length < 3 ? t('dashboard.enterAirport') : t('dashboard.sendToClient')}
+                {!airport || airport.length < 3 ? 'Enter Airport to Send' : 'Send to Client'}
               </button>
 
               {/* Reset */}
@@ -830,7 +828,7 @@ function NewQuoteContent() {
                 onClick={resetQuoteForm}
                 className="w-full mt-2 px-4 py-3 rounded-lg border border-gray-500 text-gray-300 hover:bg-gray-800 text-sm min-h-[44px]"
               >
-                {t('dashboard.startNewQuote')}
+                Start New Quote
               </button>
             </div>
           )}
@@ -842,7 +840,7 @@ function NewQuoteContent() {
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-white font-medium text-sm truncate">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
-              <p className="text-gray-400 text-xs">{selectedServicesList.length} service{selectedServicesList.length !== 1 ? 's' : ''} &middot; {totalHours.toFixed(1)}{t('common.hrs')}</p>
+              <p className="text-gray-400 text-xs">{selectedServicesList.length} service{selectedServicesList.length !== 1 ? 's' : ''} &middot; {totalHours.toFixed(1)}h</p>
             </div>
             <div className="flex items-center gap-3 flex-shrink-0">
               <span className="text-white text-xl sm:text-2xl font-bold">{currencySymbol()}{formatPrice(totalPrice)}</span>
@@ -852,7 +850,7 @@ function NewQuoteContent() {
                 disabled={totalPrice === 0 || !airport || airport.length < 3}
                 className="px-4 sm:px-6 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[44px] whitespace-nowrap"
               >
-                {!airport || airport.length < 3 ? t('dashboard.enterAirport') : t('dashboard.sendToClient')}
+                {!airport || airport.length < 3 ? 'Enter Airport to Send' : 'Send to Client'}
               </button>
             </div>
           </div>
