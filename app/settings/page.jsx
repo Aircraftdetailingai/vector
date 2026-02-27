@@ -733,10 +733,10 @@ function SettingsContent() {
       const promises = [];
       if (pendingChanges.has('laborRate')) promises.push(saveLaborRate(parseFloat(laborRate) || 0));
       if (pendingChanges.has('efficiencyFactor')) promises.push(saveEfficiencyFactor(efficiencyFactor));
-      if (pendingChanges.has('minimumFee')) promises.push(saveMinimumFee(parseFloat(minimumFee) || 0, minimumFeeLocations));
+      if (pendingChanges.has('minimumFee')) promises.push(saveMinimumFee(parseFloat(minimumFee) || 0, []));
       if (pendingChanges.has('currency')) promises.push(saveCurrency(currency));
       if (pendingChanges.has('language')) promises.push(saveLanguage(language));
-      if (pendingChanges.has('homeAirport')) promises.push(saveHomeAirport(homeAirport.toUpperCase().trim()));
+      // homeAirport removed
       if (pendingChanges.has('passFee')) promises.push(savePassFee(passFeeToCustomer));
       if (pendingChanges.has('quoteDisplay')) promises.push(saveQuoteDisplayPref(quoteDisplayPref));
       if (pendingChanges.has('notifications')) {
@@ -764,42 +764,48 @@ function SettingsContent() {
 
   return (
     <div className="space-y-4">
-        {/* Sticky Save Bar */}
+        {/* Fixed Save Bar — always at top when changes pending */}
         {(pendingChanges.size > 0 || saveSuccess) && (
-          <div className={`sticky top-0 z-40 rounded-lg px-4 py-3 flex items-center justify-between shadow-lg transition-all duration-300 ${
-            saveSuccess ? 'bg-green-600 text-white' : 'bg-[#0f172a] text-white border border-white/10'
-          }`}>
-            {saveSuccess ? (
-              <div className="flex items-center gap-2 w-full justify-center">
-                <span className="text-lg">&#10003;</span>
-                <span className="font-medium">{t('settings.saved')}</span>
+          <>
+            {/* Spacer to prevent content from hiding behind fixed bar */}
+            <div className="h-14" />
+            <div className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 flex items-center justify-between shadow-lg transition-all duration-300 ${
+              saveSuccess ? 'bg-green-600 text-white' : 'bg-[#0f172a] text-white'
+            }`}>
+              <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
+                {saveSuccess ? (
+                  <div className="flex items-center gap-2 w-full justify-center">
+                    <span className="text-lg">&#10003;</span>
+                    <span className="font-medium">{t('settings.saved')}</span>
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-400 text-lg">&#9888;</span>
+                      <span className="text-sm font-medium">
+                        {pendingChanges.size} unsaved change{pendingChanges.size !== 1 ? 's' : ''}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => window.location.reload()}
+                        className="px-4 py-1.5 text-sm border border-white/30 rounded hover:bg-white/10 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={saveAllChanges}
+                        disabled={saving}
+                        className="px-6 py-1.5 text-sm bg-gradient-to-r from-amber-500 to-amber-600 rounded font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                      >
+                        {saving ? 'Saving...' : 'Save Changes'}
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
-            ) : (
-              <>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-amber-400 rounded-full animate-pulse" />
-                  <span className="text-sm text-gray-300">
-                    {t('settingsExtra.unsavedChanges').replace('{count}', pendingChanges.size)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={() => window.location.reload()}
-                    className="px-4 py-1.5 text-sm border border-white/30 rounded hover:bg-white/10 transition-colors"
-                  >
-                    {t('common.cancel')}
-                  </button>
-                  <button
-                    onClick={saveAllChanges}
-                    disabled={saving}
-                    className="px-6 py-1.5 text-sm bg-gradient-to-r from-amber-500 to-amber-600 rounded font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
-                  >
-                    {saving ? t('common.saving') : `${t('common.save')} (${pendingChanges.size})`}
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+            </div>
+          </>
         )}
 
         {/* Plan & Billing */}
@@ -1195,18 +1201,19 @@ function SettingsContent() {
           </div>
         </div>
 
-        {/* Localization */}
+        {/* Language & Currency */}
         <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">{t('settings.language')}</h3>
-          <p className="text-sm text-gray-600 mb-4">
-            {t('settingsExtra.localizationDesc')}
-          </p>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <h3 className="font-semibold mb-2">{t('settings.language')} & {t('settings.currency')}</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">{t('settingsExtra.appLanguage')}</label>
               <select
                 value={uiLang}
-                onChange={(e) => setUiLang(e.target.value)}
+                onChange={(e) => {
+                  setUiLang(e.target.value);
+                  setLanguage(e.target.value);
+                  markDirty('language');
+                }}
                 className="w-full border rounded px-3 py-2"
               >
                 {LANGUAGES.map((l) => (
@@ -1216,28 +1223,7 @@ function SettingsContent() {
                 ))}
               </select>
               <p className="text-xs text-gray-400 mt-1">
-                {t('settingsExtra.appLanguageDesc')}
-              </p>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{t('settings.language')}</label>
-              <select
-                value={language}
-                onChange={(e) => { setLanguage(e.target.value); markDirty('language'); }}
-                className="w-full border rounded px-3 py-2"
-              >
-                {languages.length > 0 ? (
-                  languages.map((l) => (
-                    <option key={l.code} value={l.code}>
-                      {l.native} ({l.name})
-                    </option>
-                  ))
-                ) : (
-                  <option value="en">English (English)</option>
-                )}
-              </select>
-              <p className="text-xs text-gray-400 mt-1">
-                {t('settingsExtra.customerLanguageDesc')}
+                Used for the app and customer-facing emails/quotes
               </p>
             </div>
             <div>
@@ -1338,7 +1324,7 @@ function SettingsContent() {
           <p className="text-sm text-gray-600 mb-3">
             {t('settingsExtra.minimumFeeDesc')}
           </p>
-          <div className="flex items-center space-x-2 mb-4">
+          <div className="flex items-center space-x-2">
             <span className="text-gray-500">$</span>
             <input
               type="text"
@@ -1360,67 +1346,7 @@ function SettingsContent() {
             />
             <span className="text-gray-500">{t('settingsExtra.minimum')}</span>
           </div>
-
-          <div className="border-t pt-4">
-            <h4 className="font-medium mb-2">{t('settingsExtra.applyToLocations')}</h4>
-            <p className="text-sm text-gray-500 mb-3">
-              {t('settingsExtra.applyToLocationsDesc')}
-            </p>
-            <div className="flex space-x-2 mb-3">
-              <input
-                type="text"
-                value={newLocation}
-                onChange={(e) => setNewLocation(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && addLocation()}
-                placeholder="e.g., KJFK, KLAX"
-                className="flex-1 border rounded px-3 py-2"
-              />
-              <button
-                onClick={addLocation}
-                className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
-              >
-                {t('common.add')}
-              </button>
-            </div>
-            {minimumFeeLocations.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {minimumFeeLocations.map((loc) => (
-                  <span
-                    key={loc}
-                    className="inline-flex items-center px-3 py-1 bg-gray-100 rounded-full text-sm"
-                  >
-                    {loc}
-                    <button
-                      onClick={() => removeLocation(loc)}
-                      className="ml-2 text-gray-400 hover:text-red-500"
-                    >
-                      &times;
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-            {minimumFeeLocations.length === 0 && (
-              <p className="text-xs text-gray-400 italic">{t('settingsExtra.feeAppliesToAll')}</p>
-            )}
-          </div>
-        </div>
-
-        {/* Home Airport */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">{t('settingsExtra.homeAirport')}</h3>
-          <p className="text-sm text-gray-500 mb-3">{t('settingsExtra.homeAirportDesc')}</p>
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={homeAirport}
-              onChange={(e) => { setHomeAirport(e.target.value.toUpperCase()); markDirty('homeAirport'); }}
-              placeholder="e.g. KJFK, LAX, KTEB"
-              className="border rounded px-3 py-2 w-40 uppercase text-sm"
-              maxLength={4}
-            />
-            <span className="text-xs text-gray-400 self-center">{t('settingsExtra.icaoIata')}</span>
-          </div>
+          <p className="text-xs text-gray-400 mt-2">Applies to all jobs. Quotes below this amount will be bumped up.</p>
         </div>
 
         {/* Add-on Fees */}

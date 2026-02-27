@@ -541,12 +541,8 @@ function DashboardContent() {
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripeError, setStripeError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [dailyTip, setDailyTip] = useState(null);
-  const [tipDismissed, setTipDismissed] = useState(false);
   const [quickStats, setQuickStats] = useState(null);
   const [recentQuotes, setRecentQuotes] = useState([]);
-  const [upcomingRecurring, setUpcomingRecurring] = useState([]);
-  const [analyticsData, setAnalyticsData] = useState(null);
   const [upcomingJobs, setUpcomingJobs] = useState([]);
 
   useEffect(() => {
@@ -599,14 +595,11 @@ function DashboardContent() {
       const headers = { Authorization: `Bearer ${token}` };
 
       // All fetches in parallel for speed
-      const [stripeRes, servicesRes, tipRes, statsRes, quotesRes, recurringRes, analyticsRes, upcomingRes] = await Promise.allSettled([
+      const [stripeRes, servicesRes, statsRes, quotesRes, upcomingRes] = await Promise.allSettled([
         fetch('/api/stripe/status', { headers }),
         fetch('/api/services', { headers }),
-        fetch('/api/tips', { headers }),
         fetch('/api/dashboard/stats', { headers }),
         fetch('/api/quotes?limit=5&sort=created_at&order=desc', { headers }),
-        fetch('/api/recurring?status=active', { headers }),
-        fetch('/api/analytics?days=90', { headers }),
         fetch('/api/quotes?status=paid,scheduled,in_progress&has_date=true&limit=10&sort=scheduled_date&order=asc', { headers }),
       ]);
 
@@ -624,12 +617,6 @@ function DashboardContent() {
         setAvailableServices(data.services || []);
       }
 
-      // Process daily tip
-      if (tipRes.status === 'fulfilled' && tipRes.value.ok) {
-        const data = await tipRes.value.json();
-        setDailyTip(data.todaysTip);
-      }
-
       // Process quick stats
       if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
         const data = await statsRes.value.json();
@@ -640,18 +627,6 @@ function DashboardContent() {
       if (quotesRes.status === 'fulfilled' && quotesRes.value.ok) {
         const data = await quotesRes.value.json();
         setRecentQuotes(data.quotes || []);
-      }
-
-      // Process recurring services
-      if (recurringRes.status === 'fulfilled' && recurringRes.value.ok) {
-        const data = await recurringRes.value.json();
-        setUpcomingRecurring(data.recurring || []);
-      }
-
-      // Process analytics data
-      if (analyticsRes.status === 'fulfilled' && analyticsRes.value.ok) {
-        const data = await analyticsRes.value.json();
-        setAnalyticsData(data);
       }
 
       // Process upcoming jobs
@@ -824,14 +799,14 @@ function DashboardContent() {
             <div className="bg-white rounded-lg p-4 shadow">
               <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.conversionRate')}</p>
               <p className="text-2xl font-bold text-emerald-600">
-                {quickStats && analyticsData?.funnel ? (
-                  analyticsData.funnel.totalSent > 0
-                    ? `${Math.round((analyticsData.funnel.totalPaid / analyticsData.funnel.totalSent) * 100)}%`
+                {quickStats?.allTime ? (
+                  (quickStats.allTime.quotes || 0) > 0
+                    ? `${Math.round(((quickStats.allTime.booked || 0) / quickStats.allTime.quotes) * 100)}%`
                     : '0%'
                 ) : '--'}
               </p>
               <p className="text-xs text-gray-400 mt-1">
-                {analyticsData?.funnel ? `${analyticsData.funnel.totalPaid} ${t('dashboard.booked')} / ${analyticsData.funnel.totalSent} ${t('dashboard.sent').toLowerCase()}` : ''}
+                {quickStats?.allTime ? `${quickStats.allTime.booked || 0} ${t('dashboard.booked')} / ${quickStats.allTime.quotes || 0} ${t('dashboard.sent').toLowerCase()}` : ''}
               </p>
             </div>
             <div className="bg-white rounded-lg p-4 shadow">
@@ -872,162 +847,14 @@ function DashboardContent() {
       </div>
 
       {/* ═══════════════════════════════════════════════════════════
-          ANALYTICS & ACTIVITY
+          RECENT QUOTES & UPCOMING JOBS
           ═══════════════════════════════════════════════════════════ */}
       <div className="space-y-4">
 
         {/* Expiring Quotes alerts */}
         <ExpiringQuotesWidget expiring={quickStats?.expiringQuotes} expired={quickStats?.recentlyExpired} />
 
-        {/* ── MIDDLE: Charts ── */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-
-          {/* Revenue by Month - Bar Chart */}
-          <div className="bg-white rounded-lg p-4 shadow">
-            <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('dashboard.revenueByMonth')}</h3>
-            {analyticsData?.revenueTrend && analyticsData.revenueTrend.length > 0 ? (() => {
-              const data = analyticsData.revenueTrend.slice(-6);
-              const maxRevenue = Math.max(...data.map(d => d.revenue), 1);
-              return (
-                <div className="space-y-2">
-                  <div className="flex items-end gap-2 h-40">
-                    {data.map((d) => {
-                      const height = Math.max((d.revenue / maxRevenue) * 100, 4);
-                      const monthLabel = new Date(d.month + '-01').toLocaleDateString('en-US', { month: 'short' });
-                      return (
-                        <div key={d.month} className="flex-1 flex flex-col items-center justify-end h-full">
-                          <span className="text-xs text-gray-500 mb-1">{currencySymbol()}{d.revenue >= 1000 ? `${(d.revenue / 1000).toFixed(1)}k` : d.revenue}</span>
-                          <div
-                            className="w-full bg-gradient-to-t from-amber-500 to-amber-400 rounded-t-md transition-all duration-500"
-                            style={{ height: `${height}%`, minHeight: '4px' }}
-                          />
-                          <span className="text-xs text-gray-400 mt-1">{monthLabel}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                  <div className="text-xs text-gray-400 text-center">{data.reduce((s, d) => s + d.jobs, 0)} jobs over {data.length} months</div>
-                </div>
-              );
-            })() : (
-              <p className="text-sm text-gray-400 text-center py-8">{t('dashboard.noRevenueData')}</p>
-            )}
-          </div>
-
-          {/* Quote Conversion Funnel */}
-          <div className="bg-white rounded-lg p-4 shadow">
-            <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('dashboard.conversionFunnel')}</h3>
-            {analyticsData?.funnel && analyticsData.funnel.totalCreated > 0 ? (() => {
-              const f = analyticsData.funnel;
-              const steps = [
-                { label: t('dashboard.created'), value: f.totalCreated, color: 'bg-gray-400' },
-                { label: t('dashboard.sent'), value: f.totalSent, color: 'bg-blue-400' },
-                { label: t('dashboard.viewed'), value: f.totalViewed, color: 'bg-purple-400' },
-                { label: t('dashboard.paid'), value: f.totalPaid, color: 'bg-green-400' },
-                { label: t('dashboard.completed'), value: f.totalCompleted, color: 'bg-emerald-500' },
-              ];
-              const maxVal = f.totalCreated || 1;
-              return (
-                <div className="space-y-2">
-                  {steps.map((step) => {
-                    const pct = Math.round((step.value / maxVal) * 100);
-                    return (
-                      <div key={step.label}>
-                        <div className="flex justify-between text-xs text-gray-600 mb-0.5">
-                          <span>{step.label}</span>
-                          <span className="font-medium">{step.value} ({pct}%)</span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-5">
-                          <div
-                            className={`${step.color} h-5 rounded-full transition-all duration-500`}
-                            style={{ width: `${Math.max(pct, 2)}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })() : (
-              <p className="text-sm text-gray-400 text-center py-8">{t('dashboard.noRevenueData')}</p>
-            )}
-          </div>
-
-          {/* Top Services by Revenue */}
-          <div className="bg-white rounded-lg p-4 shadow">
-            <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('dashboard.topServicesByRevenue')}</h3>
-            {analyticsData?.topServices && analyticsData.topServices.length > 0 ? (() => {
-              const maxRev = analyticsData.topServices[0]?.revenue || 1;
-              return (
-                <div className="space-y-2">
-                  {analyticsData.topServices.slice(0, 5).map((svc) => {
-                    const pct = Math.round((svc.revenue / maxRev) * 100);
-                    return (
-                      <div key={svc.name}>
-                        <div className="flex justify-between text-xs text-gray-600 mb-0.5">
-                          <span className="truncate mr-2">{svc.name}</span>
-                          <span className="font-medium whitespace-nowrap">{currencySymbol()}{svc.revenue.toLocaleString()} ({svc.count})</span>
-                        </div>
-                        <div className="w-full bg-gray-100 rounded-full h-3">
-                          <div
-                            className="bg-gradient-to-r from-blue-400 to-blue-500 h-3 rounded-full transition-all duration-500"
-                            style={{ width: `${Math.max(pct, 2)}%` }}
-                          />
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            })() : (
-              <p className="text-sm text-gray-400 text-center py-8">{t('dashboard.noServiceData')}</p>
-            )}
-          </div>
-
-          {/* Recent Activity Feed */}
-          <div className="bg-white rounded-lg p-4 shadow">
-            <h3 className="font-semibold text-sm text-gray-700 mb-3">{t('dashboard.recentActivity')}</h3>
-            {quickStats?.activityFeed && quickStats.activityFeed.length > 0 ? (
-              <div className="space-y-2">
-                {quickStats.activityFeed.map((item, i) => {
-                  const labels = {
-                    completed: { text: t('dashboard.jobCompleted'), color: 'text-emerald-600 bg-emerald-50', icon: '\u2713' },
-                    paid: { text: t('dashboard.paymentReceived'), color: 'text-green-600 bg-green-50', icon: '$' },
-                    viewed: { text: t('dashboard.quoteViewed'), color: 'text-purple-600 bg-purple-50', icon: '\u25C9' },
-                    sent: { text: t('dashboard.quoteSent'), color: 'text-blue-600 bg-blue-50', icon: '\u2192' },
-                    created: { text: t('dashboard.quoteCreated'), color: 'text-gray-600 bg-gray-50', icon: '+' },
-                  };
-                  const label = labels[item.type] || labels.created;
-                  const diff = Date.now() - new Date(item.date).getTime();
-                  const mins = Math.floor(diff / 60000);
-                  const timeStr = mins < 60 ? `${mins}m` : mins < 1440 ? `${Math.floor(mins / 60)}h` : `${Math.floor(mins / 1440)}d`;
-                  return (
-                    <div key={i} className="flex items-center justify-between text-sm">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${label.color} shrink-0`}>
-                          {label.icon}
-                        </span>
-                        <div className="min-w-0">
-                          <span className="text-gray-800 text-xs">{label.text}</span>
-                          <span className="text-gray-400 mx-1">&#183;</span>
-                          <span className="text-gray-600 text-xs truncate">{item.name}</span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2 shrink-0 ml-2">
-                        <span className="font-medium text-gray-900 text-sm">{currencySymbol()}{(item.price || 0).toLocaleString()}</span>
-                        <span className="text-xs text-gray-400 w-8 text-right">{timeStr}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-gray-400 text-center py-4">{t('dashboard.noQuotesYet')}</p>
-            )}
-          </div>
-        </div>
-
-        {/* ── BOTTOM: Recent Quotes (compact) + Upcoming Jobs ── */}
+        {/* Recent Quotes + Upcoming Jobs */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
           {/* Compact Recent Quotes */}
@@ -1092,63 +919,6 @@ function DashboardContent() {
           </div>
         </div>
 
-        {/* Recurring Services */}
-        <UpcomingRecurring recurring={upcomingRecurring} />
-
-        {/* Alerts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <WeatherWidget />
-          <div>
-            <LowStockAlert />
-            <FreeUsageBar user={user} />
-          </div>
-        </div>
-
-        {/* Daily Tip */}
-        {dailyTip && !tipDismissed && (
-          <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span>&#128161;</span>
-              <span className="text-sm text-amber-800">
-                <strong>{dailyTip.title}:</strong> {dailyTip.content}
-              </span>
-              {dailyTip.actionLink && (
-                <a href={dailyTip.actionLink} className="text-sm text-amber-600 font-medium hover:underline ml-2">
-                  {dailyTip.action || 'Learn more'} &#8594;
-                </a>
-              )}
-            </div>
-            <button
-              onClick={() => setTipDismissed(true)}
-              className="text-amber-400 hover:text-amber-600 text-lg leading-none ml-2"
-              title="Dismiss"
-            >
-              &#10005;
-            </button>
-          </div>
-        )}
-
-        <PushNotifications />
-
-        {/* Quick Links */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
-          <a href="/products" className="flex flex-col items-center p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white min-h-[60px]">
-            <span className="text-2xl mb-1">&#128230;</span>
-            <span className="text-sm font-medium">{t('nav.inventory')}</span>
-          </a>
-          <a href="/equipment" className="flex flex-col items-center p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white min-h-[60px]">
-            <span className="text-2xl mb-1">&#128295;</span>
-            <span className="text-sm font-medium">{t('nav.equipment')}</span>
-          </a>
-          <a href="/growth" className="flex flex-col items-center p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white min-h-[60px]">
-            <span className="text-2xl mb-1">&#128200;</span>
-            <span className="text-sm font-medium">{t('nav.growth')}</span>
-          </a>
-          <a href="/settings/services" className="flex flex-col items-center p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors text-white min-h-[60px]">
-            <span className="text-2xl mb-1">&#9881;</span>
-            <span className="text-sm font-medium">{t('nav.services')}</span>
-          </a>
-        </div>
       </div>
 
       {/* Add Customer Modal */}
