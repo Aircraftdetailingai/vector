@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { useToast } from '@/components/Toast';
 
 const TAG_COLORS = {
   'VIP': 'bg-yellow-100 text-yellow-800 border-yellow-300',
@@ -22,6 +23,7 @@ function getTagStyle(tagName) {
 export default function CustomersPage() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [customers, setCustomers] = useState([]);
   const [allTags, setAllTags] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -39,6 +41,54 @@ export default function CustomersPage() {
   const [newTagColor, setNewTagColor] = useState('#6b7280');
   const [creatingTag, setCreatingTag] = useState(false);
   const [showTagManager, setShowTagManager] = useState(false);
+
+  // Add Customer modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [addForm, setAddForm] = useState({ name: '', email: '', phone: '', company_name: '', airport: '', notes: '', contactPref: 'email', tags: [] });
+  const [addSaving, setAddSaving] = useState(false);
+  const [addError, setAddError] = useState('');
+
+  const resetAddForm = () => {
+    setAddForm({ name: '', email: '', phone: '', company_name: '', airport: '', notes: '', contactPref: 'email', tags: [] });
+    setAddError('');
+  };
+
+  const handleAddCustomer = async () => {
+    if (!addForm.name.trim()) { setAddError('Customer name is required'); return; }
+    if (!addForm.email.trim()) { setAddError('Email is required'); return; }
+    setAddSaving(true);
+    setAddError('');
+    const token = localStorage.getItem('vector_token');
+    try {
+      const res = await fetch('/api/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          name: addForm.name.trim(),
+          email: addForm.email.trim(),
+          phone: addForm.phone.trim() || null,
+          company_name: addForm.company_name.trim() || null,
+          notes: [addForm.airport ? `Airport: ${addForm.airport.trim()}` : '', addForm.notes.trim()].filter(Boolean).join('\n') || null,
+          tags: addForm.tags.length > 0 ? addForm.tags : null,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setAddError(data.error || 'Failed to save customer');
+        return;
+      }
+      if (data.customer) {
+        setCustomers(prev => [{ ...data.customer, quote_count: 0, last_service_date: null }, ...prev]);
+      }
+      toastSuccess(data.created ? 'Customer added!' : 'Customer updated!');
+      setShowAddModal(false);
+      resetAddForm();
+    } catch (e) {
+      setAddError('Failed to save customer');
+    } finally {
+      setAddSaving(false);
+    }
+  };
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -248,14 +298,17 @@ export default function CustomersPage() {
         </div>
         <div className="flex items-center gap-2">
           <button
+            onClick={() => { resetAddForm(); setShowAddModal(true); }}
+            className="px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg hover:opacity-90 text-sm font-semibold shadow-md"
+          >
+            + Add Customer
+          </button>
+          <button
             onClick={() => setShowTagManager(!showTagManager)}
             className="px-3 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/20 text-sm"
           >
             {t('customers.manageTags')}
           </button>
-          <a href="/quotes" className="px-3 py-2 bg-white/10 border border-white/20 text-white rounded-lg hover:bg-white/20 text-sm">
-            {t('nav.quotes')}
-          </a>
         </div>
       </header>
 
@@ -373,11 +426,25 @@ export default function CustomersPage() {
           </div>
 
           {filteredCustomers.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              {customers.length === 0
-                ? t('customers.addFirst')
-                : t('common.noResults')}
-            </div>
+            customers.length === 0 ? (
+              <div className="p-12 text-center">
+                <div className="text-5xl mb-4">&#128100;</div>
+                <h3 className="text-xl font-semibold text-gray-800 mb-2">No customers yet</h3>
+                <p className="text-gray-500 mb-6 max-w-sm mx-auto">Add your first customer to start tracking quotes, services, and building relationships.</p>
+                <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                  <button
+                    onClick={() => { resetAddForm(); setShowAddModal(true); }}
+                    className="px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg font-semibold shadow-md hover:opacity-90"
+                  >
+                    + Add Your First Customer
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-8 text-center text-gray-500">
+                {t('common.noResults')}
+              </div>
+            )
           ) : (
             <div className="divide-y">
               {filteredCustomers.map((customer) => {
@@ -531,6 +598,149 @@ export default function CustomersPage() {
       )}
 
       {/* Bulk Tag Modal */}
+      {/* Add Customer Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold text-gray-900">Add Customer</h2>
+              <button onClick={() => setShowAddModal(false)} className="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+            </div>
+
+            {addError && <p className="text-red-600 text-sm mb-3">{addError}</p>}
+
+            <div className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
+                <input
+                  type="text"
+                  value={addForm.company_name}
+                  onChange={(e) => setAddForm(p => ({ ...p, company_name: e.target.value }))}
+                  placeholder="e.g. Shiny Jets LLC"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name <span className="text-red-500">*</span></label>
+                <input
+                  type="text"
+                  value={addForm.name}
+                  onChange={(e) => setAddForm(p => ({ ...p, name: e.target.value }))}
+                  placeholder="Full name"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Email <span className="text-red-500">*</span></label>
+                <input
+                  type="email"
+                  value={addForm.email}
+                  onChange={(e) => setAddForm(p => ({ ...p, email: e.target.value }))}
+                  placeholder="customer@email.com"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+                <input
+                  type="tel"
+                  value={addForm.phone}
+                  onChange={(e) => setAddForm(p => ({ ...p, phone: e.target.value }))}
+                  placeholder="(555) 123-4567"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Airport / Location</label>
+                <input
+                  type="text"
+                  value={addForm.airport}
+                  onChange={(e) => setAddForm(p => ({ ...p, airport: e.target.value }))}
+                  placeholder="KSDL, KVNY, etc."
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Notes</label>
+                <textarea
+                  value={addForm.notes}
+                  onChange={(e) => setAddForm(p => ({ ...p, notes: e.target.value }))}
+                  placeholder="Any notes about this customer..."
+                  rows={2}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Contact Preference</label>
+                <div className="flex gap-2">
+                  {['email', 'sms', 'both'].map((pref) => (
+                    <button
+                      key={pref}
+                      type="button"
+                      onClick={() => setAddForm(p => ({ ...p, contactPref: pref }))}
+                      className={`flex-1 py-2 px-3 rounded-lg text-sm font-medium border ${
+                        addForm.contactPref === pref
+                          ? 'bg-amber-500 text-white border-amber-500'
+                          : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      }`}
+                    >
+                      {pref === 'email' ? 'Email' : pref === 'sms' ? 'SMS' : 'Both'}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tags */}
+              {usedTags.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Tags</label>
+                  <div className="flex flex-wrap gap-2">
+                    {usedTags.map((tag) => {
+                      const selected = addForm.tags.includes(tag);
+                      return (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => setAddForm(p => ({
+                            ...p,
+                            tags: selected ? p.tags.filter(t => t !== tag) : [...p.tags, tag],
+                          }))}
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-all ${
+                            selected
+                              ? 'bg-amber-500 text-white border-amber-500'
+                              : `${getTagStyle(tag)} hover:opacity-80`
+                          }`}
+                        >
+                          {selected ? '\u2713 ' : ''}{tag}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 mt-5">
+              <button
+                type="button"
+                onClick={() => setShowAddModal(false)}
+                className="px-4 py-3 border rounded-lg text-gray-700 min-h-[44px] font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleAddCustomer}
+                disabled={addSaving}
+                className="px-4 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white disabled:opacity-50 min-h-[44px] font-semibold"
+              >
+                {addSaving ? 'Saving...' : 'Save Customer'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {bulkTagModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
