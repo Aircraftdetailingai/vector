@@ -273,12 +273,14 @@ export async function POST(request, { params }) {
   if (smsChecks.hasPremium && smsChecks.smsEnabled && smsChecks.hasPhone) {
     try {
       console.log(`SMS: Sending to ${clientPhone} for quote ${id}`);
+      const price = updated?.total_price ? `$${Number(updated.total_price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : '';
       const smsResult = await sendQuoteSms({
         clientPhone,
         clientName,
         aircraftDisplay: updated?.aircraft_model || updated?.aircraft_type || 'aircraft',
         quoteLink,
         companyName: detailer.company || detailer.name || '',
+        totalPrice: price,
       });
       smsSent = smsResult.success;
       if (!smsResult.success) smsError = smsResult.error;

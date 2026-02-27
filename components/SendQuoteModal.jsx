@@ -701,7 +701,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
             {requiresSms && isBusiness && effectiveName && effectivePhone && (
               <div className="mb-3">
                 <div className="bg-green-100 text-green-800 p-3 rounded text-sm whitespace-pre-line">
-                  {`Hi ${effectiveName}, here's your quote for the ${aircraftName} detail:\n${quoteLink || '[link will appear after sending]'}\nTotal: ${currencySymbol()}${formatPrice(totalPrice)}\n- ${user?.name || ''}, ${user?.company || ''}`}
+                  {`Hi ${effectiveName}, your ${aircraftName || 'aircraft'} quote is ready! Total: ${currencySymbol()}${formatPrice(totalPrice)} View: ${quoteLink || '[link]'} - ${user?.company || user?.name || ''}`}
                 </div>
               </div>
             )}
