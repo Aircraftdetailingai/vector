@@ -8,6 +8,7 @@ import NotificationBell from '../../components/NotificationBell.jsx';
 import GlobalSearch from '../../components/GlobalSearch.jsx';
 import LoadingSpinner from '../../components/LoadingSpinner.jsx';
 import { useToast } from '../../components/Toast.jsx';
+import AddCustomerModal from '../../components/AddCustomerModal.jsx';
 import { formatPrice, formatPriceWhole, currencySymbol } from '../../lib/formatPrice';
 import { calculateProductEstimates } from '../../lib/product-calculator';
 import DashboardTour from '../../components/DashboardTour.jsx';
@@ -376,12 +377,12 @@ function _UnusedQuickStats({ stats, onNewQuote }) {
         >
           <span className="text-xl">+</span> {t('quickActions.newQuote')}
         </button>
-        <a
-          href="/customers"
+        <button
+          onClick={() => setShowAddCustomerModal(true)}
           className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]"
         >
           <span>&#128100;</span> {t('dashboard.addCustomer')}
-        </a>
+        </button>
         <a
           href="/calendar"
           className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]"
@@ -547,7 +548,9 @@ function UpcomingRecurring({ recurring }) {
 function DashboardContent() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { success: toastSuccess } = useToast();
   const [user, setUser] = useState(null);
+  const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [availableServices, setAvailableServices] = useState([]);
   const [availablePackages, setAvailablePackages] = useState([]);
   const [manufacturers, setManufacturers] = useState([]);
@@ -1839,9 +1842,9 @@ function DashboardContent() {
           >
             <span>+</span> {t('quickActions.newQuote')}
           </button>
-          <a href="/customers" className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]">
+          <button onClick={() => setShowAddCustomerModal(true)} className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]">
             <span>&#128100;</span> {t('dashboard.addCustomer')}
-          </a>
+          </button>
           <a href="/calendar" className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]">
             <span>&#128197;</span> {t('dashboard.viewCalendar')}
           </a>
@@ -2124,6 +2127,23 @@ function DashboardContent() {
           </a>
         </div>
       </div>
+
+      {/* Add Customer Modal */}
+      <AddCustomerModal
+        isOpen={showAddCustomerModal}
+        onClose={() => setShowAddCustomerModal(false)}
+        onSuccess={(data) => {
+          toastSuccess(data?.created ? 'Customer added!' : 'Customer saved!');
+          // Refresh quick stats to update any customer counts
+          const token = localStorage.getItem('vector_token');
+          if (token) {
+            fetch('/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } })
+              .then(r => r.ok ? r.json() : null)
+              .then(d => { if (d) setQuickStats(d); })
+              .catch(() => {});
+          }
+        }}
+      />
     </div>
   );
 }
