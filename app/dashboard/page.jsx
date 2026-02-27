@@ -1179,6 +1179,78 @@ function DashboardContent() {
         </div>
       )}
 
+      {/* ═══════════════════════════════════════════════════════════
+          BUSINESS OVERVIEW - Key Stats at Top
+          ═══════════════════════════════════════════════════════════ */}
+      <div className="mb-4 space-y-4">
+
+        {/* ── Key Business Metrics ── */}
+        <div data-tour="quick-stats">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-bold text-white">{t('dashboard.businessOverview')}</h2>
+            <a href="/analytics" className="text-sm text-amber-400 hover:underline">{t('dashboard.viewAnalytics')}</a>
+          </div>
+
+          {/* KPI Cards */}
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.totalRevenue')}</p>
+              <p className="text-2xl font-bold text-gray-900">{currencySymbol()}{(quickStats?.monthRevenue || 0).toLocaleString()}</p>
+              <p className="text-xs text-gray-400 mt-1">{t('dashboard.thisMonth')}</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.conversionRate')}</p>
+              <p className="text-2xl font-bold text-emerald-600">
+                {quickStats && analyticsData?.funnel ? (
+                  analyticsData.funnel.totalSent > 0
+                    ? `${Math.round((analyticsData.funnel.totalPaid / analyticsData.funnel.totalSent) * 100)}%`
+                    : '0%'
+                ) : '--'}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {analyticsData?.funnel ? `${analyticsData.funnel.totalPaid} ${t('dashboard.booked')} / ${analyticsData.funnel.totalSent} ${t('dashboard.sent').toLowerCase()}` : ''}
+              </p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.outstanding')}</p>
+              <p className="text-2xl font-bold text-red-500">{quickStats?.outstandingInvoices || 0}</p>
+              <p className="text-xs text-gray-400 mt-1">{currencySymbol()}{(quickStats?.outstandingTotal || 0).toLocaleString()}</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.avgJobValue')}</p>
+              <p className="text-2xl font-bold text-blue-600">{currencySymbol()}{formatPriceWhole(quickStats?.avgJobValue)}</p>
+            </div>
+            <div className="bg-white rounded-lg p-4 shadow">
+              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.jobsCompleted')}</p>
+              <p className="text-2xl font-bold text-emerald-600">{quickStats?.monthJobs || 0}</p>
+              <p className="text-xs text-gray-400 mt-1">{t('dashboard.thisMonth')}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Quick Actions */}
+        <div className="flex gap-2 flex-wrap">
+          <button
+            onClick={() => {
+              const el = document.querySelector('[data-tour="quote-builder"]');
+              if (el) el.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-sm font-semibold hover:opacity-90 shadow min-h-[44px]"
+          >
+            <span>+</span> {t('quickActions.newQuote')}
+          </button>
+          <button onClick={() => setShowAddCustomerModal(true)} className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]">
+            <span>&#128100;</span> {t('dashboard.addCustomer')}
+          </button>
+          <a href="/calendar" className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]">
+            <span>&#128197;</span> {t('dashboard.viewCalendar')}
+          </a>
+          <a href="/quotes" className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]">
+            <span>&#128196;</span> {t('dashboard.allQuotes')}
+          </a>
+        </div>
+      </div>
+
       <div className="max-w-3xl mx-auto" data-tour="quote-builder">
           {/* 1. Select Aircraft */}
           <div className="bg-white rounded-lg p-4 mb-4 shadow">
@@ -1803,73 +1875,9 @@ function DashboardContent() {
       )}
 
       {/* ═══════════════════════════════════════════════════════════
-          BUSINESS OVERVIEW - Analytics Dashboard
-          "How is my business doing?"
+          ANALYTICS & ACTIVITY - Below Quote Builder
           ═══════════════════════════════════════════════════════════ */}
       <div className="mt-6 space-y-4">
-
-        {/* ── TOP: Key Business Metrics ── */}
-        <div data-tour="quick-stats">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-bold text-white">{t('dashboard.businessOverview')}</h2>
-            <a href="/analytics" className="text-sm text-amber-400 hover:underline">{t('dashboard.viewAnalytics')}</a>
-          </div>
-
-          {/* KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.totalRevenue')}</p>
-              <p className="text-2xl font-bold text-gray-900">{currencySymbol()}{(quickStats?.monthRevenue || 0).toLocaleString()}</p>
-              <p className="text-xs text-gray-400 mt-1">{t('dashboard.thisMonth')}</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.conversionRate')}</p>
-              <p className="text-2xl font-bold text-emerald-600">
-                {quickStats && analyticsData?.funnel ? (
-                  analyticsData.funnel.totalSent > 0
-                    ? `${Math.round((analyticsData.funnel.totalPaid / analyticsData.funnel.totalSent) * 100)}%`
-                    : '0%'
-                ) : '--'}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {analyticsData?.funnel ? `${analyticsData.funnel.totalPaid} ${t('dashboard.booked')} / ${analyticsData.funnel.totalSent} ${t('dashboard.sent').toLowerCase()}` : ''}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.outstanding')}</p>
-              <p className="text-2xl font-bold text-red-500">{quickStats?.outstandingInvoices || 0}</p>
-              <p className="text-xs text-gray-400 mt-1">{currencySymbol()}{(quickStats?.outstandingTotal || 0).toLocaleString()}</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.avgJobValue')}</p>
-              <p className="text-2xl font-bold text-blue-600">{currencySymbol()}{formatPriceWhole(quickStats?.avgJobValue)}</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs uppercase tracking-wide">{t('dashboard.jobsCompleted')}</p>
-              <p className="text-2xl font-bold text-emerald-600">{quickStats?.monthJobs || 0}</p>
-              <p className="text-xs text-gray-400 mt-1">{t('dashboard.thisMonth')}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Quick Actions */}
-        <div className="flex gap-2 flex-wrap">
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded-lg text-sm font-semibold hover:opacity-90 shadow min-h-[44px]"
-          >
-            <span>+</span> {t('quickActions.newQuote')}
-          </button>
-          <button onClick={() => setShowAddCustomerModal(true)} className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]">
-            <span>&#128100;</span> {t('dashboard.addCustomer')}
-          </button>
-          <a href="/calendar" className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]">
-            <span>&#128197;</span> {t('dashboard.viewCalendar')}
-          </a>
-          <a href="/quotes" className="flex items-center gap-1.5 px-4 py-2 bg-white text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 shadow border border-gray-200 min-h-[44px]">
-            <span>&#128196;</span> {t('dashboard.allQuotes')}
-          </a>
-        </div>
 
         {/* Expiring Quotes alerts */}
         <ExpiringQuotesWidget expiring={quickStats?.expiringQuotes} expired={quickStats?.recentlyExpired} />
