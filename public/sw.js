@@ -1,12 +1,12 @@
-const CACHE_NAME = 'vector-v1';
+const CACHE_NAME = 'vector-v2';
 const STATIC_ASSETS = [
-  '/dashboard',
   '/manifest.json',
   '/icon-192.png',
   '/icon-512.png',
+  '/apple-touch-icon.png',
 ];
 
-// Install - cache static assets
+// Install - cache static assets (only truly static files, not auth-required pages)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
