@@ -5,8 +5,9 @@ export const dynamic = 'force-dynamic';
 
 const ADMIN_EMAILS = ['brett@aircraftdetailing.ai', 'admin@aircraftdetailing.ai', 'brett@shinyjets.com'];
 
-// GET - diagnostic check (no auth, no actual send)
-export async function GET() {
+// GET - diagnostic check OR send test SMS with ?send=true&to=+16194384972
+export async function GET(request) {
+  const { searchParams } = new URL(request.url);
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM_NUMBER;
@@ -38,10 +39,23 @@ export async function GET() {
     }
   }
 
+  // If ?send=true&to=PHONE, actually send a test SMS (no auth for quick testing)
+  const sendFlag = searchParams.get('send');
+  const toParam = searchParams.get('to');
+  if (sendFlag === 'true' && toParam) {
+    const formatted = formatPhoneE164(toParam);
+    console.log(`=== SMS TEST SEND === to=${toParam} formatted=${formatted}`);
+    const result = await sendSms({
+      to: toParam,
+      body: 'Vector SMS Test - If you receive this, Twilio is working!',
+    });
+    return Response.json({ diagnostic: diag, sendResult: result, toFormatted: formatted });
+  }
+
   return Response.json({ diagnostic: diag });
 }
 
-// POST - actually send a test SMS (admin auth required)
+// POST - send test SMS (admin auth required)
 export async function POST(request) {
   const user = await getAuthUser(request);
   if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase())) {

@@ -17,11 +17,38 @@ export async function POST(request) {
 
   const supabase = getSupabase();
 
-  const { data: detailer } = await supabase
-    .from('detailers')
-    .select('id, plan, is_admin, sms_enabled, twilio_phone')
-    .eq('id', user.id)
-    .single();
+  // Column-stripping retry for detailer fetch
+  let detailer = null;
+  let detailerCols = 'id, plan, is_admin, sms_enabled, twilio_phone';
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data, error } = await supabase
+      .from('detailers')
+      .select(detailerCols)
+      .eq('id', user.id)
+      .single();
+
+    if (!error) {
+      detailer = data;
+      break;
+    }
+
+    const colMatch = error.message?.match(/column (\w+)\.(\w+) does not exist/)
+      || error.message?.match(/Could not find the '([^']+)' column/);
+    if (colMatch) {
+      const badCol = colMatch[2] || colMatch[1];
+      console.log(`=== SMS SEND === stripping missing column: ${badCol}`);
+      detailerCols = detailerCols.split(',').map(c => c.trim()).filter(c => c !== badCol).join(', ');
+      continue;
+    }
+
+    console.error('=== SMS SEND === detailer fetch error:', error);
+    break;
+  }
+
+  if (!detailer) {
+    console.error('=== SMS SEND === detailer is null after fetch');
+    return Response.json({ error: 'Could not load account' }, { status: 500 });
+  }
 
   if (!hasPremiumAccess(detailer?.plan, detailer?.is_admin)) {
     return Response.json({ error: 'SMS requires Business plan' }, { status: 403 });
@@ -37,7 +64,7 @@ export async function POST(request) {
     return Response.json({ error: 'to and body are required' }, { status: 400 });
   }
 
-  console.log('=== SMS ROUTE CALLED === to:', to);
+  console.log('=== SMS ROUTE CALLED === to:', to, 'from:', detailer.twilio_phone || 'default');
   const result = await sendSms({ to, body, from: detailer.twilio_phone || undefined });
 
   return Response.json(result, { status: result.success ? 200 : 500 });
