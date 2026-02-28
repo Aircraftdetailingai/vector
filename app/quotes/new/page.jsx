@@ -780,8 +780,8 @@ function NewQuoteContent() {
                   <p className="text-xs text-gray-400 mb-1">Estimated Products</p>
                   {productEstimates.map((pe, i) => (
                     <div key={i} className="flex justify-between text-xs text-gray-300">
-                      <span>{pe.name}</span>
-                      <span>{pe.quantity.toFixed(1)} {pe.unit}</span>
+                      <span>{pe.product_name}</span>
+                      <span>{pe.amount} {pe.unit}</span>
                     </div>
                   ))}
                 </div>
@@ -794,7 +794,7 @@ function NewQuoteContent() {
                   {quoteData.linkedProducts.map((p, i) => (
                     <div key={i} className="flex justify-between text-xs text-gray-300">
                       <span>{p.product_name}</span>
-                      <span>{p.quantity.toFixed(1)} {p.unit}</span>
+                      <span>{(p.quantity || 0).toFixed(1)} {p.unit}</span>
                     </div>
                   ))}
                 </div>
