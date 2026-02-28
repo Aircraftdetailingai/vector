@@ -210,12 +210,21 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
               company_name: effectiveCompany || null,
             }),
           });
-          const custData = await custRes.json();
-          if (custData.customer?.id) {
-            resolvedCustomerId = custData.customer.id;
+          if (!custRes.ok) {
+            const errData = await custRes.json().catch(() => null);
+            console.error('Customer save failed:', custRes.status, errData);
+            toastError(`Customer save failed: ${errData?.error || 'Unknown error'}`);
+          } else {
+            const custData = await custRes.json();
+            if (custData.customer?.id) {
+              resolvedCustomerId = custData.customer.id;
+            } else {
+              console.warn('Customer save returned no ID:', custData);
+            }
           }
         } catch (e) {
           console.error('Customer pre-save failed:', e);
+          toastError('Could not save customer record');
         }
       }
 
@@ -409,12 +418,21 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
               company_name: effectiveCompany || null,
             }),
           });
-          const custData = await custRes.json();
-          if (custData.customer?.id) {
-            draftCustomerId = custData.customer.id;
+          if (!custRes.ok) {
+            const errData = await custRes.json().catch(() => null);
+            console.error('Customer save in draft failed:', custRes.status, errData);
+            toastError(`Customer save failed: ${errData?.error || 'Unknown error'}`);
+          } else {
+            const custData = await custRes.json();
+            if (custData.customer?.id) {
+              draftCustomerId = custData.customer.id;
+            } else {
+              console.warn('Draft customer save returned no ID:', custData);
+            }
           }
         } catch (e) {
           console.error('Customer save in draft failed:', e);
+          toastError('Could not save customer record');
         }
       }
 
