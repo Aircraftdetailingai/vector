@@ -3,11 +3,14 @@ import InstallPrompt from '@/components/InstallPrompt'
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
 import Providers from '@/components/Providers'
 
+export const viewport = {
+  themeColor: '#0f172a',
+}
+
 export const metadata = {
   title: 'Vector - Aircraft Detailing Quotes',
   description: 'Professional quoting software for aircraft detailers',
   manifest: '/manifest.json',
-  themeColor: '#0f172a',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -32,7 +35,6 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <meta name="theme-color" content="#0f172a" />
         <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
