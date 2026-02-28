@@ -5,7 +5,6 @@ import DataTable from '@/components/DataTable';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 import ExportGate from '@/components/ExportGate';
-import { useTranslation } from '@/lib/i18n';
 
 const statusColors = {
   draft: 'bg-gray-100 text-gray-700',
@@ -21,7 +20,6 @@ const statusColors = {
 
 export default function QuotesPage() {
   const router = useRouter();
-  const { t } = useTranslation();
   const [quotes, setQuotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -62,15 +60,15 @@ export default function QuotesPage() {
   const [bulkProcessing, setBulkProcessing] = useState(false);
 
   const statusLabels = {
-    draft: t('status.draft'),
-    sent: t('status.sent'),
-    viewed: t('status.viewed'),
-    paid: t('status.paid'),
-    approved: t('status.approved'),
-    completed: t('status.completed'),
-    expired: t('status.expired'),
-    scheduled: t('status.scheduled'),
-    in_progress: t('status.inProgress'),
+    draft: 'Draft',
+    sent: 'Sent',
+    viewed: 'Viewed',
+    paid: 'Paid',
+    approved: 'Approved',
+    completed: 'Completed',
+    expired: 'Expired',
+    scheduled: 'Scheduled',
+    in_progress: 'In Progress',
   };
 
   useEffect(() => {
@@ -211,7 +209,7 @@ export default function QuotesPage() {
   const submitChangeOrder = async () => {
     const validServices = changeOrderData.services.filter(s => s.name && s.amount);
     if (validServices.length === 0) {
-      alert(t('quotes.addServiceRequired'));
+      alert('Please add at least one service');
       return;
     }
 
@@ -238,14 +236,14 @@ export default function QuotesPage() {
       });
 
       if (res.ok) {
-        alert(t('quotes.changeOrderSent'));
+        alert('Change order sent to customer!');
         setChangeOrderModal(null);
       } else {
         const data = await res.json();
-        alert(data.error || t('quotes.changeOrderFailed'));
+        alert(data.error || 'Failed to create change order');
       }
     } catch (err) {
-      alert(t('quotes.changeOrderFailed'));
+      alert('Failed to create change order');
     } finally {
       setSubmittingChangeOrder(false);
     }
@@ -311,7 +309,7 @@ export default function QuotesPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        alert(data.error || data.message || t('quotes.duplicateFailed'));
+        alert(data.error || data.message || 'Failed to duplicate quote');
         return;
       }
 
@@ -319,7 +317,7 @@ export default function QuotesPage() {
       setQuotes(prev => [{ ...newQuote, aircraft_name: newQuote.aircraft_model ? `${newQuote.aircraft_type || ''} ${newQuote.aircraft_model}`.trim() : newQuote.aircraft_type || 'Unknown Aircraft' }, ...prev]);
       setDuplicateModal(null);
     } catch (err) {
-      alert(t('quotes.duplicateFailed'));
+      alert('Failed to duplicate quote');
     } finally {
       setDuplicating(false);
     }
@@ -362,10 +360,10 @@ export default function QuotesPage() {
         setCompleteModal(null);
       } else {
         const data = await res.json();
-        alert(data.error || t('quotes.completeFailed'));
+        alert(data.error || 'Failed to complete job');
       }
     } catch (err) {
-      alert(t('quotes.completeFailed'));
+      alert('Failed to complete job');
     } finally {
       setCompleting(false);
     }
@@ -449,7 +447,7 @@ export default function QuotesPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        alert(data.error || t('quotes.bulkActionFailed'));
+        alert(data.error || 'Bulk action failed');
         return;
       }
 
@@ -468,7 +466,7 @@ export default function QuotesPage() {
       clearSelection();
     } catch (err) {
       console.error('Bulk action error:', err);
-      alert(t('quotes.bulkActionFailed'));
+      alert('Bulk action failed');
     } finally {
       setBulkProcessing(false);
       setBulkConfirm(null);
@@ -501,11 +499,11 @@ export default function QuotesPage() {
     },
     {
       id: 'customer',
-      header: t('common.customer'),
+      header: 'Customer',
       accessorKey: 'client_name',
       cell: ({ getValue, row }) => (
         <div>
-          <span className="font-medium">{getValue() || t('common.noName')}</span>
+          <span className="font-medium">{getValue() || 'No name'}</span>
           {row.original.client_email && (
             <span className="text-xs text-gray-500 block">{row.original.client_email}</span>
           )}
@@ -526,18 +524,18 @@ export default function QuotesPage() {
     },
     {
       id: 'aircraft',
-      header: t('common.aircraft'),
+      header: 'Aircraft',
       accessorFn: (row) => row.aircraft_model || row.aircraft_type || '-',
     },
     {
       id: 'registration',
-      header: t('quotesExtra.registration'),
+      header: 'Registration',
       accessorKey: 'tail_number',
       cell: ({ getValue }) => getValue() || '-',
     },
     {
       id: 'services',
-      header: t('common.services'),
+      header: 'Services',
       accessorFn: (row) => {
         if (row.line_items && Array.isArray(row.line_items)) {
           return row.line_items.map(item => item.description || item.service).join(', ');
@@ -552,7 +550,7 @@ export default function QuotesPage() {
     },
     {
       id: 'total',
-      header: t('quotesExtra.quoteTotal'),
+      header: 'Quote Total',
       accessorKey: 'total_price',
       cell: ({ getValue }) => (
         <span className="font-semibold">{currencySymbol()}{formatPrice(getValue())}</span>
@@ -560,7 +558,7 @@ export default function QuotesPage() {
     },
     {
       id: 'product_cost',
-      header: t('dashboard.productCost'),
+      header: 'Product Cost',
       accessorFn: (row) => getProductCost(row),
       cell: ({ getValue }) => {
         const cost = getValue();
@@ -569,7 +567,7 @@ export default function QuotesPage() {
     },
     {
       id: 'profit',
-      header: t('quotesExtra.grossProfit'),
+      header: 'Gross Profit',
       accessorFn: (row) => {
         const revenue = parseFloat(row.total_price) || 0;
         const cost = getProductCost(row);
@@ -590,7 +588,7 @@ export default function QuotesPage() {
     },
     {
       id: 'status',
-      header: t('common.status'),
+      header: 'Status',
       accessorFn: (row) => getStatus(row),
       cell: ({ getValue }) => {
         const status = getValue();
@@ -603,55 +601,55 @@ export default function QuotesPage() {
     },
     {
       id: 'date',
-      header: t('common.date'),
+      header: 'Date',
       accessorKey: 'created_at',
       cell: ({ getValue }) => formatDate(getValue()),
     },
     {
       id: 'location',
-      header: t('calendarExtra.hangarLocation'),
+      header: 'Hangar Location',
       accessorKey: 'location',
       cell: ({ getValue }) => getValue() || '-',
     },
     {
       id: 'email',
-      header: t('quotes.clientEmail'),
+      header: 'Client Email',
       accessorKey: 'client_email',
       cell: ({ getValue }) => getValue() || '-',
     },
     {
       id: 'phone',
-      header: t('quotes.clientPhone'),
+      header: 'Client Phone',
       accessorKey: 'client_phone',
       cell: ({ getValue }) => getValue() || '-',
     },
     {
       id: 'sent_date',
-      header: t('dashboard.quoteSent'),
+      header: 'Quote sent',
       accessorKey: 'sent_at',
       cell: ({ getValue }) => formatDate(getValue()),
     },
     {
       id: 'viewed_date',
-      header: t('dashboard.quoteViewed'),
+      header: 'Quote viewed',
       accessorKey: 'viewed_at',
       cell: ({ getValue }) => formatDate(getValue()),
     },
     {
       id: 'payment_date',
-      header: t('reports.paidAt'),
+      header: 'Paid At',
       accessorKey: 'paid_at',
       cell: ({ getValue }) => formatDate(getValue()),
     },
     {
       id: 'hours',
-      header: t('jobs.hours'),
+      header: 'Hours',
       accessorKey: 'total_hours',
       cell: ({ getValue }) => { const v = parseFloat(getValue()); return isNaN(v) ? '-' : v.toFixed(1); },
     },
     {
       id: 'notes',
-      header: t('common.notes'),
+      header: 'Notes',
       accessorKey: 'notes',
       cell: ({ getValue }) => (
         <span className="truncate max-w-[150px] block" title={getValue()}>
@@ -661,7 +659,7 @@ export default function QuotesPage() {
     },
     {
       id: 'actions',
-      header: t('common.actions'),
+      header: 'Actions',
       cell: ({ row }) => {
         const quote = row.original;
         const status = getStatus(quote);
@@ -676,7 +674,7 @@ export default function QuotesPage() {
                   onClick={(e) => e.stopPropagation()}
                   className="text-blue-600 hover:underline text-xs"
                 >
-                  {t('common.view')}
+                  {'View'}
                 </a>
                 <button
                   onClick={(e) => {
@@ -685,7 +683,7 @@ export default function QuotesPage() {
                   }}
                   className="text-gray-600 hover:text-gray-900 text-xs"
                 >
-                  {t('quotesExtra.copyQuote')}
+                  {'Copy'}
                 </button>
               </>
             )}
@@ -705,7 +703,7 @@ export default function QuotesPage() {
               }}
               className="text-green-600 hover:text-green-800 text-xs font-medium"
             >
-              {t('quotesExtra.duplicateQuote')}
+              {'Duplicate'}
             </button>
             {status === 'paid' && (
               <>
@@ -716,7 +714,7 @@ export default function QuotesPage() {
                   }}
                   className="text-amber-600 hover:text-amber-800 text-xs font-medium"
                 >
-                  {t('quotesExtra.changeOrder')}
+                  {'+Change'}
                 </button>
                 <button
                   onClick={(e) => {
@@ -725,7 +723,7 @@ export default function QuotesPage() {
                   }}
                   className="text-purple-600 hover:text-purple-800 text-xs font-medium"
                 >
-                  {t('quotesExtra.completeJob')}
+                  {'Complete'}
                 </button>
               </>
             )}
@@ -733,7 +731,7 @@ export default function QuotesPage() {
         );
       },
     },
-  ], [servicesMap, selectedIds, filteredQuotes, t]);
+  ], [servicesMap, selectedIds, filteredQuotes]);
 
   const stats = {
     total: quotes.length,
@@ -745,7 +743,7 @@ export default function QuotesPage() {
   };
 
   if (loading) {
-    return <LoadingSpinner message={t('common.loading')} />;
+    return <LoadingSpinner message={'Loading...'} />;
   }
 
   return (
@@ -754,7 +752,7 @@ export default function QuotesPage() {
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 text-white">
         <div className="flex items-center space-x-4">
           <a href="/dashboard" className="text-2xl hover:text-amber-400">&#8592;</a>
-          <h1 className="text-xl sm:text-2xl font-bold">{t('quotes.title')}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">{'Quotes'}</h1>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <ExportGate plan={userPlan}>
@@ -777,7 +775,7 @@ export default function QuotesPage() {
                 disabled={quotes.length === 0}
                 className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded px-3 py-1 disabled:opacity-50 text-sm"
               >
-                {t('reports.exportCsv')}
+                {'Export CSV'}
               </button>
               <button
                 onClick={async () => {
@@ -792,7 +790,7 @@ export default function QuotesPage() {
                 }}
                 className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded px-3 py-1 text-sm"
               >
-                {t('quotesExtra.exportCustomers')}
+                {'Export Customers'}
               </button>
             </div>
           </ExportGate>
@@ -800,7 +798,7 @@ export default function QuotesPage() {
             href="/dashboard"
             className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium hover:opacity-90"
           >
-            {t('quickActions.newQuote')}
+            {'New Quote'}
           </a>
         </div>
       </header>
@@ -808,30 +806,30 @@ export default function QuotesPage() {
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 mb-6">
         <div className="bg-white rounded-lg p-4 shadow">
-          <p className="text-gray-500 text-sm">{t('common.total')}</p>
+          <p className="text-gray-500 text-sm">{'Total'}</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
-          <p className="text-gray-500 text-sm">{t('common.active')}</p>
+          <p className="text-gray-500 text-sm">{'Active'}</p>
           <p className="text-2xl font-bold text-amber-600">{stats.active}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
-          <p className="text-gray-500 text-sm">{t('status.paid')}</p>
+          <p className="text-gray-500 text-sm">{'Paid'}</p>
           <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
-          <p className="text-gray-500 text-sm">{t('status.completed')}</p>
+          <p className="text-gray-500 text-sm">{'Completed'}</p>
           <p className="text-2xl font-bold text-purple-600">{stats.completed}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
-          <p className="text-gray-500 text-sm">{t('quotesExtra.revenue')}</p>
+          <p className="text-gray-500 text-sm">{'Revenue'}</p>
           <p className="text-2xl font-bold text-blue-600">{currencySymbol()}{formatPriceWhole(stats.revenue)}</p>
         </div>
         <div className="bg-white rounded-lg p-4 shadow">
-          <p className="text-gray-500 text-sm">{t('quotesExtra.grossProfit')}</p>
+          <p className="text-gray-500 text-sm">{'Gross Profit'}</p>
           <p className="text-2xl font-bold text-green-600">{currencySymbol()}{formatPriceWhole(stats.revenue - stats.productCost)}</p>
           {stats.revenue > 0 && (
-            <p className="text-xs text-gray-400">{((1 - stats.productCost / stats.revenue) * 100).toFixed(0)}{t('quotesExtra.percentMargin')}</p>
+            <p className="text-xs text-gray-400">{((1 - stats.productCost / stats.revenue) * 100).toFixed(0)}{'% margin'}</p>
           )}
         </div>
       </div>
@@ -848,11 +846,11 @@ export default function QuotesPage() {
                 : 'bg-white text-gray-700 hover:bg-gray-100'
             }`}
           >
-            {f === 'all' ? t('common.all') :
-             f === 'active' ? t('common.active') :
-             f === 'paid' ? t('status.paid') :
-             f === 'completed' ? t('status.completed') :
-             t('status.expired')}
+            {f === 'all' ? 'All' :
+             f === 'active' ? 'Active' :
+             f === 'paid' ? 'Paid' :
+             f === 'completed' ? 'Completed' :
+             'Expired'}
           </button>
         ))}
       </div>
@@ -862,26 +860,26 @@ export default function QuotesPage() {
         <div className="bg-white border border-amber-300 rounded-lg px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-gray-900">
-              {selectedIds.size} {t('quotes.selected')}
+              {selectedIds.size} {'selected'}
             </span>
             <button onClick={clearSelection} className="text-xs text-gray-500 hover:text-gray-700 underline">
-              {t('quotesExtra.clear')}
+              {'Clear'}
             </button>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => setBulkConfirm({ action: 'send', label: t('quotes.bulkSendConfirm', { count: selectedIds.size }), description: t('quotes.bulkSendDesc') })}
+              onClick={() => setBulkConfirm({ action: 'send', label: `Send ${selectedIds.size} quote(s)?`, description: 'Quotes with a customer email in draft/sent status will be emailed.' })}
               disabled={bulkProcessing}
               className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 disabled:opacity-50"
             >
-              {t('quotesExtra.sendAll')}
+              {'Send All'}
             </button>
             <button
-              onClick={() => setBulkConfirm({ action: 'expire', label: t('quotes.bulkExpireConfirm', { count: selectedIds.size }), description: t('quotes.bulkExpireDesc') })}
+              onClick={() => setBulkConfirm({ action: 'expire', label: `Mark ${selectedIds.size} quote(s) as expired?`, description: 'This will change their status to expired.' })}
               disabled={bulkProcessing}
               className="px-3 py-1.5 bg-amber-500 text-white text-sm rounded-lg hover:bg-amber-600 disabled:opacity-50"
             >
-              {t('quotes.bulkExpire')}
+              {'Expire Selected'}
             </button>
             <ExportGate plan={userPlan}>
               <button
@@ -889,15 +887,15 @@ export default function QuotesPage() {
                 disabled={bulkProcessing}
                 className="px-3 py-1.5 bg-gray-600 text-white text-sm rounded-lg hover:bg-gray-700 disabled:opacity-50"
               >
-                {t('reports.exportCsv')}
+                {'Export CSV'}
               </button>
             </ExportGate>
             <button
-              onClick={() => setBulkConfirm({ action: 'delete', label: t('quotes.bulkDeleteConfirm', { count: selectedIds.size }), description: t('quotes.bulkDeleteDesc') })}
+              onClick={() => setBulkConfirm({ action: 'delete', label: `Delete ${selectedIds.size} quote(s) permanently?`, description: 'This cannot be undone.' })}
               disabled={bulkProcessing}
               className="px-3 py-1.5 bg-red-500 text-white text-sm rounded-lg hover:bg-red-600 disabled:opacity-50"
             >
-              {t('quotes.bulkDelete')}
+              {'Delete Selected'}
             </button>
           </div>
         </div>
@@ -908,14 +906,14 @@ export default function QuotesPage() {
         tableId="detailer"
         data={filteredQuotes}
         columns={columns}
-        emptyMessage={t('common.noResults')}
+        emptyMessage={'No results found'}
       />
 
       {/* Complete Job Modal */}
       {completeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">{t('quotes.completeJob')}</h3>
+            <h3 className="text-lg font-semibold mb-4">{'Complete Job'}</h3>
             <p className="text-gray-600 mb-4">
               {completeModal.aircraft_model || completeModal.aircraft_type}
               {completeModal.client_name && ` - ${completeModal.client_name}`}
@@ -938,7 +936,7 @@ export default function QuotesPage() {
                 {completeModal.emergency_contact_name && (
                   <div className="flex items-center justify-between pt-1 border-t">
                     <div>
-                      <span className="text-xs text-red-600 font-semibold uppercase">{t('quotes.emergency')}: </span>
+                      <span className="text-xs text-red-600 font-semibold uppercase">{'Emergency'}: </span>
                       <span className="font-medium">{completeModal.emergency_contact_name}</span>
                     </div>
                     {completeModal.emergency_contact_phone && (
@@ -953,13 +951,13 @@ export default function QuotesPage() {
               {/* Per-Service Hours Breakdown */}
               {serviceHours.length > 0 ? (
                 <div>
-                  <label className="block text-sm font-medium mb-2">{t('quotes.actualHours')} {t('quotes.perService')}</label>
+                  <label className="block text-sm font-medium mb-2">{'Actual Hours'} {'Per Service *'}</label>
                   <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                     {serviceHours.map((sh, idx) => (
                       <div key={idx} className="flex items-center justify-between p-2 bg-gray-50 rounded-lg">
                         <div className="flex-1 min-w-0 mr-3">
                           <p className="text-sm font-medium text-gray-900 truncate">{sh.service_name}</p>
-                          <p className="text-xs text-gray-400">{t('quotesExtra.quotedHours', { hours: sh.quoted_hours.toFixed(1) })}</p>
+                          <p className="text-xs text-gray-400">{`Quoted: ${sh.quoted_hours.toFixed(1)}h`}</p>
                         </div>
                         <div className="flex items-center gap-1">
                           <input
@@ -976,17 +974,17 @@ export default function QuotesPage() {
                             }}
                             className="w-20 border rounded px-2 py-1.5 text-sm text-right"
                           />
-                          <span className="text-xs text-gray-500">{t('common.hrs')}</span>
+                          <span className="text-xs text-gray-500">{'h'}</span>
                         </div>
                       </div>
                     ))}
                   </div>
                   <div className="flex justify-between items-center mt-2 pt-2 border-t">
-                    <span className="text-sm font-medium text-gray-700">{t('quotesExtra.totalHours')}</span>
+                    <span className="text-sm font-medium text-gray-700">{'Total Hours'}</span>
                     <span className="text-lg font-bold text-gray-900">{parseFloat(completionData.actual_hours || 0).toFixed(1)}h</span>
                   </div>
                   <p className="text-xs text-gray-400 mt-1">
-                    {t('quotesExtra.quoteEstimate', { hours: completeModal.total_hours?.toFixed(1) || '0' })}
+                    {`Quote estimate: ${completeModal.total_hours?.toFixed(1) || "0"} hours`}
                     {completeModal.total_hours && parseFloat(completionData.actual_hours) !== completeModal.total_hours && (
                       <span className={parseFloat(completionData.actual_hours) > completeModal.total_hours ? ' text-red-500' : ' text-green-500'}>
                         {' '}({parseFloat(completionData.actual_hours) > completeModal.total_hours ? '+' : ''}
@@ -997,17 +995,17 @@ export default function QuotesPage() {
                 </div>
               ) : (
                 <div>
-                  <label className="block text-sm font-medium mb-1">{t('quotes.actualHours')} {t('quotes.worked')}</label>
+                  <label className="block text-sm font-medium mb-1">{'Actual Hours'} {'Worked *'}</label>
                   <input
                     type="number"
                     step="0.25"
                     value={completionData.actual_hours}
                     onChange={(e) => setCompletionData({ ...completionData, actual_hours: e.target.value })}
-                    placeholder={t('quotesExtra.estimatedHours', { hours: completeModal.total_hours?.toFixed(1) || '0' })}
+                    placeholder={`Estimated: ${completeModal.total_hours?.toFixed(1) || "0"}`}
                     className="w-full border rounded px-3 py-2"
                   />
                   <p className="text-xs text-gray-500 mt-1">
-                    {t('quotesExtra.quoteEstimate', { hours: completeModal.total_hours?.toFixed(1) || '0' })}
+                    {`Quote estimate: ${completeModal.total_hours?.toFixed(1) || "0"} hours`}
                   </p>
                 </div>
               )}
@@ -1015,7 +1013,7 @@ export default function QuotesPage() {
               {/* Product estimates from quote */}
               {completeModal.product_estimates && completeModal.product_estimates.length > 0 && (
                 <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <p className="text-sm font-medium text-blue-800 mb-1">{t('dashboard.estimatedProducts')} {t('quotes.fromQuote')}</p>
+                  <p className="text-sm font-medium text-blue-800 mb-1">{'Estimated Products'} {'(from quote)'}</p>
                   <div className="space-y-0.5">
                     {completeModal.product_estimates.map((e, i) => (
                       <div key={i} className="flex justify-between text-sm">
@@ -1028,7 +1026,7 @@ export default function QuotesPage() {
               )}
 
               <div>
-                <label className="block text-sm font-medium mb-1">{t('quotes.productsUsed')}</label>
+                <label className="block text-sm font-medium mb-1">{'Products Used'}</label>
                 {inventoryProducts.length > 0 ? (
                   <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
                     {selectedProducts.map((sp, idx) => (
@@ -1042,7 +1040,7 @@ export default function QuotesPage() {
                           }}
                           className="flex-1 border rounded px-2 py-1.5 text-sm"
                         >
-                          <option value="">{t('quotes.selectProduct')}</option>
+                          <option value="">{'Select product...'}</option>
                           {inventoryProducts.map(p => (
                             <option key={p.id} value={p.id}>{p.name} ({p.current_quantity} {p.unit})</option>
                           ))}
@@ -1063,7 +1061,7 @@ export default function QuotesPage() {
                             });
                             setCompletionData(prev => ({ ...prev, product_cost: totalCost.toFixed(2) }));
                           }}
-                          placeholder={t('common.qty')}
+                          placeholder={'Qty'}
                           className="w-20 border rounded px-2 py-1.5 text-sm text-right"
                         />
                         <button
@@ -1077,9 +1075,9 @@ export default function QuotesPage() {
                       type="button"
                       onClick={() => setSelectedProducts([...selectedProducts, { product_id: '', amount: '' }])}
                       className="text-sm text-amber-600 hover:underline"
-                    >{t('quotesExtra.addProduct')}</button>
+                    >{'Add Product'}</button>
                     {selectedProducts.length > 0 && completionData.product_cost && (
-                      <p className="text-xs text-gray-500 mt-1">{t('quotes.estimatedMaterialCost')} {currencySymbol()}{completionData.product_cost}</p>
+                      <p className="text-xs text-gray-500 mt-1">{'Estimated material cost:'} {currencySymbol()}{completionData.product_cost}</p>
                     )}
                   </div>
                 ) : (
@@ -1093,17 +1091,17 @@ export default function QuotesPage() {
                       placeholder="0.00"
                       className="w-32 border rounded px-3 py-2"
                     />
-                    <a href="/products" className="text-xs text-amber-600 hover:underline">{t('quotes.addProductsToTrack')}</a>
+                    <a href="/products" className="text-xs text-amber-600 hover:underline">{'Add products to track inventory'}</a>
                   </div>
                 )}
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">{t('common.notes')} ({t('common.optional').toLowerCase()})</label>
+                <label className="block text-sm font-medium mb-1">{'Notes'} ({'Optional'.toLowerCase()})</label>
                 <textarea
                   value={completionData.notes}
                   onChange={(e) => setCompletionData({ ...completionData, notes: e.target.value })}
-                  placeholder={t('quotes.jobNotes')}
+                  placeholder={'Any notes about this job...'}
                   className="w-full border rounded px-3 py-2"
                   rows={2}
                 />
@@ -1112,13 +1110,13 @@ export default function QuotesPage() {
               {/* Smart Tracking Section */}
               <div className="border-t pt-4 mt-4">
                 <p className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
-                  <span>{t('quotesExtra.trackHiddenCosts')}</span>
-                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">{t('quotesExtra.bonusPoints')}</span>
+                  <span>{'Track Hidden Costs'}</span>
+                  <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded">{'+Points'}</span>
                 </p>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm text-gray-600 mb-1">{t('quotes.waitTime')}</label>
+                    <label className="block text-sm text-gray-600 mb-1">{'Wait Time (min)'}</label>
                     <div className="flex items-center gap-2">
                       <input
                         type="number"
@@ -1127,7 +1125,7 @@ export default function QuotesPage() {
                         placeholder="0"
                         className="w-20 border rounded px-2 py-1.5 text-sm"
                       />
-                      <span className="text-xs text-gray-500">{t('quotesExtra.mins')}</span>
+                      <span className="text-xs text-gray-500">{'mins'}</span>
                     </div>
                   </div>
 
@@ -1139,7 +1137,7 @@ export default function QuotesPage() {
                         onChange={(e) => setCompletionData({ ...completionData, repositioning_needed: e.target.checked })}
                         className="rounded border-gray-300"
                       />
-                      <span className="text-sm text-gray-600">{t('quotes.repositioning')}</span>
+                      <span className="text-sm text-gray-600">{'Repositioning needed'}</span>
                     </label>
                   </div>
 
@@ -1151,24 +1149,24 @@ export default function QuotesPage() {
                         onChange={(e) => setCompletionData({ ...completionData, customer_late: e.target.checked })}
                         className="rounded border-gray-300"
                       />
-                      <span className="text-sm text-gray-600">{t('quotes.customerLate')}</span>
+                      <span className="text-sm text-gray-600">{'Customer was late'}</span>
                     </label>
                   </div>
                 </div>
 
                 <div className="mt-3">
-                  <label className="block text-sm text-gray-600 mb-1">{t('quotes.issues')} ({t('common.optional').toLowerCase()})</label>
+                  <label className="block text-sm text-gray-600 mb-1">{'Issues'} ({'Optional'.toLowerCase()})</label>
                   <textarea
                     value={completionData.issues}
                     onChange={(e) => setCompletionData({ ...completionData, issues: e.target.value })}
-                    placeholder={t('quotesExtra.accessNotes')}
+                    placeholder={'Access problems, condition notes, etc...'}
                     className="w-full border rounded px-3 py-2 text-sm"
                     rows={2}
                   />
                 </div>
 
                 <p className="text-xs text-gray-400 mt-2">
-                  {t('quotesExtra.trackingDataHelp')}
+                  {'Tracking this data earns points and helps identify problem customers.'}
                 </p>
               </div>
             </div>
@@ -1178,14 +1176,14 @@ export default function QuotesPage() {
                 onClick={() => setCompleteModal(null)}
                 className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
               >
-                {t('common.cancel')}
+                {'Cancel'}
               </button>
               <button
                 onClick={completeJob}
                 disabled={!completionData.actual_hours || completing}
                 className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50"
               >
-                {completing ? t('common.saving') : t('quotes.completeJob')}
+                {completing ? 'Saving...' : 'Complete Job'}
               </button>
             </div>
           </div>
@@ -1205,7 +1203,7 @@ export default function QuotesPage() {
                 disabled={bulkProcessing}
                 className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50 disabled:opacity-50"
               >
-                {t('common.cancel')}
+                {'Cancel'}
               </button>
               <button
                 onClick={() => executeBulkAction(bulkConfirm.action)}
@@ -1216,7 +1214,7 @@ export default function QuotesPage() {
                   'bg-blue-500 hover:bg-blue-600'
                 }`}
               >
-                {bulkProcessing ? t('common.processing') : t('common.confirm')}
+                {bulkProcessing ? 'Processing...' : 'Confirm'}
               </button>
             </div>
           </div>
@@ -1227,16 +1225,16 @@ export default function QuotesPage() {
       {duplicateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-2">{t('quotes.duplicateQuote')}</h3>
+            <h3 className="text-lg font-semibold mb-2">{'Duplicate Quote'}</h3>
             <p className="text-gray-600 mb-4">
-              {t('quotesExtra.duplicateDesc')}
+              {'Create a copy of this quote with new customer details.'}
             </p>
 
             {/* Source quote summary */}
             <div className="bg-gray-50 p-3 rounded-lg mb-4">
               <div className="flex justify-between items-center mb-1">
                 <span className="text-sm font-medium text-gray-900">
-                  {duplicateModal.aircraft_model || duplicateModal.aircraft_type || t('common.aircraft')}
+                  {duplicateModal.aircraft_model || duplicateModal.aircraft_type || 'Aircraft'}
                 </span>
                 <span className="font-bold text-[#1e3a5f]">{currencySymbol()}{formatPrice(duplicateModal.total_price)}</span>
               </div>
@@ -1248,7 +1246,7 @@ export default function QuotesPage() {
                     </span>
                   ))}
                   {duplicateModal.line_items.length > 4 && (
-                    <span className="text-xs text-gray-400"> {t('quotesExtra.moreItems', { count: duplicateModal.line_items.length - 4 })}</span>
+                    <span className="text-xs text-gray-400"> {`+${duplicateModal.line_items.length - 4} more`}</span>
                   )}
                 </div>
               )}
@@ -1256,17 +1254,17 @@ export default function QuotesPage() {
 
             <div className="space-y-3">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('quotes.clientName')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{'Client Name'}</label>
                 <input
                   type="text"
                   value={duplicateData.client_name}
                   onChange={(e) => setDuplicateData({ ...duplicateData, client_name: e.target.value })}
-                  placeholder={t('quotes.clientName')}
+                  placeholder={'Client Name'}
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('quotes.clientEmail')}</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{'Client Email'}</label>
                 <input
                   type="email"
                   value={duplicateData.client_email}
@@ -1276,7 +1274,7 @@ export default function QuotesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.phone')} ({t('common.optional').toLowerCase()})</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{'Phone'} ({'Optional'.toLowerCase()})</label>
                 <input
                   type="tel"
                   value={duplicateData.client_phone}
@@ -1286,11 +1284,11 @@ export default function QuotesPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{t('common.notes')} ({t('common.optional').toLowerCase()})</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">{'Notes'} ({'Optional'.toLowerCase()})</label>
                 <textarea
                   value={duplicateData.notes}
                   onChange={(e) => setDuplicateData({ ...duplicateData, notes: e.target.value })}
-                  placeholder={t('quotes.addNotesPlaceholder')}
+                  placeholder={'Add notes for this quote...'}
                   className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 focus:border-amber-500 resize-none"
                   rows={2}
                 />
@@ -1302,14 +1300,14 @@ export default function QuotesPage() {
                 onClick={() => setDuplicateModal(null)}
                 className="px-4 py-2 border rounded-lg text-gray-700 hover:bg-gray-50"
               >
-                {t('common.cancel')}
+                {'Cancel'}
               </button>
               <button
                 onClick={submitDuplicate}
                 disabled={duplicating}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 font-medium"
               >
-                {duplicating ? t('common.creating') : t('quotes.duplicateQuote')}
+                {duplicating ? 'Creating...' : 'Duplicate Quote'}
               </button>
             </div>
           </div>
@@ -1319,7 +1317,7 @@ export default function QuotesPage() {
       {changeOrderModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
           <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-2">{t('quotes.changeOrder')}</h3>
+            <h3 className="text-lg font-semibold mb-2">{'Change Order'}</h3>
             <p className="text-gray-600 mb-4">
               {changeOrderModal.aircraft_model || changeOrderModal.aircraft_type}
               {changeOrderModal.client_name && ` - ${changeOrderModal.client_name}`}
@@ -1327,20 +1325,20 @@ export default function QuotesPage() {
 
             <div className="bg-gray-50 p-3 rounded mb-4">
               <p className="text-sm text-gray-600">
-                <strong>{t('quotesExtra.currentQuoteTotal')}</strong> {currencySymbol()}{formatPrice(changeOrderModal.total_price)}
+                <strong>{'Current Quote Total:'}</strong> {currencySymbol()}{formatPrice(changeOrderModal.total_price)}
               </p>
             </div>
 
             <div className="space-y-4">
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <label className="block text-sm font-medium">{t('quotesExtra.additionalServices')}</label>
+                  <label className="block text-sm font-medium">{'Additional Services'}</label>
                   <button
                     type="button"
                     onClick={addChangeOrderService}
                     className="text-amber-600 hover:text-amber-700 text-sm font-medium"
                   >
-                    {t('quotes.addService')}
+                    {'+ Add Service'}
                   </button>
                 </div>
                 {changeOrderData.services.map((service, idx) => (
@@ -1349,7 +1347,7 @@ export default function QuotesPage() {
                       type="text"
                       value={service.name}
                       onChange={(e) => updateChangeOrderService(idx, 'name', e.target.value)}
-                      placeholder={t('quotes.serviceName')}
+                      placeholder={'Service name'}
                       className="flex-1 border rounded px-3 py-2"
                     />
                     <div className="flex items-center">
@@ -1377,11 +1375,11 @@ export default function QuotesPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium mb-1">{t('quotes.reason')} / {t('quotes.noteForCustomer')}</label>
+                <label className="block text-sm font-medium mb-1">{'Reason'} / {'Note for Customer'}</label>
                 <textarea
                   value={changeOrderData.reason}
                   onChange={(e) => setChangeOrderData({ ...changeOrderData, reason: e.target.value })}
-                  placeholder={t('quotes.changeOrderPlaceholder')}
+                  placeholder={'Explain why these additional services are needed...'}
                   className="w-full border rounded px-3 py-2"
                   rows={3}
                 />
@@ -1390,14 +1388,14 @@ export default function QuotesPage() {
               {/* Summary */}
               <div className="bg-amber-50 border border-amber-200 p-3 rounded">
                 <div className="flex justify-between text-sm mb-1">
-                  <span>{t('quotes.additionalAmount')}</span>
+                  <span>{'Additional Amount:'}</span>
                   <span className="font-semibold">
                     {currencySymbol()}{formatPrice(changeOrderData.services
                       .reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0))}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm font-bold">
-                  <span>{t('quotes.newTotal')}:</span>
+                  <span>{'New Total'}:</span>
                   <span>
                     {currencySymbol()}{formatPrice((parseFloat(changeOrderModal.total_price) || 0) +
                       changeOrderData.services.reduce((sum, s) => sum + (parseFloat(s.amount) || 0), 0))}
@@ -1411,14 +1409,14 @@ export default function QuotesPage() {
                 onClick={() => setChangeOrderModal(null)}
                 className="px-4 py-2 border rounded text-gray-700 hover:bg-gray-50"
               >
-                {t('common.cancel')}
+                {'Cancel'}
               </button>
               <button
                 onClick={submitChangeOrder}
                 disabled={submittingChangeOrder}
                 className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50"
               >
-                {submittingChangeOrder ? t('common.sending') : t('dashboard.sendToClient')}
+                {submittingChangeOrder ? 'Sending...' : 'Send to Client'}
               </button>
             </div>
           </div>
