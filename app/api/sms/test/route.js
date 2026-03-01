@@ -1,87 +1,81 @@
-import { getAuthUser } from '@/lib/auth';
-import { sendSms, formatPhoneE164 } from '@/lib/sms';
+import { NextResponse } from 'next/server';
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_EMAILS = ['brett@aircraftdetailing.ai', 'admin@aircraftdetailing.ai', 'brett@shinyjets.com'];
-
-// GET - diagnostic check OR send test SMS with ?send=true&to=+16194384972
 export async function GET(request) {
-  const { searchParams } = new URL(request.url);
+  const url = new URL(request.url);
+  const to = url.searchParams.get('to') || '+16194384972';
+
   const sid = process.env.TWILIO_ACCOUNT_SID;
   const token = process.env.TWILIO_AUTH_TOKEN;
   const from = process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM_NUMBER;
 
-  const diag = {
-    hasSid: !!sid,
-    sidPrefix: sid?.slice(0, 6) || 'MISSING',
-    sidLength: sid?.length || 0,
-    hasToken: !!token,
-    tokenLength: token?.length || 0,
-    fromNumber: from || 'MISSING',
-    fromFormatted: formatPhoneE164(from),
-  };
+  console.log('=== SMS TEST ===');
+  console.log('SID:', sid);
+  console.log('FROM:', from);
+  console.log('TO:', to);
 
-  // Verify credentials by calling Twilio's account API (no SMS sent)
-  if (sid && token) {
-    try {
-      const res = await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}.json`, {
-        headers: { 'Authorization': `Basic ${Buffer.from(`${sid}:${token}`).toString('base64')}` },
-      });
-      const data = await res.json();
-      diag.twilioStatus = res.status;
-      diag.accountStatus = data.status || data.message || 'unknown';
-      if (data.friendly_name) diag.accountName = data.friendly_name;
-      if (!res.ok) diag.twilioError = data.message;
-    } catch (e) {
-      diag.twilioStatus = 'fetch_error';
-      diag.twilioError = e.message;
-    }
-  }
+  // Check credentials exist
+  if (!sid) return NextResponse.json({ error: 'TWILIO_ACCOUNT_SID missing' }, { status: 500 });
+  if (!token) return NextResponse.json({ error: 'TWILIO_AUTH_TOKEN missing' }, { status: 500 });
+  if (!from) return NextResponse.json({ error: 'TWILIO_PHONE_NUMBER missing' }, { status: 500 });
 
-  // If ?send=true&to=PHONE, actually send a test SMS (no auth for quick testing)
-  const sendFlag = searchParams.get('send');
-  const toParam = searchParams.get('to');
-  if (sendFlag === 'true' && toParam) {
-    const formatted = formatPhoneE164(toParam);
-    console.log(`=== SMS TEST SEND === to=${toParam} formatted=${formatted}`);
-    const result = await sendSms({
-      to: toParam,
-      body: 'Vector SMS Test - If you receive this, Twilio is working!',
+  // Format phone number
+  let phone = to.replace(/\D/g, '');
+  if (phone.length === 10) phone = '1' + phone;
+  if (!phone.startsWith('+')) phone = '+' + phone;
+
+  // Format from number
+  let fromFormatted = from.replace(/\D/g, '');
+  if (fromFormatted.length === 10) fromFormatted = '1' + fromFormatted;
+  if (!fromFormatted.startsWith('+')) fromFormatted = '+' + fromFormatted;
+
+  try {
+    // Direct Twilio REST API call - no SDK, no helpers
+    const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+    const basicAuth = Buffer.from(`${sid}:${token}`).toString('base64');
+
+    const response = await fetch(twilioUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${basicAuth}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        From: fromFormatted,
+        To: phone,
+        Body: 'Vector CRM Test - If you see this, SMS is working!',
+      }).toString(),
     });
-    return Response.json({ diagnostic: diag, sendResult: result, toFormatted: formatted });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      console.error('=== SMS ERROR ===', data.message, data.code);
+      return NextResponse.json({
+        error: data.message,
+        code: data.code,
+        status: response.status,
+        to: phone,
+        from: fromFormatted,
+        sidPrefix: sid?.slice(0, 6),
+      }, { status: 500 });
+    }
+
+    console.log('=== SMS SENT ===', data.sid);
+    return NextResponse.json({
+      success: true,
+      sid: data.sid,
+      to: phone,
+      from: fromFormatted,
+      twilioStatus: data.status,
+    });
+  } catch (error) {
+    console.error('=== SMS EXCEPTION ===', error.message);
+    return NextResponse.json({
+      error: error.message,
+      to: phone,
+      from: fromFormatted,
+    }, { status: 500 });
   }
-
-  return Response.json({ diagnostic: diag });
-}
-
-// POST - send test SMS (admin auth required)
-export async function POST(request) {
-  const user = await getAuthUser(request);
-  if (!user || !ADMIN_EMAILS.includes(user.email?.toLowerCase())) {
-    return Response.json({ error: 'Admin only' }, { status: 403 });
-  }
-
-  const { to } = await request.json();
-  if (!to) {
-    return Response.json({ error: 'Phone number required in "to" field' }, { status: 400 });
-  }
-
-  const diag = {
-    hasSid: !!process.env.TWILIO_ACCOUNT_SID,
-    sidPrefix: process.env.TWILIO_ACCOUNT_SID?.slice(0, 6) || 'MISSING',
-    hasToken: !!process.env.TWILIO_AUTH_TOKEN,
-    fromNumber: process.env.TWILIO_PHONE_NUMBER || process.env.TWILIO_FROM_NUMBER || 'MISSING',
-    toRaw: to,
-    toFormatted: formatPhoneE164(to),
-  };
-
-  console.log('SMS test diagnostic:', JSON.stringify(diag));
-
-  const result = await sendSms({
-    to,
-    body: 'Vector SMS test - if you receive this, Twilio is working correctly.',
-  });
-
-  return Response.json({ ...result, diagnostic: diag });
 }
