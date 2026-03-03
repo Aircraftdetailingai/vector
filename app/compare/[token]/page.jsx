@@ -124,7 +124,7 @@ export default function CompareQuotesPage() {
   }, [token, idsParam]);
 
   const sym = getCurrencySymbol(detailer?.currency || 'USD');
-  const companyName = detailer?.company || detailer?.name || 'Your Detailer';
+  const companyName = detailer?.company || detailer?.name || 'your detailing professional';
 
   const handlePayment = async (quoteId) => {
     setPaymentError('');

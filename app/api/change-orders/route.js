@@ -176,7 +176,7 @@ export async function POST(request) {
             </div>
 
             <p style="color: #666; font-size: 12px; text-align: center;">
-              Have questions? Reply to this email or contact your detailer directly.
+              Have questions? Reply to this email or contact your detailing professional directly.
             </p>
           </div>
         `,

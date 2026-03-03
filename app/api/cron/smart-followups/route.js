@@ -124,7 +124,7 @@ export async function GET(request) {
             aircraft: q.aircraft_model,
             quoteUrl,
             expiresIn: '5 days',
-            detailerName: detailer?.name || detailer?.company || 'Your detailer',
+            detailerName: detailer?.company || detailer?.name || 'your detailing professional',
             detailerPhone: detailer?.phone,
           });
           results.reminderEmails++;
@@ -203,7 +203,7 @@ export async function GET(request) {
             discountPercent: discountPct,
             originalPrice,
             discountedPrice,
-            detailerName: detailer?.name || detailer?.company || 'Your detailer',
+            detailerName: detailer?.company || detailer?.name || 'your detailing professional',
             detailerPhone: detailer?.phone,
           });
           results.discountEmails++;

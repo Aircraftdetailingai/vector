@@ -130,7 +130,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
       discount_percent: quote?.discountPercent || 0,
       addon_fees: quote?.addonFees || [],
       addon_total: quote?.addonsTotal || 0,
-      customer_id: effectiveCustomerId,
+      customer_id: custId || effectiveCustomerId,
       customer_phone: effectivePhone || null,
       customer_company: effectiveCompany || null,
       airport: quote?.airport || null,

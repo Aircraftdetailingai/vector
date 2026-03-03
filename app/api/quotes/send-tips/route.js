@@ -69,7 +69,7 @@ export async function POST(request) {
               <ul>
                 <li><strong>Remove personal items</strong> - Clear out any loose items from the cabin, including papers, headsets, and personal belongings.</li>
                 <li><strong>Empty trash</strong> - Dispose of any garbage or debris.</li>
-                <li><strong>Note problem areas</strong> - If there are specific stains, scuffs, or areas needing extra attention, make a note to share with your detailer.</li>
+                <li><strong>Note problem areas</strong> - If there are specific stains, scuffs, or areas needing extra attention, make a note to share with your detailing team.</li>
                 <li><strong>Ensure access</strong> - Make sure the hangar or location is accessible and the aircraft will be available for the scheduled time.</li>
               </ul>
 
@@ -88,11 +88,11 @@ export async function POST(request) {
                 <li>Regular maintenance details will keep your aircraft looking its best</li>
               </ul>
 
-              <p>If you have any questions, feel free to reach out to ${detailer?.company || 'your detailer'}.</p>
+              <p>If you have any questions, feel free to reach out to ${detailer?.company || 'your detailing professional'}.</p>
 
               <p>Looking forward to making your aircraft shine!</p>
 
-              <p><em>- ${detailer?.name || detailer?.company || 'your detailing professional'}</em></p>
+              <p><em>- ${detailer?.company || detailer?.name || 'Your Detailing Team'}</em></p>
             `
           })
         });

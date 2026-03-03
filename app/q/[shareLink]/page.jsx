@@ -371,16 +371,16 @@ export default function QuoteViewPage() {
               </div>
             )}
 
-            {/* Package discount */}
-            {quote.discount_percent > 0 && (
+            {/* Package discount - hide when minimum fee applies (show clean total only) */}
+            {!quote.minimum_fee_applied && quote.discount_percent > 0 && (
               <div className="flex justify-between text-sm text-green-600 pt-2">
                 <span>Package Discount ({quote.discount_percent}%)</span>
                 <span>Included</span>
               </div>
             )}
 
-            {/* Add-on Fees */}
-            {quote.addon_fees && quote.addon_fees.length > 0 && (
+            {/* Add-on Fees - hide when minimum fee applies (show clean total only) */}
+            {!quote.minimum_fee_applied && quote.addon_fees && quote.addon_fees.length > 0 && (
               <div className="pt-3 border-t space-y-2">
                 {quote.addon_fees.map((fee, i) => (
                   <div key={i} className="flex justify-between text-sm">
