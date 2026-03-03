@@ -51,7 +51,7 @@ export async function POST(request) {
       description = 'First month free!';
       break;
     case 'percent_off':
-      description = `${promo.discount_value}% off`;
+      description = `${promo.discount_value}% off for 12 months!`;
       break;
     case 'flat_off':
       description = `$${promo.discount_value} off`;

@@ -122,8 +122,9 @@ export async function POST(request) {
           break;
         case 'percent_off':
           couponParams.percent_off = parseFloat(promo.discount_value);
-          couponParams.duration = 'once';
-          couponParams.name = `${normalizedCode} - ${promo.discount_value}% Off`;
+          couponParams.duration = 'repeating';
+          couponParams.duration_in_months = 12;
+          couponParams.name = `${normalizedCode} - ${promo.discount_value}% Off for 12 months`;
           break;
         case 'flat_off':
           couponParams.amount_off = Math.round(parseFloat(promo.discount_value) * 100); // cents

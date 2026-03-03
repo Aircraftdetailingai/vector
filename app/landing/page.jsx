@@ -211,9 +211,17 @@ export default function LandingPage() {
           <h2 className="text-3xl font-bold text-white text-center mb-4">
             Simple, Transparent Pricing
           </h2>
-          <p className="text-gray-400 text-center mb-8 max-w-2xl mx-auto">
+          <p className="text-gray-400 text-center mb-6 max-w-2xl mx-auto">
             Start free and upgrade as your business grows. No hidden fees, no long-term contracts.
           </p>
+
+          {/* Promo Code Callout */}
+          <div className="flex justify-center mb-8">
+            <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-full px-6 py-2.5">
+              <span className="text-green-400 text-lg">&#127881;</span>
+              <span className="text-green-400 text-sm font-semibold">Use code SHINYJETS for 25% off your first year!</span>
+            </div>
+          </div>
 
           {/* Billing Toggle */}
           <div className="flex justify-center mb-12">
