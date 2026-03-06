@@ -382,12 +382,6 @@ export default function LandingPage() {
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">{P('pricingTitle')}</h2>
             <p className="text-gray-400 max-w-2xl mx-auto mb-6">{P('pricingSubtitle')}</p>
 
-            {/* Promo Code Callout */}
-            <div className="inline-flex items-center gap-2 bg-green-500/10 border border-green-500/30 rounded-full px-5 py-2 mb-8">
-              <span className="text-green-400 text-lg">{'\uD83C\uDF89'}</span>
-              <span className="text-green-400 text-sm font-semibold">{P('promoCode')}</span>
-            </div>
-
             {/* Billing Toggle + Language Selector */}
             <div className="flex justify-center items-center gap-4 flex-wrap">
               <div className="inline-flex items-center gap-3 bg-white/[0.05] border border-white/10 rounded-full p-1.5">
