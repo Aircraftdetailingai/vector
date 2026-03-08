@@ -115,23 +115,8 @@ export async function POST(request) {
         }
       }
 
-      // Send SMS for business plan
+      // SMS temporarily disabled pending 10DLC approval
       let smsSent = false;
-      if (hasPremiumAccess(detailer?.plan) && detailer?.sms_enabled !== false && sq.client_phone) {
-        try {
-          const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai';
-          const result = await sendQuoteSms({
-            clientPhone: sq.client_phone,
-            clientName: sq.client_name,
-            aircraftDisplay: quote.aircraft_model || quote.aircraft_type || 'aircraft',
-            quoteLink: `${APP_URL}/q/${quote.share_link}`,
-            companyName: detailer?.company || detailer?.name || '',
-          });
-          smsSent = result.success;
-        } catch (e) {
-          console.error('Scheduled quote SMS error:', e.message);
-        }
-      }
 
       // Mark scheduled quote as sent
       await supabase.from('scheduled_quotes').update({

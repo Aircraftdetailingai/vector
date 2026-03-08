@@ -461,7 +461,7 @@ export default function OnboardingPage() {
                     placeholder="(555) 123-4567"
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                   />
-                  <p className="text-xs text-gray-400 mt-1">For SMS job notifications</p>
+                  <p className="text-xs text-gray-400 mt-1">For account recovery and notifications</p>
                 </div>
               </div>
 

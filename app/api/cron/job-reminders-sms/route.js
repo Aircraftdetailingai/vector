@@ -43,26 +43,8 @@ export async function POST(request) {
       }).catch(console.error);
     }
 
-    // SMS only for eligible plans
-    if (!hasPremiumAccess(detailer?.plan)) { skipped++; continue; }
-    if (detailer?.sms_enabled === false) { skipped++; continue; }
-    if (!quote.client_phone) { skipped++; continue; }
-
-    const settings = detailer.notification_settings || {};
-    if (settings.jobReminderSms === false) { skipped++; continue; }
-
-    try {
-      const result = await sendJobReminderSms({
-        clientPhone: quote.client_phone,
-        clientName: quote.client_name || '',
-        aircraftDisplay: quote.aircraft_model || quote.aircraft_type || 'aircraft',
-        companyName: detailer.company || detailer.name || '',
-        scheduledTime: quote.scheduled_time || '',
-      });
-      if (result.success) sent++;
-    } catch (e) {
-      console.error(`Job reminder SMS failed for quote ${quote.id}:`, e);
-    }
+    // SMS temporarily disabled pending 10DLC approval
+    skipped++;
   }
 
   return new Response(JSON.stringify({ sent, skipped, total: (quotes || []).length }), { status: 200 });

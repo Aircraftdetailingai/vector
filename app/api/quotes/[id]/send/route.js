@@ -253,64 +253,9 @@ export async function POST(request, { params }) {
     console.log('No clientEmail provided, skipping email');
   }
 
-  // Send SMS - log all gate checks for debugging
-  if (!detailer) {
-    console.error('=== SMS BLOCKED: detailer is null (fetch failed). SMS cannot proceed. ===');
-  }
-  const isAdminEmail = ADMIN_EMAILS.includes(detailer?.email?.toLowerCase());
-  const smsChecks = {
-    detailerExists: !!detailer,
-    hasPremium: hasPremiumAccess(detailer?.plan, detailer?.is_admin) || isAdminEmail,
-    smsEnabled: detailer?.sms_enabled !== false,
-    hasPhone: !!clientPhone,
-    clientPhone: clientPhone || 'NONE',
-    plan: detailer?.plan || 'UNKNOWN',
-    isAdmin: detailer?.is_admin,
-    isAdminEmail,
-    smsEnabledRaw: detailer?.sms_enabled,
-    hasTwilioSid: !!process.env.TWILIO_ACCOUNT_SID,
-    hasTwilioToken: !!process.env.TWILIO_AUTH_TOKEN,
-    twilioFrom: process.env.TWILIO_PHONE_NUMBER || 'MISSING',
-  };
-  console.log('=== SMS GATE CHECKS ===', JSON.stringify(smsChecks));
-
-  if (smsChecks.hasPremium && smsChecks.smsEnabled && smsChecks.hasPhone) {
-    try {
-      console.log(`SMS: Sending to ${clientPhone} for quote ${id}`);
-      const smsResult = await sendQuoteSms({
-        clientPhone,
-        clientName,
-        aircraftDisplay: updated?.aircraft_model || updated?.aircraft_type || 'aircraft',
-        quoteLink,
-        companyName: detailer.company || detailer.name || '',
-      });
-      smsSent = smsResult.success;
-      if (!smsResult.success) smsError = smsResult.error;
-      console.log('SMS result:', JSON.stringify(smsResult));
-
-      if (smsSent) {
-        // Schedule follow-ups
-        const followups = [];
-        const threeDay = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString();
-        followups.push({ quote_id: id, client_phone: clientPhone, followup_type: '3day', scheduled_for: threeDay });
-
-        const settings = detailer.notification_settings || {};
-        if (!settings.disable7day) {
-          const sevenDay = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
-          followups.push({ quote_id: id, client_phone: clientPhone, followup_type: '7day', scheduled_for: sevenDay });
-        }
-
-        await supabase.from('scheduled_followups').insert(followups);
-      }
-    } catch (e) {
-      console.error('=== SMS EXCEPTION in quote send ===', e.message || e);
-      smsError = e.message || 'SMS send exception';
-    }
-  } else {
-    const reason = !smsChecks.hasPremium ? 'not premium' : !smsChecks.smsEnabled ? 'sms disabled' : 'no phone number';
-    console.log(`=== SMS SKIPPED === reason: ${reason}`, JSON.stringify(smsChecks));
-    smsError = reason;
-  }
+  // SMS temporarily disabled pending 10DLC approval
+  console.log('=== SMS DISABLED === pending 10DLC approval, skipping SMS send');
+  smsError = 'SMS temporarily disabled';
 
   // Log activity
   if (clientEmail) {

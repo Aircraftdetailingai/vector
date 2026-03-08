@@ -58,35 +58,7 @@ export async function POST(request) {
         );
       }
 
-      // SMS to detailer (pro+)
-      if ((plan === 'pro' || hasPremiumAccess(plan)) && settings.smsQuoteExpiring && detailer.phone) {
-        try {
-          const statusText = quote.status === 'viewed' ? 'viewed' : 'not viewed';
-          await sendExpirationAlertSms({
-            detailerPhone: detailer.phone,
-            clientName: quote.client_name || '',
-            aircraft: quote.aircraft_type || '',
-            statusText,
-          });
-        } catch (err) {
-          // ignore sms errors
-        }
-      }
-
-      // SMS to client (business+)
-      if (hasPremiumAccess(plan) && detailer.sms_enabled !== false && settings.smsClientExpiration && quote.client_phone) {
-        try {
-          const link = `https://app.vectorav.ai/q/${quote.share_link}`;
-          await sendExpirationWarningSms({
-            clientPhone: quote.client_phone,
-            clientName: quote.client_name || '',
-            aircraft: quote.aircraft_type || '',
-            link,
-          });
-        } catch (err) {
-          // ignore sms errors
-        }
-      }
+      // SMS temporarily disabled pending 10DLC approval
 
       // Mark warning as sent
       await supabase.from('quotes').update({ expiration_warning_sent: nowISO }).eq('id', quote.id);

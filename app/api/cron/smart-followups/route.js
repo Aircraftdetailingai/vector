@@ -116,8 +116,8 @@ export async function GET(request) {
         const contactPref = await getContactPreference(supabase, q.detailer_id, q.client_email);
         const quoteUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.vectorav.ai'}/q/${q.share_link}`;
 
-        // Send reminder email (unless customer prefers SMS only)
-        if (contactPref !== 'sms' && q.client_email) {
+        // Send reminder email (SMS disabled pending 10DLC, always send email)
+        if (q.client_email) {
           await sendFollowUpReminderEmail({
             to: q.client_email,
             clientName: q.client_name,
@@ -130,16 +130,7 @@ export async function GET(request) {
           results.reminderEmails++;
         }
 
-        // Send SMS if preferred and enabled
-        if ((contactPref === 'sms' || contactPref === 'both') && q.client_phone && detailer?.sms_enabled !== false) {
-          try {
-            await sendSms({
-              to: q.client_phone,
-              body: `Hi ${q.client_name || 'there'}, just a reminder - your quote for the ${q.aircraft_model || 'aircraft detail'} expires in 5 days. View it here: ${quoteUrl} - ${detailer?.name || ''}`,
-            });
-            results.sms++;
-          } catch (e) { /* SMS failures non-blocking */ }
-        }
+        // SMS temporarily disabled pending 10DLC approval
 
         // Notify detailer
         await createNotification({
@@ -193,8 +184,8 @@ export async function GET(request) {
         const contactPref = await getContactPreference(supabase, q.detailer_id, q.client_email);
         const quoteUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.vectorav.ai'}/q/${q.share_link}`;
 
-        // Send discount email
-        if (contactPref !== 'sms' && q.client_email) {
+        // Send discount email (SMS disabled pending 10DLC, always send email)
+        if (q.client_email) {
           await sendExpiryDiscountEmail({
             to: q.client_email,
             clientName: q.client_name,
@@ -209,16 +200,7 @@ export async function GET(request) {
           results.discountEmails++;
         }
 
-        // Send discount SMS
-        if ((contactPref === 'sms' || contactPref === 'both') && q.client_phone && detailer?.sms_enabled !== false) {
-          try {
-            await sendSms({
-              to: q.client_phone,
-              body: `Hi ${q.client_name || 'there'}, your quote expires soon! Book today and save ${discountPct}% on your ${q.aircraft_model || 'aircraft'} detail. View: ${quoteUrl} - ${detailer?.name || ''}`,
-            });
-            results.sms++;
-          } catch (e) { /* non-blocking */ }
-        }
+        // SMS temporarily disabled pending 10DLC approval
 
         // Notify detailer about discount sent
         await createNotification({

@@ -7,26 +7,20 @@ function getSupabase() {
 }
 
 export async function GET(request) {
-  const user = await getAuthUser(request);
-  if (!user) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 });
-  }
-
-  const supabase = getSupabase();
-  const { data: detailer } = await supabase
-    .from('detailers')
-    .select('sms_enabled, twilio_phone, plan')
-    .eq('id', user.id)
-    .single();
-
+  // SMS temporarily disabled pending 10DLC approval
   return Response.json({
-    sms_enabled: detailer?.sms_enabled || false,
-    twilio_phone: detailer?.twilio_phone || null,
-    plan: detailer?.plan || 'free',
+    sms_enabled: false,
+    sms_disabled_reason: 'SMS is temporarily disabled pending 10DLC approval.',
+    twilio_phone: null,
+    plan: 'free',
   });
 }
 
 export async function POST(request) {
+  // SMS temporarily disabled pending 10DLC approval
+  return Response.json({ error: 'SMS is temporarily disabled. Will be re-enabled after 10DLC approval.' }, { status: 503 });
+
+  /* eslint-disable no-unreachable */
   const user = await getAuthUser(request);
   if (!user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

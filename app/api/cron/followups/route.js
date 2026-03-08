@@ -52,43 +52,9 @@ export async function POST(request) {
         await supabase.from('scheduled_followups').update({ cancelled_at: nowISO, cancel_reason: quote.status }).eq('id', followup.id);
         continue;
       }
-      // Cancel if detailer plan is not business or SMS disabled
-      if (!hasPremiumAccess(detailer.plan) || detailer.sms_enabled === false) {
-        await supabase.from('scheduled_followups').update({ cancelled_at: nowISO, cancel_reason: 'downgraded' }).eq('id', followup.id);
-        continue;
-      }
-      // Determine message
-      let body = '';
-      const clientName = quote.client_name || '';
-      const aircraft = quote.aircraft_type || '';
-      const link = `https://app.aircraftdetailing.ai/q/${quote.share_link}`;
-      if (followup.followup_type === '3day') {
-        body = `Hi ${clientName}, checking in on the quote for your ${aircraft}. ${link} - ${detailer.name || ''}`;
-      } else if (followup.followup_type === '7day') {
-        body = `Hi ${clientName}, following up one more time on the ${aircraft} quote. ${link} - ${detailer.name || ''}`;
-      } else {
-        await supabase.from('scheduled_followups').update({ cancelled_at: nowISO, cancel_reason: 'unsupported' }).eq('id', followup.id);
-        continue;
-      }
-      // Send SMS
-      try {
-        const smsArgs = {
-          clientPhone: followup.client_phone,
-          clientName,
-          aircraft,
-          link,
-          detailerName: detailer.name || '',
-        };
-        if (followup.followup_type === '3day') {
-          await sendFollowup3DaySms(smsArgs);
-        } else {
-          await sendFollowup7DaySms(smsArgs);
-        }
-      } catch (err) {
-        // ignore SMS errors
-      }
-      await supabase.from('scheduled_followups').update({ sent_at: nowISO }).eq('id', followup.id);
-      processed++;
+      // SMS temporarily disabled pending 10DLC approval
+      await supabase.from('scheduled_followups').update({ cancelled_at: nowISO, cancel_reason: 'sms_disabled_10dlc' }).eq('id', followup.id);
+      skipped++;
     } catch (err) {
       // continue on error
     }

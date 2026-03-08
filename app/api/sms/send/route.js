@@ -10,6 +10,10 @@ function getSupabase() {
 }
 
 export async function POST(request) {
+  // SMS temporarily disabled pending 10DLC approval
+  return Response.json({ error: 'SMS is temporarily disabled. Will be re-enabled after 10DLC approval.' }, { status: 503 });
+
+  /* eslint-disable no-unreachable */
   const user = await getAuthUser(request);
   if (!user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });

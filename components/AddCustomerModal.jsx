@@ -125,7 +125,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, tags = []
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Contact Preference</label>
             <div className="flex gap-2">
-              {['email', 'sms', 'both'].map((pref) => (
+              {['email'].map((pref) => (
                 <button
                   key={pref}
                   type="button"
@@ -136,7 +136,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, tags = []
                       : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
                   }`}
                 >
-                  {pref === 'email' ? 'Email' : pref === 'sms' ? 'SMS' : 'Both'}
+                  Email
                 </button>
               ))}
             </div>

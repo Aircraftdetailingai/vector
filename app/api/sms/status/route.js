@@ -4,6 +4,10 @@ import twilio from 'twilio';
 export const dynamic = 'force-dynamic';
 
 export async function GET(request) {
+  // SMS temporarily disabled pending 10DLC approval
+  return NextResponse.json({ error: 'SMS is temporarily disabled. Will be re-enabled after 10DLC approval.' }, { status: 503 });
+
+  /* eslint-disable no-unreachable */
   const url = new URL(request.url);
   const sid = url.searchParams.get('sid');
 

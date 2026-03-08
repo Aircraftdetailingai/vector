@@ -6,10 +6,10 @@ const FAQ_ITEMS = [
   {
     category: 'Getting Started',
     questions: [
-      { q: 'How do I create my first quote?', a: 'From the dashboard, click "New Quote". Select a manufacturer and aircraft model, choose your services or a package, then click "Send Quote" to deliver it via email, SMS, or shareable link.' },
+      { q: 'How do I create my first quote?', a: 'From the dashboard, click "New Quote". Select a manufacturer and aircraft model, choose your services or a package, then click "Send Quote" to deliver it via email or shareable link.' },
       { q: 'How do I set up my services and rates?', a: 'Go to Settings > Services to add your service menu. Each service links to an aircraft hour column (e.g., Exterior Wash uses ext_wash_hours). Set your hourly rate, and Vector calculates pricing automatically based on aircraft size.' },
       { q: 'How do I connect Stripe for payments?', a: 'Go to Settings and click "Connect Stripe" in the Payments section. You\'ll be redirected to Stripe to create or link your account. Once connected, customers can pay directly from your quotes.' },
-      { q: 'What are the different subscription plans?', a: 'Free: 3 quotes/month, 5% fee. Pro ($79/mo): Unlimited quotes, 2% fee, SMS alerts. Business ($149/mo): SMS to clients, team management, 1% fee. Enterprise: Custom pricing, 0% fee.' },
+      { q: 'What are the different subscription plans?', a: 'Free: 3 quotes/month, 5% fee. Pro ($79/mo): Unlimited quotes, 2% fee, priority support. Business ($149/mo): Team management, 1% fee. Enterprise: Custom pricing, 0% fee.' },
     ],
   },
   {

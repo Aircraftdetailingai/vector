@@ -86,33 +86,7 @@ export async function POST(request) {
           // ignore email errors
         }
       }
-      // Send SMS if required
-      if (sendSms && detailer.phone) {
-        try {
-          const accountSid = process.env.TWILIO_ACCOUNT_SID;
-          const authToken = process.env.TWILIO_AUTH_TOKEN;
-          const fromNumber = process.env.TWILIO_FROM_NUMBER;
-          if (accountSid && authToken && fromNumber) {
-            const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-            const basicAuth = Buffer.from(`${accountSid}:${authToken}`).toString('base64');
-            const smsBody = "How's Vector working for you?";
-            await fetch(twilioUrl, {
-              method: 'POST',
-              headers: {
-                'Authorization': `Basic ${basicAuth}`,
-                'Content-Type': 'application/x-www-form-urlencoded'
-              },
-              body: new URLSearchParams({
-                From: fromNumber,
-                To: detailer.phone,
-                Body: smsBody
-              }).toString()
-            });
-          }
-        } catch (err) {
-          // ignore SMS errors
-        }
-      }
+      // SMS temporarily disabled pending 10DLC approval
       await supabase.from('drip_messages').update({ sent_at: now }).eq('id', message.id);
       processed++;
     } catch (err) {
