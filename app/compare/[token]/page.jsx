@@ -123,7 +123,7 @@ export default function CompareQuotesPage() {
     fetchData();
   }, [token, idsParam]);
 
-  const sym = getCurrencySymbol(detailer?.currency || 'USD');
+  const sym = getCurrencySymbol(detailer?.preferred_currency || 'USD');
   const companyName = detailer?.company || detailer?.name || 'your detailing professional';
 
   const handlePayment = async (quoteId) => {

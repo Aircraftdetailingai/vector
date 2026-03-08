@@ -49,11 +49,11 @@ export async function GET(request) {
 
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('currency')
+      .select('preferred_currency')
       .eq('id', user.id)
       .single();
 
-    const currentCurrency = detailer?.currency || 'USD';
+    const currentCurrency = detailer?.preferred_currency || 'USD';
     const currencyInfo = CURRENCIES.find(c => c.code === currentCurrency) || CURRENCIES[0];
 
     return Response.json({
@@ -90,7 +90,7 @@ export async function POST(request) {
 
     const { error } = await supabase
       .from('detailers')
-      .update({ currency })
+      .update({ preferred_currency: currency })
       .eq('id', user.id);
 
     if (error) {

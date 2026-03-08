@@ -23,7 +23,7 @@ export async function GET(request) {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('detailers')
-    .select('id, email, name, phone, company, plan, status, rates, notification_settings, price_reminder_months, quote_display_preference, efficiency_factor, default_labor_rate, sms_enabled, currency')
+    .select('id, email, name, phone, company, plan, status, rates, notification_settings, price_reminder_months, quote_display_preference, efficiency_factor, default_labor_rate, sms_enabled, preferred_currency')
     .eq('id', user.id)
     .single();
 
@@ -50,7 +50,7 @@ export async function GET(request) {
       efficiency_factor: data.efficiency_factor || 1.0,
       default_labor_rate: data.default_labor_rate || 25,
       sms_enabled: isAdmin ? true : (data.sms_enabled !== false),
-      currency: data.currency || 'usd',
+      currency: data.preferred_currency || 'USD',
     },
   });
 }

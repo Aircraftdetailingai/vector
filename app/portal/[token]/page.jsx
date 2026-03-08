@@ -104,7 +104,7 @@ export default function PortalPage() {
   const isExpired = quote && !isPaid && new Date() > new Date(quote.valid_until);
   const canPay = quote && !isPaid && !isExpired && stripeConnected && ['sent', 'viewed'].includes(quote.status);
   const companyName = detailer?.company || detailer?.name || 'your detailing professional';
-  const sym = getCurrencySymbol(detailer?.currency || 'USD');
+  const sym = getCurrencySymbol(detailer?.preferred_currency || 'USD');
   const comparableQuotes = history.filter(h => ['sent', 'viewed'].includes(h.status));
   const hasComparableQuotes = comparableQuotes.length > 0 && !isPaid;
 

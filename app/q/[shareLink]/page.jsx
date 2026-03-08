@@ -50,7 +50,7 @@ export default function QuoteViewPage() {
     }
   }, [params.shareLink]);
 
-  const sym = getCurrencySymbol(detailer?.currency || 'USD');
+  const sym = getCurrencySymbol(detailer?.preferred_currency || 'USD');
   const isExpired = quote && new Date() > new Date(quote.valid_until);
   const isPaid = quote && (quote.status === 'paid' || quote.status === 'approved');
 
