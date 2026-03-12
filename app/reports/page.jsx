@@ -367,7 +367,7 @@ export default function ReportsPage() {
                           row.status === 'declined' ? 'bg-red-100 text-red-700' :
                           'bg-gray-100 text-gray-600'
                         }`}>
-                          {t('status.' + row.status)}
+                          {row.status.replace(/_/g, ' ')}
                         </span>
                       </td>
                       <td className="py-2 text-right font-medium text-gray-900">{formatCurrency(row.amount)}</td>

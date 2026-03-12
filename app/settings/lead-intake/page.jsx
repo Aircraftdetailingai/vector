@@ -41,7 +41,7 @@ export default function LeadIntakeSettingsPage() {
   const [draggedIndex, setDraggedIndex] = useState(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('vector_user');
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
@@ -239,7 +239,8 @@ export default function LeadIntakeSettingsPage() {
 
   const getWidgetCode = () => {
     const userId = user?.id || 'YOUR_DETAILER_ID';
-    return `<script src="https://app.aircraftdetailing.ai/widget.js" data-detailer-id="${userId}"></script>`;
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://app.aircraftdetailing.ai';
+    return `<script src="${origin}/widget.js" data-detailer-id="${userId}"></script>`;
   };
 
   const copyWidgetCode = () => {

@@ -51,7 +51,7 @@ const FAQ_ITEMS = [
 ];
 
 const GUIDES = [
-  { title: 'Create Your First Quote', description: 'Learn how to build and send a professional quote in under 60 seconds.', icon: '📝', link: '#' },
+  { title: 'Create Your First Quote', description: 'Learn how to build and send a professional quote in under 60 seconds.', icon: '📝', link: '/quotes/new' },
   { title: 'Set Up Services & Packages', description: 'Configure your service menu, hourly rates, and bundled packages.', icon: '⚙️', link: '/settings/services' },
   { title: 'Connect Stripe Payments', description: 'Link your Stripe account to accept online payments from quotes.', icon: '💳', link: '/settings' },
   { title: 'Add Your Team', description: 'Invite team members, assign jobs, and track hours.', icon: '👥', link: '/team/add' },
@@ -120,15 +120,16 @@ export default function HelpPage() {
     setSending(true);
     try {
       const token = localStorage.getItem('vector_token');
-      await fetch('/api/support', {
+      const res = await fetch('/api/support', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify(contactForm),
       });
+      if (!res.ok) throw new Error('Failed to send');
       setSent(true);
       setContactForm({ subject: '', message: '' });
     } catch {
-      setSent(true);
+      setSent(false);
     } finally {
       setSending(false);
     }

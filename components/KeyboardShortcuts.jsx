@@ -89,7 +89,7 @@ export default function KeyboardShortcuts() {
       // Cmd/Ctrl + N -> New Quote
       if (meta && e.key === 'n') {
         e.preventDefault();
-        window.location.href = '/dashboard';
+        window.location.href = '/quotes/new';
         return;
       }
 

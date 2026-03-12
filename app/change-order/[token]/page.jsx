@@ -1,11 +1,10 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { useParams, useSearchParams, useRouter } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 
 export default function ChangeOrderPage() {
   const params = useParams();
   const searchParams = useSearchParams();
-  const router = useRouter();
   const token = params.token;
   const actionParam = searchParams.get('action');
 

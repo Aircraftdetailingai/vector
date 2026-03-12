@@ -137,7 +137,7 @@ export default function Page() {
           <div className="flex-grow border-t border-gray-300"></div>
         </div>
         <a
-          href="/"
+          href="/#pricing"
           className="block w-full text-center bg-[#1e3a5f] text-white py-2 rounded-md font-medium hover:opacity-90"
         >
           See Plans & Pricing

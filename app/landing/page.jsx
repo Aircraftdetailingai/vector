@@ -1,6 +1,7 @@
 "use client";
 import { useState } from 'react';
-import { formatPriceWhole } from '@/lib/formatPrice';
+
+
 
 const TIERS = [
   {
@@ -124,7 +125,7 @@ export default function LandingPage() {
         </p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <a
-            href="/"
+            href="/login"
             className="px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-lg text-lg hover:opacity-90 shadow-lg shadow-amber-500/30"
           >
             Start Free &mdash; No Credit Card
@@ -283,7 +284,7 @@ export default function LandingPage() {
                   ))}
                 </ul>
                 <a
-                  href="/"
+                  href="/login"
                   className={`w-full py-3 rounded-lg font-semibold text-center block ${
                     tier.highlight
                       ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:opacity-90'
@@ -314,7 +315,7 @@ export default function LandingPage() {
             Start free &mdash; no credit card required.
           </p>
           <a
-            href="/"
+            href="/login"
             className="inline-block px-8 py-4 bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold rounded-lg text-lg hover:opacity-90 shadow-lg shadow-amber-500/30"
           >
             Get Started Free

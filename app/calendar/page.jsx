@@ -305,7 +305,7 @@ export default function CalendarPage() {
               {Object.entries(statusColors).map(([status, color]) => (
                 <div key={status} className="flex items-center text-xs">
                   <div className={`w-3 h-3 rounded mr-2 ${color}`}></div>
-                  <span className="capitalize">{t('status.' + status.replace(/_([a-z])/g, (_, c) => c.toUpperCase()))}</span>
+                  <span className="capitalize">{status.replace(/_/g, ' ')}</span>
                 </div>
               ))}
             </div>

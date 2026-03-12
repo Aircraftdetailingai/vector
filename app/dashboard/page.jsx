@@ -501,7 +501,7 @@ function DashboardContent() {
                 {recentQuotes.slice(0, 5).map((q) => {
                   const sc = { sent: 'text-blue-600', viewed: 'text-purple-600', accepted: 'text-green-600', completed: 'text-emerald-600', paid: 'text-green-600', declined: 'text-red-500', expired: 'text-gray-400' };
                   return (
-                    <a key={q.id} href={`/quotes/${q.id}`} className="flex items-center justify-between py-1.5 hover:bg-gray-50 rounded px-1 -mx-1 transition-colors">
+                    <a key={q.id} href={`/quotes`} className="flex items-center justify-between py-1.5 hover:bg-gray-50 rounded px-1 -mx-1 transition-colors">
                       <div className="min-w-0 flex-1">
                         <p className="text-sm font-medium text-gray-900 truncate">{q.aircraft_name || q.aircraft_model || 'Unknown Aircraft'}</p>
                         <p className="text-xs text-gray-400 truncate">{q.customer_name || q.customer_email || ''}</p>

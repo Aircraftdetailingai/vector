@@ -1328,6 +1328,11 @@ function SettingsContent() {
             <div className="font-medium text-sm">{'AI Lead Intake'}</div>
             <div className="text-xs text-gray-500">{'Custom questions'}</div>
           </a>
+          <a href="/settings/integrations" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
+            <div className="text-2xl mb-1">&#128268;</div>
+            <div className="font-medium text-sm">{'Integrations'}</div>
+            <div className="text-xs text-gray-500">{'QuickBooks & more'}</div>
+          </a>
           <a href="/admin/aircraft" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
             <div className="text-2xl mb-1">&#9992;</div>
             <div className="font-medium text-sm">{'Aircraft DB'}</div>

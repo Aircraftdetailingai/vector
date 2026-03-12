@@ -131,7 +131,10 @@ function IntegrationsContent() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-xl font-bold text-white">Integrations</h2>
+      <div className="flex items-center gap-3">
+        <a href="/settings" className="text-2xl text-white hover:text-amber-400">&#8592;</a>
+        <h2 className="text-xl font-bold text-white">Integrations</h2>
+      </div>
 
       {/* QuickBooks Card */}
       <div className="bg-white p-5 rounded-lg shadow">

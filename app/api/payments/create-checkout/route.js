@@ -64,10 +64,7 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: 'Detailer has not connected Stripe', code: 'stripe_not_connected' }), { status: 400 });
     }
 
-    // Use the known working test account (temporary fix for DB sync issue)
-    const stripeAccountId = detailer.stripe_account_id === 'acct_1Sul7NCqHiG6qwTk'
-      ? 'acct_1SulfbE9Qo7bJV5q'  // Use working custom account
-      : detailer.stripe_account_id;
+    const stripeAccountId = detailer.stripe_account_id;
 
     // Calculate application fee based on plan
     const baseAmount = Math.round((quote.total_price || 0) * 100); // Convert to cents
@@ -83,8 +80,7 @@ export async function POST(request) {
     // The application fee stays the same — it just comes from the customer instead of the detailer
     const totalAmount = passFee ? baseAmount + applicationFee : baseAmount;
 
-    // Hardcode URL to avoid env var issues
-    const appUrl = 'https://app.aircraftdetailing.ai';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.aircraftdetailing.ai';
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({

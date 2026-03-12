@@ -218,7 +218,7 @@ export default function VendorLoginPage() {
 
         {/* Back link */}
         <div className="text-center mt-6">
-          <a href="/login" className="text-blue-200 hover:text-white text-sm">
+          <a href="/" className="text-blue-200 hover:text-white text-sm">
             &larr; {'Back'} to main site
           </a>
         </div>

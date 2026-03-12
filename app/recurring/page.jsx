@@ -257,7 +257,7 @@ export default function RecurringPage() {
                     {item.status}
                   </span>
                   <span className="text-lg font-bold text-gray-900">
-                    ${formatPrice(item.total_price)}
+                    {currencySymbol()}{formatPrice(item.total_price)}
                   </span>
                 </div>
               </div>
@@ -316,7 +316,7 @@ export default function RecurringPage() {
                   {item.customer_phone || item.client_phone ? ` | ${item.customer_phone || item.client_phone}` : ''}
                 </span>
                 <a
-                  href={`/quotes/${item.id}`}
+                  href={`/quotes`}
                   className="text-amber-600 hover:underline"
                 >
                   {'View Quote'}

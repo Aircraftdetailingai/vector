@@ -153,7 +153,7 @@ export default function ScheduledQuotesPage() {
           <h1 className="text-2xl font-bold text-white">{'Scheduled Quotes'}</h1>
         </div>
         <a
-          href="/dashboard"
+          href="/quotes/new"
           className="px-4 py-2 rounded-lg text-sm font-semibold bg-gradient-to-r from-amber-500 to-amber-600 text-white hover:opacity-90 shadow"
         >
           {'New Quote'}

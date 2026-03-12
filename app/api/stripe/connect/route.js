@@ -148,8 +148,7 @@ export async function POST(request) {
       }
     }
 
-    // Create account link - hardcode URL to avoid env var issues
-    const appUrl = 'https://app.aircraftdetailing.ai';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.aircraftdetailing.ai';
 
     console.log('Creating account link for:', accountId);
 

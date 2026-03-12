@@ -786,7 +786,7 @@ export default function CrewDashboard() {
           <div className="space-y-3">
             <h2 className="text-white font-semibold text-lg mb-3">{'Equipment'}</h2>
             {equipment.length === 0 && (
-              <div className="text-white/50 text-center py-8">{'No products yet'}</div>
+              <div className="text-white/50 text-center py-8">{'No equipment yet'}</div>
             )}
             {equipment.map(e => (
               <div key={e.id} className="bg-white/10 backdrop-blur rounded-xl p-4">

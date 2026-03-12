@@ -1,6 +1,5 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { EquipmentTeaser } from './EquipmentROI';
 import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 
 export default function UpgradeModal({ isOpen, onClose, detailerId, existingServices = [] }) {
@@ -204,11 +203,6 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
                         That's ${formatPrice(analysis.savings.netMonthlySavings * 12)}{'/year'}!
                       </p>
                     </div>
-                    {/* Equipment ROI Teaser */}
-                    <EquipmentTeaser
-                      monthlySavings={analysis.savings.netMonthlySavings}
-                      existingServices={existingServices}
-                    />
                   </>
                 ) : (
                   <div className="bg-gray-50 rounded-lg p-3 text-center">

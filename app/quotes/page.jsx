@@ -795,7 +795,7 @@ export default function QuotesPage() {
             </div>
           </ExportGate>
           <a
-            href="/dashboard"
+            href="/quotes/new"
             className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium hover:opacity-90"
           >
             New Quote
