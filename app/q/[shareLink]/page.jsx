@@ -128,18 +128,28 @@ export default function QuoteViewPage() {
     });
   };
 
-  const formatServices = (services) => {
-    if (!services) return [];
-    const labels = {
-      exterior: 'Exterior Wash & Detail',
-      interior: 'Interior Detail',
-      brightwork: 'Brightwork Polish',
-      ceramic: 'Ceramic Coating',
-      engine: 'Engine Detail',
-    };
-    return Object.entries(services)
-      .filter(([key, value]) => value === true)
-      .map(([key]) => labels[key] || key);
+  const getServicesList = (quote) => {
+    // Primary: use line_items array (current format)
+    if (quote.line_items && quote.line_items.length > 0) {
+      return quote.line_items.map(item => ({
+        name: item.service || item.description || 'Service',
+        amount: item.amount || 0,
+      }));
+    }
+    // Fallback: legacy services object { exterior: true, ... }
+    if (quote.services && typeof quote.services === 'object') {
+      const labels = {
+        exterior: 'Exterior Wash & Detail',
+        interior: 'Interior Detail',
+        brightwork: 'Brightwork Polish',
+        ceramic: 'Ceramic Coating',
+        engine: 'Engine Detail',
+      };
+      return Object.entries(quote.services)
+        .filter(([, value]) => value === true)
+        .map(([key]) => ({ name: labels[key] || key, amount: 0 }));
+    }
+    return [];
   };
 
   if (loading) {
@@ -243,8 +253,8 @@ export default function QuoteViewPage() {
               <div>
                 <span className="text-gray-600">Services:</span>
                 <ul className="mt-1 ml-4 list-disc list-inside">
-                  {formatServices(quote.services).map((svc, i) => (
-                    <li key={i} className="text-gray-800">{svc}</li>
+                  {getServicesList(quote).map((svc, i) => (
+                    <li key={i} className="text-gray-800">{svc.name}</li>
                   ))}
                 </ul>
               </div>
@@ -338,10 +348,10 @@ export default function QuoteViewPage() {
             <div>
               <span className="text-gray-600">Services:</span>
               <ul className="mt-2 space-y-1">
-                {formatServices(quote.services).map((svc, i) => (
+                {getServicesList(quote).map((svc, i) => (
                   <li key={i} className="flex items-center text-gray-800">
                     <span className="text-green-500 mr-2">&#10003;</span>
-                    {svc}
+                    {svc.name}
                   </li>
                 ))}
               </ul>
