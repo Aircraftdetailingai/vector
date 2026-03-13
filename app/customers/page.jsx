@@ -259,6 +259,27 @@ export default function CustomersPage() {
     }
   };
 
+  const deleteCustomer = async (customer) => {
+    if (!confirm(`Delete ${customer.name || customer.email}? This cannot be undone.`)) return;
+    const token = localStorage.getItem('vector_token');
+    try {
+      const res = await fetch(`/api/customers/${customer.id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setCustomers(prev => prev.filter(c => c.id !== customer.id));
+        setSelectedIds(prev => { const next = new Set(prev); next.delete(customer.id); return next; });
+        toastSuccess('Customer deleted');
+      } else {
+        const data = await res.json();
+        toastError(data.error || 'Failed to delete');
+      }
+    } catch (err) {
+      toastError('Failed to delete customer');
+    }
+  };
+
   const formatDate = (dateStr) => {
     if (!dateStr) return '-';
     return new Date(dateStr).toLocaleDateString('en-US', {
@@ -498,14 +519,23 @@ export default function CustomersPage() {
                       {formatDate(customer.last_service_date)}
                     </div>
 
-                    {/* View / Mobile checkbox */}
-                    <div className="col-span-1 flex items-center justify-end">
+                    {/* Actions / Mobile checkbox */}
+                    <div className="col-span-1 flex items-center justify-end gap-2">
                       {customer.id && (
                         <button
                           onClick={() => router.push(`/customers/${customer.id}`)}
                           className="hidden sm:inline-flex text-xs text-amber-600 hover:text-amber-700 font-medium"
                         >
-                          {'View'}
+                          View
+                        </button>
+                      )}
+                      {customer.id && (
+                        <button
+                          onClick={() => deleteCustomer(customer)}
+                          className="hidden sm:inline-flex text-xs text-red-400 hover:text-red-600"
+                          title="Delete customer"
+                        >
+                          &#10005;
                         </button>
                       )}
                       {customer.id && (

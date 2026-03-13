@@ -104,3 +104,36 @@ export async function PATCH(request, { params }) {
   }
   return Response.json({ error: 'Update failed' }, { status: 500 });
 }
+
+// DELETE - Remove a customer
+export async function DELETE(request, { params }) {
+  const user = await getAuthUser(request);
+  if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+  const { id } = await params;
+  const supabase = getSupabase();
+
+  // Verify ownership
+  const { data: customer } = await supabase
+    .from('customers')
+    .select('id')
+    .eq('id', id)
+    .eq('detailer_id', user.id)
+    .single();
+
+  if (!customer) {
+    return Response.json({ error: 'Customer not found' }, { status: 404 });
+  }
+
+  const { error } = await supabase
+    .from('customers')
+    .delete()
+    .eq('id', id)
+    .eq('detailer_id', user.id);
+
+  if (error) {
+    return Response.json({ error: error.message }, { status: 500 });
+  }
+
+  return Response.json({ success: true });
+}
