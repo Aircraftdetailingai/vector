@@ -9,7 +9,7 @@ const TYPE_ICONS = {
 };
 
 const TYPE_COLORS = {
-  quote_viewed: 'text-blue-400',
+  quote_viewed: 'text-v-gold',
   payment_received: 'text-green-400',
   quote_expired: 'text-amber-400',
   job_reminder: 'text-purple-400',

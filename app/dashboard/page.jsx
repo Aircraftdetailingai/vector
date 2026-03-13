@@ -315,7 +315,7 @@ function DashboardContent() {
   }
 
   const STATUS_COLORS = {
-    sent: 'text-blue-400',
+    sent: 'text-v-gold',
     viewed: 'text-purple-400',
     accepted: 'text-v-success',
     completed: 'text-v-success',
@@ -417,43 +417,43 @@ function DashboardContent() {
       <div className="mb-4 space-y-4">
         <div data-tour="quick-stats">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-light text-v-text-primary tracking-wide">Business Overview</h2>
+            <h2 className="text-lg font-heading text-v-text-primary section-heading">Business Overview</h2>
             <a href="/analytics" className="text-sm text-v-gold hover:text-v-gold-dim transition-colors">View Full Analytics</a>
           </div>
 
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <div className="bg-v-surface border border-v-border rounded border-l-2 border-l-v-gold p-4">
-              <p className="text-v-text-secondary text-xs uppercase tracking-wider">Total Revenue</p>
-              <p className="text-2xl font-light text-v-gold font-data mt-1">{currencySymbol()}{(quickStats?.monthRevenue || 0).toLocaleString()}</p>
-              <p className="text-xs text-v-text-secondary mt-1">This Month</p>
+            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-gold p-6">
+              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Total Revenue</p>
+              <p className="text-4xl font-light text-v-gold font-data mt-2 tracking-wide">{currencySymbol()}{(quickStats?.monthRevenue || 0).toLocaleString()}</p>
+              <p className="text-xs text-v-text-secondary mt-2">This Month</p>
             </div>
-            <div className="bg-v-surface border border-v-border rounded border-l-2 border-l-v-gold p-4">
-              <p className="text-v-text-secondary text-xs uppercase tracking-wider">Conversion Rate</p>
-              <p className="text-2xl font-light text-v-gold font-data mt-1">
+            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-gold p-6">
+              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Conversion Rate</p>
+              <p className="text-4xl font-light text-v-gold font-data mt-2 tracking-wide">
                 {quickStats?.allTime ? (
                   (quickStats.allTime.quotes || 0) > 0
                     ? `${Math.round(((quickStats.allTime.booked || 0) / quickStats.allTime.quotes) * 100)}%`
                     : '0%'
                 ) : '--'}
               </p>
-              <p className="text-xs text-v-text-secondary mt-1">
+              <p className="text-xs text-v-text-secondary mt-2">
                 {quickStats?.allTime ? `${quickStats.allTime.booked || 0} / ${quickStats.allTime.quotes || 0} sent` : ''}
               </p>
             </div>
-            <div className="bg-v-surface border border-v-border rounded border-l-2 border-l-v-danger p-4">
-              <p className="text-v-text-secondary text-xs uppercase tracking-wider">Outstanding</p>
-              <p className="text-2xl font-light text-v-danger font-data mt-1">{quickStats?.outstandingInvoices || 0}</p>
-              <p className="text-xs text-v-text-secondary mt-1 font-data">{currencySymbol()}{(quickStats?.outstandingTotal || 0).toLocaleString()}</p>
+            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-danger p-6">
+              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Outstanding</p>
+              <p className="text-4xl font-light text-v-danger font-data mt-2 tracking-wide">{quickStats?.outstandingInvoices || 0}</p>
+              <p className="text-xs text-v-text-secondary mt-2 font-data">{currencySymbol()}{(quickStats?.outstandingTotal || 0).toLocaleString()}</p>
             </div>
-            <div className="bg-v-surface border border-v-border rounded border-l-2 border-l-v-gold p-4">
-              <p className="text-v-text-secondary text-xs uppercase tracking-wider">Avg Job Value</p>
-              <p className="text-2xl font-light text-v-gold font-data mt-1">{currencySymbol()}{formatPriceWhole(quickStats?.avgJobValue)}</p>
+            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-gold p-6">
+              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Avg Job Value</p>
+              <p className="text-4xl font-light text-v-gold font-data mt-2 tracking-wide">{currencySymbol()}{formatPriceWhole(quickStats?.avgJobValue)}</p>
             </div>
-            <div className="bg-v-surface border border-v-border rounded border-l-2 border-l-v-success p-4">
-              <p className="text-v-text-secondary text-xs uppercase tracking-wider">Jobs Completed</p>
-              <p className="text-2xl font-light text-v-success font-data mt-1">{quickStats?.monthJobs || 0}</p>
-              <p className="text-xs text-v-text-secondary mt-1">This Month</p>
+            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-success p-6">
+              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Jobs Completed</p>
+              <p className="text-4xl font-light text-v-success font-data mt-2 tracking-wide">{quickStats?.monthJobs || 0}</p>
+              <p className="text-xs text-v-text-secondary mt-2">This Month</p>
             </div>
           </div>
         </div>
@@ -486,7 +486,7 @@ function DashboardContent() {
           {/* Recent Quotes */}
           <div className="bg-v-surface border border-v-border rounded p-4">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-light text-sm text-v-text-secondary tracking-wide uppercase">Recent Quotes</h3>
+              <h3 className="font-heading text-sm text-v-text-secondary tracking-widest uppercase">Recent Quotes</h3>
               <a href="/quotes" className="text-xs text-v-gold hover:text-v-gold-dim transition-colors">View All</a>
             </div>
             {recentQuotes.length > 0 ? (
@@ -512,7 +512,7 @@ function DashboardContent() {
           {/* Upcoming Jobs */}
           <div className="bg-v-surface border border-v-border rounded p-4">
             <div className="flex justify-between items-center mb-3">
-              <h3 className="font-light text-sm text-v-text-secondary tracking-wide uppercase">Upcoming Jobs <span className="text-xs text-v-text-secondary font-normal normal-case">(Next 7 Days)</span></h3>
+              <h3 className="font-heading text-sm text-v-text-secondary tracking-widest uppercase">Upcoming Jobs <span className="text-xs text-v-text-secondary font-normal normal-case">(Next 7 Days)</span></h3>
               <a href="/calendar" className="text-xs text-v-gold hover:text-v-gold-dim transition-colors">View Calendar</a>
             </div>
             {upcomingJobs.length > 0 ? (

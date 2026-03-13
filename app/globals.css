@@ -209,6 +209,32 @@ input, textarea, select {
   font-variant-numeric: tabular-nums;
 }
 
+/* ========== SECTION HEADING WITH GOLD UNDERLINE ========== */
+
+.section-heading {
+  position: relative;
+  padding-bottom: 0.75rem;
+}
+
+.section-heading::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 60px;
+  height: 2px;
+  background-color: var(--v-gold);
+}
+
+/* ========== MODAL INNER GLOW ========== */
+
+.modal-glow {
+  box-shadow:
+    inset 0 1px 0 0 rgba(201, 168, 76, 0.08),
+    inset 0 0 40px rgba(201, 168, 76, 0.03),
+    0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
 /* ========== FORCE HIDE VERCEL TOOLBAR ========== */
 
 [data-vercel-toolbar],

@@ -10,6 +10,7 @@ module.exports = {
         v: {
           charcoal: '#0F1117',
           navy: '#0D1B2A',
+          sidebar: '#0A0E17',
           surface: '#1A2236',
           'surface-light': '#1E2A40',
           gold: '#C9A84C',
@@ -23,8 +24,12 @@ module.exports = {
         },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        sans: ['var(--font-inter)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
+        heading: ['var(--font-playfair)', 'Playfair Display', 'Georgia', 'serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
+      },
+      gridTemplateColumns: {
+        '14': 'repeat(14, minmax(0, 1fr))',
       },
     },
   },

@@ -53,9 +53,9 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, tags = []
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-v-surface border border-v-border rounded-t-lg sm:rounded p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
+      <div className="bg-v-surface border border-v-border rounded-t-lg sm:rounded-sm p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh] modal-glow">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-light tracking-wide text-v-text-primary">Add Customer</h2>
+          <h2 className="text-xl font-heading text-v-text-primary">Add Customer</h2>
           <button onClick={() => { resetForm(); onClose(); }} className="text-v-text-secondary hover:text-v-text-primary text-2xl">&times;</button>
         </div>
 
@@ -119,7 +119,7 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, tags = []
               onChange={(e) => setForm(p => ({ ...p, notes: e.target.value }))}
               placeholder="Any notes about this customer..."
               rows={2}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none"
+              className="w-full bg-v-surface-light border border-v-border rounded-sm px-3 py-2 text-sm text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50 resize-none"
             />
           </div>
           <div>

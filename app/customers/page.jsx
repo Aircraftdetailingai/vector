@@ -7,7 +7,7 @@ import AddCustomerModal from '@/components/AddCustomerModal';
 
 const TAG_COLORS = {
   'VIP': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  'Recurring': 'bg-blue-500/20 text-blue-300 border-blue-500/30',
+  'Recurring': 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
   'Corporate': 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
   'FBO': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
   'Owner-Pilot': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
@@ -478,7 +478,7 @@ export default function CustomersPage() {
         <div className="flex items-center space-x-4">
           <a href="/dashboard" className="text-2xl text-v-text-secondary hover:text-v-gold">&#8592;</a>
           <div>
-            <h1 className="text-2xl font-light tracking-wide text-v-text-primary">Customers</h1>
+            <h1 className="text-2xl font-heading text-v-text-primary section-heading">Customers</h1>
             <p className="text-sm text-v-text-secondary">{customers.length} total</p>
           </div>
         </div>
@@ -494,13 +494,13 @@ export default function CustomersPage() {
           )}
           <button
             onClick={() => setShowAddModal(true)}
-            className="px-4 py-2 bg-v-gold text-v-charcoal rounded hover:bg-v-gold-dim text-sm font-medium"
+            className="px-4 py-2 bg-v-gold text-v-charcoal rounded-sm hover:bg-v-gold-dim text-sm font-medium"
           >
             + Add Customer
           </button>
           <button
             onClick={() => setShowTagManager(!showTagManager)}
-            className="px-3 py-2 border border-v-border text-v-text-secondary rounded hover:text-v-text-primary hover:border-v-gold/50 text-sm"
+            className="px-3 py-2 border border-v-gold/30 text-v-text-primary rounded-sm hover:border-v-gold text-sm"
           >
             Manage Tags
           </button>
@@ -604,7 +604,7 @@ export default function CustomersPage() {
               </button>
               <button
                 onClick={() => { setEmailBlastModal(true); setEmailSubject(''); setEmailMessage(''); }}
-                className="px-3 py-1.5 bg-blue-500/20 text-blue-300 text-xs rounded hover:bg-blue-500/30 font-medium border border-blue-500/30"
+                className="px-3 py-1.5 bg-v-gold/20 text-v-gold text-xs rounded-sm hover:bg-v-gold/30 font-medium border border-v-gold/30"
               >
                 Email Blast
               </button>
@@ -623,9 +623,9 @@ export default function CustomersPage() {
         )}
 
         {/* Customer List */}
-        <div className="bg-v-surface border border-v-border rounded overflow-hidden">
+        <div className="bg-v-surface rounded-sm overflow-hidden">
           {/* Table Header */}
-          <div className="bg-v-navy border-b border-v-border px-4 py-3 hidden sm:grid sm:grid-cols-14 gap-4 items-center text-xs font-medium text-v-text-secondary uppercase tracking-wider">
+          <div className="border-b border-v-border/30 px-4 py-3 hidden sm:grid sm:grid-cols-14 gap-4 items-center text-xs font-medium text-v-text-secondary uppercase tracking-widest">
             <div className="col-span-1">
               <input
                 type="checkbox"
@@ -667,11 +667,11 @@ export default function CustomersPage() {
               <div className="p-8 text-center text-v-text-secondary">No results found</div>
             )
           ) : (
-            <div className="divide-y divide-v-border/50">
+            <div className="divide-y divide-v-border/20">
               {filteredCustomers.map((customer) => {
                 const tags = Array.isArray(customer.tags) ? customer.tags : [];
                 return (
-                  <div key={customer.id || customer.email} className="px-4 py-3 hover:bg-v-surface-light grid grid-cols-1 sm:grid-cols-14 gap-2 sm:gap-4 items-center transition-colors">
+                  <div key={customer.id || customer.email} className="px-4 py-4 hover:bg-v-surface-light grid grid-cols-1 sm:grid-cols-14 gap-2 sm:gap-4 items-center transition-colors">
                     {/* Checkbox */}
                     <div className="col-span-1 hidden sm:block">
                       {customer.id && (
@@ -765,7 +765,7 @@ export default function CustomersPage() {
           )}
 
           {/* Footer */}
-          <div className="p-3 border-t border-v-border bg-v-navy text-sm text-v-text-secondary flex justify-between items-center">
+          <div className="p-4 border-t border-v-border/30 text-sm text-v-text-secondary flex justify-between items-center">
             <span>Showing {filteredCustomers.length} of {customers.length} customers</span>
             {selectedIds.size === 0 && filteredCustomers.length > 0 && (
               <button onClick={exportCsv} className="text-xs text-v-gold hover:text-v-gold-dim font-medium">
@@ -779,8 +779,8 @@ export default function CustomersPage() {
       {/* Edit Tags Modal (single customer) */}
       {editCustomer && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-v-surface border border-v-border rounded p-6 w-full max-w-md">
-            <h3 className="text-lg font-light tracking-wide text-v-text-primary mb-1">Edit Tags</h3>
+          <div className="bg-v-surface border border-v-border rounded-sm p-6 w-full max-w-md modal-glow">
+            <h3 className="text-lg font-heading text-v-text-primary mb-1">Edit Tags</h3>
             <p className="text-sm text-v-text-secondary mb-4">{editCustomer.name} &mdash; {editCustomer.email}</p>
 
             <div className="flex flex-wrap gap-2 mb-4 min-h-[32px]">
@@ -848,8 +848,8 @@ export default function CustomersPage() {
       {/* Bulk Tag Modal */}
       {bulkTagModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-v-surface border border-v-border rounded p-6 w-full max-w-md">
-            <h3 className="text-lg font-light tracking-wide text-v-text-primary mb-1">Manage Tags</h3>
+          <div className="bg-v-surface border border-v-border rounded-sm p-6 w-full max-w-md modal-glow">
+            <h3 className="text-lg font-heading text-v-text-primary mb-1">Manage Tags</h3>
             <p className="text-sm text-v-text-secondary mb-4">{selectedIds.size} customer{selectedIds.size !== 1 ? 's' : ''} selected</p>
 
             <div className="flex gap-2 mb-4">
@@ -916,9 +916,9 @@ export default function CustomersPage() {
       {/* Email Blast Modal */}
       {emailBlastModal && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-v-surface border border-v-border rounded-t-lg sm:rounded p-5 sm:p-6 w-full sm:max-w-lg">
+          <div className="bg-v-surface border border-v-border rounded-t-lg sm:rounded-sm p-5 sm:p-6 w-full sm:max-w-lg modal-glow">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-light tracking-wide text-v-text-primary">Send Email Blast</h3>
+              <h3 className="text-lg font-heading text-v-text-primary">Send Email Blast</h3>
               <button onClick={() => setEmailBlastModal(false)} className="text-v-text-secondary hover:text-v-text-primary text-xl">&times;</button>
             </div>
             <p className="text-sm text-v-text-secondary mb-4">Sending to {selectedIds.size} customer{selectedIds.size !== 1 ? 's' : ''}</p>

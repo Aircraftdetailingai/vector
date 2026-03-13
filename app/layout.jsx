@@ -1,5 +1,5 @@
 import './globals.css'
-import { Inter } from 'next/font/google'
+import { Inter, Playfair_Display } from 'next/font/google'
 import InstallPrompt from '@/components/InstallPrompt'
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
 import Providers from '@/components/Providers'
@@ -8,6 +8,14 @@ const inter = Inter({
   subsets: ['latin'],
   weight: ['300', '400', '500', '600'],
   display: 'swap',
+  variable: '--font-inter',
+})
+
+const playfair = Playfair_Display({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-playfair',
 })
 
 export const viewport = {
@@ -46,7 +54,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className={`${inter.className} bg-v-charcoal text-v-text-primary antialiased`}>
+      <body className={`${inter.variable} ${playfair.variable} ${inter.className} bg-v-charcoal text-v-text-primary antialiased`}>
         <Providers>
           {children}
         </Providers>

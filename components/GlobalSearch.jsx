@@ -2,14 +2,14 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 
 const TYPE_CONFIG = {
-  quote: { icon: '📄', labelKey: 'search.quote', color: 'text-blue-400' },
+  quote: { icon: '📄', labelKey: 'search.quote', color: 'text-v-gold' },
   customer: { icon: '👤', labelKey: 'common.customer', color: 'text-green-400' },
   aircraft: { icon: '✈️', labelKey: 'common.aircraft', color: 'text-amber-400' },
 };
 
 const STATUS_BADGES = {
   draft: 'bg-gray-500/20 text-gray-300',
-  sent: 'bg-blue-500/20 text-blue-300',
+  sent: 'bg-v-gold/20 text-v-gold',
   viewed: 'bg-amber-500/20 text-amber-300',
   paid: 'bg-green-500/20 text-green-300',
   completed: 'bg-purple-500/20 text-purple-300',
