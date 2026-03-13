@@ -27,9 +27,10 @@ export async function GET(request) {
     const q = searchParams.get('q') || '';
     const limit = parseInt(searchParams.get('limit')) || 20;
     const tag = searchParams.get('tag');
+    const archived = searchParams.get('archived');
 
     // Core columns that exist in the customers table
-    let selectCols = 'id, name, email, phone, company_name, notes, tags, created_at';
+    let selectCols = 'id, name, email, phone, company_name, notes, tags, is_archived, created_at';
     let customers = [];
 
     for (let attempt = 0; attempt < 10; attempt++) {
@@ -45,6 +46,14 @@ export async function GET(request) {
       }
       if (tag) {
         query = query.contains('tags', [tag]);
+      }
+      // Filter by archived status (only if column exists in select)
+      if (selectCols.includes('is_archived')) {
+        if (archived === 'true') {
+          query = query.eq('is_archived', true);
+        } else {
+          query = query.or('is_archived.eq.false,is_archived.is.null');
+        }
       }
 
       const { data, error } = await query;

@@ -82,6 +82,7 @@ export async function PATCH(request, { params }) {
   for (const f of contactFields) {
     if (body[f] !== undefined) updates[f] = body[f];
   }
+  if (body.is_archived !== undefined) updates.is_archived = body.is_archived;
 
   // Column-stripping retry
   for (let attempt = 0; attempt < 5; attempt++) {

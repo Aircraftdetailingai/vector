@@ -65,20 +65,15 @@ export default function CustomersPage() {
   const [emailMessage, setEmailMessage] = useState('');
   const [emailSending, setEmailSending] = useState(false);
 
-  useEffect(() => {
-    const token = localStorage.getItem('vector_token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-    fetchData();
-  }, [router]);
+  // Gmail-style view mode + archive
+  const [viewMode, setViewMode] = useState('active');
+  const [archiving, setArchiving] = useState(false);
 
-  const fetchData = async () => {
+  const fetchData = async (archived = false) => {
     const token = localStorage.getItem('vector_token');
     try {
       const [custRes, tagsRes] = await Promise.all([
-        fetch('/api/customers?limit=500', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch(`/api/customers?limit=500&archived=${archived}`, { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/customers/tags', { headers: { Authorization: `Bearer ${token}` } }),
       ]);
       if (custRes.ok) {
@@ -101,6 +96,20 @@ export default function CustomersPage() {
     }
   };
 
+  useEffect(() => {
+    const token = localStorage.getItem('vector_token');
+    if (!token) { router.push('/login'); return; }
+    fetchData(viewMode === 'archived');
+  }, [viewMode]);
+
+  const switchView = (mode) => {
+    if (mode === viewMode) return;
+    setViewMode(mode);
+    setSelectedIds(new Set());
+    setSearch('');
+    setFilterTag('');
+  };
+
   const handleQBImport = async () => {
     setQbImporting(true);
     const token = localStorage.getItem('vector_token');
@@ -112,7 +121,7 @@ export default function CustomersPage() {
       const data = await res.json();
       if (data.success) {
         toastSuccess(`Imported ${data.imported} customers from QuickBooks`);
-        fetchData();
+        fetchData(viewMode === 'archived');
       } else {
         toastError(data.error || 'Import failed');
       }
@@ -143,23 +152,19 @@ export default function CustomersPage() {
     result = [...result].sort((a, b) => {
       let aVal = a[sortField];
       let bVal = b[sortField];
-      // Handle nulls
       if (aVal == null && bVal == null) return 0;
       if (aVal == null) return 1;
       if (bVal == null) return -1;
-      // Numeric fields
       if (sortField === 'quote_count' || sortField === 'total_revenue') {
         aVal = Number(aVal) || 0;
         bVal = Number(bVal) || 0;
         return sortDir === 'asc' ? aVal - bVal : bVal - aVal;
       }
-      // Date fields
       if (sortField === 'created_at' || sortField === 'last_service_date') {
         return sortDir === 'asc'
           ? new Date(aVal) - new Date(bVal)
           : new Date(bVal) - new Date(aVal);
       }
-      // String fields
       aVal = String(aVal).toLowerCase();
       bVal = String(bVal).toLowerCase();
       if (aVal < bVal) return sortDir === 'asc' ? -1 : 1;
@@ -210,32 +215,36 @@ export default function CustomersPage() {
     return <span className="text-v-gold ml-1">{sortDir === 'asc' ? '&#9650;' : '&#9660;'}</span>;
   };
 
-  // Delete single customer
-  const deleteCustomer = async (customer) => {
-    if (!confirm(`Delete ${customer.name || customer.email}? This cannot be undone.`)) return;
+  // Bulk archive / unarchive
+  const bulkArchive = async (archive = true) => {
+    setArchiving(true);
     const token = localStorage.getItem('vector_token');
     try {
-      const res = await fetch(`/api/customers/${customer.id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` },
+      const res = await fetch('/api/customers/bulk-archive', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ customerIds: Array.from(selectedIds), archived: archive }),
       });
       if (res.ok) {
-        setCustomers(prev => prev.filter(c => c.id !== customer.id));
-        setSelectedIds(prev => { const next = new Set(prev); next.delete(customer.id); return next; });
-        toastSuccess('Customer deleted');
+        setCustomers(prev => prev.filter(c => !selectedIds.has(c.id)));
+        const count = selectedIds.size;
+        setSelectedIds(new Set());
+        toastSuccess(`${archive ? 'Archived' : 'Unarchived'} ${count} customer${count !== 1 ? 's' : ''}`);
       } else {
         const data = await res.json();
-        toastError(data.error || 'Failed to delete');
+        toastError(data.error || `Failed to ${archive ? 'archive' : 'unarchive'}`);
       }
-    } catch (err) {
-      toastError('Failed to delete customer');
+    } catch {
+      toastError(`Failed to ${archive ? 'archive' : 'unarchive'}`);
+    } finally {
+      setArchiving(false);
     }
   };
 
-  // Bulk delete selected
+  // Bulk delete selected (permanent — with confirmation)
   const bulkDelete = async () => {
     const count = selectedIds.size;
-    if (!confirm(`Delete ${count} customer${count !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+    if (!confirm(`Permanently delete ${count} customer${count !== 1 ? 's' : ''}? This cannot be undone.`)) return;
     setBulkDeleting(true);
     const token = localStorage.getItem('vector_token');
     let deleted = 0;
@@ -467,6 +476,8 @@ export default function CustomersPage() {
     return '$' + Number(val).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
   };
 
+  const hasSelection = selectedIds.size > 0;
+
   if (loading) {
     return <LoadingSpinner message="Loading..." />;
   }
@@ -479,7 +490,9 @@ export default function CustomersPage() {
           <a href="/dashboard" className="text-2xl text-v-text-secondary hover:text-v-gold">&#8592;</a>
           <div>
             <h1 className="text-2xl font-heading text-v-text-primary section-heading">Customers</h1>
-            <p className="text-sm text-v-text-secondary">{customers.length} total</p>
+            <p className="text-sm text-v-text-secondary">
+              {customers.length} {viewMode === 'archived' ? 'archived' : 'total'}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
@@ -570,98 +583,222 @@ export default function CustomersPage() {
             onChange={(e) => setFilterTag(e.target.value)}
             className="bg-v-surface border border-v-border rounded px-4 py-2 text-v-text-primary text-sm outline-none focus:border-v-gold/50"
           >
-            <option value="">All Customers</option>
+            <option value="">All Tags</option>
             {usedTags.map((tag) => (
               <option key={tag} value={tag}>{tag}</option>
             ))}
           </select>
         </div>
 
-        {/* Bulk Actions Bar */}
-        {selectedIds.size > 0 && (
-          <div className="bg-v-surface border border-v-gold/30 rounded px-4 py-3 mb-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="text-sm font-medium text-v-text-primary mr-2">
-                {selectedIds.size} selected
-              </span>
-              <button
-                onClick={() => { setBulkTagModal(true); setBulkTagAction('add'); setBulkTagSelection([]); }}
-                className="px-3 py-1.5 bg-v-gold/20 text-v-gold text-xs rounded hover:bg-v-gold/30 font-medium border border-v-gold/30"
-              >
-                Assign Tag
-              </button>
-              <button
-                onClick={moveToVip}
-                className="px-3 py-1.5 bg-amber-500/20 text-amber-300 text-xs rounded hover:bg-amber-500/30 font-medium border border-amber-500/30"
-              >
-                &#9733; Move to VIP
-              </button>
-              <button
-                onClick={exportCsv}
-                className="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 text-xs rounded hover:bg-emerald-500/30 font-medium border border-emerald-500/30"
-              >
-                Export CSV
-              </button>
-              <button
-                onClick={() => { setEmailBlastModal(true); setEmailSubject(''); setEmailMessage(''); }}
-                className="px-3 py-1.5 bg-v-gold/20 text-v-gold text-xs rounded-sm hover:bg-v-gold/30 font-medium border border-v-gold/30"
-              >
-                Email Blast
-              </button>
-              <button
-                onClick={bulkDelete}
-                disabled={bulkDeleting}
-                className="px-3 py-1.5 bg-red-500/20 text-red-400 text-xs rounded hover:bg-red-500/30 font-medium border border-red-500/30 disabled:opacity-50"
-              >
-                {bulkDeleting ? 'Deleting...' : 'Delete Selected'}
-              </button>
-              <button onClick={() => setSelectedIds(new Set())} className="ml-auto text-xs text-v-text-secondary hover:text-v-text-primary">
-                Clear
-              </button>
-            </div>
-          </div>
-        )}
+        {/* Active / Archived Toggle */}
+        <div className="flex items-center gap-1 mb-4">
+          <button
+            onClick={() => switchView('active')}
+            className={`px-3 py-1.5 text-sm rounded-sm font-medium transition-colors ${
+              viewMode === 'active'
+                ? 'bg-v-gold/20 text-v-gold border border-v-gold/30'
+                : 'text-v-text-secondary hover:text-v-text-primary border border-transparent'
+            }`}
+          >
+            Active
+          </button>
+          <button
+            onClick={() => switchView('archived')}
+            className={`px-3 py-1.5 text-sm rounded-sm font-medium transition-colors ${
+              viewMode === 'archived'
+                ? 'bg-v-gold/20 text-v-gold border border-v-gold/30'
+                : 'text-v-text-secondary hover:text-v-text-primary border border-transparent'
+            }`}
+          >
+            Archived
+          </button>
+        </div>
 
         {/* Customer List */}
         <div className="bg-v-surface rounded-sm overflow-hidden">
-          {/* Table Header */}
-          <div className="border-b border-v-border/30 px-4 py-3 hidden sm:grid sm:grid-cols-14 gap-4 items-center text-xs font-medium text-v-text-secondary uppercase tracking-widest">
-            <div className="col-span-1">
-              <input
-                type="checkbox"
-                checked={filteredCustomers.length > 0 && selectedIds.size === filteredCustomers.length}
-                onChange={toggleSelectAll}
-                className="w-4 h-4 rounded border-v-border text-v-gold cursor-pointer accent-amber-500"
-              />
-            </div>
-            <div className="col-span-3 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('name')}>
-              Customer <SortArrow field="name" />
-            </div>
-            <div className="col-span-3">Tags</div>
-            <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('quote_count')}>
-              Quotes <SortArrow field="quote_count" />
-            </div>
-            <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('total_revenue')}>
-              Revenue <SortArrow field="total_revenue" />
-            </div>
-            <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('last_service_date')}>
-              Last Activity <SortArrow field="last_service_date" />
-            </div>
-            <div className="col-span-1"></div>
+          {/* Desktop Table Header / Action Toolbar */}
+          <div className="border-b border-v-border/30 px-4 py-2.5 hidden sm:block">
+            {hasSelection ? (
+              /* Gmail-style action toolbar */
+              <div className="flex items-center gap-1">
+                <input
+                  type="checkbox"
+                  checked={selectedIds.size === filteredCustomers.length}
+                  onChange={toggleSelectAll}
+                  className="w-4 h-4 rounded border-v-border accent-amber-500 cursor-pointer mr-3"
+                />
+                <span className="text-sm font-medium text-v-text-primary">{selectedIds.size} selected</span>
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="ml-1 mr-2 text-v-text-secondary hover:text-v-text-primary"
+                  title="Clear selection"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+
+                <div className="flex items-center gap-0.5 border-l border-v-border/30 pl-2">
+                  {/* Archive / Unarchive */}
+                  {viewMode === 'active' ? (
+                    <button
+                      onClick={() => bulkArchive(true)}
+                      disabled={archiving}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors disabled:opacity-50"
+                      title="Archive"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-2-3H6L4 7m16 0v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7m16 0H4m8 4v6m0 0l-3-3m3 3l3-3" /></svg>
+                      <span className="hidden lg:inline">Archive</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => bulkArchive(false)}
+                      disabled={archiving}
+                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors disabled:opacity-50"
+                      title="Unarchive"
+                    >
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 17l2 3h12l2-3M4 17V7m16 10V7M4 17h16M4 7l2-3h12l2 3M4 7h16m-8-2v6m0 0l3-3m-3 3l-3-3" /></svg>
+                      <span className="hidden lg:inline">Unarchive</span>
+                    </button>
+                  )}
+
+                  {/* Delete */}
+                  <button
+                    onClick={bulkDelete}
+                    disabled={bulkDeleting}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50"
+                    title="Delete permanently"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                    <span className="hidden lg:inline">Delete</span>
+                  </button>
+
+                  {/* Tag */}
+                  <button
+                    onClick={() => { setBulkTagModal(true); setBulkTagAction('add'); setBulkTagSelection([]); }}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors"
+                    title="Manage tags"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /></svg>
+                    <span className="hidden lg:inline">Tag</span>
+                  </button>
+
+                  {/* VIP */}
+                  <button
+                    onClick={moveToVip}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/10 rounded transition-colors"
+                    title="Mark as VIP"
+                  >
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                    <span className="hidden lg:inline">VIP</span>
+                  </button>
+
+                  {/* Email */}
+                  <button
+                    onClick={() => { setEmailBlastModal(true); setEmailSubject(''); setEmailMessage(''); }}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors"
+                    title="Send email blast"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                    <span className="hidden lg:inline">Email</span>
+                  </button>
+
+                  {/* Export */}
+                  <button
+                    onClick={exportCsv}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors"
+                    title="Export to CSV"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                    <span className="hidden lg:inline">Export</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
+              /* Column headers with sort */
+              <div className="grid grid-cols-14 gap-4 items-center text-xs font-medium text-v-text-secondary uppercase tracking-widest">
+                <div className="col-span-1">
+                  <input
+                    type="checkbox"
+                    checked={filteredCustomers.length > 0 && selectedIds.size === filteredCustomers.length}
+                    onChange={toggleSelectAll}
+                    className="w-4 h-4 rounded border-v-border text-v-gold cursor-pointer accent-amber-500"
+                  />
+                </div>
+                <div className="col-span-4 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('name')}>
+                  Customer <SortArrow field="name" />
+                </div>
+                <div className="col-span-3">Tags</div>
+                <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('quote_count')}>
+                  Quotes <SortArrow field="quote_count" />
+                </div>
+                <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('total_revenue')}>
+                  Revenue <SortArrow field="total_revenue" />
+                </div>
+                <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('last_service_date')}>
+                  Activity <SortArrow field="last_service_date" />
+                </div>
+              </div>
+            )}
           </div>
+
+          {/* Mobile Action Bar (fixed bottom when items selected) */}
+          {hasSelection && (
+            <div className="sm:hidden fixed bottom-0 left-0 right-0 bg-v-surface border-t border-v-border px-4 py-3 z-40 flex items-center justify-between">
+              <span className="text-sm text-v-text-primary font-medium">{selectedIds.size} selected</span>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => bulkArchive(viewMode === 'active')}
+                  disabled={archiving}
+                  className="text-v-text-secondary hover:text-v-text-primary disabled:opacity-50"
+                  title={viewMode === 'active' ? 'Archive' : 'Unarchive'}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-2-3H6L4 7m16 0v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7m16 0H4m8 4v6m0 0l-3-3m3 3l3-3" /></svg>
+                </button>
+                <button
+                  onClick={bulkDelete}
+                  disabled={bulkDeleting}
+                  className="text-red-400/70 hover:text-red-400 disabled:opacity-50"
+                  title="Delete"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
+                <button
+                  onClick={() => { setBulkTagModal(true); setBulkTagAction('add'); setBulkTagSelection([]); }}
+                  className="text-v-text-secondary hover:text-v-text-primary"
+                  title="Tag"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /></svg>
+                </button>
+                <button
+                  onClick={() => setSelectedIds(new Set())}
+                  className="text-xs text-v-text-secondary hover:text-v-text-primary font-medium"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+          )}
 
           {filteredCustomers.length === 0 ? (
             customers.length === 0 ? (
               <div className="p-12 text-center">
                 <div className="text-5xl mb-4 opacity-30">&#128100;</div>
-                <h3 className="text-xl font-light tracking-wide text-v-text-primary mb-2">No customers yet</h3>
-                <p className="text-v-text-secondary mb-6 max-w-sm mx-auto">Add your first customer to start tracking quotes, services, and building relationships.</p>
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="px-6 py-3 bg-v-gold text-v-charcoal rounded font-medium hover:bg-v-gold-dim"
-                >
-                  + Add Your First Customer
-                </button>
+                {viewMode === 'archived' ? (
+                  <>
+                    <h3 className="text-xl font-light tracking-wide text-v-text-primary mb-2">No archived customers</h3>
+                    <p className="text-v-text-secondary mb-6 max-w-sm mx-auto">Archived customers will appear here.</p>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="text-xl font-light tracking-wide text-v-text-primary mb-2">No customers yet</h3>
+                    <p className="text-v-text-secondary mb-6 max-w-sm mx-auto">Add your first customer to start tracking quotes, services, and building relationships.</p>
+                    <button
+                      onClick={() => setShowAddModal(true)}
+                      className="px-6 py-3 bg-v-gold text-v-charcoal rounded font-medium hover:bg-v-gold-dim"
+                    >
+                      + Add Your First Customer
+                    </button>
+                  </>
+                )}
               </div>
             ) : (
               <div className="p-8 text-center text-v-text-secondary">No results found</div>
@@ -670,93 +807,95 @@ export default function CustomersPage() {
             <div className="divide-y divide-v-border/20">
               {filteredCustomers.map((customer) => {
                 const tags = Array.isArray(customer.tags) ? customer.tags : [];
+                const isSelected = selectedIds.has(customer.id);
                 return (
-                  <div key={customer.id || customer.email} className="px-4 py-4 hover:bg-v-surface-light grid grid-cols-1 sm:grid-cols-14 gap-2 sm:gap-4 items-center transition-colors">
-                    {/* Checkbox */}
-                    <div className="col-span-1 hidden sm:block">
+                  <div key={customer.id || customer.email} className="hover:bg-v-surface-light transition-colors group">
+                    {/* Mobile row */}
+                    <div className="sm:hidden flex items-start gap-3 px-4 py-3">
                       {customer.id && (
                         <input
                           type="checkbox"
-                          checked={selectedIds.has(customer.id)}
+                          checked={isSelected}
                           onChange={() => toggleSelect(customer.id)}
-                          className="w-4 h-4 rounded border-v-border accent-amber-500 cursor-pointer"
+                          className="w-4 h-4 mt-1 accent-amber-500 flex-shrink-0"
                         />
                       )}
-                    </div>
-
-                    {/* Customer Info */}
-                    <div className="col-span-3 cursor-pointer" onClick={() => customer.id && router.push(`/customers/${customer.id}`)}>
-                      <p className="font-medium text-v-text-primary hover:text-v-gold">{customer.name || 'Name'}</p>
-                      <p className="text-xs text-v-text-secondary">{customer.email}</p>
-                      {customer.company_name && (
-                        <p className="text-xs text-v-text-secondary/60">{customer.company_name}</p>
-                      )}
-                    </div>
-
-                    {/* Tags */}
-                    <div className="col-span-3">
-                      <div className="flex flex-wrap gap-1">
-                        {tags.map((tag) => (
-                          <span key={tag} className={`px-2 py-0.5 rounded text-xs font-medium border ${getTagStyle(tag)}`}>
-                            {tag}
-                          </span>
-                        ))}
-                        {customer.id && (
-                          <button
-                            onClick={() => {
-                              setEditCustomer(customer);
-                              setEditTags([...tags]);
-                            }}
-                            className="px-2 py-0.5 rounded text-xs text-v-text-secondary/50 border border-dashed border-v-border hover:border-v-gold/50 hover:text-v-gold"
-                          >
-                            + Tag
-                          </button>
+                      <div className="flex-1 min-w-0 cursor-pointer" onClick={() => customer.id && router.push(`/customers/${customer.id}`)}>
+                        <p className="font-medium text-v-text-primary truncate">{customer.name || 'Name'}</p>
+                        <p className="text-xs text-v-text-secondary truncate">{customer.email}</p>
+                        {customer.company_name && <p className="text-xs text-v-text-secondary/60 truncate">{customer.company_name}</p>}
+                        {tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1.5">
+                            {tags.slice(0, 3).map(tag => (
+                              <span key={tag} className={`px-1.5 py-0.5 rounded text-[10px] font-medium border ${getTagStyle(tag)}`}>{tag}</span>
+                            ))}
+                            {tags.length > 3 && <span className="text-[10px] text-v-text-secondary">+{tags.length - 3}</span>}
+                          </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Quotes */}
-                    <div className="col-span-2 text-sm text-v-text-secondary">
-                      {customer.quote_count || 0} {(customer.quote_count || 0) === 1 ? 'quote' : 'quotes'}
-                    </div>
+                    {/* Desktop row */}
+                    <div className="hidden sm:grid sm:grid-cols-14 gap-4 items-center px-4 py-4">
+                      {/* Checkbox — hidden by default, visible on hover or when items selected */}
+                      <div className="col-span-1 flex items-center justify-center">
+                        {customer.id && (
+                          <input
+                            type="checkbox"
+                            checked={isSelected}
+                            onChange={() => toggleSelect(customer.id)}
+                            className={`w-4 h-4 rounded border-v-border accent-amber-500 cursor-pointer transition-opacity duration-150 ${
+                              hasSelection ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+                            }`}
+                          />
+                        )}
+                      </div>
 
-                    {/* Revenue */}
-                    <div className="col-span-2 text-sm text-v-gold font-data">
-                      {formatCurrency(customer.total_revenue)}
-                    </div>
+                      {/* Customer Info */}
+                      <div className="col-span-4 cursor-pointer" onClick={() => customer.id && router.push(`/customers/${customer.id}`)}>
+                        <p className="font-medium text-v-text-primary hover:text-v-gold">{customer.name || 'Name'}</p>
+                        <p className="text-xs text-v-text-secondary">{customer.email}</p>
+                        {customer.company_name && (
+                          <p className="text-xs text-v-text-secondary/60">{customer.company_name}</p>
+                        )}
+                      </div>
 
-                    {/* Last Activity */}
-                    <div className="col-span-2 text-sm text-v-text-secondary">
-                      {formatDate(customer.last_service_date)}
-                    </div>
+                      {/* Tags */}
+                      <div className="col-span-3">
+                        <div className="flex flex-wrap gap-1">
+                          {tags.map((tag) => (
+                            <span key={tag} className={`px-2 py-0.5 rounded text-xs font-medium border ${getTagStyle(tag)}`}>
+                              {tag}
+                            </span>
+                          ))}
+                          {customer.id && (
+                            <button
+                              onClick={() => {
+                                setEditCustomer(customer);
+                                setEditTags([...tags]);
+                              }}
+                              className="px-2 py-0.5 rounded text-xs text-v-text-secondary/50 border border-dashed border-v-border hover:border-v-gold/50 hover:text-v-gold"
+                            >
+                              + Tag
+                            </button>
+                          )}
+                        </div>
+                      </div>
 
-                    {/* Actions */}
-                    <div className="col-span-1 flex items-center justify-end gap-2">
-                      {customer.id && (
-                        <button
-                          onClick={() => router.push(`/customers/${customer.id}`)}
-                          className="hidden sm:inline-flex text-xs text-v-gold hover:text-v-gold-dim font-medium"
-                        >
-                          View
-                        </button>
-                      )}
-                      {customer.id && (
-                        <button
-                          onClick={() => deleteCustomer(customer)}
-                          className="hidden sm:inline-flex text-xs text-red-400/60 hover:text-red-400"
-                          title="Delete customer"
-                        >
-                          &#10005;
-                        </button>
-                      )}
-                      {customer.id && (
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(customer.id)}
-                          onChange={() => toggleSelect(customer.id)}
-                          className="w-4 h-4 rounded border-v-border accent-amber-500 sm:hidden"
-                        />
-                      )}
+                      {/* Quotes */}
+                      <div className="col-span-2 text-sm text-v-text-secondary">
+                        {customer.quote_count || 0} {(customer.quote_count || 0) === 1 ? 'quote' : 'quotes'}
+                      </div>
+
+                      {/* Revenue */}
+                      <div className="col-span-2 text-sm text-v-gold font-data">
+                        {formatCurrency(customer.total_revenue)}
+                      </div>
+
+                      {/* Last Activity */}
+                      <div className="col-span-2 text-sm text-v-text-secondary">
+                        {formatDate(customer.last_service_date)}
+                      </div>
                     </div>
                   </div>
                 );
@@ -766,8 +905,8 @@ export default function CustomersPage() {
 
           {/* Footer */}
           <div className="p-4 border-t border-v-border/30 text-sm text-v-text-secondary flex justify-between items-center">
-            <span>Showing {filteredCustomers.length} of {customers.length} customers</span>
-            {selectedIds.size === 0 && filteredCustomers.length > 0 && (
+            <span>Showing {filteredCustomers.length} of {customers.length} {viewMode === 'archived' ? 'archived ' : ''}customers</span>
+            {!hasSelection && filteredCustomers.length > 0 && (
               <button onClick={exportCsv} className="text-xs text-v-gold hover:text-v-gold-dim font-medium">
                 Export All CSV
               </button>
