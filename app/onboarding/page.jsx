@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import { TERMS_VERSION } from '@/lib/terms';
 
 const LANGUAGES = [
   { code: 'en', label: 'English', flag: '\u{1F1FA}\u{1F1F8}' },
@@ -173,7 +174,7 @@ export default function OnboardingPage() {
       const res = await fetch('/api/onboarding', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ action: 'save_company', company, name, phone, agreed_to_terms_at: new Date().toISOString() }),
+        body: JSON.stringify({ action: 'save_company', company, name, phone, agreed_to_terms_at: new Date().toISOString(), terms_accepted_version: TERMS_VERSION }),
       });
       const data = await res.json();
       if (data.user) {

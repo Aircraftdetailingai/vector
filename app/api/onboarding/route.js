@@ -51,16 +51,18 @@ export async function POST(request) {
 
     // Save company info
     if (action === 'save_company') {
-      const { company, name, phone, agreed_to_terms_at } = body;
+      const { company, name, phone, agreed_to_terms_at, terms_accepted_version } = body;
       const updates = { onboarding_step: 2 };
       if (company) updates.company = company;
       if (name) updates.name = name;
       if (phone) updates.phone = phone;
       if (agreed_to_terms_at) updates.agreed_to_terms_at = agreed_to_terms_at;
+      if (terms_accepted_version) updates.terms_accepted_version = terms_accepted_version;
 
       const { error: updateErr } = await supabase.from('detailers').update(updates).eq('id', user.id);
       if (updateErr && updateErr.message?.includes('column')) {
         delete updates.agreed_to_terms_at;
+        delete updates.terms_accepted_version;
         await supabase.from('detailers').update(updates).eq('id', user.id);
       }
 

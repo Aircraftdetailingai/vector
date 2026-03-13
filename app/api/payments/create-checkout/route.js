@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
+import { calculateCcFee } from '@/lib/cc-fee';
 
 export const dynamic = 'force-dynamic';
 
@@ -56,7 +57,7 @@ export async function POST(request) {
     // Fetch detailer for Stripe Connect account
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('stripe_account_id, company, email, plan, pass_fee_to_customer')
+      .select('stripe_account_id, company, email, plan, pass_fee_to_customer, cc_fee_mode')
       .eq('id', quote.detailer_id)
       .single();
 
@@ -81,7 +82,14 @@ export async function POST(request) {
 
     // When pass-through is enabled, add service fee to the total charged to customer
     // The application fee stays the same — it just comes from the customer instead of the detailer
-    const totalAmount = passFee ? baseAmount + applicationFee : baseAmount;
+    let totalAmount = passFee ? baseAmount + applicationFee : baseAmount;
+
+    // CC processing fee pass-through
+    const ccFeeMode = detailer?.cc_fee_mode || 'absorb';
+    if (ccFeeMode === 'pass' || ccFeeMode === 'customer_choice') {
+      const ccFee = calculateCcFee(totalAmount / 100); // convert cents to dollars for calculation
+      totalAmount += Math.round(ccFee * 100); // add back in cents
+    }
 
     // Hardcode URL to avoid env var issues
     const appUrl = 'https://app.aircraftdetailing.ai';

@@ -11,7 +11,7 @@ export default function TermsPage() {
         <div className="mb-8">
           <a href="/" className="text-amber-400 hover:text-amber-300 text-sm">&larr; Back to Vector</a>
           <h1 className="text-3xl font-bold text-white mt-4">Terms of Service</h1>
-          <p className="text-gray-400 mt-2">Last updated: March 7, 2026</p>
+          <p className="text-gray-400 mt-2">Last updated: March 12, 2026</p>
         </div>
 
         <div className="bg-white rounded-2xl p-8 space-y-8 text-gray-700 leading-relaxed">
@@ -203,18 +203,42 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">12. Data Ownership</h2>
-            <p>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">12. Data Ownership and License</h2>
+            <p className="mb-3">
               You retain ownership of all data you input into the Platform, including customer
-              information, quotes, invoices, and business records. You grant Vector a limited
-              license to use this data solely to provide and improve the Platform&apos;s services.
-              We may use anonymized and aggregated data for analytics, benchmarking, and
-              product improvement purposes.
+              information, quotes, invoices, and business records.
+            </p>
+            <p className="mb-3">
+              By using the Platform, you grant Vector Aviation Artificial Intelligence LLC a perpetual,
+              non-exclusive, royalty-free license to use anonymized, aggregated data derived from your
+              usage of the Platform for analytics, product improvement, industry benchmarking, and
+              commercial purposes, including the sale of such aggregated data to third parties.
+            </p>
+            <p>
+              This license applies only to anonymized and aggregated data. Your identifiable business
+              data remains under your control and is used only to provide Platform services to you.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">13. Communications</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">13. Aggregated Data and Non-Attribution</h2>
+            <p className="mb-3">
+              Vector may aggregate and anonymize data from all users to create industry reports,
+              benchmarks, and analytics products. This data may be shared with or sold to third parties
+              for research, analytics, or commercial purposes.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <p className="font-medium text-blue-900 mb-2">Non-Attribution Guarantee:</p>
+              <p className="text-blue-800">
+                Data shared with or sold to third parties is never attributable to any individual account,
+                user, or business. Vector employs technical and organizational measures to prevent
+                re-identification of individual accounts from aggregated data sets.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">14. Communications</h2>
             <p>
               Vector may send communications on your behalf (such as quote emails) through
               third-party services. You are responsible for ensuring compliance with applicable
@@ -225,7 +249,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">14. Disclaimer of Warranties</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">15. Disclaimer of Warranties</h2>
             <p>
               THE PLATFORM IS PROVIDED &ldquo;AS IS&rdquo; AND &ldquo;AS AVAILABLE&rdquo; WITHOUT WARRANTIES OF ANY KIND,
               EITHER EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO IMPLIED WARRANTIES OF
@@ -237,7 +261,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">15. Limitation of Liability</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">16. Limitation of Liability</h2>
             <p>
               TO THE MAXIMUM EXTENT PERMITTED BY LAW, VECTOR AVIATION ARTIFICIAL INTELLIGENCE AND ITS
               OFFICERS, DIRECTORS, EMPLOYEES, AND AGENTS SHALL NOT BE LIABLE FOR ANY INDIRECT,
@@ -249,7 +273,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">16. Indemnification</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">17. Indemnification</h2>
             <p>
               You agree to indemnify, defend, and hold harmless Vector Aviation Artificial Intelligence
               and its affiliates, officers, directors, employees, and agents from any and all claims,
@@ -262,7 +286,7 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">17. Termination</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">18. Termination</h2>
             <p className="mb-2">
               Either party may terminate this agreement at any time. You may cancel your subscription
               through the Platform settings. We may suspend or terminate your access for violation
@@ -277,12 +301,12 @@ export default function TermsPage() {
               After 30 days, your data may be permanently deleted.
             </p>
             <p>
-              Sections 5, 6, 7, 8, 11, 14, 15, 16, and 18 survive termination.
+              Sections 5, 6, 7, 8, 11, 12, 13, 15, 16, 17, and 19 survive termination.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">18. Governing Law and Dispute Resolution</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">19. Governing Law and Dispute Resolution</h2>
             <p>
               These Terms are governed by the laws of the State of Wyoming, without regard to
               conflict of law principles. Any disputes arising under these Terms shall be resolved
@@ -295,16 +319,18 @@ export default function TermsPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">19. Changes to Terms</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">20. Changes to Terms</h2>
             <p>
-              We reserve the right to modify these Terms at any time. Material changes will be
-              communicated via email or through a notice on the Platform. Your continued use of
-              the Platform after changes are posted constitutes acceptance of the revised Terms.
+              We reserve the right to modify these Terms at any time. We will provide at least 30 days&apos;
+              notice before material changes take effect, via email or through a notice on the Platform.
+              For significant updates, you may be required to affirmatively accept the revised Terms to
+              continue using the Platform. Your continued use of the Platform after the notice period
+              constitutes acceptance of the revised Terms.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">20. Contact Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">21. Contact Information</h2>
             <p>
               For questions about these Terms of Service, contact us at:
             </p>

@@ -11,7 +11,7 @@ export default function PrivacyPage() {
         <div className="mb-8">
           <a href="/" className="text-amber-400 hover:text-amber-300 text-sm">&larr; Back to Vector</a>
           <h1 className="text-3xl font-bold text-white mt-4">Privacy Policy</h1>
-          <p className="text-gray-400 mt-2">Last updated: March 7, 2026</p>
+          <p className="text-gray-400 mt-2">Last updated: March 12, 2026</p>
         </div>
 
         <div className="bg-white rounded-2xl p-8 space-y-8 text-gray-700 leading-relaxed">
@@ -52,10 +52,43 @@ export default function PrivacyPage() {
               <li>Payment information from Stripe (transaction status, not full card numbers)</li>
               <li>Aircraft data from public aviation databases</li>
             </ul>
+
+            <h3 className="font-medium text-gray-800 mt-4 mb-2">2.4 Business Activity Data</h3>
+            <p className="mb-2">
+              As part of providing and improving the Platform, we collect data related to your business activity on Vector, including:
+            </p>
+            <ul className="list-disc ml-6 space-y-1">
+              <li>Quote and pricing data (service types, frequencies, pricing patterns)</li>
+              <li>Service patterns and scheduling data</li>
+              <li>Aircraft types and categories serviced</li>
+              <li>Job completion and business performance metrics</li>
+              <li>Feature usage and workflow patterns</li>
+            </ul>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">3. How We Use Your Information</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">3. Aggregated and Anonymized Data</h2>
+            <p className="mb-3">
+              We may aggregate and anonymize data collected from all users of the Platform to create
+              industry-level insights. This includes:
+            </p>
+            <ul className="list-disc ml-6 space-y-1 mb-3">
+              <li>Analyzing platform-wide trends in aircraft detailing services</li>
+              <li>Creating industry reports, benchmarks, and analytics products</li>
+              <li>Sharing or selling aggregated, anonymized data with third parties for research, analytics, or commercial purposes</li>
+            </ul>
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+              <p className="font-medium text-amber-900 mb-2">Non-Identifiability Guarantee:</p>
+              <p className="text-amber-800">
+                Aggregated and anonymized data does not identify any individual user, business, or account.
+                We employ technical and organizational measures to ensure that no individual business is
+                identifiable in any data we share or sell to third parties.
+              </p>
+            </div>
+          </section>
+
+          <section>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">4. How We Use Your Information</h2>
             <p className="mb-2">We use collected information to:</p>
             <ul className="list-disc ml-6 space-y-1">
               <li>Provide, maintain, and improve the Platform</li>
@@ -71,8 +104,11 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">4. How We Share Your Information</h2>
-            <p className="mb-2">We do not sell your personal information. We may share information with:</p>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">5. How We Share Your Information</h2>
+            <p className="mb-2">
+              We do not sell your personal information. We may share or sell aggregated, anonymized
+              data that does not identify any individual user or business. We may share information with:
+            </p>
             <ul className="list-disc ml-6 space-y-2">
               <li>
                 <strong>Stripe, Inc.</strong> &mdash; for payment processing. Stripe&apos;s handling of your data
@@ -107,7 +143,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">5. Data Security</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">6. Data Security</h2>
             <p>
               We implement industry-standard security measures to protect your data, including:
             </p>
@@ -126,7 +162,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">6. Data Retention</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">7. Data Retention</h2>
             <p>
               We retain your account data for as long as your account is active. After account
               deletion, we retain data for up to 90 days for backup and recovery purposes,
@@ -137,7 +173,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">7. Your Rights</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">8. Your Rights</h2>
             <p className="mb-2">Depending on your location, you may have the right to:</p>
             <ul className="list-disc ml-6 space-y-1">
               <li><strong>Access</strong> &mdash; request a copy of the personal data we hold about you</li>
@@ -157,7 +193,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">8. Cookies</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">9. Cookies</h2>
             <p>
               Vector uses essential cookies and local storage to maintain your session and
               preferences. We do not use third-party advertising cookies or tracking pixels.
@@ -171,7 +207,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">9. Children&apos;s Privacy</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">10. Children&apos;s Privacy</h2>
             <p>
               Vector is not intended for use by individuals under 18 years of age. We do not
               knowingly collect personal information from children. If we learn that we have
@@ -180,12 +216,13 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">10. California Privacy Rights (CCPA)</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">11. California Privacy Rights (CCPA)</h2>
             <p>
               If you are a California resident, you have the right to know what personal information
               we collect, request deletion, and opt out of the sale of personal information.
-              We do not sell personal information. To exercise your California privacy rights,
-              contact us at{' '}
+              We do not sell personal information as defined under the CCPA. We may share aggregated,
+              anonymized data that does not constitute &ldquo;personal information&rdquo; under the CCPA.
+              To exercise your California privacy rights, contact us at{' '}
               <a href="mailto:support@vectorav.ai" className="text-amber-600 hover:underline">
                 support@vectorav.ai
               </a>.
@@ -193,7 +230,7 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">11. International Data Transfers</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">12. International Data Transfers</h2>
             <p>
               Your data may be processed and stored in the United States. By using the Platform,
               you consent to the transfer and processing of your data in the United States.
@@ -202,16 +239,18 @@ export default function PrivacyPage() {
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">12. Changes to This Policy</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">13. Changes to This Policy</h2>
             <p>
-              We may update this Privacy Policy from time to time. Material changes will be
-              communicated via email or through a notice on the Platform. The &ldquo;Last updated&rdquo;
-              date at the top of this page indicates when the policy was last revised.
+              We may update this Privacy Policy from time to time. We will provide at least 30 days&apos;
+              notice before material changes take effect, via email or through a notice on the Platform.
+              The &ldquo;Last updated&rdquo; date at the top of this page indicates when the policy was last revised.
+              Your continued use of the Platform after the notice period constitutes acceptance of the
+              revised Privacy Policy.
             </p>
           </section>
 
           <section>
-            <h2 className="text-xl font-semibold text-gray-900 mb-3">13. Contact Us</h2>
+            <h2 className="text-xl font-semibold text-gray-900 mb-3">14. Contact Us</h2>
             <p>
               For questions or concerns about this Privacy Policy or our data practices, contact us at:
             </p>

@@ -65,6 +65,9 @@ function SettingsContent() {
   // Platform fee pass-through
   const [passFeeToCustomer, setPassFeeToCustomer] = useState(false);
 
+  // CC fee mode
+  const [ccFeeMode, setCcFeeMode] = useState('absorb');
+
   // Add-on Fees state
   const [addonFees, setAddonFees] = useState([]);
   const [addonLoading, setAddonLoading] = useState(false);
@@ -245,6 +248,39 @@ function SettingsContent() {
     }
   };
 
+  const fetchCcFee = async () => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/user/cc-fee', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCcFeeMode(data.cc_fee_mode || 'absorb');
+      }
+    } catch (err) {
+      console.log('Failed to fetch cc fee setting:', err);
+    }
+  };
+
+  const saveCcFee = async (mode) => {
+    setCcFeeMode(mode);
+    try {
+      const token = localStorage.getItem('vector_token');
+      await fetch('/api/user/cc-fee', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ cc_fee_mode: mode }),
+      });
+      const stored = localStorage.getItem('vector_user');
+      if (stored) {
+        try { const u = JSON.parse(stored); u.cc_fee_mode = mode; localStorage.setItem('vector_user', JSON.stringify(u)); } catch {}
+      }
+    } catch (err) {
+      console.error('Failed to save cc fee setting:', err);
+    }
+  };
+
   const fetchProductRatios = async () => {
     try {
       const token = localStorage.getItem('vector_token');
@@ -341,6 +377,7 @@ function SettingsContent() {
     fetchMinimumFee();
     fetchAddonFees();
     fetchPassFee();
+    fetchCcFee();
     fetchProductRatios();
     fetchReferralData();
   }, []);
@@ -821,6 +858,7 @@ function SettingsContent() {
       if (pendingChanges.has('language')) promises.push(saveLanguage(language));
       // homeAirport removed
       if (pendingChanges.has('passFee')) promises.push(savePassFee(passFeeToCustomer));
+      if (pendingChanges.has('ccFee')) promises.push(saveCcFee(ccFeeMode));
       if (pendingChanges.has('quoteDisplay')) promises.push(saveQuoteDisplayPref(quoteDisplayPref));
       if (pendingChanges.has('notifications')) {
         const allNotifs = { ...emailNotifs, ...smsAlerts, ...smsClient, priceReviewMonths: priceReminder, autoDiscountEnabled };
@@ -1256,6 +1294,67 @@ function SettingsContent() {
               <div>
                 <p className="font-medium">{'Pass platform fee to customer'}</p>
                 <p className="text-sm text-gray-500">{'A "Service Fee" line item is added to the customer\'s quote. You receive the full quote amount.'}</p>
+              </div>
+            </label>
+          </div>
+        </div>
+
+        {/* Credit Card Processing Fee */}
+        <div className="bg-white p-4 rounded shadow">
+          <h3 className="font-semibold mb-2">Credit Card Processing Fee</h3>
+          <p className="text-sm text-gray-600 mb-3">
+            Stripe charges 2.9% + $0.30 per transaction. Choose how this fee is handled.
+          </p>
+          <div className="space-y-3">
+            <label
+              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
+                ccFeeMode === 'absorb' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="ccFeeMode"
+                checked={ccFeeMode === 'absorb'}
+                onChange={() => { setCcFeeMode('absorb'); markDirty('ccFee'); }}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <p className="font-medium">Absorb fees</p>
+                <p className="text-sm text-gray-500">You pay the processing fee. Customer sees a clean price with no extra charges.</p>
+              </div>
+            </label>
+            <label
+              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
+                ccFeeMode === 'pass' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="ccFeeMode"
+                checked={ccFeeMode === 'pass'}
+                onChange={() => { setCcFeeMode('pass'); markDirty('ccFee'); }}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <p className="font-medium">Pass to customer</p>
+                <p className="text-sm text-gray-500">A &quot;Processing Fee&quot; line item (2.9% + $0.30) is added to the customer&apos;s invoice.</p>
+              </div>
+            </label>
+            <label
+              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
+                ccFeeMode === 'customer_choice' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <input
+                type="radio"
+                name="ccFeeMode"
+                checked={ccFeeMode === 'customer_choice'}
+                onChange={() => { setCcFeeMode('customer_choice'); markDirty('ccFee'); }}
+                className="mt-1 mr-3"
+              />
+              <div>
+                <p className="font-medium">Customer choice</p>
+                <p className="text-sm text-gray-500">Customer can pay by card (fee included) or request an invoice to pay by check/ACH (no fee).</p>
               </div>
             </label>
           </div>

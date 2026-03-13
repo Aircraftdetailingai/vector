@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { PLATFORM_FEES } from '@/lib/pricing-tiers';
 import { formatPrice } from '@/lib/formatPrice';
 import { getCurrencySymbol } from '@/lib/currency';
+import { calculateCcFee } from '@/lib/cc-fee';
 
 // Friendly error messages for payment declines
 const PAYMENT_ERROR_MESSAGES = {
@@ -28,6 +29,8 @@ export default function QuoteViewPage() {
   const [tipsSent, setTipsSent] = useState(false);
   const [stripeConnected, setStripeConnected] = useState(true);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [invoiceRequesting, setInvoiceRequesting] = useState(false);
+  const [invoiceAccepted, setInvoiceAccepted] = useState(false);
 
   useEffect(() => {
     const fetchQuote = async () => {
@@ -53,7 +56,7 @@ export default function QuoteViewPage() {
 
   const sym = getCurrencySymbol(detailer?.preferred_currency || 'USD');
   const isExpired = quote && new Date() > new Date(quote.valid_until);
-  const isPaid = quote && (quote.status === 'paid' || quote.status === 'approved');
+  const isPaid = quote && (quote.status === 'paid' || quote.status === 'approved' || quote.status === 'accepted');
 
   const handlePayment = async () => {
     setPaymentError('');
@@ -80,6 +83,28 @@ export default function QuoteViewPage() {
       setPaymentError(PAYMENT_ERROR_MESSAGES.default);
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handleRequestInvoice = async () => {
+    setInvoiceRequesting(true);
+    setPaymentError('');
+    try {
+      const res = await fetch(`/api/quotes/${quote.id}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareLink: params.shareLink }),
+      });
+      if (res.ok) {
+        setInvoiceAccepted(true);
+      } else {
+        const data = await res.json();
+        setPaymentError(data.error || 'Failed to submit request');
+      }
+    } catch (err) {
+      setPaymentError('Network error. Please try again.');
+    } finally {
+      setInvoiceRequesting(false);
     }
   };
 
@@ -129,11 +154,20 @@ export default function QuoteViewPage() {
   };
 
   const getServicesList = (quote) => {
-    // Primary: use line_items array (current format)
-    if (quote.line_items && quote.line_items.length > 0) {
-      return quote.line_items.map(item => ({
-        name: item.service || item.description || 'Service',
+    // Primary: use line_items column or metadata fallback
+    const items = quote.line_items || quote.metadata?.line_items;
+    if (Array.isArray(items) && items.length > 0) {
+      return items.map(item => ({
+        name: item.service || item.description || item.name || 'Service',
         amount: item.amount || 0,
+      }));
+    }
+    // Fallback: selected_services array (column or metadata)
+    const selected = quote.selected_services || quote.metadata?.selected_services;
+    if (Array.isArray(selected) && selected.length > 0) {
+      return selected.map(svc => ({
+        name: svc.name || svc.description || 'Service',
+        amount: 0,
       }));
     }
     // Fallback: legacy services object { exterior: true, ... }
@@ -145,9 +179,11 @@ export default function QuoteViewPage() {
         ceramic: 'Ceramic Coating',
         engine: 'Engine Detail',
       };
-      return Object.entries(quote.services)
-        .filter(([, value]) => value === true)
-        .map(([key]) => ({ name: labels[key] || key, amount: 0 }));
+      const entries = Object.entries(quote.services)
+        .filter(([, value]) => value === true);
+      if (entries.length > 0) {
+        return entries.map(([key]) => ({ name: labels[key] || key, amount: 0 }));
+      }
     }
     return [];
   };
@@ -358,11 +394,11 @@ export default function QuoteViewPage() {
             </div>
 
             {/* Pricing based on detailer preference - hide breakdown when minimum fee applies */}
-            {!quote.minimum_fee_applied && detailer?.quote_display_preference === 'full_breakdown' && quote.line_items && (
+            {!quote.minimum_fee_applied && detailer?.quote_display_preference === 'full_breakdown' && (quote.line_items || quote.metadata?.line_items) && (
               <div className="pt-3 border-t space-y-2">
-                {quote.line_items.map((item, i) => (
+                {(quote.line_items || quote.metadata?.line_items).map((item, i) => (
                   <div key={i} className="flex justify-between text-sm">
-                    <span className="text-gray-700">{item.description}</span>
+                    <span className="text-gray-700">{item.description || item.service || item.name || 'Service'}</span>
                     <span className="text-gray-900">{sym}{formatPrice(item.amount)}</span>
                   </div>
                 ))}
@@ -404,14 +440,18 @@ export default function QuoteViewPage() {
               </div>
             )}
 
-            {/* Service Fee (platform fee passed to customer) */}
+            {/* Service Fee + CC Processing Fee */}
             {(() => {
               const plan = detailer?.plan || 'free';
               const feeRate = PLATFORM_FEES[plan] || PLATFORM_FEES.free;
               const passFee = detailer?.pass_fee_to_customer;
+              const ccFeeMode = detailer?.cc_fee_mode || 'absorb';
               const basePrice = parseFloat(quote.total_price) || 0;
               const serviceFee = passFee ? Math.round(basePrice * feeRate * 100) / 100 : 0;
-              const displayTotal = passFee ? basePrice + serviceFee : basePrice;
+              const subtotalWithService = basePrice + serviceFee;
+              const ccFee = (ccFeeMode === 'pass' || ccFeeMode === 'customer_choice') ? calculateCcFee(subtotalWithService) : 0;
+              const showCcFee = ccFeeMode === 'pass'; // always show for pass, conditional for customer_choice
+              const displayTotal = subtotalWithService + (showCcFee ? ccFee : 0);
 
               return (
                 <>
@@ -421,10 +461,21 @@ export default function QuoteViewPage() {
                       <span className="text-gray-700">+{sym}{formatPrice(serviceFee)}</span>
                     </div>
                   )}
+                  {showCcFee && ccFee > 0 && (
+                    <div className="flex justify-between text-sm pt-2">
+                      <span className="text-gray-500">Processing Fee (2.9% + $0.30)</span>
+                      <span className="text-gray-700">+{sym}{formatPrice(ccFee)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between pt-3 border-t">
                     <span className="text-gray-800 font-semibold">Total:</span>
                     <span className="font-bold text-2xl text-[#1e3a5f]">{sym}{formatPrice(displayTotal)}</span>
                   </div>
+                  {ccFeeMode === 'customer_choice' && (
+                    <p className="text-xs text-gray-400 text-right mt-1">
+                      Pay by card includes +{sym}{formatPrice(ccFee)} processing fee
+                    </p>
+                  )}
                 </>
               );
             })()}
@@ -507,14 +558,43 @@ export default function QuoteViewPage() {
         )}
 
         {/* Pay Button or Payment Unavailable */}
-        {stripeConnected ? (
-          <button
-            onClick={handlePayment}
-            disabled={paymentLoading || !agreedToTerms}
-            className="w-full py-3 rounded-lg text-white font-medium bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 disabled:opacity-50"
-          >
-            {paymentLoading ? 'Processing...' : 'Approve & Pay'}
-          </button>
+        {invoiceAccepted ? (
+          <div className="bg-green-50 border border-green-200 rounded-lg p-4 text-center">
+            <p className="text-green-800 font-medium">Invoice Requested</p>
+            <p className="text-green-700 text-sm mt-1">
+              {detailer?.company || 'The detailer'} has been notified and will send you an invoice.
+            </p>
+          </div>
+        ) : stripeConnected ? (
+          detailer?.cc_fee_mode === 'customer_choice' ? (
+            <div className="space-y-3">
+              <button
+                onClick={handlePayment}
+                disabled={paymentLoading || !agreedToTerms}
+                className="w-full py-3 rounded-lg text-white font-medium bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 disabled:opacity-50"
+              >
+                {paymentLoading ? 'Processing...' : 'Pay by Card'}
+              </button>
+              <button
+                onClick={handleRequestInvoice}
+                disabled={invoiceRequesting || !agreedToTerms}
+                className="w-full py-3 rounded-lg font-medium border-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              >
+                {invoiceRequesting ? 'Submitting...' : 'Request Invoice (Check/ACH)'}
+              </button>
+              <p className="text-xs text-gray-400 text-center">
+                Card payment includes a processing fee. Invoice payments have no additional fees.
+              </p>
+            </div>
+          ) : (
+            <button
+              onClick={handlePayment}
+              disabled={paymentLoading || !agreedToTerms}
+              className="w-full py-3 rounded-lg text-white font-medium bg-gradient-to-r from-amber-500 to-amber-600 hover:opacity-90 disabled:opacity-50"
+            >
+              {paymentLoading ? 'Processing...' : 'Approve & Pay'}
+            </button>
+          )
         ) : (
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-center">
             <p className="text-blue-800 font-medium">Payment details to follow</p>

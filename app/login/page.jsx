@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { setUserCurrency } from '@/lib/currency';
+import TermsConsentModal from '@/components/TermsConsentModal';
+import { TERMS_VERSION } from '@/lib/terms';
 
 export default function Page() {
   const router = useRouter();
@@ -9,6 +11,8 @@ export default function Page() {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const [pendingRedirect, setPendingRedirect] = useState(null);
 
   // Redirect to dashboard if already logged in
   useEffect(() => {
@@ -66,12 +70,12 @@ export default function Page() {
             }
           }
         }
-        if (data.must_change_password) {
-          console.log('Redirecting to /onboarding (must_change_password: true)');
-          router.push('/onboarding');
+        const redirectTo = data.must_change_password ? '/onboarding' : '/dashboard';
+        if (data.user.terms_accepted_version !== TERMS_VERSION) {
+          setPendingRedirect(redirectTo);
+          setShowTermsModal(true);
         } else {
-          console.log('Redirecting to /dashboard (must_change_password: false)');
-          router.push('/dashboard');
+          router.push(redirectTo);
         }
       } else {
         console.log('No token in response!');
@@ -149,6 +153,13 @@ export default function Page() {
           <p className="text-xs text-gray-400">By Vector Aviation</p>
         </div>
       </div>
+      <TermsConsentModal
+        isOpen={showTermsModal}
+        onAccept={() => {
+          setShowTermsModal(false);
+          if (pendingRedirect) router.push(pendingRedirect);
+        }}
+      />
     </div>
   );
 }

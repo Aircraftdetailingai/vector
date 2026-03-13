@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { PLATFORM_FEES } from '@/lib/pricing-tiers';
 import { formatPrice } from '@/lib/formatPrice';
 import { getCurrencySymbol } from '@/lib/currency';
+import { calculateCcFee } from '@/lib/cc-fee';
 import { t, detectBrowserLanguage, SUPPORTED_LANGUAGES } from '@/lib/translations';
 
 const STATUS_LABELS = {
@@ -50,6 +51,8 @@ export default function PortalPage() {
   const [lang, setLang] = useState('en');
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const [invoiceRequesting, setInvoiceRequesting] = useState(false);
+  const [invoiceAccepted, setInvoiceAccepted] = useState(false);
 
   // Detect browser language on mount
   useEffect(() => {
@@ -101,7 +104,7 @@ export default function PortalPage() {
 
   const T = (key, replacements) => t(lang, key, replacements);
 
-  const isPaid = quote && ['paid', 'approved', 'scheduled', 'in_progress', 'completed'].includes(quote.status);
+  const isPaid = quote && ['paid', 'approved', 'accepted', 'scheduled', 'in_progress', 'completed'].includes(quote.status);
   const isExpired = quote && !isPaid && new Date() > new Date(quote.valid_until);
   const canPay = quote && !isPaid && !isExpired && stripeConnected && ['sent', 'viewed'].includes(quote.status);
   const companyName = detailer?.company || detailer?.name || 'your detailing professional';
@@ -128,6 +131,28 @@ export default function PortalPage() {
       setPaymentError('Payment failed. Please try again.');
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  const handleRequestInvoice = async () => {
+    setInvoiceRequesting(true);
+    setPaymentError('');
+    try {
+      const res = await fetch(`/api/quotes/${quote.id}/accept`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ shareLink: quote.share_link }),
+      });
+      if (res.ok) {
+        setInvoiceAccepted(true);
+      } else {
+        const data = await res.json();
+        setPaymentError(data.error || 'Failed to submit request');
+      }
+    } catch (err) {
+      setPaymentError('Network error. Please try again.');
+    } finally {
+      setInvoiceRequesting(false);
     }
   };
 
@@ -175,7 +200,19 @@ export default function PortalPage() {
   }
 
   const aircraftDisplay = quote.aircraft_model || quote.aircraft_type || 'Aircraft';
-  const lineItems = Array.isArray(quote.line_items) ? quote.line_items.filter(li => li.description && li.amount > 0) : [];
+  const rawLineItems = Array.isArray(quote.line_items) && quote.line_items.length > 0
+    ? quote.line_items
+    : Array.isArray(quote.metadata?.line_items) && quote.metadata.line_items.length > 0
+      ? quote.metadata.line_items
+      : Array.isArray(quote.selected_services) && quote.selected_services.length > 0
+        ? quote.selected_services.map(svc => ({ description: svc.name || svc.description, amount: 0 }))
+        : Array.isArray(quote.metadata?.selected_services) && quote.metadata.selected_services.length > 0
+          ? quote.metadata.selected_services.map(svc => ({ description: svc.name || svc.description, amount: 0 }))
+          : [];
+  const lineItems = rawLineItems.filter(li => li.description || li.service || li.name).map(li => ({
+    description: li.description || li.service || li.name || 'Service',
+    amount: li.amount || 0,
+  }));
   const completedJobs = history.filter(h => h.status === 'completed').length;
   const totalSpent = history.filter(h => ['paid', 'approved', 'completed'].includes(h.status)).reduce((sum, h) => sum + (h.total_price || 0), 0) + (isPaid ? (quote.total_price || 0) : 0);
 
@@ -252,7 +289,17 @@ export default function PortalPage() {
             {/* Payment CTA */}
             {canPay && (
               <div className="bg-gradient-to-r from-amber-500 to-amber-600 rounded-xl p-5 text-white text-center">
-                <p className="text-2xl font-bold mb-1">{sym}{formatPrice(quote.total_price)}</p>
+                {(() => {
+                  const ccMode = detailer?.cc_fee_mode || 'absorb';
+                  const basePrice = parseFloat(quote.total_price) || 0;
+                  const ccFee = (ccMode === 'pass') ? calculateCcFee(basePrice) : 0;
+                  return (
+                    <>
+                      <p className="text-2xl font-bold mb-1">{sym}{formatPrice(basePrice + ccFee)}</p>
+                      {ccFee > 0 && <p className="text-white/70 text-xs mb-1">Includes {sym}{formatPrice(ccFee)} processing fee</p>}
+                    </>
+                  );
+                })()}
                 <p className="text-white/80 text-sm mb-4">{aircraftDisplay} {T('detail')}</p>
                 {paymentError && <p className="text-white bg-red-600/30 rounded p-2 mb-3 text-sm">{paymentError}</p>}
                 {(detailer?.terms_text || detailer?.terms_pdf_url) && (
@@ -282,13 +329,38 @@ export default function PortalPage() {
                     I agree to the {(detailer?.terms_text || detailer?.terms_pdf_url) ? 'above' : ''} Terms & Conditions for this service
                   </label>
                 </div>
-                <button
-                  onClick={handlePayment}
-                  disabled={paymentLoading || !agreedToTerms}
-                  className="bg-white text-amber-600 font-semibold px-8 py-3 rounded-lg hover:bg-amber-50 disabled:opacity-50 transition-colors"
-                >
-                  {paymentLoading ? T('processing') : T('approveAndPay')}
-                </button>
+                {invoiceAccepted ? (
+                  <div className="bg-white/20 rounded-lg p-4 text-center">
+                    <p className="text-white font-medium">Invoice Requested</p>
+                    <p className="text-white/80 text-sm mt-1">{detailer?.company || 'The detailer'} will send you an invoice.</p>
+                  </div>
+                ) : detailer?.cc_fee_mode === 'customer_choice' ? (
+                  <div className="space-y-3">
+                    <button
+                      onClick={handlePayment}
+                      disabled={paymentLoading || !agreedToTerms}
+                      className="w-full bg-white text-amber-600 font-semibold px-8 py-3 rounded-lg hover:bg-amber-50 disabled:opacity-50 transition-colors"
+                    >
+                      {paymentLoading ? T('processing') : 'Pay by Card'}
+                    </button>
+                    <button
+                      onClick={handleRequestInvoice}
+                      disabled={invoiceRequesting || !agreedToTerms}
+                      className="w-full border-2 border-white/50 text-white font-semibold px-8 py-3 rounded-lg hover:bg-white/10 disabled:opacity-50 transition-colors"
+                    >
+                      {invoiceRequesting ? 'Submitting...' : 'Request Invoice (Check/ACH)'}
+                    </button>
+                    <p className="text-xs text-white/60 text-center">Card includes processing fee. Invoice has no additional fees.</p>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handlePayment}
+                    disabled={paymentLoading || !agreedToTerms}
+                    className="bg-white text-amber-600 font-semibold px-8 py-3 rounded-lg hover:bg-amber-50 disabled:opacity-50 transition-colors"
+                  >
+                    {paymentLoading ? T('processing') : T('approveAndPay')}
+                  </button>
+                )}
               </div>
             )}
 

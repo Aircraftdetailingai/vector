@@ -10,6 +10,8 @@ import { formatPriceWhole, currencySymbol } from '../../lib/formatPrice';
 import DashboardTour from '../../components/DashboardTour.jsx';
 import DashboardLanguageSelector from '../../components/DashboardLanguageSelector.jsx';
 import PointsBadge from '../../components/PointsBadge.jsx';
+import TermsConsentModal from '../../components/TermsConsentModal.jsx';
+import { TERMS_VERSION } from '../../lib/terms';
 
 
 // Stripe Connect Warning Banner Component
@@ -168,6 +170,7 @@ function DashboardContent() {
   const [quickStats, setQuickStats] = useState(null);
   const [recentQuotes, setRecentQuotes] = useState([]);
   const [upcomingJobs, setUpcomingJobs] = useState([]);
+  const [showTermsModal, setShowTermsModal] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -192,6 +195,9 @@ function DashboardContent() {
           if (data.user) {
             setUser(data.user);
             localStorage.setItem('vector_user', JSON.stringify(data.user));
+            if (data.user.terms_accepted_version !== TERMS_VERSION) {
+              setShowTermsModal(true);
+            }
           }
         }
       } catch (e) {}
@@ -553,6 +559,15 @@ function DashboardContent() {
         </div>
 
       </div>
+
+      {/* Terms Consent Modal */}
+      <TermsConsentModal
+        isOpen={showTermsModal}
+        onAccept={() => {
+          setShowTermsModal(false);
+          setUser(prev => ({ ...prev, terms_accepted_version: TERMS_VERSION }));
+        }}
+      />
 
       {/* Add Customer Modal */}
       <AddCustomerModal

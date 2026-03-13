@@ -100,6 +100,7 @@ export async function POST(request) {
       efficiency_factor: data.efficiency_factor || 1.0,
       default_labor_rate: data.default_labor_rate || 25,
       sms_enabled: isAdmin ? true : (data.sms_enabled !== false),
+      terms_accepted_version: data.terms_accepted_version || null,
     };
     return new Response(
       JSON.stringify({ token, user, must_change_password: data.must_change_password }),
