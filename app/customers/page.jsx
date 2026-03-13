@@ -614,131 +614,138 @@ export default function CustomersPage() {
           </button>
         </div>
 
+        {/* Gmail-style Action Toolbar — rendered OUTSIDE overflow-hidden container */}
+        {hasSelection && (
+          <div className="bg-v-surface border border-v-border/30 rounded-t-sm px-4 py-2.5 hidden sm:flex items-center gap-1 relative z-10">
+            <input
+              type="checkbox"
+              checked={selectedIds.size === filteredCustomers.length}
+              onChange={toggleSelectAll}
+              className="w-4 h-4 rounded border-v-border accent-amber-500 cursor-pointer mr-3"
+            />
+            <span className="text-sm font-medium text-v-text-primary">{selectedIds.size} selected</span>
+            <button
+              type="button"
+              onClick={() => setSelectedIds(new Set())}
+              className="ml-1 mr-2 text-v-text-secondary hover:text-v-text-primary cursor-pointer"
+              title="Clear selection"
+            >
+              <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+
+            <div className="flex items-center gap-0.5 border-l border-v-border/30 pl-2">
+              {/* Archive / Unarchive */}
+              {viewMode === 'active' ? (
+                <button
+                  type="button"
+                  onClick={() => bulkArchive(true)}
+                  disabled={archiving}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors disabled:opacity-50 cursor-pointer"
+                  title="Archive"
+                >
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-2-3H6L4 7m16 0v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7m16 0H4m8 4v6m0 0l-3-3m3 3l3-3" /></svg>
+                  <span className="hidden lg:inline">Archive</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => bulkArchive(false)}
+                  disabled={archiving}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors disabled:opacity-50 cursor-pointer"
+                  title="Unarchive"
+                >
+                  <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 17l2 3h12l2-3M4 17V7m16 10V7M4 17h16M4 7l2-3h12l2 3M4 7h16m-8-2v6m0 0l3-3m-3 3l-3-3" /></svg>
+                  <span className="hidden lg:inline">Unarchive</span>
+                </button>
+              )}
+
+              {/* Delete */}
+              <button
+                type="button"
+                onClick={bulkDelete}
+                disabled={bulkDeleting}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50 cursor-pointer"
+                title="Delete permanently"
+              >
+                <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                <span className="hidden lg:inline">Delete</span>
+              </button>
+
+              {/* Tag */}
+              <button
+                type="button"
+                onClick={() => { setBulkTagModal(true); setBulkTagAction('add'); setBulkTagSelection([]); }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors cursor-pointer"
+                title="Manage tags"
+              >
+                <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /></svg>
+                <span className="hidden lg:inline">Tag</span>
+              </button>
+
+              {/* VIP */}
+              <button
+                type="button"
+                onClick={moveToVip}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/10 rounded transition-colors cursor-pointer"
+                title="Mark as VIP"
+              >
+                <svg className="w-4 h-4 pointer-events-none" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
+                <span className="hidden lg:inline">VIP</span>
+              </button>
+
+              {/* Email */}
+              <button
+                type="button"
+                onClick={() => { setEmailBlastModal(true); setEmailSubject(''); setEmailMessage(''); }}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors cursor-pointer"
+                title="Send email blast"
+              >
+                <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                <span className="hidden lg:inline">Email</span>
+              </button>
+
+              {/* Export */}
+              <button
+                type="button"
+                onClick={exportCsv}
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors cursor-pointer"
+                title="Export to CSV"
+              >
+                <svg className="w-4 h-4 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                <span className="hidden lg:inline">Export</span>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Customer List */}
-        <div className="bg-v-surface rounded-sm overflow-hidden">
-          {/* Desktop Table Header / Action Toolbar */}
-          <div className="border-b border-v-border/30 px-4 py-2.5 hidden sm:block">
-            {hasSelection ? (
-              /* Gmail-style action toolbar */
-              <div className="flex items-center gap-1">
+        <div className={`bg-v-surface ${hasSelection ? 'rounded-b-sm' : 'rounded-sm'} overflow-hidden`}>
+          {/* Column headers (only when no selection) */}
+          {!hasSelection && (
+            <div className="border-b border-v-border/30 px-4 py-2.5 hidden sm:grid sm:grid-cols-14 gap-4 items-center text-xs font-medium text-v-text-secondary uppercase tracking-widest">
+              <div className="col-span-1">
                 <input
                   type="checkbox"
-                  checked={selectedIds.size === filteredCustomers.length}
+                  checked={filteredCustomers.length > 0 && selectedIds.size === filteredCustomers.length}
                   onChange={toggleSelectAll}
-                  className="w-4 h-4 rounded border-v-border accent-amber-500 cursor-pointer mr-3"
+                  className="w-4 h-4 rounded border-v-border text-v-gold cursor-pointer accent-amber-500"
                 />
-                <span className="text-sm font-medium text-v-text-primary">{selectedIds.size} selected</span>
-                <button
-                  onClick={() => setSelectedIds(new Set())}
-                  className="ml-1 mr-2 text-v-text-secondary hover:text-v-text-primary"
-                  title="Clear selection"
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                </button>
-
-                <div className="flex items-center gap-0.5 border-l border-v-border/30 pl-2">
-                  {/* Archive / Unarchive */}
-                  {viewMode === 'active' ? (
-                    <button
-                      onClick={() => bulkArchive(true)}
-                      disabled={archiving}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors disabled:opacity-50"
-                      title="Archive"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-2-3H6L4 7m16 0v10a2 2 0 01-2 2H6a2 2 0 01-2-2V7m16 0H4m8 4v6m0 0l-3-3m3 3l3-3" /></svg>
-                      <span className="hidden lg:inline">Archive</span>
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => bulkArchive(false)}
-                      disabled={archiving}
-                      className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors disabled:opacity-50"
-                      title="Unarchive"
-                    >
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 17l2 3h12l2-3M4 17V7m16 10V7M4 17h16M4 7l2-3h12l2 3M4 7h16m-8-2v6m0 0l3-3m-3 3l-3-3" /></svg>
-                      <span className="hidden lg:inline">Unarchive</span>
-                    </button>
-                  )}
-
-                  {/* Delete */}
-                  <button
-                    onClick={bulkDelete}
-                    disabled={bulkDeleting}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-red-400/70 hover:text-red-400 hover:bg-red-500/10 rounded transition-colors disabled:opacity-50"
-                    title="Delete permanently"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                    <span className="hidden lg:inline">Delete</span>
-                  </button>
-
-                  {/* Tag */}
-                  <button
-                    onClick={() => { setBulkTagModal(true); setBulkTagAction('add'); setBulkTagSelection([]); }}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors"
-                    title="Manage tags"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A2 2 0 013 12V7a4 4 0 014-4z" /></svg>
-                    <span className="hidden lg:inline">Tag</span>
-                  </button>
-
-                  {/* VIP */}
-                  <button
-                    onClick={moveToVip}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-amber-400/70 hover:text-amber-400 hover:bg-amber-500/10 rounded transition-colors"
-                    title="Mark as VIP"
-                  >
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" /></svg>
-                    <span className="hidden lg:inline">VIP</span>
-                  </button>
-
-                  {/* Email */}
-                  <button
-                    onClick={() => { setEmailBlastModal(true); setEmailSubject(''); setEmailMessage(''); }}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors"
-                    title="Send email blast"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                    <span className="hidden lg:inline">Email</span>
-                  </button>
-
-                  {/* Export */}
-                  <button
-                    onClick={exportCsv}
-                    className="flex items-center gap-1.5 px-2.5 py-1.5 text-sm text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface-light rounded transition-colors"
-                    title="Export to CSV"
-                  >
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                    <span className="hidden lg:inline">Export</span>
-                  </button>
-                </div>
               </div>
-            ) : (
-              /* Column headers with sort */
-              <div className="grid grid-cols-14 gap-4 items-center text-xs font-medium text-v-text-secondary uppercase tracking-widest">
-                <div className="col-span-1">
-                  <input
-                    type="checkbox"
-                    checked={filteredCustomers.length > 0 && selectedIds.size === filteredCustomers.length}
-                    onChange={toggleSelectAll}
-                    className="w-4 h-4 rounded border-v-border text-v-gold cursor-pointer accent-amber-500"
-                  />
-                </div>
-                <div className="col-span-4 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('name')}>
-                  Customer <SortArrow field="name" />
-                </div>
-                <div className="col-span-3">Tags</div>
-                <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('quote_count')}>
-                  Quotes <SortArrow field="quote_count" />
-                </div>
-                <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('total_revenue')}>
-                  Revenue <SortArrow field="total_revenue" />
-                </div>
-                <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('last_service_date')}>
-                  Activity <SortArrow field="last_service_date" />
-                </div>
+              <div className="col-span-4 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('name')}>
+                Customer <SortArrow field="name" />
               </div>
-            )}
-          </div>
+              <div className="col-span-3">Tags</div>
+              <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('quote_count')}>
+                Quotes <SortArrow field="quote_count" />
+              </div>
+              <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('total_revenue')}>
+                Revenue <SortArrow field="total_revenue" />
+              </div>
+              <div className="col-span-2 cursor-pointer select-none hover:text-v-text-primary" onClick={() => handleSort('last_service_date')}>
+                Activity <SortArrow field="last_service_date" />
+              </div>
+            </div>
+          )}
 
           {/* Mobile Action Bar (fixed bottom when items selected) */}
           {hasSelection && (
