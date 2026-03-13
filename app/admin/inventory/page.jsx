@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 
 const ADMIN_NAV = [
   { label: 'Dashboard', href: '/admin' },
+  { label: 'Analytics', href: '/admin/analytics' },
   { label: 'Inventory', href: '/admin/inventory' },
   { label: 'Redemptions', href: '/admin/redemptions' },
   { label: 'Aircraft', href: '/admin/aircraft' },
