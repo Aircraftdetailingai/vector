@@ -490,7 +490,7 @@ export default function CustomersPage() {
 
                     {/* Quotes */}
                     <div className="col-span-2 text-sm text-gray-600">
-                      {`${customer.quote_count || 0} {count, plural, one ${quote} other ${quotes}}`}
+                      {customer.quote_count || 0} {(customer.quote_count || 0) === 1 ? 'quote' : 'quotes'}
                     </div>
 
                     {/* Last Service */}
