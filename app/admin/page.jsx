@@ -10,6 +10,7 @@ const ADMIN_NAV = [
   { label: 'Redemptions', href: '/admin/redemptions' },
   { label: 'Aircraft', href: '/admin/aircraft' },
   { label: 'Vendors', href: '/admin/vendors' },
+  { label: 'Beta Invites', href: '/admin/beta-invites' },
 ];
 
 const STATUS_COLORS = {
