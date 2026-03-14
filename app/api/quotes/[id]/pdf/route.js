@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
+import { calculateCcFee } from '@/lib/cc-fee';
+import React from 'react';
+import { renderToBuffer } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
 export const dynamic = 'force-dynamic';
 
@@ -14,9 +18,249 @@ function fmt(amount) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(amount || 0);
 }
 
-function escHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const colors = {
+  navy: '#0f172a',
+  blue: '#1e3a5f',
+  amber: '#f59e0b',
+  white: '#ffffff',
+  gray50: '#f8fafc',
+  gray100: '#f1f5f9',
+  gray200: '#e2e8f0',
+  gray400: '#94a3b8',
+  gray500: '#64748b',
+  gray700: '#334155',
+  gray900: '#0f172a',
+  green: '#059669',
+  red: '#dc2626',
+};
+
+const s = StyleSheet.create({
+  page: { padding: 40, fontFamily: 'Helvetica', fontSize: 10, color: colors.gray700 },
+  // Header
+  header: { backgroundColor: colors.blue, padding: 28, marginHorizontal: -40, marginTop: -40, marginBottom: 24 },
+  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' },
+  logoText: { color: colors.white, fontSize: 18, fontFamily: 'Helvetica-Bold', letterSpacing: 0.5 },
+  logoSub: { color: colors.white, opacity: 0.6, fontSize: 8, marginTop: 2, letterSpacing: 1.5 },
+  companyName: { color: colors.white, fontSize: 14, fontFamily: 'Helvetica-Bold', marginTop: 10 },
+  companyDetail: { color: colors.white, opacity: 0.7, fontSize: 9, marginTop: 2 },
+  quoteNum: { color: colors.white, opacity: 0.7, fontSize: 9, textAlign: 'right' },
+  quoteDate: { color: colors.white, opacity: 0.6, fontSize: 9, textAlign: 'right', marginTop: 2 },
+  statusBadge: { paddingHorizontal: 12, paddingVertical: 3, borderRadius: 10, alignSelf: 'flex-end', marginBottom: 6 },
+  statusText: { fontSize: 9, fontFamily: 'Helvetica-Bold', letterSpacing: 0.5 },
+  // Info columns
+  infoRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 24 },
+  infoCol: { flex: 1 },
+  infoLabel: { fontSize: 8, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 1.2, fontFamily: 'Helvetica-Bold', marginBottom: 4 },
+  infoValue: { fontSize: 12, fontFamily: 'Helvetica-Bold', color: colors.gray900, marginBottom: 1 },
+  infoSub: { fontSize: 9, color: colors.gray500, marginTop: 1 },
+  // Table
+  tableHeader: { flexDirection: 'row', backgroundColor: colors.gray50, borderBottomWidth: 2, borderBottomColor: colors.blue, paddingVertical: 8, paddingHorizontal: 12 },
+  tableHeaderText: { fontSize: 8, color: colors.blue, textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Helvetica-Bold' },
+  tableRow: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: colors.gray200, paddingVertical: 9, paddingHorizontal: 12 },
+  tableCell: { fontSize: 10, color: colors.gray700 },
+  tableCellRight: { fontSize: 10, color: colors.gray900, fontFamily: 'Helvetica-Bold', textAlign: 'right' },
+  // Fees
+  feeRow: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 12, paddingVertical: 4 },
+  feeLabel: { fontSize: 9, color: colors.gray500 },
+  feeValue: { fontSize: 9, color: colors.gray500 },
+  discountLabel: { fontSize: 9, color: colors.green },
+  // Total
+  totalBox: { backgroundColor: colors.blue, borderRadius: 8, padding: 16, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 14 },
+  totalLabel: { color: colors.white, fontSize: 14, fontFamily: 'Helvetica-Bold' },
+  totalValue: { color: colors.white, fontSize: 22, fontFamily: 'Helvetica-Bold' },
+  // Notes
+  notesBox: { marginTop: 20, padding: 14, backgroundColor: '#fffbeb', borderLeftWidth: 3, borderLeftColor: colors.amber, borderRadius: 4 },
+  notesLabel: { fontSize: 8, color: '#92400e', textTransform: 'uppercase', letterSpacing: 0.5, fontFamily: 'Helvetica-Bold', marginBottom: 4 },
+  notesText: { fontSize: 9, color: '#78350f', lineHeight: 1.5 },
+  // Terms
+  termsBox: { marginTop: 18, paddingTop: 14, borderTopWidth: 1, borderTopColor: colors.gray200 },
+  termsLabel: { fontSize: 8, color: colors.gray400, textTransform: 'uppercase', letterSpacing: 1, fontFamily: 'Helvetica-Bold', marginBottom: 6 },
+  termsText: { fontSize: 8, color: colors.gray500, lineHeight: 1.5 },
+  // Footer
+  footer: { marginTop: 24, paddingTop: 12, borderTopWidth: 1, borderTopColor: colors.gray200, alignItems: 'center' },
+  footerText: { fontSize: 8, color: colors.gray400 },
+  // Paid stamp
+  paidText: { fontSize: 9, color: colors.green, fontFamily: 'Helvetica-Bold', textAlign: 'center', marginTop: 10 },
+});
+
+function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees }) {
+  const companyName = detailer?.company || detailer?.name || 'Detailer';
+  const aircraftDisplay = quote.aircraft_model || quote.aircraft_type || 'Aircraft';
+  const isPaid = ['paid', 'approved', 'completed'].includes(quote.status);
+  const isExpired = !isPaid && quote.valid_until && new Date() > new Date(quote.valid_until);
+
+  const fmtDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : '';
+  const createdDate = fmtDate(quote.created_at);
+  const validDate = fmtDate(quote.valid_until);
+  const paidDate = fmtDate(quote.paid_at);
+
+  const clientName = quote.client_name || quote.customer_name || '';
+  const clientEmail = quote.client_email || quote.customer_email || '';
+  const clientPhone = quote.client_phone || '';
+
+  // Fee calculations
+  const basePrice = parseFloat(quote.total_price) || 0;
+  const plan = detailer?.plan || 'free';
+  const PLATFORM_FEES = { free: 0.05, pro: 0.02, business: 0.01, enterprise: 0.00 };
+  const feeRate = PLATFORM_FEES[plan] || PLATFORM_FEES.free;
+  const passFee = detailer?.pass_fee_to_customer;
+  const serviceFee = passFee ? Math.round(basePrice * feeRate * 100) / 100 : 0;
+  const subtotalWithService = basePrice + serviceFee;
+
+  const ccFeeMode = detailer?.cc_fee_mode || 'absorb';
+  const ccFee = ccFeeMode === 'pass' ? calculateCcFee(subtotalWithService) : 0;
+  const displayTotal = subtotalWithService + ccFee;
+
+  const discountPercent = quote.discount_percent || 0;
+
+  // Terms snippet
+  const termsSnippet = detailer?.terms_text
+    ? (detailer.terms_text.length > 200 ? detailer.terms_text.slice(0, 200) + '...' : detailer.terms_text)
+    : '';
+
+  // Status
+  let statusLabel = 'QUOTE';
+  let statusBg = '#eff6ff';
+  let statusColor = '#2563eb';
+  if (isPaid) { statusLabel = 'PAID'; statusBg = '#ecfdf5'; statusColor = colors.green; }
+  else if (isExpired) { statusLabel = 'EXPIRED'; statusBg = '#fef2f2'; statusColor = colors.red; }
+
+  return (
+    <Document>
+      <Page size="A4" style={s.page}>
+        {/* Header */}
+        <View style={s.header}>
+          <View style={s.headerRow}>
+            <View>
+              <Text style={s.logoText}>Vector Aviation</Text>
+              <Text style={s.logoSub}>AIRCRAFT DETAILING SOFTWARE</Text>
+              <Text style={s.companyName}>{companyName}</Text>
+              {detailer?.email && <Text style={s.companyDetail}>{detailer.email}</Text>}
+              {detailer?.phone && <Text style={s.companyDetail}>{detailer.phone}</Text>}
+            </View>
+            <View>
+              <View style={[s.statusBadge, { backgroundColor: statusBg }]}>
+                <Text style={[s.statusText, { color: statusColor }]}>{statusLabel}</Text>
+              </View>
+              <Text style={s.quoteNum}>Quote #{quote.id.slice(0, 8).toUpperCase()}</Text>
+              <Text style={s.quoteDate}>{createdDate}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Customer + Aircraft */}
+        <View style={s.infoRow}>
+          <View style={s.infoCol}>
+            <Text style={s.infoLabel}>Prepared For</Text>
+            {clientName ? <Text style={s.infoValue}>{clientName}</Text> : null}
+            {clientEmail ? <Text style={s.infoSub}>{clientEmail}</Text> : null}
+            {clientPhone ? <Text style={s.infoSub}>{clientPhone}</Text> : null}
+            {!clientName && !clientEmail && <Text style={s.infoSub}>Customer</Text>}
+          </View>
+          <View style={[s.infoCol, { alignItems: 'flex-end' }]}>
+            <Text style={s.infoLabel}>Aircraft</Text>
+            <Text style={s.infoValue}>{aircraftDisplay}</Text>
+            {quote.tail_number && <Text style={s.infoSub}>Reg: {quote.tail_number}</Text>}
+            {quote.airport && <Text style={s.infoSub}>Location: {quote.airport}</Text>}
+          </View>
+        </View>
+
+        {/* Services chips (when no line items) */}
+        {servicesList.length > 0 && lineItems.length === 0 && (
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginBottom: 16 }}>
+            {servicesList.map((svc, i) => (
+              <View key={i} style={{ backgroundColor: '#f0f9ff', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 4 }}>
+                <Text style={{ fontSize: 9, color: '#0369a1', fontFamily: 'Helvetica-Bold' }}>{svc}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Line Items Table */}
+        {lineItems.length > 0 && (
+          <View style={{ marginBottom: 4 }}>
+            <View style={s.tableHeader}>
+              <Text style={[s.tableHeaderText, { flex: 3 }]}>Service</Text>
+              <Text style={[s.tableHeaderText, { flex: 1, textAlign: 'right' }]}>Amount</Text>
+            </View>
+            {lineItems.map((li, i) => (
+              <View key={i} style={s.tableRow}>
+                <Text style={[s.tableCell, { flex: 3 }]}>{li.description || li.service || li.name || 'Service'}</Text>
+                <Text style={[s.tableCellRight, { flex: 1 }]}>{fmt(li.amount)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Addon Fees */}
+        {addonFees.length > 0 && (
+          <View style={{ marginTop: 4 }}>
+            {addonFees.map((f, i) => (
+              <View key={i} style={s.feeRow}>
+                <Text style={s.feeLabel}>{f.name}{f.fee_type === 'percent' ? ` (${f.amount}%)` : ''}</Text>
+                <Text style={s.feeValue}>+{fmt(f.calculated || f.amount)}</Text>
+              </View>
+            ))}
+          </View>
+        )}
+
+        {/* Discount */}
+        {discountPercent > 0 && (
+          <View style={s.feeRow}>
+            <Text style={s.discountLabel}>Package Discount ({discountPercent}%)</Text>
+            <Text style={s.discountLabel}>Included</Text>
+          </View>
+        )}
+
+        {/* Service Fee */}
+        {passFee && serviceFee > 0 && (
+          <View style={s.feeRow}>
+            <Text style={s.feeLabel}>Service Fee ({Math.round(feeRate * 100)}%)</Text>
+            <Text style={s.feeValue}>+{fmt(serviceFee)}</Text>
+          </View>
+        )}
+
+        {/* CC Fee */}
+        {ccFee > 0 && (
+          <View style={s.feeRow}>
+            <Text style={s.feeLabel}>Processing Fee (2.9% + $0.30)</Text>
+            <Text style={s.feeValue}>+{fmt(ccFee)}</Text>
+          </View>
+        )}
+
+        {/* Total */}
+        <View style={s.totalBox}>
+          <Text style={s.totalLabel}>Total</Text>
+          <Text style={s.totalValue}>{fmt(displayTotal)}</Text>
+        </View>
+
+        {isPaid && paidDate && <Text style={s.paidText}>Payment received on {paidDate}</Text>}
+
+        {/* Notes */}
+        {quote.notes && (
+          <View style={s.notesBox}>
+            <Text style={s.notesLabel}>Notes</Text>
+            <Text style={s.notesText}>{quote.notes}</Text>
+          </View>
+        )}
+
+        {/* Terms */}
+        {(!isPaid && (validDate || termsSnippet)) && (
+          <View style={s.termsBox}>
+            <Text style={s.termsLabel}>Terms</Text>
+            {validDate && <Text style={s.termsText}>This quote is valid until {validDate}.</Text>}
+            <Text style={s.termsText}>Scheduling is subject to availability and confirmed upon payment.</Text>
+            {termsSnippet ? <Text style={[s.termsText, { marginTop: 6 }]}>{termsSnippet}</Text> : null}
+          </View>
+        )}
+
+        {/* Footer */}
+        <View style={s.footer}>
+          <Text style={s.footerText}>Powered by Vector Aviation</Text>
+        </View>
+      </Page>
+    </Document>
+  );
 }
 
 export async function GET(request, { params }) {
@@ -29,272 +273,60 @@ export async function GET(request, { params }) {
   // Auth: either detailer token or customer share link
   let quote;
   if (shareToken) {
-    // Customer access via share_link
-    const { data } = await supabase
-      .from('quotes')
-      .select('*')
-      .eq('id', id)
-      .eq('share_link', shareToken)
-      .single();
+    const { data } = await supabase.from('quotes').select('*').eq('id', id).eq('share_link', shareToken).single();
     quote = data;
   } else {
-    // Detailer access via auth token
     const user = await getAuthUser(request);
     if (!user) return new Response('Unauthorized', { status: 401 });
-
-    const { data } = await supabase
-      .from('quotes')
-      .select('*')
-      .eq('id', id)
-      .eq('detailer_id', user.id)
-      .single();
+    const { data } = await supabase.from('quotes').select('*').eq('id', id).eq('detailer_id', user.id).single();
     quote = data;
   }
 
-  if (!quote) {
-    return new Response('Quote not found', { status: 404 });
-  }
+  if (!quote) return new Response('Quote not found', { status: 404 });
 
   // Fetch detailer info
   const { data: detailer } = await supabase
     .from('detailers')
-    .select('name, company, email, phone, preferred_currency')
+    .select('name, company, email, phone, preferred_currency, plan, pass_fee_to_customer, cc_fee_mode, terms_text')
     .eq('id', quote.detailer_id)
     .single();
 
-  const companyName = escHtml(detailer?.company || detailer?.name || 'Detailer');
-  const aircraftDisplay = escHtml(quote.aircraft_model || quote.aircraft_type || 'Aircraft');
-  const isPaid = ['paid', 'approved', 'completed'].includes(quote.status);
-  const isExpired = !isPaid && quote.valid_until && new Date() > new Date(quote.valid_until);
-
-  const paidDate = quote.paid_at
-    ? new Date(quote.paid_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-    : '';
-  const createdDate = new Date(quote.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
-  const validDate = quote.valid_until
-    ? new Date(quote.valid_until).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })
-    : '';
-
-  const clientName = escHtml(quote.client_name || quote.customer_name || '');
-  const clientEmail = escHtml(quote.client_email || quote.customer_email || '');
-  const clientPhone = escHtml(quote.client_phone || '');
-
   // Build line items
-  const lineItems = Array.isArray(quote.line_items)
-    ? quote.line_items.filter(li => li.description && li.amount > 0)
-    : [];
+  const rawItems = quote.line_items || quote.metadata?.line_items || [];
+  const lineItems = Array.isArray(rawItems) ? rawItems.filter(li => (li.description || li.service || li.name) && li.amount > 0) : [];
 
-  // Build services list from services object
+  // Build services list
   const serviceLabels = {
-    exterior: 'Exterior Wash & Detail',
-    interior: 'Interior Detail',
-    brightwork: 'Brightwork Polish',
-    ceramic: 'Ceramic Coating',
-    engine: 'Engine Detail',
-    decon: 'Decontamination',
-    polish: 'Paint Correction',
-    wax: 'Wax / Sealant',
-    dry_wash: 'Dry Wash',
-    ext_wash: 'Exterior Wash',
+    exterior: 'Exterior Wash & Detail', interior: 'Interior Detail',
+    brightwork: 'Brightwork Polish', ceramic: 'Ceramic Coating',
+    engine: 'Engine Detail', decon: 'Decontamination',
+    polish: 'Paint Correction', wax: 'Wax / Sealant',
+    dry_wash: 'Dry Wash', ext_wash: 'Exterior Wash',
   };
-
   const servicesList = quote.services
-    ? Object.entries(quote.services)
-        .filter(([, v]) => v === true)
-        .map(([k]) => serviceLabels[k] || k)
+    ? Object.entries(quote.services).filter(([, v]) => v === true).map(([k]) => serviceLabels[k] || k)
     : [];
-
-  const lineItemsHtml = lineItems.map(li => `
-    <tr>
-      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px;">${escHtml(li.description)}</td>
-      <td style="padding: 10px 12px; border-bottom: 1px solid #e5e7eb; text-align: right; font-size: 14px; font-weight: 500;">${fmt(li.amount)}</td>
-    </tr>
-  `).join('');
 
   // Addon fees
   const addonFees = Array.isArray(quote.addon_fees) ? quote.addon_fees.filter(f => f.name) : [];
-  const addonHtml = addonFees.map(f => `
-    <tr>
-      <td style="padding: 8px 12px; font-size: 13px; color: #6b7280;">${escHtml(f.name)}${f.fee_type === 'percent' ? ` (${f.amount}%)` : ''}</td>
-      <td style="padding: 8px 12px; text-align: right; font-size: 13px; color: #6b7280;">+${fmt(f.calculated || f.amount)}</td>
-    </tr>
-  `).join('');
 
-  // Discount
-  const discountPercent = quote.discount_percent || 0;
+  const buffer = await renderToBuffer(
+    <QuotePDF
+      quote={quote}
+      detailer={detailer}
+      lineItems={lineItems}
+      servicesList={servicesList}
+      addonFees={addonFees}
+    />
+  );
 
-  // Status badge
-  let statusBadge = '';
-  if (isPaid) {
-    statusBadge = '<span style="display: inline-block; background: #ecfdf5; color: #059669; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">PAID</span>';
-  } else if (isExpired) {
-    statusBadge = '<span style="display: inline-block; background: #fef2f2; color: #dc2626; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">EXPIRED</span>';
-  } else {
-    statusBadge = '<span style="display: inline-block; background: #eff6ff; color: #2563eb; padding: 4px 16px; border-radius: 20px; font-size: 13px; font-weight: 700; letter-spacing: 0.5px;">QUOTE</span>';
-  }
+  const filename = `Quote-${(quote.aircraft_model || quote.aircraft_type || 'Aircraft').replace(/[^a-zA-Z0-9]/g, '-')}-${quote.id.slice(0, 8).toUpperCase()}.pdf`;
 
-  const html = `<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Quote - ${companyName} - ${aircraftDisplay}</title>
-  <style>
-    @media print {
-      body { padding: 20px; margin: 0; }
-      .no-print { display: none !important; }
-      .page { box-shadow: none !important; }
-    }
-    * { box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-      background: #f1f5f9;
-      margin: 0;
-      padding: 40px 20px;
-      color: #1f2937;
-      line-height: 1.5;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    .page {
-      max-width: 750px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
-      overflow: hidden;
-    }
-    .header {
-      background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%);
-      color: white;
-      padding: 36px 40px;
-    }
-    .content { padding: 32px 40px; }
-    table { width: 100%; border-collapse: collapse; }
-  </style>
-</head>
-<body>
-  <div class="no-print" style="text-align: center; margin-bottom: 24px;">
-    <button onclick="window.print()" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white; border: none; padding: 14px 40px; border-radius: 10px; font-size: 16px; cursor: pointer; font-weight: 700; letter-spacing: 0.3px; box-shadow: 0 2px 8px rgba(245,158,11,0.3);">
-      Download PDF / Print
-    </button>
-    <p style="color: #94a3b8; font-size: 13px; margin-top: 8px;">Opens your browser's print dialog. Choose "Save as PDF" to download.</p>
-  </div>
-
-  <div class="page">
-    <!-- Header -->
-    <div class="header">
-      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-        <div>
-          <h1 style="margin: 0; font-size: 26px; font-weight: 800; letter-spacing: -0.3px;">${companyName}</h1>
-          ${detailer?.email ? `<p style="margin: 6px 0 0 0; opacity: 0.7; font-size: 13px;">${escHtml(detailer.email)}</p>` : ''}
-          ${detailer?.phone ? `<p style="margin: 2px 0 0 0; opacity: 0.7; font-size: 13px;">${escHtml(detailer.phone)}</p>` : ''}
-        </div>
-        <div style="text-align: right;">
-          ${statusBadge}
-          <p style="margin: 8px 0 0 0; opacity: 0.6; font-size: 12px;">Quote #${quote.id.slice(0, 8).toUpperCase()}</p>
-          <p style="margin: 2px 0 0 0; opacity: 0.6; font-size: 12px;">${createdDate}</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="content">
-      <!-- Customer + Aircraft Info -->
-      <div style="display: flex; justify-content: space-between; gap: 40px; margin-bottom: 28px;">
-        <div style="flex: 1;">
-          <p style="margin: 0; color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Prepared For</p>
-          ${clientName ? `<p style="margin: 6px 0 0 0; font-weight: 700; font-size: 16px;">${clientName}</p>` : ''}
-          ${clientEmail ? `<p style="margin: 2px 0 0 0; color: #6b7280; font-size: 13px;">${clientEmail}</p>` : ''}
-          ${clientPhone ? `<p style="margin: 2px 0 0 0; color: #6b7280; font-size: 13px;">${clientPhone}</p>` : ''}
-        </div>
-        <div style="flex: 1; text-align: right;">
-          <p style="margin: 0; color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Aircraft Details</p>
-          <p style="margin: 6px 0 0 0; font-weight: 700; font-size: 16px;">${aircraftDisplay}</p>
-          ${quote.tail_number ? `<p style="margin: 2px 0 0 0; color: #6b7280; font-size: 13px;">Reg: ${escHtml(quote.tail_number)}</p>` : ''}
-          ${quote.airport ? `<p style="margin: 2px 0 0 0; color: #6b7280; font-size: 13px;">Location: ${escHtml(quote.airport)}</p>` : ''}
-        </div>
-      </div>
-
-      <!-- Services (if no line items) -->
-      ${servicesList.length > 0 && lineItems.length === 0 ? `
-      <div style="margin-bottom: 24px;">
-        <p style="margin: 0 0 8px 0; color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Services Included</p>
-        <div style="display: flex; flex-wrap: wrap; gap: 6px;">
-          ${servicesList.map(s => `<span style="background: #f0f9ff; color: #0369a1; padding: 4px 12px; border-radius: 6px; font-size: 13px; font-weight: 500;">${escHtml(s)}</span>`).join('')}
-        </div>
-      </div>
-      ` : ''}
-
-      <!-- Line Items Table -->
-      ${lineItems.length > 0 ? `
-      <table style="margin-bottom: 8px;">
-        <thead>
-          <tr>
-            <th style="text-align: left; padding: 10px 12px; background: #f8fafc; border-bottom: 2px solid #1e3a5f; color: #1e3a5f; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Service</th>
-            <th style="text-align: right; padding: 10px 12px; background: #f8fafc; border-bottom: 2px solid #1e3a5f; color: #1e3a5f; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          ${lineItemsHtml}
-        </tbody>
-      </table>
-      ` : ''}
-
-      <!-- Addon Fees -->
-      ${addonHtml ? `
-      <table style="margin-bottom: 8px;">
-        <tbody>${addonHtml}</tbody>
-      </table>
-      ` : ''}
-
-      <!-- Discount -->
-      ${discountPercent > 0 ? `
-      <div style="padding: 8px 12px; display: flex; justify-content: space-between; color: #059669; font-size: 13px;">
-        <span>Package Discount (${discountPercent}%)</span>
-        <span>Included</span>
-      </div>
-      ` : ''}
-
-      <!-- Total -->
-      <div style="margin-top: 16px; padding: 20px; background: linear-gradient(135deg, #0f172a 0%, #1e3a5f 100%); border-radius: 10px; display: flex; justify-content: space-between; align-items: center;">
-        <span style="color: white; font-size: 16px; font-weight: 600;">Total</span>
-        <span style="color: white; font-size: 28px; font-weight: 800;">${fmt(quote.total_price)}</span>
-      </div>
-
-      ${isPaid && paidDate ? `
-      <p style="text-align: center; margin: 12px 0 0 0; color: #059669; font-size: 13px; font-weight: 600;">Payment received on ${paidDate}</p>
-      ` : ''}
-
-      <!-- Notes -->
-      ${quote.notes ? `
-      <div style="margin-top: 24px; padding: 16px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 0 8px 8px 0;">
-        <p style="margin: 0; color: #92400e; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">Notes</p>
-        <p style="margin: 6px 0 0 0; color: #78350f; font-size: 14px;">${escHtml(quote.notes)}</p>
-      </div>
-      ` : ''}
-
-      <!-- Terms -->
-      ${!isPaid ? `
-      <div style="margin-top: 28px; padding-top: 20px; border-top: 1px solid #e5e7eb;">
-        <p style="margin: 0; color: #9ca3af; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; font-weight: 600;">Terms</p>
-        <div style="margin-top: 8px; font-size: 13px; color: #6b7280; line-height: 1.6;">
-          ${validDate ? `<p style="margin: 0;">This quote is valid until <strong>${validDate}</strong>.</p>` : ''}
-          <p style="margin: 4px 0 0 0;">Scheduling is subject to availability and confirmed upon payment.</p>
-        </div>
-      </div>
-      ` : ''}
-
-      <!-- Footer -->
-      <div style="margin-top: 32px; text-align: center; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-        <p style="margin: 0; color: #d1d5db; font-size: 11px;">Powered by Vector &mdash; Aircraft Detailing Software</p>
-      </div>
-    </div>
-  </div>
-</body>
-</html>`;
-
-  return new Response(html, {
+  return new Response(buffer, {
     status: 200,
-    headers: { 'Content-Type': 'text/html' },
+    headers: {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${filename}"`,
+    },
   });
 }
