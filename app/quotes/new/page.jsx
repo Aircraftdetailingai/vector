@@ -1,6 +1,6 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import SendQuoteModal from '../../../components/SendQuoteModal.jsx';
 import LoadingSpinner from '../../../components/LoadingSpinner.jsx';
 import { useToast } from '../../../components/Toast.jsx';
@@ -32,11 +32,13 @@ const categoryLabels = {
 
 function NewQuoteContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { success: toastSuccess } = useToast();
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [availableServices, setAvailableServices] = useState([]);
+  const [preselectedCustomer, setPreselectedCustomer] = useState(null);
   const [availablePackages, setAvailablePackages] = useState([]);
   const [manufacturers, setManufacturers] = useState([]);
   const [models, setModels] = useState([]);
@@ -153,6 +155,17 @@ function NewQuoteContent() {
     };
 
     fetchData().catch(err => console.error('Quote builder fetch error:', err));
+
+    // Pre-select customer from URL param
+    const customerIdParam = searchParams.get('customer_id');
+    if (customerIdParam) {
+      fetch(`/api/customers/${customerIdParam}`, { headers })
+        .then(res => res.ok ? res.json() : null)
+        .then(data => {
+          if (data?.customer) setPreselectedCustomer(data.customer);
+        })
+        .catch(() => {});
+    }
   }, [router]);
 
   const handleSelectAircraft = async (aircraft) => {
@@ -866,6 +879,7 @@ function NewQuoteContent() {
           isOpen={isModalOpen}
           onClose={closeSendModal}
           onSuccess={resetQuoteForm}
+          preselectedCustomer={preselectedCustomer}
           quote={{
             aircraft: quoteData.aircraft,
             selectedServices: quoteData.selectedServices,
@@ -899,5 +913,9 @@ function NewQuoteContent() {
 }
 
 export default function NewQuotePage() {
-  return <NewQuoteContent />;
+  return (
+    <Suspense fallback={<LoadingSpinner message="Loading..." />}>
+      <NewQuoteContent />
+    </Suspense>
+  );
 }

@@ -4,7 +4,7 @@ import CustomerSelector from "./CustomerSelector";
 import { formatPrice, currencySymbol } from "@/lib/formatPrice";
 import { useToast } from "./Toast";
 
-export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user }) {
+export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user, preselectedCustomer }) {
   const { success: toastSuccess, error: toastError } = useToast();
   const [clientName, setClientName] = useState("");
   const [clientPhone, setClientPhone] = useState("");
@@ -37,6 +37,28 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
   const [emergencyPhone, setEmergencyPhone] = useState("");
   const [contactNotes, setContactNotes] = useState("");
   const [showContacts, setShowContacts] = useState(false);
+  const [customerLocked, setCustomerLocked] = useState(false);
+
+  // Auto-select preselected customer when modal opens
+  useEffect(() => {
+    if (isOpen && preselectedCustomer && !selectedCustomer) {
+      setSelectedCustomer(preselectedCustomer);
+      setClientName(preselectedCustomer.name || "");
+      setClientEmail(preselectedCustomer.email || "");
+      setClientPhone(preselectedCustomer.phone || "");
+      setClientCompany(preselectedCustomer.company_name || "");
+      setCustomerMode("existing");
+      setCustomerLocked(true);
+      if (preselectedCustomer.poc_name) setPocName(preselectedCustomer.poc_name);
+      if (preselectedCustomer.poc_phone) setPocPhone(preselectedCustomer.poc_phone);
+      if (preselectedCustomer.poc_email) setPocEmail(preselectedCustomer.poc_email);
+      if (preselectedCustomer.poc_role) setPocRole(preselectedCustomer.poc_role);
+      if (preselectedCustomer.emergency_contact_name) setEmergencyName(preselectedCustomer.emergency_contact_name);
+      if (preselectedCustomer.emergency_contact_phone) setEmergencyPhone(preselectedCustomer.emergency_contact_phone);
+      if (preselectedCustomer.contact_notes) setContactNotes(preselectedCustomer.contact_notes);
+      if (preselectedCustomer.poc_name || preselectedCustomer.emergency_contact_name) setShowContacts(true);
+    }
+  }, [isOpen, preselectedCustomer]);
 
   // Close when not open
   if (!isOpen) return null;
@@ -575,15 +597,25 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
 
             {/* Customer Selection */}
             <label className="block mb-2 text-sm font-medium">{'Customer'}</label>
-            <CustomerSelector
-              customerMode={customerMode}
-              onModeChange={setCustomerMode}
-              selectedCustomer={selectedCustomer}
-              onSelect={handleCustomerSelect}
-              onClear={handleCustomerClear}
-              newCustomerFields={newCustomerFields}
-              onFieldChange={handleNewCustomerFieldChange}
-            />
+            {customerLocked && selectedCustomer ? (
+              <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-gray-900">{selectedCustomer.name}</p>
+                  <p className="text-xs text-gray-500">{selectedCustomer.email}</p>
+                </div>
+                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Pre-selected</span>
+              </div>
+            ) : (
+              <CustomerSelector
+                customerMode={customerMode}
+                onModeChange={setCustomerMode}
+                selectedCustomer={selectedCustomer}
+                onSelect={handleCustomerSelect}
+                onClear={handleCustomerClear}
+                newCustomerFields={newCustomerFields}
+                onFieldChange={handleNewCustomerFieldChange}
+              />
+            )}
 
             {/* Contact Information */}
             <div className="mb-3">

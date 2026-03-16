@@ -11,6 +11,7 @@ import DashboardTour from '../../components/DashboardTour.jsx';
 import DashboardLanguageSelector from '../../components/DashboardLanguageSelector.jsx';
 import PointsBadge from '../../components/PointsBadge.jsx';
 import TermsConsentModal from '../../components/TermsConsentModal.jsx';
+import OnboardingChecklist from '../../components/OnboardingChecklist.jsx';
 import { TERMS_VERSION } from '../../lib/terms';
 
 
@@ -551,6 +552,9 @@ function DashboardContent() {
           setUser(prev => ({ ...prev, terms_accepted_version: TERMS_VERSION }));
         }}
       />
+
+      {/* Onboarding Checklist */}
+      {user && !showTermsModal && <OnboardingChecklist user={user} />}
 
       {/* Add Customer Modal */}
       <AddCustomerModal
