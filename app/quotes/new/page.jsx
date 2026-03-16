@@ -61,6 +61,9 @@ function NewQuoteContent() {
   const [customProductRatios, setCustomProductRatios] = useState(null);
   const [serviceProductLinks, setServiceProductLinks] = useState([]);
   const [serviceEquipmentLinks, setServiceEquipmentLinks] = useState([]);
+  const [customHours, setCustomHours] = useState({});
+  const [saveDefaultPrompt, setSaveDefaultPrompt] = useState({});
+  const [savingDefault, setSavingDefault] = useState({});
 
   // Fetch manufacturers on mount
   useEffect(() => {
@@ -181,6 +184,8 @@ function NewQuoteContent() {
         setQuoteNotes('');
         setJobLocation('');
         setAirport('');
+        setCustomHours({});
+        setSaveDefaultPrompt({});
         setTimeout(() => {
           document.getElementById('services-section')?.scrollIntoView({ behavior: 'smooth' });
         }, 100);
@@ -208,7 +213,8 @@ function NewQuoteContent() {
     }
   };
 
-  const getHoursForService = (svc) => {
+  // Get aircraft-based hours for a service (from aircraft table based on hours_field)
+  const getAircraftHours = (svc) => {
     if (!selectedAircraft) return 0;
     if (svc.hours_field && selectedAircraft[svc.hours_field] !== undefined) {
       return parseFloat(selectedAircraft[svc.hours_field]) || 0;
@@ -226,6 +232,59 @@ function NewQuoteContent() {
     if (name.includes('quick turn') && name.includes('exterior')) return parseFloat(selectedAircraft.ext_wash_hours) || 0;
     if (name.includes('interior') || name.includes('vacuum') || name.includes('wipe') || name.includes('cabin')) return parseFloat(selectedAircraft.int_detail_hours) || 0;
     return parseFloat(selectedAircraft.ext_wash_hours) || 0;
+  };
+
+  // Get hours for a service: manual override > detailer default > aircraft data
+  const getHoursForService = (svc) => {
+    // 1. Manual override for this quote
+    if (customHours[svc.id] !== undefined) return customHours[svc.id];
+    // 2. Detailer's saved default_hours
+    if (svc.default_hours && parseFloat(svc.default_hours) > 0) return parseFloat(svc.default_hours);
+    // 3. Aircraft-based hours
+    return getAircraftHours(svc);
+  };
+
+  // Get the "starting" hours (before manual override) for comparison
+  const getDefaultHours = (svc) => {
+    if (svc.default_hours && parseFloat(svc.default_hours) > 0) return parseFloat(svc.default_hours);
+    return getAircraftHours(svc);
+  };
+
+  const handleHoursChange = (svcId, svcName, newHours) => {
+    const val = Math.max(0, parseFloat(newHours) || 0);
+    setCustomHours(prev => ({ ...prev, [svcId]: val }));
+    // Show save-default prompt
+    const svc = availableServices.find(s => s.id === svcId);
+    const defaultHrs = svc ? getDefaultHours(svc) : 0;
+    if (val !== defaultHrs && val > 0) {
+      setSaveDefaultPrompt(prev => ({ ...prev, [svcId]: true }));
+    } else {
+      setSaveDefaultPrompt(prev => ({ ...prev, [svcId]: false }));
+    }
+  };
+
+  const saveAsDefault = async (svcId) => {
+    const hours = customHours[svcId];
+    if (hours === undefined) return;
+    setSavingDefault(prev => ({ ...prev, [svcId]: true }));
+    try {
+      const token = localStorage.getItem('vector_token');
+      await fetch(`/api/services/${svcId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ default_hours: hours }),
+      });
+      // Update local service data
+      setAvailableServices(prev => prev.map(s => s.id === svcId ? { ...s, default_hours: hours } : s));
+      setSaveDefaultPrompt(prev => ({ ...prev, [svcId]: false }));
+      toastSuccess('Default hours saved');
+    } catch {} finally {
+      setSavingDefault(prev => ({ ...prev, [svcId]: false }));
+    }
+  };
+
+  const dismissSavePrompt = (svcId) => {
+    setSaveDefaultPrompt(prev => ({ ...prev, [svcId]: false }));
   };
 
   const getServicePrice = (svc) => {
@@ -316,6 +375,8 @@ function NewQuoteContent() {
     setTailNumber('');
     setSelectedAddons({});
     setCustomProductRatios(null);
+    setCustomHours({});
+    setSaveDefaultPrompt({});
     setModalOpen(false);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -548,29 +609,70 @@ function NewQuoteContent() {
                   const hours = getHoursForService(svc);
                   const price = getServicePrice(svc);
                   const isSelected = !!selectedServices[svc.id];
+                  const showPrompt = isSelected && saveDefaultPrompt[svc.id];
                   return (
-                    <button
-                      key={svc.id}
-                      onClick={() => toggleService(svc.id)}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-all min-h-[44px] ${
-                        isSelected
-                          ? 'border-amber-500 bg-amber-50'
-                          : 'border-gray-200 hover:border-amber-300'
-                      }`}
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
-                          isSelected ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-300'
-                        }`}>
-                          {isSelected && <span className="text-xs">&#10003;</span>}
+                    <div key={svc.id}>
+                      <div
+                        className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-all min-h-[44px] ${
+                          isSelected
+                            ? 'border-amber-500 bg-amber-50'
+                            : 'border-gray-200 hover:border-amber-300'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 flex-1 min-w-0" onClick={() => toggleService(svc.id)} role="button" tabIndex={0}>
+                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
+                            isSelected ? 'bg-amber-500 border-amber-500 text-white' : 'border-gray-300'
+                          }`}>
+                            {isSelected && <span className="text-xs">&#10003;</span>}
+                          </div>
+                          <p className="font-medium text-gray-900 text-sm truncate">{svc.name}</p>
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900 text-sm">{svc.name}</p>
-                          <p className="text-xs text-gray-400">{hours.toFixed(1)} hrs @ {currencySymbol()}{parseFloat(svc.hourly_rate || 0).toFixed(0)}/hr</p>
+                        <div className="flex items-center gap-1.5 flex-shrink-0 text-sm">
+                          {isSelected ? (
+                            <>
+                              <input
+                                type="number"
+                                min="0.5"
+                                step="0.5"
+                                value={customHours[svc.id] !== undefined ? customHours[svc.id] : hours}
+                                onChange={(e) => handleHoursChange(svc.id, svc.name, e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
+                                className="w-16 border border-gray-300 rounded px-2 py-1 text-center text-sm font-mono focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
+                              />
+                              <span className="text-gray-400 text-xs">hrs</span>
+                              <span className="text-gray-300 mx-0.5">@</span>
+                              <span className="text-gray-500 text-xs">{currencySymbol()}{parseFloat(svc.hourly_rate || 0).toFixed(0)}/hr</span>
+                              <span className="text-gray-300 mx-0.5">=</span>
+                              <span className="font-bold text-gray-900 min-w-[60px] text-right">{currencySymbol()}{formatPrice(price)}</span>
+                            </>
+                          ) : (
+                            <>
+                              <span className="text-xs text-gray-400">{hours.toFixed(1)} hrs @ {currencySymbol()}{parseFloat(svc.hourly_rate || 0).toFixed(0)}/hr</span>
+                              <span className="font-bold text-gray-900 ml-2">{currencySymbol()}{formatPrice(price)}</span>
+                            </>
+                          )}
                         </div>
                       </div>
-                      <span className="font-bold text-gray-900">{currencySymbol()}{formatPrice(price)}</span>
-                    </button>
+                      {/* Save default prompt */}
+                      {showPrompt && (
+                        <div className="flex items-center gap-2 px-3 py-1.5 text-xs ml-7">
+                          <span className="text-gray-500">Save {(customHours[svc.id] || 0).toFixed(1)} hrs as default for {svc.name}?</span>
+                          <button
+                            onClick={() => saveAsDefault(svc.id)}
+                            disabled={savingDefault[svc.id]}
+                            className="text-amber-600 hover:text-amber-700 font-medium disabled:opacity-50"
+                          >
+                            {savingDefault[svc.id] ? 'Saving...' : 'Save Default'}
+                          </button>
+                          <button
+                            onClick={() => dismissSavePrompt(svc.id)}
+                            className="text-gray-400 hover:text-gray-600"
+                          >
+                            Just this quote
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
