@@ -249,22 +249,22 @@ export default function LeadIntakeSettingsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-v-charcoal flex items-center justify-center">
         <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full"></div>
       </div>
     );
   }
 
   return (
-    <div className="page-transition min-h-screen bg-gray-50">
+    <div className="page-transition min-h-screen bg-v-charcoal">
       {/* Header */}
-      <div className="bg-white border-b">
+      <div className="bg-v-surface border-b">
         <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/settings')}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-v-text-secondary hover:text-v-text-secondary"
               >
                 &larr; {'Back'}
               </button>
@@ -283,7 +283,7 @@ export default function LeadIntakeSettingsPage() {
 
       {/* Tabs */}
       <div className="max-w-4xl mx-auto px-4 mt-6">
-        <div className="flex border-b bg-white rounded-t-lg">
+        <div className="flex border-b bg-v-surface rounded-t-lg">
           {[
             { key: 'questions', label: 'Intake Questions' },
             { key: 'website', label: 'Analyze Website' },
@@ -296,7 +296,7 @@ export default function LeadIntakeSettingsPage() {
               className={`px-6 py-3 font-medium border-b-2 -mb-px ${
                 activeTab === tab.key
                   ? 'border-amber-500 text-amber-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700'
+                  : 'border-transparent text-v-text-secondary hover:text-v-text-secondary'
               }`}
             >
               {tab.label}
@@ -308,17 +308,17 @@ export default function LeadIntakeSettingsPage() {
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 py-6">
         {activeTab === 'questions' && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-v-surface rounded-lg shadow p-6">
             <div className="flex justify-between items-center mb-6">
               <div>
                 <h2 className="text-lg font-semibold">Customize Your Intake Questions</h2>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-v-text-secondary">
                   These questions will be asked by the AI chat widget on your website
                 </p>
               </div>
               <button
                 onClick={resetToDefaults}
-                className="text-sm text-gray-500 hover:text-gray-700"
+                className="text-sm text-v-text-secondary hover:text-v-text-secondary"
               >
                 Reset to Defaults
               </button>
@@ -333,12 +333,12 @@ export default function LeadIntakeSettingsPage() {
                   onDragOver={(e) => handleDragOver(e, index)}
                   onDragEnd={handleDragEnd}
                   className={`border rounded-lg p-4 ${
-                    draggedIndex === index ? 'opacity-50 bg-amber-50' : 'bg-white'
+                    draggedIndex === index ? 'opacity-50 bg-amber-50' : 'bg-v-surface'
                   } cursor-move`}
                 >
                   <div className="flex gap-4">
                     {/* Drag Handle */}
-                    <div className="text-gray-400 pt-2">
+                    <div className="text-v-text-secondary pt-2">
                       <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M3 15h18v-2H3v2zm0 4h18v-2H3v2zm0-8h18V9H3v2zm0-6v2h18V5H3z"/>
                       </svg>
@@ -346,7 +346,7 @@ export default function LeadIntakeSettingsPage() {
 
                     <div className="flex-1 space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                        <label className="block text-sm font-medium text-v-text-secondary mb-1">
                           Question
                         </label>
                         <input
@@ -360,7 +360,7 @@ export default function LeadIntakeSettingsPage() {
 
                       <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                          <label className="block text-sm font-medium text-v-text-secondary mb-1">
                             Placeholder
                           </label>
                           <input
@@ -401,7 +401,7 @@ export default function LeadIntakeSettingsPage() {
 
             <button
               onClick={addQuestion}
-              className="mt-4 w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-500 hover:border-amber-500 hover:text-amber-600"
+              className="mt-4 w-full py-3 border-2 border-dashed border-v-border rounded-lg text-v-text-secondary hover:border-amber-500 hover:text-amber-600"
             >
               + Add Question
             </button>
@@ -409,9 +409,9 @@ export default function LeadIntakeSettingsPage() {
         )}
 
         {activeTab === 'website' && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-v-surface rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-2">AI Website Analyzer</h2>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-v-text-secondary mb-6">
               Enter your website URL and we'll suggest relevant intake questions based on your services
             </p>
 
@@ -457,9 +457,9 @@ export default function LeadIntakeSettingsPage() {
         )}
 
         {activeTab === 'faq' && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-v-surface rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-2">Upload FAQ</h2>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-v-text-secondary mb-6">
               Paste your FAQ content and we'll extract Q&A pairs for the AI chatbot
             </p>
 
@@ -492,7 +492,7 @@ A: Yes, we come to your hangar."
                   {extractedFaqs.map((faq, i) => (
                     <div key={i} className="p-4 bg-green-50 rounded-lg">
                       <p className="font-medium">{faq.question}</p>
-                      <p className="text-sm text-gray-600 mt-1">{faq.answer}</p>
+                      <p className="text-sm text-v-text-secondary mt-1">{faq.answer}</p>
                     </div>
                   ))}
                 </div>
@@ -527,9 +527,9 @@ A: Yes, we come to your hangar."
         )}
 
         {activeTab === 'widget' && (
-          <div className="bg-white rounded-lg shadow p-6">
+          <div className="bg-v-surface rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-2">Embed Chat Widget</h2>
-            <p className="text-sm text-gray-500 mb-6">
+            <p className="text-sm text-v-text-secondary mb-6">
               Add this code to your website to display the AI chat widget
             </p>
 
@@ -559,14 +559,14 @@ A: Yes, we come to your hangar."
               <h3 className="font-medium mb-4">Preview Widget</h3>
               <button
                 onClick={() => setShowPreview(!showPreview)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 border rounded-lg hover:bg-white/5"
               >
                 {showPreview ? 'Hide Preview' : 'Show Preview'}
               </button>
 
               {showPreview && (
-                <div className="mt-4 border rounded-lg p-4 bg-gray-100 h-96 relative">
-                  <p className="text-center text-gray-500 text-sm">
+                <div className="mt-4 border rounded-lg p-4 bg-v-charcoal h-96 relative">
+                  <p className="text-center text-v-text-secondary text-sm">
                     Widget preview would appear on your actual website.
                     <br />
                     Deploy the code to see it in action!

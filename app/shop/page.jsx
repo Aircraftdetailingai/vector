@@ -138,19 +138,19 @@ export default function ShopPage() {
   };
 
   return (
-    <div className="page-transition min-h-screen bg-gray-50">
+    <div className="page-transition min-h-screen bg-v-charcoal">
       {/* Header */}
-      <div className="bg-white border-b sticky top-0 z-40">
+      <div className="bg-v-surface border-b border-v-border sticky top-0 z-40">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => router.push('/dashboard')}
-                className="text-gray-500 hover:text-gray-700"
+                className="text-v-text-secondary hover:text-v-text-primary"
               >
                 &larr; Back
               </button>
-              <h1 className="text-2xl font-bold">Vector Shop</h1>
+              <h1 className="text-2xl text-v-text-primary font-heading">Vector Shop</h1>
             </div>
 
             {/* Cart Button */}
@@ -177,7 +177,7 @@ export default function ShopPage() {
               placeholder="Search products..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full max-w-md border rounded-lg px-4 py-2"
+              className="w-full max-w-md bg-v-charcoal border border-v-border text-v-text-primary rounded-lg px-4 py-2"
             />
           </div>
 
@@ -190,7 +190,7 @@ export default function ShopPage() {
                 className={`px-4 py-2 rounded-full whitespace-nowrap text-sm ${
                   category === cat.key
                     ? 'bg-amber-500 text-white'
-                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    : 'bg-v-surface text-v-text-secondary hover:bg-white/5'
                 }`}
               >
                 {cat.name}
@@ -205,20 +205,20 @@ export default function ShopPage() {
         {loading ? (
           <div className="text-center py-12">
             <div className="animate-spin w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full mx-auto"></div>
-            <p className="mt-4 text-gray-500">Loading products...</p>
+            <p className="mt-4 text-v-text-secondary">Loading products...</p>
           </div>
         ) : products.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📦</div>
-            <h2 className="text-xl font-semibold text-gray-700">No products found</h2>
-            <p className="text-gray-500 mt-2">Try a different category or search term</p>
+            <h2 className="text-xl font-semibold text-v-text-primary">No products found</h2>
+            <p className="text-v-text-secondary mt-2">Try a different category or search term</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {products.map(product => (
-              <div key={product.id} className="bg-white rounded-lg shadow-sm border overflow-hidden hover:shadow-md transition-shadow">
+              <div key={product.id} className="bg-v-surface rounded-sm border border-v-border overflow-hidden hover:border-v-gold/30 transition-colors">
                 {/* Product Image */}
-                <div className="aspect-square bg-gray-100 relative">
+                <div className="aspect-square bg-v-charcoal relative">
                   {product.images?.[0] ? (
                     <img
                       src={product.images[0]}
@@ -226,7 +226,7 @@ export default function ShopPage() {
                       className="w-full h-full object-cover"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    <div className="w-full h-full flex items-center justify-center text-v-text-secondary">
                       <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                       </svg>
@@ -241,12 +241,12 @@ export default function ShopPage() {
 
                 {/* Product Info */}
                 <div className="p-4">
-                  <p className="text-xs text-gray-500 mb-1">{product.vendors?.company_name}</p>
-                  <h3 className="font-semibold text-gray-900 line-clamp-2">{product.name}</h3>
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">{product.description}</p>
+                  <p className="text-xs text-v-text-secondary mb-1">{product.vendors?.company_name}</p>
+                  <h3 className="font-semibold text-v-text-primary line-clamp-2">{product.name}</h3>
+                  <p className="text-sm text-v-text-secondary mt-1 line-clamp-2">{product.description}</p>
 
                   <div className="mt-4 flex items-center justify-between">
-                    <span className="text-xl font-bold text-amber-600">
+                    <span className="text-xl font-bold text-v-gold">
                       {currencySymbol()}{formatPrice(product.price)}
                     </span>
                     <button
@@ -258,7 +258,7 @@ export default function ShopPage() {
                   </div>
 
                   {product.stock !== null && product.stock < 10 && (
-                    <p className="text-xs text-red-500 mt-2">Only {product.stock} left!</p>
+                    <p className="text-xs text-red-400 mt-2">Only {product.stock} left!</p>
                   )}
                 </div>
               </div>
@@ -270,12 +270,12 @@ export default function ShopPage() {
       {/* Cart Sidebar */}
       {showCart && (
         <div className="fixed inset-0 z-50">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowCart(false)} />
-          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl flex flex-col">
+          <div className="absolute inset-0 bg-black/80" onClick={() => setShowCart(false)} />
+          <div className="absolute right-0 top-0 h-full w-full max-w-md bg-v-surface shadow-xl flex flex-col">
             {/* Cart Header */}
-            <div className="p-4 border-b flex items-center justify-between">
-              <h2 className="text-xl font-semibold">Your Cart ({cartCount})</h2>
-              <button onClick={() => setShowCart(false)} className="text-gray-500 hover:text-gray-700">
+            <div className="p-4 border-b border-v-border flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-v-text-primary">Your Cart ({cartCount})</h2>
+              <button onClick={() => setShowCart(false)} className="text-v-text-secondary hover:text-v-text-primary">
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
@@ -285,20 +285,20 @@ export default function ShopPage() {
             {/* Cart Items */}
             <div className="flex-1 overflow-y-auto p-4">
               {cart.length === 0 ? (
-                <div className="text-center py-12 text-gray-500">
+                <div className="text-center py-12 text-v-text-secondary">
                   <div className="text-4xl mb-2">🛒</div>
                   <p>Your cart is empty</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   {cart.map(item => (
-                    <div key={item.productId} className="flex gap-4 p-4 bg-gray-50 rounded-lg">
+                    <div key={item.productId} className="flex gap-4 p-4 bg-v-charcoal rounded-lg">
                       {/* Item Image */}
-                      <div className="w-20 h-20 bg-gray-200 rounded flex-shrink-0">
+                      <div className="w-20 h-20 bg-v-surface rounded flex-shrink-0">
                         {item.image ? (
                           <img src={item.image} alt={item.name} className="w-full h-full object-cover rounded" />
                         ) : (
-                          <div className="w-full h-full flex items-center justify-center text-gray-400">
+                          <div className="w-full h-full flex items-center justify-center text-v-text-secondary">
                             <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
                             </svg>
@@ -308,28 +308,28 @@ export default function ShopPage() {
 
                       {/* Item Details */}
                       <div className="flex-1">
-                        <h4 className="font-medium text-gray-900 line-clamp-1">{item.name}</h4>
-                        <p className="text-sm text-gray-500">{item.vendor}</p>
-                        <p className="text-amber-600 font-semibold">{currencySymbol()}{formatPrice(item.price)}</p>
+                        <h4 className="font-medium text-v-text-primary line-clamp-1">{item.name}</h4>
+                        <p className="text-sm text-v-text-secondary">{item.vendor}</p>
+                        <p className="text-v-gold font-semibold">{currencySymbol()}{formatPrice(item.price)}</p>
 
                         {/* Quantity Controls */}
                         <div className="flex items-center gap-2 mt-2">
                           <button
                             onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                            className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-100"
+                            className="w-8 h-8 rounded border-v-border border flex items-center justify-center hover:bg-white/5 text-v-text-primary"
                           >
                             -
                           </button>
-                          <span className="w-8 text-center">{item.quantity}</span>
+                          <span className="w-8 text-center text-v-text-primary">{item.quantity}</span>
                           <button
                             onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                            className="w-8 h-8 rounded border flex items-center justify-center hover:bg-gray-100"
+                            className="w-8 h-8 rounded border-v-border border flex items-center justify-center hover:bg-white/5 text-v-text-primary"
                           >
                             +
                           </button>
                           <button
                             onClick={() => removeFromCart(item.productId)}
-                            className="ml-auto text-red-500 hover:text-red-700 text-sm"
+                            className="ml-auto text-red-400 hover:text-red-300 text-sm"
                           >
                             Remove
                           </button>
@@ -343,10 +343,10 @@ export default function ShopPage() {
 
             {/* Cart Footer */}
             {cart.length > 0 && (
-              <div className="p-4 border-t bg-gray-50">
+              <div className="p-4 border-t border-v-border bg-v-charcoal">
                 <div className="flex justify-between mb-4">
-                  <span className="text-gray-600">Subtotal</span>
-                  <span className="text-xl font-bold">${cartTotal.toFixed(2)}</span>
+                  <span className="text-v-text-secondary">Subtotal</span>
+                  <span className="text-xl font-bold text-v-text-primary">${cartTotal.toFixed(2)}</span>
                 </div>
                 <button
                   onClick={handleCheckout}
@@ -355,7 +355,7 @@ export default function ShopPage() {
                 >
                   {checkingOut ? 'Processing...' : 'Checkout'}
                 </button>
-                <p className="text-xs text-gray-500 text-center mt-2">
+                <p className="text-xs text-v-text-secondary text-center mt-2">
                   Secure checkout powered by Stripe
                 </p>
               </div>

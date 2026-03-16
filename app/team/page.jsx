@@ -40,7 +40,7 @@ export default function TeamPage() {
   const totalPay = members.reduce((sum, m) => sum + (m.total_pay || 0), 0);
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
@@ -56,7 +56,7 @@ export default function TeamPage() {
           </a>
           <a
             href="/team/add"
-            className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium"
+            className="px-4 py-2 bg-amber-900/200 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium"
           >
             {'+ Add Member'}
           </a>
@@ -91,22 +91,22 @@ export default function TeamPage() {
       {loading ? (
         <div className="text-white text-center py-12">{'Loading team...'}</div>
       ) : error ? (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-200">{error}</div>
+        <div className="bg-red-900/200/20 border border-red-500/50 rounded-lg p-4 text-red-200">{error}</div>
       ) : members.length === 0 ? (
         <div className="bg-white/10 rounded-lg p-8 text-center">
           <p className="text-white/60 text-lg mb-4">{'No team members yet'}</p>
           <a
             href="/team/add"
-            className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium inline-block"
+            className="px-6 py-3 bg-amber-900/200 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium inline-block"
           >
             {'Add Your First Team Member'}
           </a>
         </div>
       ) : (
-        <div className="bg-white rounded-lg overflow-hidden">
+        <div className="bg-v-surface rounded-lg overflow-hidden">
           <table className="w-full">
             <thead>
-              <tr className="bg-gray-50 text-left text-sm text-gray-500">
+              <tr className="bg-v-charcoal text-left text-sm text-v-text-secondary">
                 <th className="px-4 py-3 font-medium">{'Name'}</th>
                 <th className="px-4 py-3 font-medium hidden sm:table-cell">{'Role'}</th>
                 <th className="px-4 py-3 font-medium hidden md:table-cell">{'Rate'}</th>
@@ -120,37 +120,37 @@ export default function TeamPage() {
                 <tr
                   key={member.id}
                   onClick={() => router.push(`/team/${member.id}`)}
-                  className="border-t border-gray-100 hover:bg-gray-50 cursor-pointer transition-colors"
+                  className="border-t border-v-border hover:bg-white/5 cursor-pointer transition-colors"
                 >
                   <td className="px-4 py-3">
-                    <div className="font-medium text-gray-900">{member.name}</div>
-                    <div className="text-xs text-gray-500 sm:hidden">{member.type}</div>
+                    <div className="font-medium text-v-text-primary">{member.name}</div>
+                    <div className="text-xs text-v-text-secondary sm:hidden">{member.type}</div>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                      member.role === 'owner' ? 'bg-amber-100 text-amber-800' :
-                      member.role === 'manager' ? 'bg-indigo-100 text-indigo-700' :
-                      member.role === 'lead_tech' ? 'bg-cyan-100 text-cyan-700' :
-                      member.role === 'contractor' ? 'bg-purple-100 text-purple-700' :
-                      'bg-blue-100 text-blue-700'
+                      member.role === 'owner' ? 'bg-amber-900/30 text-amber-400' :
+                      member.role === 'manager' ? 'bg-indigo-900/30 text-indigo-400' :
+                      member.role === 'lead_tech' ? 'bg-cyan-900/30 text-cyan-400' :
+                      member.role === 'contractor' ? 'bg-purple-900/30 text-purple-400' :
+                      'bg-blue-900/30 text-blue-400'
                     }`}>
                       {(member.role || member.type || '').replace('_', ' ')}
                     </span>
                   </td>
-                  <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
+                  <td className="px-4 py-3 text-v-text-secondary hidden md:table-cell">
                     ${parseFloat(member.hourly_pay || 0).toFixed(2)}{'/hr'}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 hidden md:table-cell">
+                  <td className="px-4 py-3 text-v-text-secondary hidden md:table-cell">
                     {(member.total_hours || 0).toFixed(1)}
                   </td>
-                  <td className="px-4 py-3 text-gray-600 hidden sm:table-cell">
+                  <td className="px-4 py-3 text-v-text-secondary hidden sm:table-cell">
                     ${formatPrice(member.total_pay)}
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-block w-2 h-2 rounded-full ${
-                      member.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                      member.status === 'active' ? 'bg-green-900/200' : 'bg-gray-400'
                     }`} />
-                    <span className="ml-2 text-sm text-gray-600 hidden sm:inline">{member.status}</span>
+                    <span className="ml-2 text-sm text-v-text-secondary hidden sm:inline">{member.status}</span>
                   </td>
                 </tr>
               ))}

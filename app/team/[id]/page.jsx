@@ -140,25 +140,25 @@ export default function TeamMemberPage() {
 
   if (error && !member) {
     return (
-      <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+      <div className="page-transition min-h-screen bg-v-charcoal p-4">
         <header className="flex items-center space-x-3 mb-6">
           <a href="/team" className="text-white text-2xl">&#8592;</a>
           <h1 className="text-2xl font-bold text-white">{'Team'}</h1>
         </header>
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-200">{error}</div>
+        <div className="bg-red-900/200/20 border border-red-500/50 rounded-lg p-4 text-red-200">{error}</div>
       </div>
     );
   }
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
           <a href="/team" className="text-white text-2xl">&#8592;</a>
           <h1 className="text-2xl font-bold text-white">{member.name}</h1>
           <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-            member.type === 'employee' ? 'bg-blue-500/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'
+            member.type === 'employee' ? 'bg-blue-900/200/20 text-blue-300' : 'bg-purple-500/20 text-purple-300'
           }`}>
             {member.type}
           </span>
@@ -176,7 +176,7 @@ export default function TeamMemberPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm disabled:opacity-50"
+                className="px-3 py-1.5 bg-amber-900/200 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save'}
               </button>
@@ -190,7 +190,7 @@ export default function TeamMemberPage() {
           )}
           <button
             onClick={handleDelete}
-            className="px-3 py-1.5 bg-red-500/20 text-red-300 rounded-lg hover:bg-red-500/30 transition-colors text-sm"
+            className="px-3 py-1.5 bg-red-900/200/20 text-red-300 rounded-lg hover:bg-red-900/200/30 transition-colors text-sm"
           >
             {'Delete'}
           </button>
@@ -198,7 +198,7 @@ export default function TeamMemberPage() {
       </header>
 
       {error && (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-200 text-sm mb-4">{error}</div>
+        <div className="bg-red-900/200/20 border border-red-500/50 rounded-lg p-3 text-red-200 text-sm mb-4">{error}</div>
       )}
 
       {/* Stats Row */}
@@ -222,74 +222,74 @@ export default function TeamMemberPage() {
       </div>
 
       {/* Profile Card */}
-      <div className="bg-white rounded-lg p-5 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">Profile</h2>
+      <div className="bg-v-surface rounded-lg p-5 mb-6">
+        <h2 className="text-lg font-semibold text-v-text-primary mb-4">Profile</h2>
         {editing ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{'Name'}</label>
+              <label className="block text-sm text-v-text-secondary mb-1">{'Name'}</label>
               <input
                 type="text"
                 value={editForm.name || ''}
                 onChange={e => setEditForm({ ...editForm, name: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{'Type'}</label>
+              <label className="block text-sm text-v-text-secondary mb-1">{'Type'}</label>
               <select
                 value={editForm.type || 'employee'}
                 onChange={e => setEditForm({ ...editForm, type: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
               >
                 <option value="employee">{'Employee'}</option>
                 <option value="contractor">{'Contractor'}</option>
               </select>
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{'Email'}</label>
+              <label className="block text-sm text-v-text-secondary mb-1">{'Email'}</label>
               <input
                 type="email"
                 value={editForm.email || ''}
                 onChange={e => setEditForm({ ...editForm, email: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{'Phone'}</label>
+              <label className="block text-sm text-v-text-secondary mb-1">{'Phone'}</label>
               <input
                 type="tel"
                 value={editForm.phone || ''}
                 onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">Hourly Pay</label>
+              <label className="block text-sm text-v-text-secondary mb-1">Hourly Pay</label>
               <input
                 type="number"
                 step="0.01"
                 value={editForm.hourly_pay || ''}
                 onChange={e => setEditForm({ ...editForm, hourly_pay: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">PIN Code</label>
+              <label className="block text-sm text-v-text-secondary mb-1">PIN Code</label>
               <input
                 type="text"
                 maxLength={6}
                 value={editForm.pin_code || ''}
                 onChange={e => setEditForm({ ...editForm, pin_code: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
               />
             </div>
             <div>
-              <label className="block text-sm text-gray-600 mb-1">{'Status'}</label>
+              <label className="block text-sm text-v-text-secondary mb-1">{'Status'}</label>
               <select
                 value={editForm.status || 'active'}
                 onChange={e => setEditForm({ ...editForm, status: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
+                className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none"
               >
                 <option value="active">{'Active'}</option>
                 <option value="inactive">{'Inactive'}</option>
@@ -299,40 +299,40 @@ export default function TeamMemberPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <p className="text-sm text-gray-500">{'Email'}</p>
-              <p className="text-gray-900">{member.email || '-'}</p>
+              <p className="text-sm text-v-text-secondary">{'Email'}</p>
+              <p className="text-v-text-primary">{member.email || '-'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">{'Phone'}</p>
-              <p className="text-gray-900">{member.phone || '-'}</p>
+              <p className="text-sm text-v-text-secondary">{'Phone'}</p>
+              <p className="text-v-text-primary">{member.phone || '-'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Hourly Pay</p>
-              <p className="text-gray-900">${parseFloat(member.hourly_pay || 0).toFixed(2)}{'/hr'}</p>
+              <p className="text-sm text-v-text-secondary">Hourly Pay</p>
+              <p className="text-v-text-primary">${parseFloat(member.hourly_pay || 0).toFixed(2)}{'/hr'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">PIN Code</p>
-              <p className="text-gray-900">{member.pin_code || 'Not set'}</p>
+              <p className="text-sm text-v-text-secondary">PIN Code</p>
+              <p className="text-v-text-primary">{member.pin_code || 'Not set'}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">{'Status'}</p>
-              <p className="text-gray-900 capitalize">{member.status}</p>
+              <p className="text-sm text-v-text-secondary">{'Status'}</p>
+              <p className="text-v-text-primary capitalize">{member.status}</p>
             </div>
             <div>
-              <p className="text-sm text-gray-500">Added</p>
-              <p className="text-gray-900">{new Date(member.created_at).toLocaleDateString()}</p>
+              <p className="text-sm text-v-text-secondary">Added</p>
+              <p className="text-v-text-primary">{new Date(member.created_at).toLocaleDateString()}</p>
             </div>
           </div>
         )}
       </div>
 
       {/* Time Entries */}
-      <div className="bg-white rounded-lg p-5">
+      <div className="bg-v-surface rounded-lg p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold text-gray-900">Time Entries</h2>
+          <h2 className="text-lg font-semibold text-v-text-primary">Time Entries</h2>
           <button
             onClick={() => setShowAddEntry(!showAddEntry)}
-            className="px-3 py-1.5 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
+            className="px-3 py-1.5 bg-amber-900/200 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
           >
             {showAddEntry ? 'Cancel' : '+ Add Entry'}
           </button>
@@ -340,20 +340,20 @@ export default function TeamMemberPage() {
 
         {/* Add Entry Form */}
         {showAddEntry && (
-          <form onSubmit={handleAddEntry} className="bg-gray-50 rounded-lg p-4 mb-4 space-y-3">
+          <form onSubmit={handleAddEntry} className="bg-v-charcoal rounded-lg p-4 mb-4 space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
               <div>
-                <label className="block text-sm text-gray-600 mb-1">{'Date'}</label>
+                <label className="block text-sm text-v-text-secondary mb-1">{'Date'}</label>
                 <input
                   type="date"
                   value={entryForm.date}
                   onChange={e => setEntryForm({ ...entryForm, date: e.target.value })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                  className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">{'Hours'}</label>
+                <label className="block text-sm text-v-text-secondary mb-1">{'Hours'}</label>
                 <input
                   type="number"
                   step="0.25"
@@ -361,34 +361,34 @@ export default function TeamMemberPage() {
                   value={entryForm.hours_worked}
                   onChange={e => setEntryForm({ ...entryForm, hours_worked: e.target.value })}
                   required
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                  className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
                   placeholder="0.00"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">Service Type</label>
+                <label className="block text-sm text-v-text-secondary mb-1">Service Type</label>
                 <input
                   type="text"
                   value={entryForm.service_type}
                   onChange={e => setEntryForm({ ...entryForm, service_type: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                  className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
                   placeholder="e.g. Exterior Wash"
                 />
               </div>
               <div>
-                <label className="block text-sm text-gray-600 mb-1">{'Notes'}</label>
+                <label className="block text-sm text-v-text-secondary mb-1">{'Notes'}</label>
                 <input
                   type="text"
                   value={entryForm.notes}
                   onChange={e => setEntryForm({ ...entryForm, notes: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
+                  className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-amber-500 outline-none text-sm"
                   placeholder={'Optional'}
                 />
               </div>
             </div>
             <button
               type="submit"
-              className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
+              className="px-4 py-2 bg-amber-900/200 text-white rounded-lg hover:bg-amber-600 transition-colors text-sm font-medium"
             >
               {'Save'}
             </button>
@@ -396,12 +396,12 @@ export default function TeamMemberPage() {
         )}
 
         {entries.length === 0 ? (
-          <p className="text-gray-500 text-center py-6">No time entries yet</p>
+          <p className="text-v-text-secondary text-center py-6">No time entries yet</p>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="text-left text-sm text-gray-500 border-b">
+                <tr className="text-left text-sm text-v-text-secondary border-b">
                   <th className="pb-2 font-medium">{'Date'}</th>
                   <th className="pb-2 font-medium">{'Hours'}</th>
                   <th className="pb-2 font-medium hidden sm:table-cell">{'Services'}</th>
@@ -412,21 +412,21 @@ export default function TeamMemberPage() {
               </thead>
               <tbody>
                 {entries.map((entry) => (
-                  <tr key={entry.id} className="border-b border-gray-100 text-sm">
-                    <td className="py-2.5 text-gray-900">
+                  <tr key={entry.id} className="border-b border-v-border text-sm">
+                    <td className="py-2.5 text-v-text-primary">
                       {new Date(entry.date).toLocaleDateString()}
                     </td>
-                    <td className="py-2.5 text-gray-900">{parseFloat(entry.hours_worked).toFixed(2)}</td>
-                    <td className="py-2.5 text-gray-600 hidden sm:table-cell">{entry.service_type || '-'}</td>
-                    <td className="py-2.5 text-gray-600 hidden md:table-cell">{entry.notes || '-'}</td>
-                    <td className="py-2.5 text-gray-900">
+                    <td className="py-2.5 text-v-text-primary">{parseFloat(entry.hours_worked).toFixed(2)}</td>
+                    <td className="py-2.5 text-v-text-secondary hidden sm:table-cell">{entry.service_type || '-'}</td>
+                    <td className="py-2.5 text-v-text-secondary hidden md:table-cell">{entry.notes || '-'}</td>
+                    <td className="py-2.5 text-v-text-primary">
                       ${(parseFloat(entry.hours_worked) * parseFloat(member.hourly_pay || 0)).toFixed(2)}
                     </td>
                     <td className="py-2.5">
                       <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${
                         entry.approved
-                          ? 'bg-green-100 text-green-700'
-                          : 'bg-yellow-100 text-yellow-700'
+                          ? 'bg-green-900/30 text-green-400'
+                          : 'bg-yellow-900/30 text-yellow-400'
                       }`}>
                         {entry.approved ? 'Yes' : 'Pending'}
                       </span>

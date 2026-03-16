@@ -112,14 +112,14 @@ export default function TeamPermissionsPage() {
 
   if (loading) {
     return (
-      <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 flex items-center justify-center">
+      <div className="page-transition min-h-screen bg-v-charcoal p-4 flex items-center justify-center">
         <div className="text-white text-lg">{'Loading...'}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
@@ -141,8 +141,8 @@ export default function TeamPermissionsPage() {
             disabled={saving}
             className={`px-6 py-2 rounded-lg font-medium transition-all text-sm ${
               saved
-                ? 'bg-green-500 text-white'
-                : 'bg-amber-500 text-white hover:bg-amber-600 disabled:opacity-50'
+                ? 'bg-green-900/200 text-white'
+                : 'bg-amber-900/200 text-white hover:bg-amber-600 disabled:opacity-50'
             }`}
           >
             {saving ? 'Saving...' : saved ? 'Settings saved' : 'Save'}
@@ -151,23 +151,23 @@ export default function TeamPermissionsPage() {
       </header>
 
       {error && (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-3 text-red-200 mb-4 text-sm">{error}</div>
+        <div className="bg-red-900/200/20 border border-red-500/50 rounded-lg p-3 text-red-200 mb-4 text-sm">{error}</div>
       )}
 
       {/* Permissions Matrix */}
-      <div className="bg-white rounded-lg overflow-x-auto shadow">
+      <div className="bg-v-surface rounded-lg overflow-x-auto shadow">
         <table className="w-full min-w-[700px]">
           <thead>
-            <tr className="border-b-2 border-gray-200">
-              <th className="px-4 py-3 text-left text-sm font-semibold text-gray-700 w-[220px]">{'Permissions'}</th>
+            <tr className="border-b-2 border-v-border">
+              <th className="px-4 py-3 text-left text-sm font-semibold text-v-text-secondary w-[220px]">{'Permissions'}</th>
               {ROLES.map(role => (
-                <th key={role.value} className="px-3 py-3 text-center text-sm font-semibold text-gray-700">
+                <th key={role.value} className="px-3 py-3 text-center text-sm font-semibold text-v-text-secondary">
                   <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
-                    role.value === 'owner' ? 'bg-amber-100 text-amber-800' :
-                    role.value === 'manager' ? 'bg-indigo-100 text-indigo-700' :
-                    role.value === 'lead_tech' ? 'bg-cyan-100 text-cyan-700' :
-                    role.value === 'contractor' ? 'bg-purple-100 text-purple-700' :
-                    'bg-blue-100 text-blue-700'
+                    role.value === 'owner' ? 'bg-amber-900/30 text-amber-400' :
+                    role.value === 'manager' ? 'bg-indigo-900/30 text-indigo-400' :
+                    role.value === 'lead_tech' ? 'bg-cyan-900/30 text-cyan-400' :
+                    role.value === 'contractor' ? 'bg-purple-900/30 text-purple-400' :
+                    'bg-blue-900/30 text-blue-400'
                   }`}>
                     {role.label}
                   </span>
@@ -178,10 +178,10 @@ export default function TeamPermissionsPage() {
           <tbody>
             {/* Boolean permissions */}
             {BOOLEAN_PERMISSIONS.map((perm) => (
-              <tr key={perm} className="border-b border-gray-100 hover:bg-gray-50">
+              <tr key={perm} className="border-b border-v-border hover:bg-white/5">
                 <td className="px-4 py-3">
-                  <div className="text-sm font-medium text-gray-900">{PERMISSION_LABELS[perm]}</div>
-                  <div className="text-xs text-gray-500">{PERMISSION_DESCRIPTIONS[perm]}</div>
+                  <div className="text-sm font-medium text-v-text-primary">{PERMISSION_LABELS[perm]}</div>
+                  <div className="text-xs text-v-text-secondary">{PERMISSION_DESCRIPTIONS[perm]}</div>
                 </td>
                 {ROLES.map(role => {
                   const val = permissions?.[role.value]?.[perm];
@@ -193,9 +193,9 @@ export default function TeamPermissionsPage() {
                         disabled={isOwner}
                         className={`w-10 h-6 rounded-full relative transition-colors ${
                           isOwner ? 'cursor-not-allowed' : 'cursor-pointer'
-                        } ${val ? 'bg-green-500' : 'bg-gray-300'}`}
+                        } ${val ? 'bg-green-900/200' : 'bg-v-charcoal'}`}
                       >
-                        <span className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
+                        <span className={`absolute top-0.5 w-5 h-5 bg-v-surface rounded-full shadow transition-transform ${
                           val ? 'left-[18px]' : 'left-0.5'
                         }`} />
                       </button>
@@ -206,10 +206,10 @@ export default function TeamPermissionsPage() {
             ))}
 
             {/* Schedule visibility */}
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
+            <tr className="border-b border-v-border hover:bg-white/5">
               <td className="px-4 py-3">
-                <div className="text-sm font-medium text-gray-900">{PERMISSION_LABELS.schedule_visibility_days}</div>
-                <div className="text-xs text-gray-500">{PERMISSION_DESCRIPTIONS.schedule_visibility_days}</div>
+                <div className="text-sm font-medium text-v-text-primary">{PERMISSION_LABELS.schedule_visibility_days}</div>
+                <div className="text-xs text-v-text-secondary">{PERMISSION_DESCRIPTIONS.schedule_visibility_days}</div>
               </td>
               {ROLES.map(role => {
                 const val = permissions?.[role.value]?.schedule_visibility_days;
@@ -220,7 +220,7 @@ export default function TeamPermissionsPage() {
                       value={val ?? -1}
                       onChange={(e) => setScheduleDays(role.value, parseInt(e.target.value))}
                       disabled={isOwner}
-                      className={`text-xs border rounded px-2 py-1 ${isOwner ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+                      className={`text-xs border rounded px-2 py-1 ${isOwner ? 'bg-v-charcoal cursor-not-allowed' : ''}`}
                     >
                       {SCHEDULE_OPTIONS.map(opt => (
                         <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -241,11 +241,11 @@ export default function TeamPermissionsPage() {
           {ROLES.map(role => (
             <div key={role.value} className="flex items-start gap-2">
               <span className={`inline-block px-2 py-0.5 rounded-full text-xs font-medium mt-0.5 ${
-                role.value === 'owner' ? 'bg-amber-100 text-amber-800' :
-                role.value === 'manager' ? 'bg-indigo-100 text-indigo-700' :
-                role.value === 'lead_tech' ? 'bg-cyan-100 text-cyan-700' :
-                role.value === 'contractor' ? 'bg-purple-100 text-purple-700' :
-                'bg-blue-100 text-blue-700'
+                role.value === 'owner' ? 'bg-amber-900/30 text-amber-400' :
+                role.value === 'manager' ? 'bg-indigo-900/30 text-indigo-400' :
+                role.value === 'lead_tech' ? 'bg-cyan-900/30 text-cyan-400' :
+                role.value === 'contractor' ? 'bg-purple-900/30 text-purple-400' :
+                'bg-blue-900/30 text-blue-400'
               }`}>
                 {role.label}
               </span>

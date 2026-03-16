@@ -215,18 +215,18 @@ export default function InventoryPage() {
   const rewardTypeDisplay = form.reward_type.toLowerCase();
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-v-charcoal">
       {/* Admin Nav */}
-      <nav className="bg-white border-b sticky top-0 z-10">
+      <nav className="bg-v-surface border-b border-v-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
           <div className="flex items-center gap-6">
-            <a href="/dashboard" className="text-gray-400 hover:text-gray-600 text-sm">&larr; App</a>
-            <span className="font-bold text-gray-900">Admin</span>
+            <a href="/dashboard" className="text-v-text-secondary hover:text-v-text-primary text-sm">&larr; App</a>
+            <span className="text-v-text-primary font-bold">Admin</span>
             {ADMIN_NAV.map(nav => (
               <a
                 key={nav.href}
                 href={nav.href}
-                className={`text-sm ${nav.href === '/admin/inventory' ? 'text-amber-600 font-medium' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`text-sm ${nav.href === '/admin/inventory' ? 'text-v-gold font-medium' : 'text-v-text-secondary hover:text-v-text-primary'}`}
               >
                 {nav.label}
               </a>
@@ -237,7 +237,7 @@ export default function InventoryPage() {
 
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-gray-900">Reward Inventory</h1>
+          <h1 className="text-2xl font-bold text-v-text-primary font-heading">Reward Inventory</h1>
           <button
             onClick={() => { setForm({ ...EMPTY_FORM }); setEditingId(null); setShowForm(true); }}
             className="px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600"
@@ -246,75 +246,75 @@ export default function InventoryPage() {
           </button>
         </div>
 
-        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
-        {success && <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">{success}</div>}
+        {error && <div className="p-3 bg-red-900/30 border border-red-600/30 rounded-lg text-red-400 text-sm">{error}</div>}
+        {success && <div className="p-3 bg-green-900/30 border border-green-600/30 rounded-lg text-green-400 text-sm">{success}</div>}
 
         {/* Add/Edit Form */}
         {showForm && (
-          <div className="bg-white rounded-xl border p-6">
-            <h2 className="text-lg font-semibold mb-4">{editingId ? 'Edit Product' : 'Add New Product'}</h2>
+          <div className="bg-v-surface rounded-sm border border-v-border p-6">
+            <h2 className="text-lg font-semibold text-v-text-primary mb-4">{editingId ? 'Edit Product' : 'Add New Product'}</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Name *</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Name *</label>
                 <input
                   type="text"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                   placeholder="Product name"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Points Cost *</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Points Cost *</label>
                 <input
                   type="number"
                   value={form.points_cost}
                   onChange={e => setForm(f => ({ ...f, points_cost: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                   placeholder="500"
                 />
               </div>
               <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Description</label>
                 <textarea
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                   rows={2}
                   placeholder="Product description..."
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Image</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Image</label>
                 <div className="flex items-center gap-3">
                   {form.image_url && (
-                    <img src={form.image_url} alt="" className="w-12 h-12 rounded object-cover border" />
+                    <img src={form.image_url} alt="" className="w-12 h-12 rounded object-cover border border-v-border" />
                   )}
                   <input
                     type="file"
                     accept="image/*"
                     onChange={handleImageUpload}
-                    className="text-sm text-gray-500"
+                    className="text-sm text-v-text-secondary"
                   />
-                  {uploading && <span className="text-xs text-gray-400">Uploading...</span>}
+                  {uploading && <span className="text-xs text-v-text-secondary">Uploading...</span>}
                 </div>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Quantity</label>
                 <input
                   type="number"
                   value={form.quantity_available}
                   onChange={e => setForm(f => ({ ...f, quantity_available: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                   placeholder="0"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Category</label>
                 <select
                   value={form.category}
                   onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                 >
                   {CATEGORIES.map(c => (
                     <option key={c} value={c.toLowerCase()}>{c}</option>
@@ -322,11 +322,11 @@ export default function InventoryPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Minimum Tier</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Minimum Tier</label>
                 <select
                   value={form.min_tier}
                   onChange={e => setForm(f => ({ ...f, min_tier: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                 >
                   {TIERS.map(t => (
                     <option key={t} value={t} className="capitalize">{t.charAt(0).toUpperCase() + t.slice(1)}</option>
@@ -334,11 +334,11 @@ export default function InventoryPage() {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reward Type</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Reward Type</label>
                 <select
                   value={form.reward_type}
                   onChange={e => setForm(f => ({ ...f, reward_type: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2"
+                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                 >
                   {REWARD_TYPES.map(t => (
                     <option key={t} value={t.toLowerCase()}>{t}</option>
@@ -349,12 +349,12 @@ export default function InventoryPage() {
               {/* Conditional fields for discount/credit */}
               {rewardTypeDisplay === 'discount' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Discount Percent</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">Discount Percent</label>
                   <input
                     type="number"
                     value={form.discount_percent}
                     onChange={e => setForm(f => ({ ...f, discount_percent: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2"
+                    className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                     placeholder="10"
                   />
                 </div>
@@ -362,21 +362,21 @@ export default function InventoryPage() {
               {rewardTypeDisplay === 'subscription credit' && (
                 <>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Credit Months</label>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1">Credit Months</label>
                     <input
                       type="number"
                       value={form.credit_months}
                       onChange={e => setForm(f => ({ ...f, credit_months: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2"
+                      className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                       placeholder="1"
                     />
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1">Plan</label>
                     <select
                       value={form.credit_plan}
                       onChange={e => setForm(f => ({ ...f, credit_plan: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2"
+                      className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
                     >
                       <option value="pro">Pro</option>
                       <option value="business">Business</option>
@@ -395,7 +395,7 @@ export default function InventoryPage() {
                     onChange={e => setForm(f => ({ ...f, active: e.target.checked }))}
                     className="w-4 h-4 rounded text-amber-500"
                   />
-                  <span className="text-sm text-gray-700">Active</span>
+                  <span className="text-sm text-v-text-primary">Active</span>
                 </label>
                 <label className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -404,7 +404,7 @@ export default function InventoryPage() {
                     onChange={e => setForm(f => ({ ...f, featured: e.target.checked }))}
                     className="w-4 h-4 rounded text-amber-500"
                   />
-                  <span className="text-sm text-gray-700">Featured</span>
+                  <span className="text-sm text-v-text-primary">Featured</span>
                 </label>
               </div>
             </div>
@@ -419,7 +419,7 @@ export default function InventoryPage() {
               </button>
               <button
                 onClick={() => { setShowForm(false); setEditingId(null); setForm({ ...EMPTY_FORM }); }}
-                className="px-5 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
+                className="px-5 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5"
               >
                 Cancel
               </button>
@@ -432,7 +432,7 @@ export default function InventoryPage() {
           <select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm"
+            className="border rounded-lg px-3 py-2 text-sm bg-v-charcoal border-v-border text-v-text-primary"
           >
             <option value="all">All Categories</option>
             {CATEGORIES.map(c => (
@@ -442,24 +442,24 @@ export default function InventoryPage() {
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm"
+            className="border rounded-lg px-3 py-2 text-sm bg-v-charcoal border-v-border text-v-text-primary"
           >
             <option value="created">Newest First</option>
             <option value="stock">Stock (low to high)</option>
             <option value="points">Points (high to low)</option>
             <option value="name">Name (A-Z)</option>
           </select>
-          <span className="text-sm text-gray-500">{filtered.length} items</span>
+          <span className="text-sm text-v-text-secondary">{filtered.length} items</span>
         </div>
 
         {/* Inventory Table */}
         {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading inventory...</div>
+          <div className="text-center py-8 text-v-text-secondary">Loading inventory...</div>
         ) : (
-          <div className="bg-white rounded-xl border overflow-x-auto">
+          <div className="bg-v-surface rounded-sm border border-v-border overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 border-b bg-gray-50">
+                <tr className="text-left text-v-text-secondary border-b border-v-border bg-v-charcoal">
                   <th className="px-4 py-3 font-medium">Image</th>
                   <th className="px-4 py-3 font-medium">Name</th>
                   <th className="px-4 py-3 font-medium">Points</th>
@@ -473,37 +473,37 @@ export default function InventoryPage() {
               </thead>
               <tbody>
                 {filtered.map(item => {
-                  const stockWarning = item.quantity_available === 0 ? 'text-red-600 font-bold'
-                    : item.quantity_available < 5 ? 'text-yellow-600 font-medium'
-                    : 'text-gray-900';
+                  const stockWarning = item.quantity_available === 0 ? 'text-red-400 font-bold'
+                    : item.quantity_available < 5 ? 'text-yellow-400 font-medium'
+                    : 'text-v-text-primary';
                   return (
-                    <tr key={item.id} className="border-b last:border-0 hover:bg-gray-50">
+                    <tr key={item.id} className="border-b border-v-border last:border-0 hover:bg-white/5">
                       <td className="px-4 py-3">
                         {item.image_url ? (
-                          <img src={item.image_url} alt="" className="w-10 h-10 rounded object-cover border" />
+                          <img src={item.image_url} alt="" className="w-10 h-10 rounded object-cover border border-v-border" />
                         ) : (
-                          <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center text-gray-400 text-xs">N/A</div>
+                          <div className="w-10 h-10 rounded bg-v-charcoal flex items-center justify-center text-v-text-secondary text-xs">N/A</div>
                         )}
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-medium text-gray-900">{item.name}</div>
-                        <div className="text-xs text-gray-500 truncate max-w-[200px]">{item.description}</div>
+                        <div className="font-medium text-v-text-primary">{item.name}</div>
+                        <div className="text-xs text-v-text-secondary truncate max-w-[200px]">{item.description}</div>
                       </td>
-                      <td className="px-4 py-3 font-medium text-amber-600">{item.points_cost?.toLocaleString()}</td>
+                      <td className="px-4 py-3 font-medium text-v-gold">{item.points_cost?.toLocaleString()}</td>
                       <td className={`px-4 py-3 ${stockWarning}`}>
                         {item.quantity_available}
                         {item.quantity_available === 0 && <span className="ml-1 text-xs">OUT</span>}
                         {item.quantity_available > 0 && item.quantity_available < 5 && <span className="ml-1 text-xs">LOW</span>}
                       </td>
-                      <td className="px-4 py-3 text-gray-600">{item.redeemed_count || 0}</td>
+                      <td className="px-4 py-3 text-v-text-secondary">{item.redeemed_count || 0}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 bg-gray-100 rounded text-xs capitalize">{item.category}</span>
+                        <span className="px-2 py-0.5 bg-v-charcoal text-v-text-secondary rounded text-xs capitalize">{item.category}</span>
                       </td>
-                      <td className="px-4 py-3 text-xs capitalize text-gray-600">{item.min_tier}</td>
+                      <td className="px-4 py-3 text-xs capitalize text-v-text-secondary">{item.min_tier}</td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => handleToggleActive(item)}
-                          className={`w-9 h-5 rounded-full relative transition-colors ${item.active ? 'bg-green-500' : 'bg-gray-300'}`}
+                          className={`w-9 h-5 rounded-full relative transition-colors ${item.active ? 'bg-green-500' : 'bg-v-charcoal'}`}
                         >
                           <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${item.active ? 'left-[18px]' : 'left-0.5'}`} />
                         </button>
@@ -512,13 +512,13 @@ export default function InventoryPage() {
                         <div className="flex items-center gap-2">
                           <button
                             onClick={() => handleEdit(item)}
-                            className="text-blue-600 hover:underline text-xs"
+                            className="text-v-gold hover:underline text-xs"
                           >
                             Edit
                           </button>
                           <button
                             onClick={() => handleDelete(item.id)}
-                            className="text-red-500 hover:underline text-xs"
+                            className="text-red-400 hover:underline text-xs"
                           >
                             Delete
                           </button>
@@ -529,7 +529,7 @@ export default function InventoryPage() {
                 })}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan="9" className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan="9" className="px-4 py-8 text-center text-v-text-secondary">
                       {items.length === 0 ? 'No inventory items yet. Add your first product above.' : 'No items match the current filter.'}
                     </td>
                   </tr>

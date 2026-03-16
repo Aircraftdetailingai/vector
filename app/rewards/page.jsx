@@ -12,18 +12,18 @@ const CATEGORY_LABELS = {
 };
 
 const STATUS_STYLES = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  processing: 'bg-blue-100 text-blue-800',
-  fulfilled: 'bg-green-100 text-green-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
+  pending: 'bg-yellow-900/30 text-yellow-400',
+  processing: 'bg-blue-900/30 text-blue-400',
+  fulfilled: 'bg-green-900/30 text-green-400',
+  completed: 'bg-green-900/30 text-green-400',
+  cancelled: 'bg-red-900/30 text-red-400',
 };
 
 const TIER_COLORS = {
-  free: 'bg-gray-100 text-gray-600',
-  pro: 'bg-blue-100 text-blue-700',
-  business: 'bg-purple-100 text-purple-700',
-  enterprise: 'bg-amber-100 text-amber-700',
+  free: 'bg-v-charcoal text-v-text-secondary',
+  pro: 'bg-blue-900/30 text-blue-400',
+  business: 'bg-purple-900/30 text-purple-400',
+  enterprise: 'bg-amber-900/30 text-amber-400',
 };
 
 export default function RewardsPage() {
@@ -104,14 +104,14 @@ export default function RewardsPage() {
 
   if (loading) {
     return (
-      <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 flex items-center justify-center">
+      <div className="page-transition min-h-screen bg-v-charcoal p-4 flex items-center justify-center">
         <div className="text-white text-xl">Loading rewards...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex justify-between items-center mb-6 text-white max-w-4xl mx-auto">
         <div className="flex items-center space-x-2 text-2xl font-bold">
@@ -155,21 +155,21 @@ export default function RewardsPage() {
 
         {/* Message */}
         {message && (
-          <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          <div className={`p-4 rounded-lg ${message.type === 'success' ? 'bg-green-900/30 text-green-400' : 'bg-red-900/30 text-red-400'}`}>
             {message.text}
             <button onClick={() => setMessage(null)} className="float-right font-bold">&times;</button>
           </div>
         )}
 
         {/* Available Rewards */}
-        <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="bg-v-surface rounded-lg shadow overflow-hidden">
           <div className="px-6 py-4 border-b">
             <h2 className="text-xl font-semibold">Available Rewards</h2>
-            <p className="text-gray-500 text-sm">Redeem your points for exclusive rewards</p>
+            <p className="text-v-text-secondary text-sm">Redeem your points for exclusive rewards</p>
           </div>
 
           {rewards.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
+            <div className="p-8 text-center text-v-text-secondary">
               <p className="text-lg mb-2">No rewards available yet</p>
               <p className="text-sm">Check back soon - new rewards are added regularly!</p>
             </div>
@@ -187,9 +187,9 @@ export default function RewardsPage() {
                         <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <h3 className="font-semibold text-lg">{reward.name}</h3>
                           {reward.featured && (
-                            <span className="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded font-medium">Featured</span>
+                            <span className="text-xs bg-amber-900/30 text-amber-400 px-2 py-0.5 rounded font-medium">Featured</span>
                           )}
-                          <span className="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                          <span className="text-xs bg-v-charcoal text-v-text-secondary px-2 py-0.5 rounded">
                             {CATEGORY_LABELS[reward.category] || reward.category}
                           </span>
                           {reward.min_tier && reward.min_tier !== 'free' && (
@@ -198,7 +198,7 @@ export default function RewardsPage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-gray-600 text-sm">{reward.description}</p>
+                        <p className="text-v-text-secondary text-sm">{reward.description}</p>
                         {!inStock && <p className="text-red-500 text-xs mt-1">Out of stock</p>}
                         {!eligible && <p className="text-orange-500 text-xs mt-1">Requires {reward.min_tier} tier or higher</p>}
                       </div>
@@ -208,12 +208,12 @@ export default function RewardsPage() {
                           <button
                             onClick={() => setShowConfirm(reward)}
                             disabled={redeeming === reward.id}
-                            className="mt-2 px-4 py-2 bg-amber-500 text-white text-sm font-medium rounded hover:bg-amber-600 disabled:opacity-50"
+                            className="mt-2 px-4 py-2 bg-amber-900/200 text-white text-sm font-medium rounded hover:bg-amber-600 disabled:opacity-50"
                           >
                             {redeeming === reward.id ? 'Processing...' : 'Redeem'}
                           </button>
                         ) : canAfford ? null : (
-                          <p className="mt-2 text-gray-400 text-sm">
+                          <p className="mt-2 text-v-text-secondary text-sm">
                             Need {(reward.points_cost - points.available).toLocaleString()} more
                           </p>
                         )}
@@ -228,7 +228,7 @@ export default function RewardsPage() {
 
         {/* Redemption History */}
         {redemptions.length > 0 && (
-          <div className="bg-white rounded-lg shadow overflow-hidden">
+          <div className="bg-v-surface rounded-lg shadow overflow-hidden">
             <div className="px-6 py-4 border-b">
               <h2 className="text-xl font-semibold">Redemption History</h2>
             </div>
@@ -238,13 +238,13 @@ export default function RewardsPage() {
                 <div key={r.id} className="p-4 flex justify-between items-center">
                   <div>
                     <p className="font-medium">{r.reward_name || 'Reward'}</p>
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-v-text-secondary">
                       {new Date(r.created_at).toLocaleDateString()}
                     </p>
                   </div>
                   <div className="text-right">
                     <p className="text-amber-600 font-medium">-{r.points_spent.toLocaleString()} pts</p>
-                    <span className={`text-xs px-2 py-0.5 rounded ${STATUS_STYLES[r.status] || 'bg-gray-100'}`}>
+                    <span className={`text-xs px-2 py-0.5 rounded ${STATUS_STYLES[r.status] || 'bg-v-charcoal'}`}>
                       {r.status}
                     </span>
                   </div>
@@ -255,7 +255,7 @@ export default function RewardsPage() {
         )}
 
         {/* How to Earn More */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="bg-blue-900/20 border border-blue-200 rounded-lg p-6">
           <h3 className="font-semibold text-blue-900 mb-3">How to Earn Points</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
             <div className="flex items-center gap-2">
@@ -302,29 +302,29 @@ export default function RewardsPage() {
       {/* Confirmation Modal */}
       {showConfirm && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-md">
+          <div className="bg-v-surface rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-2">Confirm Redemption</h3>
-            <p className="text-gray-600 mb-4">
+            <p className="text-v-text-secondary mb-4">
               Redeem {showConfirm.points_cost.toLocaleString()} points for:
             </p>
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
+            <div className="bg-v-charcoal rounded-lg p-4 mb-4">
               <p className="font-semibold">{showConfirm.name}</p>
-              <p className="text-sm text-gray-500">{showConfirm.description}</p>
+              <p className="text-sm text-v-text-secondary">{showConfirm.description}</p>
             </div>
-            <p className="text-sm text-gray-500 mb-4">
+            <p className="text-sm text-v-text-secondary mb-4">
               Your new balance will be {(points.available - showConfirm.points_cost).toLocaleString()} points.
             </p>
             <div className="flex justify-end gap-3">
               <button
                 onClick={() => setShowConfirm(null)}
-                className="px-4 py-2 border rounded-lg hover:bg-gray-50"
+                className="px-4 py-2 border rounded-lg hover:bg-white/5"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleRedeem(showConfirm)}
                 disabled={redeeming}
-                className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
+                className="px-4 py-2 bg-amber-900/200 text-white rounded-lg hover:bg-amber-600 disabled:opacity-50"
               >
                 {redeeming ? 'Processing...' : 'Confirm Redemption'}
               </button>

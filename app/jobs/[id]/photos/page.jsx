@@ -136,7 +136,7 @@ export default function JobPhotosPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="min-h-screen bg-v-charcoal p-4">
       {/* Hidden file input */}
       <input
         type="file"
@@ -154,7 +154,7 @@ export default function JobPhotosPage() {
           <div>
             <h1 className="text-2xl font-bold">{'Job Documentation'}</h1>
             {quote && (
-              <p className="text-gray-400 text-sm">
+              <p className="text-v-text-secondary text-sm">
                 {quote.aircraft_type} {quote.aircraft_model}
               </p>
             )}
@@ -168,21 +168,21 @@ export default function JobPhotosPage() {
       {/* Contact Card */}
       {quote && (quote.poc_name || quote.emergency_contact_name || quote.client_name) && (
         <div className="max-w-2xl mx-auto mb-4">
-          <div className="bg-white rounded-xl p-4 shadow">
+          <div className="bg-v-surface rounded-xl p-4 shadow">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">{'Contacts'}</h3>
+              <h3 className="text-sm font-semibold text-v-text-secondary uppercase tracking-wider">{'Contacts'}</h3>
               {quote.contact_notes && (
-                <span className="text-xs text-gray-400" title={quote.contact_notes}>{'Notes'} &#9432;</span>
+                <span className="text-xs text-v-text-secondary" title={quote.contact_notes}>{'Notes'} &#9432;</span>
               )}
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               {/* Point of Contact */}
               {(quote.poc_name || quote.client_name) && (
-                <div className="bg-gray-50 rounded-lg p-3">
-                  <p className="text-xs font-semibold text-gray-500 uppercase mb-1">
+                <div className="bg-v-charcoal rounded-lg p-3">
+                  <p className="text-xs font-semibold text-v-text-secondary uppercase mb-1">
                     {quote.poc_role ? `${quote.poc_role} (POC)` : 'Point of Contact'}
                   </p>
-                  <p className="text-sm font-medium text-gray-900">{quote.poc_name || quote.client_name}</p>
+                  <p className="text-sm font-medium text-v-text-primary">{quote.poc_name || quote.client_name}</p>
                   <div className="mt-1 space-y-0.5">
                     {(quote.poc_phone || quote.client_phone) && (
                       <a href={`tel:${quote.poc_phone || quote.client_phone}`} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline">
@@ -199,9 +199,9 @@ export default function JobPhotosPage() {
               )}
               {/* Emergency Contact */}
               {quote.emergency_contact_name && (
-                <div className="bg-red-50 rounded-lg p-3 border border-red-100">
+                <div className="bg-red-900/20 rounded-lg p-3 border border-red-100">
                   <p className="text-xs font-semibold text-red-600 uppercase mb-1">{'Emergency Contact'}</p>
-                  <p className="text-sm font-medium text-gray-900">{quote.emergency_contact_name}</p>
+                  <p className="text-sm font-medium text-v-text-primary">{quote.emergency_contact_name}</p>
                   {quote.emergency_contact_phone && (
                     <a href={`tel:${quote.emergency_contact_phone}`} className="flex items-center gap-1.5 text-sm text-blue-600 hover:underline mt-1">
                       <span>&#9742;</span> {quote.emergency_contact_phone}
@@ -211,7 +211,7 @@ export default function JobPhotosPage() {
               )}
             </div>
             {quote.contact_notes && (
-              <p className="mt-2 text-xs text-gray-500 bg-gray-50 rounded p-2">{quote.contact_notes}</p>
+              <p className="mt-2 text-xs text-v-text-secondary bg-v-charcoal rounded p-2">{quote.contact_notes}</p>
             )}
           </div>
         </div>
@@ -226,13 +226,13 @@ export default function JobPhotosPage() {
 
       <div className="max-w-2xl mx-auto space-y-6">
         {/* Before Section */}
-        <div className="bg-white rounded-xl p-6 shadow">
+        <div className="bg-v-surface rounded-xl p-6 shadow">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-v-text-primary flex items-center gap-2">
                 <span className="text-2xl">&#128249;</span> {'Before Photos/Video'}
               </h2>
-              <p className="text-sm text-gray-500">{'Document the aircraft condition before starting'}</p>
+              <p className="text-sm text-v-text-secondary">{'Document the aircraft condition before starting'}</p>
             </div>
             {beforeMedia.length > 0 && (
               <span className="text-green-600 text-sm font-medium">
@@ -261,14 +261,14 @@ export default function JobPhotosPage() {
                   )}
                   <button
                     onClick={() => handleDelete(item.id)}
-                    className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-sm"
+                    className="absolute top-1 right-1 bg-red-900/200 text-white w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-sm"
                   >
                     &times;
                   </button>
                   {item.notes && (
-                    <p className="text-xs text-gray-500 mt-1 truncate">{item.notes}</p>
+                    <p className="text-xs text-v-text-secondary mt-1 truncate">{item.notes}</p>
                   )}
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-v-text-secondary">
                     {new Date(item.created_at).toLocaleTimeString()}
                   </p>
                 </div>
@@ -281,7 +281,7 @@ export default function JobPhotosPage() {
             <button
               onClick={() => handleUploadClick('before_video')}
               disabled={uploading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-900/200 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
             >
               <span>&#127909;</span>
               {uploading && uploadType === 'before_video' ? 'Uploading...' : 'Record Video'}
@@ -289,7 +289,7 @@ export default function JobPhotosPage() {
             <button
               onClick={() => handleUploadClick('before_photo')}
               disabled={uploading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-blue-900/200 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
             >
               <span>&#128247;</span>
               {uploading && uploadType === 'before_photo' ? 'Uploading...' : 'Take Photo'}
@@ -298,13 +298,13 @@ export default function JobPhotosPage() {
         </div>
 
         {/* After Section */}
-        <div className="bg-white rounded-xl p-6 shadow">
+        <div className="bg-v-surface rounded-xl p-6 shadow">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h2 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+              <h2 className="text-lg font-bold text-v-text-primary flex items-center gap-2">
                 <span className="text-2xl">&#128248;</span> {'After Photos'}
               </h2>
-              <p className="text-sm text-gray-500">{'Document your completed work'}</p>
+              <p className="text-sm text-v-text-secondary">{'Document your completed work'}</p>
             </div>
             {afterMedia.length > 0 && (
               <span className="text-green-600 text-sm font-medium">
@@ -333,14 +333,14 @@ export default function JobPhotosPage() {
                   )}
                   <button
                     onClick={() => handleDelete(item.id)}
-                    className="absolute top-1 right-1 bg-red-500 text-white w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-sm"
+                    className="absolute top-1 right-1 bg-red-900/200 text-white w-6 h-6 rounded-full opacity-0 group-hover:opacity-100 transition-opacity text-sm"
                   >
                     &times;
                   </button>
                   {item.notes && (
-                    <p className="text-xs text-gray-500 mt-1 truncate">{item.notes}</p>
+                    <p className="text-xs text-v-text-secondary mt-1 truncate">{item.notes}</p>
                   )}
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-v-text-secondary">
                     {new Date(item.created_at).toLocaleTimeString()}
                   </p>
                 </div>
@@ -353,7 +353,7 @@ export default function JobPhotosPage() {
             <button
               onClick={() => handleUploadClick('after_photo')}
               disabled={uploading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-900/200 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
             >
               <span>&#128247;</span>
               {uploading && uploadType === 'after_photo' ? 'Uploading...' : 'Take Photo'}
@@ -361,7 +361,7 @@ export default function JobPhotosPage() {
             <button
               onClick={() => handleUploadClick('after_video')}
               disabled={uploading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-green-900/200 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
             >
               <span>&#127909;</span>
               {uploading && uploadType === 'after_video' ? 'Uploading...' : 'Record Video'}
@@ -370,7 +370,7 @@ export default function JobPhotosPage() {
         </div>
 
         {/* Tips Card */}
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+        <div className="bg-amber-900/20 border border-amber-200 rounded-xl p-4">
           <h3 className="font-bold text-amber-900 mb-2">&#128161; {'Documentation Tips'}</h3>
           <ul className="text-sm text-amber-800 space-y-1">
             <li>&#8226; {'Capture any existing damage or stains before starting'}</li>
@@ -382,11 +382,11 @@ export default function JobPhotosPage() {
         </div>
 
         {/* Completion Summary */}
-        <div className="bg-white rounded-xl p-6 shadow">
-          <h3 className="font-bold text-gray-900 mb-3">{'Documentation Status'}</h3>
+        <div className="bg-v-surface rounded-xl p-6 shadow">
+          <h3 className="font-bold text-v-text-primary mb-3">{'Documentation Status'}</h3>
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">{'Before Documentation'}</span>
+              <span className="text-v-text-secondary">{'Before Documentation'}</span>
               {beforeMedia.length > 0 ? (
                 <span className="text-green-600 font-medium">&#10003; {'Complete'}</span>
               ) : (
@@ -394,7 +394,7 @@ export default function JobPhotosPage() {
               )}
             </div>
             <div className="flex items-center justify-between">
-              <span className="text-gray-600">{'After Documentation'}</span>
+              <span className="text-v-text-secondary">{'After Documentation'}</span>
               {afterMedia.length > 0 ? (
                 <span className="text-green-600 font-medium">&#10003; {'Complete'}</span>
               ) : (
@@ -404,7 +404,7 @@ export default function JobPhotosPage() {
           </div>
 
           {beforeMedia.length > 0 && afterMedia.length > 0 && (
-            <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
+            <div className="mt-4 p-3 bg-green-900/20 border border-green-200 rounded-lg">
               <p className="text-green-800 font-medium">
                 &#127881; {'Great job! Full documentation complete.'}
               </p>

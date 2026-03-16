@@ -4,9 +4,9 @@ import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/formatPrice';
 
 const statusColors = {
-  scheduled: 'bg-blue-500',
-  in_progress: 'bg-amber-500',
-  paid: 'bg-green-500',
+  scheduled: 'bg-blue-900/200',
+  in_progress: 'bg-amber-900/200',
+  paid: 'bg-green-900/200',
   completed: 'bg-purple-500',
 };
 
@@ -165,14 +165,14 @@ export default function CalendarPage() {
 
   if (loading) {
     return (
-      <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] flex items-center justify-center">
+      <div className="page-transition min-h-screen bg-v-charcoal flex items-center justify-center">
         <div className="text-white text-xl">{'Loading calendar...'}</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex justify-between items-center mb-6 text-white">
         <div className="flex items-center space-x-4">
@@ -187,20 +187,20 @@ export default function CalendarPage() {
 
       <div className="flex gap-4">
         {/* Main Calendar */}
-        <div className="flex-1 bg-white rounded-lg shadow overflow-hidden">
+        <div className="flex-1 bg-v-surface rounded-lg shadow overflow-hidden">
           {/* Calendar Header */}
           <div className="flex items-center justify-between p-4 border-b">
             <div className="flex items-center space-x-4">
               <button
                 onClick={() => navigateMonth(-1)}
-                className="p-2 hover:bg-gray-100 rounded"
+                className="p-2 hover:bg-white/5 rounded"
               >
                 &larr;
               </button>
               <h2 className="text-xl font-semibold">{monthName}</h2>
               <button
                 onClick={() => navigateMonth(1)}
-                className="p-2 hover:bg-gray-100 rounded"
+                className="p-2 hover:bg-white/5 rounded"
               >
                 &rarr;
               </button>
@@ -208,7 +208,7 @@ export default function CalendarPage() {
             <div className="flex space-x-2">
               <button
                 onClick={() => setCurrentDate(new Date())}
-                className="px-3 py-1 text-sm border rounded hover:bg-gray-50"
+                className="px-3 py-1 text-sm border rounded hover:bg-white/5"
               >
                 {'Today'}
               </button>
@@ -218,7 +218,7 @@ export default function CalendarPage() {
           {/* Week Days Header */}
           <div className="grid grid-cols-7 border-b">
             {weekDays.map((day) => (
-              <div key={day} className="p-2 text-center text-sm font-medium text-gray-500 border-r last:border-r-0">
+              <div key={day} className="p-2 text-center text-sm font-medium text-v-text-secondary border-r last:border-r-0">
                 {day}
               </div>
             ))}
@@ -237,13 +237,13 @@ export default function CalendarPage() {
                 <div
                   key={idx}
                   className={`min-h-[100px] p-1 border-r border-b last:border-r-0 ${
-                    day.isCurrentMonth ? 'bg-white' : 'bg-gray-50'
+                    day.isCurrentMonth ? 'bg-v-surface' : 'bg-v-charcoal'
                   }`}
                 >
                   <div className={`text-sm font-medium mb-1 ${
                     isToday
-                      ? 'bg-amber-500 text-white w-6 h-6 rounded-full flex items-center justify-center'
-                      : day.isCurrentMonth ? 'text-gray-900' : 'text-gray-400'
+                      ? 'bg-amber-900/200 text-white w-6 h-6 rounded-full flex items-center justify-center'
+                      : day.isCurrentMonth ? 'text-v-text-primary' : 'text-v-text-secondary'
                   }`}>
                     {day.date.getDate()}
                   </div>
@@ -252,14 +252,14 @@ export default function CalendarPage() {
                       <div
                         key={job.id}
                         onClick={() => setSelectedJob(job)}
-                        className={`text-xs p-1 rounded text-white cursor-pointer truncate ${statusColors[job.status] || 'bg-gray-500'}`}
+                        className={`text-xs p-1 rounded text-white cursor-pointer truncate ${statusColors[job.status] || 'bg-v-charcoal0'}`}
                         title={`${job.aircraft_model || job.aircraft_type} - ${job.client_name || 'No name'}`}
                       >
                         {formatTime(job.scheduled_date)} {job.client_name || job.aircraft_model}
                       </div>
                     ))}
                     {dayJobs.length > 3 && (
-                      <div className="text-xs text-gray-500">{`+${dayJobs.length - 3} more`}</div>
+                      <div className="text-xs text-v-text-secondary">{`+${dayJobs.length - 3} more`}</div>
                     )}
                   </div>
                 </div>
@@ -269,12 +269,12 @@ export default function CalendarPage() {
         </div>
 
         {/* Sidebar - Unscheduled Jobs */}
-        <div className="w-80 bg-white rounded-lg shadow p-4">
+        <div className="w-80 bg-v-surface rounded-lg shadow p-4">
           <h3 className="font-semibold mb-3">{'Unscheduled Jobs'} ({unscheduledJobs.length})</h3>
-          <p className="text-sm text-gray-500 mb-4">{'Drag to calendar or click to schedule'}</p>
+          <p className="text-sm text-v-text-secondary mb-4">{'Drag to calendar or click to schedule'}</p>
 
           {unscheduledJobs.length === 0 ? (
-            <p className="text-gray-400 text-sm">{'No unscheduled jobs'}</p>
+            <p className="text-v-text-secondary text-sm">{'No unscheduled jobs'}</p>
           ) : (
             <div className="space-y-2 max-h-[500px] overflow-y-auto">
               {unscheduledJobs.map((job) => (
@@ -284,10 +284,10 @@ export default function CalendarPage() {
                     setScheduleModal(job);
                     setScheduleDate('');
                   }}
-                  className="p-3 border rounded-lg cursor-pointer hover:bg-gray-50"
+                  className="p-3 border rounded-lg cursor-pointer hover:bg-white/5"
                 >
                   <div className="font-medium text-sm">{job.client_name || 'No name'}</div>
-                  <div className="text-xs text-gray-500">
+                  <div className="text-xs text-v-text-secondary">
                     {job.aircraft_model || job.aircraft_type}
                   </div>
                   <div className="text-xs text-green-600 font-medium mt-1">
@@ -316,34 +316,34 @@ export default function CalendarPage() {
       {/* Job Detail Modal */}
       {selectedJob && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-lg font-semibold">{'Job Details'}</h3>
-              <button onClick={() => setSelectedJob(null)} className="text-gray-400 hover:text-gray-600">
+              <button onClick={() => setSelectedJob(null)} className="text-v-text-secondary hover:text-v-text-secondary">
                 &times;
               </button>
             </div>
 
             <div className="space-y-3">
               <div>
-                <label className="text-sm text-gray-500">{'Customer'}</label>
+                <label className="text-sm text-v-text-secondary">{'Customer'}</label>
                 <p className="font-medium">{selectedJob.client_name || 'No name'}</p>
               </div>
 
               <div>
-                <label className="text-sm text-gray-500">{'Aircraft'}</label>
+                <label className="text-sm text-v-text-secondary">{'Aircraft'}</label>
                 <p className="font-medium">{selectedJob.aircraft_model || selectedJob.aircraft_type}</p>
               </div>
 
               {selectedJob.tail_number && (
                 <div>
-                  <label className="text-sm text-gray-500">{'Tail Number'}</label>
+                  <label className="text-sm text-v-text-secondary">{'Tail Number'}</label>
                   <p className="font-medium">{selectedJob.tail_number}</p>
                 </div>
               )}
 
               <div>
-                <label className="text-sm text-gray-500">{'Scheduled'}</label>
+                <label className="text-sm text-v-text-secondary">{'Scheduled'}</label>
                 <p className="font-medium">
                   {selectedJob.scheduled_date
                     ? new Date(selectedJob.scheduled_date).toLocaleString()
@@ -352,14 +352,14 @@ export default function CalendarPage() {
               </div>
 
               <div>
-                <label className="text-sm text-gray-500">{'Status'}</label>
-                <p className={`inline-block px-2 py-1 rounded text-sm text-white ${statusColors[selectedJob.status] || 'bg-gray-500'}`}>
+                <label className="text-sm text-v-text-secondary">{'Status'}</label>
+                <p className={`inline-block px-2 py-1 rounded text-sm text-white ${statusColors[selectedJob.status] || 'bg-v-charcoal0'}`}>
                   {selectedJob.status}
                 </p>
               </div>
 
               <div>
-                <label className="text-sm text-gray-500">{'Total'}</label>
+                <label className="text-sm text-v-text-secondary">{'Total'}</label>
                 <p className="font-semibold text-lg text-green-600">
                   ${formatPrice(selectedJob.total_price)}
                 </p>
@@ -369,7 +369,7 @@ export default function CalendarPage() {
             <div className="flex flex-col gap-2 mt-6">
               <a
                 href={`/jobs/${selectedJob.id}/photos`}
-                className="w-full py-2 bg-blue-500 text-white rounded text-center hover:bg-blue-600 flex items-center justify-center gap-2"
+                className="w-full py-2 bg-blue-900/200 text-white rounded text-center hover:bg-blue-600 flex items-center justify-center gap-2"
               >
                 <span>&#128247;</span> {'Document Job'}
               </a>
@@ -379,14 +379,14 @@ export default function CalendarPage() {
                     setScheduleModal(selectedJob);
                     setSelectedJob(null);
                   }}
-                  className="flex-1 py-2 border border-amber-500 text-amber-500 rounded hover:bg-amber-50"
+                  className="flex-1 py-2 border border-amber-500 text-amber-500 rounded hover:bg-amber-900/20"
                 >
                   {'Reschedule'}
                 </button>
                 <a
                   href={`/q/${selectedJob.share_link}`}
                   target="_blank"
-                  className="flex-1 py-2 bg-amber-500 text-white rounded text-center hover:bg-amber-600"
+                  className="flex-1 py-2 bg-amber-900/200 text-white rounded text-center hover:bg-amber-600"
                 >
                   {'View Quote'}
                 </a>
@@ -399,12 +399,12 @@ export default function CalendarPage() {
       {/* Schedule Modal */}
       {scheduleModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">{'Schedule Job'}</h3>
 
             <div className="mb-4">
               <p className="font-medium">{scheduleModal.client_name || 'No name'}</p>
-              <p className="text-sm text-gray-500">{scheduleModal.aircraft_model || scheduleModal.aircraft_type}</p>
+              <p className="text-sm text-v-text-secondary">{scheduleModal.aircraft_model || scheduleModal.aircraft_type}</p>
             </div>
 
             <div className="space-y-4">
@@ -432,14 +432,14 @@ export default function CalendarPage() {
             <div className="flex gap-2 mt-6">
               <button
                 onClick={() => setScheduleModal(null)}
-                className="flex-1 py-2 border rounded hover:bg-gray-50"
+                className="flex-1 py-2 border rounded hover:bg-white/5"
               >
                 {'Cancel'}
               </button>
               <button
                 onClick={handleScheduleJob}
                 disabled={!scheduleDate}
-                className="flex-1 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50"
+                className="flex-1 py-2 bg-amber-900/200 text-white rounded hover:bg-amber-600 disabled:opacity-50"
               >
                 {'Schedule'}
               </button>

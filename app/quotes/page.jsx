@@ -7,15 +7,15 @@ import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice
 import ExportGate from '@/components/ExportGate';
 
 const statusColors = {
-  draft: 'bg-gray-100 text-gray-700',
-  sent: 'bg-blue-100 text-blue-700',
-  viewed: 'bg-amber-100 text-amber-700',
-  paid: 'bg-green-100 text-green-700',
-  approved: 'bg-green-100 text-green-700',
-  completed: 'bg-purple-100 text-purple-700',
-  expired: 'bg-red-100 text-red-700',
-  scheduled: 'bg-indigo-100 text-indigo-700',
-  in_progress: 'bg-cyan-100 text-cyan-700',
+  draft: 'bg-gray-700/30 text-gray-300',
+  sent: 'bg-blue-900/30 text-blue-400',
+  viewed: 'bg-amber-900/30 text-amber-400',
+  paid: 'bg-green-900/30 text-green-400',
+  approved: 'bg-green-900/30 text-green-400',
+  completed: 'bg-purple-900/30 text-purple-400',
+  expired: 'bg-red-900/30 text-red-400',
+  scheduled: 'bg-indigo-900/30 text-indigo-400',
+  in_progress: 'bg-cyan-900/30 text-cyan-400',
 };
 
 export default function QuotesPage() {
@@ -593,7 +593,7 @@ export default function QuotesPage() {
       cell: ({ getValue }) => {
         const status = getValue();
         return (
-          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-100'}`}>
+          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[status] || 'bg-gray-700/30'}`}>
             {statusLabels[status] || status}
           </span>
         );
@@ -747,7 +747,7 @@ export default function QuotesPage() {
   }
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 text-white">
         <div className="flex items-center space-x-4">
@@ -805,27 +805,27 @@ export default function QuotesPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 mb-6">
-        <div className="bg-white rounded-lg p-4 shadow">
+        <div className="bg-v-surface border border-v-border rounded-sm p-4">
           <p className="text-gray-500 text-sm">Total</p>
           <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 shadow">
+        <div className="bg-v-surface border border-v-border rounded-sm p-4">
           <p className="text-gray-500 text-sm">Active</p>
           <p className="text-2xl font-bold text-amber-600">{stats.active}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 shadow">
+        <div className="bg-v-surface border border-v-border rounded-sm p-4">
           <p className="text-gray-500 text-sm">Paid</p>
           <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 shadow">
+        <div className="bg-v-surface border border-v-border rounded-sm p-4">
           <p className="text-gray-500 text-sm">Completed</p>
           <p className="text-2xl font-bold text-purple-600">{stats.completed}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 shadow">
+        <div className="bg-v-surface border border-v-border rounded-sm p-4">
           <p className="text-gray-500 text-sm">Revenue</p>
           <p className="text-2xl font-bold text-blue-600">{currencySymbol()}{formatPriceWhole(stats.revenue)}</p>
         </div>
-        <div className="bg-white rounded-lg p-4 shadow">
+        <div className="bg-v-surface border border-v-border rounded-sm p-4">
           <p className="text-gray-500 text-sm">Gross Profit</p>
           <p className="text-2xl font-bold text-green-600">{currencySymbol()}{formatPriceWhole(stats.revenue - stats.productCost)}</p>
           {stats.revenue > 0 && (
@@ -843,7 +843,7 @@ export default function QuotesPage() {
             className={`px-4 py-2 rounded-lg font-medium text-sm ${
               filter === f
                 ? 'bg-amber-500 text-white'
-                : 'bg-white text-gray-700 hover:bg-gray-100'
+                : 'bg-v-surface text-v-text-secondary hover:bg-white/5'
             }`}
           >
             {f === 'all' ? 'All' :
@@ -857,7 +857,7 @@ export default function QuotesPage() {
 
       {/* Bulk Actions Bar */}
       {selectedIds.size > 0 && (
-        <div className="bg-white border border-amber-300 rounded-lg px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div className="bg-amber-900/20 border border-amber-600/30 rounded-sm px-4 py-3 mb-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
           <div className="flex items-center gap-3">
             <span className="text-sm font-semibold text-gray-900">
               {selectedIds.size} selected
@@ -912,7 +912,7 @@ export default function QuotesPage() {
       {/* Complete Job Modal */}
       {completeModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="bg-v-surface border border-v-border rounded-sm p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-4">Complete Job</h3>
             <p className="text-gray-600 mb-4">
               {completeModal.aircraft_model || completeModal.aircraft_type}
@@ -1194,7 +1194,7 @@ export default function QuotesPage() {
       {/* Bulk Confirm Modal */}
       {bulkConfirm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-6 w-full max-w-sm shadow-xl">
+          <div className="bg-v-surface border border-v-border rounded-sm p-6 w-full max-w-sm">
             <h3 className="text-lg font-semibold text-gray-900 mb-2">{bulkConfirm.label}</h3>
             <p className="text-sm text-gray-600 mb-6">{bulkConfirm.description}</p>
             <div className="flex justify-end gap-3">
@@ -1224,7 +1224,7 @@ export default function QuotesPage() {
       {/* Duplicate Quote Modal */}
       {duplicateModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="bg-v-surface border border-v-border rounded-sm p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-2">Duplicate Quote</h3>
             <p className="text-gray-600 mb-4">
               Create a copy of this quote with new customer details.
@@ -1316,7 +1316,7 @@ export default function QuotesPage() {
 
       {changeOrderModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="bg-v-surface border border-v-border rounded-sm p-5 sm:p-6 w-full sm:max-w-lg max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <h3 className="text-lg font-semibold mb-2">Change Order</h3>
             <p className="text-gray-600 mb-4">
               {changeOrderModal.aircraft_model || changeOrderModal.aircraft_type}

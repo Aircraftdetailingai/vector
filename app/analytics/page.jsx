@@ -20,14 +20,14 @@ function BarChart({ data, valueKey, labelKey, color = 'amber', maxBars = 12 }) {
             </div>
             <div
               className={`w-full rounded-t transition-all duration-300 ${
-                color === 'amber' ? 'bg-amber-500' :
-                color === 'green' ? 'bg-green-500' :
-                color === 'blue' ? 'bg-blue-500' :
+                color === 'amber' ? 'bg-amber-900/200' :
+                color === 'green' ? 'bg-green-900/200' :
+                color === 'blue' ? 'bg-blue-900/200' :
                 'bg-purple-500'
               }`}
               style={{ height: `${Math.max(pct, 2)}%` }}
             />
-            <span className="text-[9px] text-gray-500 mt-1 truncate w-full text-center">{d[labelKey]}</span>
+            <span className="text-[9px] text-v-text-secondary mt-1 truncate w-full text-center">{d[labelKey]}</span>
           </div>
         );
       })}
@@ -37,7 +37,7 @@ function BarChart({ data, valueKey, labelKey, color = 'amber', maxBars = 12 }) {
 
 function HorizontalBar({ label, value, max, suffix = '', color = 'amber' }) {
   const pct = max > 0 ? (value / max) * 100 : 0;
-  const colorClass = color === 'amber' ? 'bg-amber-500' : color === 'green' ? 'bg-green-500' : color === 'blue' ? 'bg-blue-500' : 'bg-purple-500';
+  const colorClass = color === 'amber' ? 'bg-amber-900/200' : color === 'green' ? 'bg-green-900/200' : color === 'blue' ? 'bg-blue-900/200' : 'bg-purple-500';
   return (
     <div className="flex items-center gap-3">
       <span className="text-sm text-gray-300 w-28 truncate">{label}</span>
@@ -54,9 +54,9 @@ function FunnelStep({ label, value, total, color }) {
   return (
     <div className="flex-1 text-center">
       <div className={`text-2xl sm:text-3xl font-bold ${color}`}>{value}</div>
-      <div className="text-xs text-gray-400 mt-1">{label}</div>
+      <div className="text-xs text-v-text-secondary mt-1">{label}</div>
       {total > 0 && value !== total && (
-        <div className="text-[10px] text-gray-500 mt-0.5">{pct}%</div>
+        <div className="text-[10px] text-v-text-secondary mt-0.5">{pct}%</div>
       )}
     </div>
   );
@@ -67,10 +67,10 @@ function StatCard({ label, value, sub, icon }) {
     <div className="bg-white/5 border border-white/10 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-1">
         <span className="text-lg">{icon}</span>
-        <span className="text-xs text-gray-400 uppercase tracking-wider">{label}</span>
+        <span className="text-xs text-v-text-secondary uppercase tracking-wider">{label}</span>
       </div>
       <p className="text-2xl font-bold text-white">{value}</p>
-      {sub && <p className="text-xs text-gray-500 mt-1">{sub}</p>}
+      {sub && <p className="text-xs text-v-text-secondary mt-1">{sub}</p>}
     </div>
   );
 }
@@ -117,7 +117,7 @@ export default function AnalyticsPage() {
   const avgJobValue = totalJobs > 0 ? Math.round(totalRevenue / totalJobs) : 0;
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 text-white">
         <div className="flex items-center space-x-4">
@@ -136,8 +136,8 @@ export default function AnalyticsPage() {
               onClick={() => setDays(opt.value)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-all min-h-[36px] ${
                 days === opt.value
-                  ? 'bg-white text-gray-900'
-                  : 'bg-white/5 text-gray-400 hover:bg-white/10 border border-white/10'
+                  ? 'bg-v-surface text-v-text-primary'
+                  : 'bg-white/5 text-v-text-secondary hover:bg-white/10 border border-white/10'
               }`}
             >
               {opt.label}
@@ -165,13 +165,13 @@ export default function AnalyticsPage() {
             <h2 className="text-sm font-semibold text-white mb-4">Quote Funnel</h2>
             <div className="flex items-center">
               <FunnelStep label={'Quote created'} value={data.funnel.totalCreated} total={data.funnel.totalCreated} color="text-gray-300" />
-              <span className="text-gray-600 mx-1">›</span>
+              <span className="text-v-text-secondary mx-1">›</span>
               <FunnelStep label={'Sent'} value={data.funnel.totalSent} total={data.funnel.totalCreated} color="text-blue-400" />
-              <span className="text-gray-600 mx-1">›</span>
+              <span className="text-v-text-secondary mx-1">›</span>
               <FunnelStep label={'Viewed'} value={data.funnel.totalViewed} total={data.funnel.totalCreated} color="text-amber-400" />
-              <span className="text-gray-600 mx-1">›</span>
+              <span className="text-v-text-secondary mx-1">›</span>
               <FunnelStep label={'Paid'} value={data.funnel.totalPaid} total={data.funnel.totalCreated} color="text-green-400" />
-              <span className="text-gray-600 mx-1">›</span>
+              <span className="text-v-text-secondary mx-1">›</span>
               <FunnelStep label={'Completed'} value={data.funnel.totalCompleted} total={data.funnel.totalCreated} color="text-purple-400" />
             </div>
           </div>
@@ -181,7 +181,7 @@ export default function AnalyticsPage() {
             {/* Conversion Rate Trend */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-white mb-1">{'Conversion Rate'}</h2>
-              <p className="text-xs text-gray-500 mb-4">Weekly quote-to-paid percentage</p>
+              <p className="text-xs text-v-text-secondary mb-4">Weekly quote-to-paid percentage</p>
               {data.conversionTrend.length > 0 ? (
                 <BarChart
                   data={data.conversionTrend.map(w => ({
@@ -193,14 +193,14 @@ export default function AnalyticsPage() {
                   color="blue"
                 />
               ) : (
-                <p className="text-gray-500 text-sm text-center py-10">{'No data'}</p>
+                <p className="text-v-text-secondary text-sm text-center py-10">{'No data'}</p>
               )}
             </div>
 
             {/* Avg Job Value Trend */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-white mb-1">{'Avg Job Value'}</h2>
-              <p className="text-xs text-gray-500 mb-4">Weekly average per completed job</p>
+              <p className="text-xs text-v-text-secondary mb-4">Weekly average per completed job</p>
               {data.valueTrend.filter(w => w.avgValue > 0).length > 0 ? (
                 <BarChart
                   data={data.valueTrend.filter(w => w.avgValue > 0).map(w => ({
@@ -212,14 +212,14 @@ export default function AnalyticsPage() {
                   color="green"
                 />
               ) : (
-                <p className="text-gray-500 text-sm text-center py-10">No completed jobs yet</p>
+                <p className="text-v-text-secondary text-sm text-center py-10">No completed jobs yet</p>
               )}
             </div>
 
             {/* Revenue Trend */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-white mb-1">{'Revenue by Month'}</h2>
-              <p className="text-xs text-gray-500 mb-4">{'Total Revenue'} by month</p>
+              <p className="text-xs text-v-text-secondary mb-4">{'Total Revenue'} by month</p>
               {data.revenueTrend.length > 0 ? (
                 <BarChart
                   data={data.revenueTrend.map(m => {
@@ -231,14 +231,14 @@ export default function AnalyticsPage() {
                   color="amber"
                 />
               ) : (
-                <p className="text-gray-500 text-sm text-center py-10">No revenue data yet</p>
+                <p className="text-v-text-secondary text-sm text-center py-10">No revenue data yet</p>
               )}
             </div>
 
             {/* Busiest Days */}
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-white mb-1">Busiest Days</h2>
-              <p className="text-xs text-gray-500 mb-4">Jobs by day of week</p>
+              <p className="text-xs text-v-text-secondary mb-4">Jobs by day of week</p>
               <BarChart data={data.busiestDays} valueKey="jobs" labelKey="day" color="purple" maxBars={7} />
             </div>
           </div>
@@ -246,7 +246,7 @@ export default function AnalyticsPage() {
           {/* Top Services */}
           <div className="bg-white/5 border border-white/10 rounded-xl p-5">
             <h2 className="text-sm font-semibold text-white mb-1">Top {'Services'} by Revenue</h2>
-            <p className="text-xs text-gray-500 mb-4">Your highest-earning services</p>
+            <p className="text-xs text-v-text-secondary mb-4">Your highest-earning services</p>
             {data.topServices.length > 0 ? (
               <div className="space-y-3">
                 {data.topServices.map((svc, i) => (
@@ -261,7 +261,7 @@ export default function AnalyticsPage() {
                 ))}
               </div>
             ) : (
-              <p className="text-gray-500 text-sm text-center py-6">No service revenue data yet</p>
+              <p className="text-v-text-secondary text-sm text-center py-6">No service revenue data yet</p>
             )}
           </div>
 
@@ -269,15 +269,15 @@ export default function AnalyticsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
               <p className="text-3xl font-bold text-white">{data.retention.totalCustomers}</p>
-              <p className="text-xs text-gray-400 mt-1">Total {'Customers'}</p>
+              <p className="text-xs text-v-text-secondary mt-1">Total {'Customers'}</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
               <p className="text-3xl font-bold text-green-400">{data.retention.repeatCustomers}</p>
-              <p className="text-xs text-gray-400 mt-1">Repeat {'Customers'}</p>
+              <p className="text-xs text-v-text-secondary mt-1">Repeat {'Customers'}</p>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-5 text-center">
               <p className="text-3xl font-bold text-amber-400">{data.retention.retentionRate}%</p>
-              <p className="text-xs text-gray-400 mt-1">Retention Rate</p>
+              <p className="text-xs text-v-text-secondary mt-1">Retention Rate</p>
             </div>
           </div>
 
@@ -285,13 +285,13 @@ export default function AnalyticsPage() {
           {data.busiestHours.length > 0 && (
             <div className="bg-white/5 border border-white/10 rounded-xl p-5">
               <h2 className="text-sm font-semibold text-white mb-1">Busiest Hours</h2>
-              <p className="text-xs text-gray-500 mb-4">When your jobs happen</p>
+              <p className="text-xs text-v-text-secondary mb-4">When your jobs happen</p>
               <BarChart data={data.busiestHours} valueKey="jobs" labelKey="label" color="amber" maxBars={24} />
             </div>
           )}
         </div>
       ) : (
-        <div className="text-center text-gray-400 py-20">{'Failed to load report'}</div>
+        <div className="text-center text-v-text-secondary py-20">{'Failed to load report'}</div>
       )}
     </div>
   );

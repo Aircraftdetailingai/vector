@@ -104,7 +104,7 @@ export default function JobsPage() {
   };
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 text-gray-900">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4 text-v-text-primary">
       <header className="text-white flex items-center justify-between mb-4">
         <div className="flex items-center space-x-2">
           <a href="/profitability" className="text-2xl">&#8592;</a>
@@ -125,37 +125,37 @@ export default function JobsPage() {
             onChange={(e) => setPeriod(parseInt(e.target.value))}
             className="bg-white/10 text-white border border-white/20 rounded px-3 py-1"
           >
-            <option value={30} className="text-gray-900">{'Last 30 days'}</option>
-            <option value={90} className="text-gray-900">{'Last 90 days'}</option>
-            <option value={180} className="text-gray-900">{'Last 6 months'}</option>
-            <option value={365} className="text-gray-900">{'Last year'}</option>
+            <option value={30} className="text-v-text-primary">{'Last 30 days'}</option>
+            <option value={90} className="text-v-text-primary">{'Last 90 days'}</option>
+            <option value={180} className="text-v-text-primary">{'Last 6 months'}</option>
+            <option value={365} className="text-v-text-primary">{'Last year'}</option>
           </select>
         </div>
       </header>
 
       {/* Quick Stats */}
       {stats && (
-        <div className="bg-white rounded-lg p-4 shadow mb-4">
+        <div className="bg-v-surface rounded-lg p-4 shadow mb-4">
           <div className="grid grid-cols-5 gap-2 text-center">
             <div>
               <p className="text-xl font-bold text-amber-600">{stats.totalJobs}</p>
-              <p className="text-xs text-gray-500">{'Jobs'}</p>
+              <p className="text-xs text-v-text-secondary">{'Jobs'}</p>
             </div>
             <div>
               <p className="text-xl font-bold text-green-600">{formatCurrency(stats.totalRevenue)}</p>
-              <p className="text-xs text-gray-500">{'Revenue'}</p>
+              <p className="text-xs text-v-text-secondary">{'Revenue'}</p>
             </div>
             <div>
               <p className="text-xl font-bold text-blue-600">{formatCurrency(stats.totalProfit)}</p>
-              <p className="text-xs text-gray-500">{'Profit'}</p>
+              <p className="text-xs text-v-text-secondary">{'Profit'}</p>
             </div>
             <div>
               <p className="text-xl font-bold">{stats.totalHours.toFixed(1)}h</p>
-              <p className="text-xs text-gray-500">{'Hours'}</p>
+              <p className="text-xs text-v-text-secondary">{'Hours'}</p>
             </div>
             <div>
               <p className="text-xl font-bold text-purple-600">{stats.avgMargin.toFixed(1)}%</p>
-              <p className="text-xs text-gray-500">{'Margin'}</p>
+              <p className="text-xs text-v-text-secondary">{'Margin'}</p>
             </div>
           </div>
         </div>
@@ -166,43 +166,43 @@ export default function JobsPage() {
       ) : error ? (
         <div className="text-red-400 text-center py-12">{error}</div>
       ) : jobs.length === 0 ? (
-        <div className="bg-white rounded-lg p-8 text-center">
+        <div className="bg-v-surface rounded-lg p-8 text-center">
           <p className="text-xl font-semibold mb-2">{'No completed jobs'}</p>
-          <p className="text-gray-500 mb-4">{'Jobs will appear here after you complete quotes and log hours.'}</p>
+          <p className="text-v-text-secondary mb-4">{'Jobs will appear here after you complete quotes and log hours.'}</p>
           <a href="/dashboard" className="text-amber-600 underline">{'Go to Dashboard'}</a>
         </div>
       ) : (
         <div className="space-y-3">
           {jobs.map((job) => (
-            <div key={job.id} className="bg-white rounded-lg p-4 shadow">
+            <div key={job.id} className="bg-v-surface rounded-lg p-4 shadow">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <p className="font-semibold">
                     {job.quotes?.client_name || 'Unknown Client'}
                   </p>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-v-text-secondary">
                     {job.quotes?.aircraft_model || 'Unknown Aircraft'}
                   </p>
                 </div>
-                <span className="text-sm text-gray-400">{formatDate(job.completed_at)}</span>
+                <span className="text-sm text-v-text-secondary">{formatDate(job.completed_at)}</span>
               </div>
 
               <div className="grid grid-cols-4 gap-2 text-center mt-3 pt-3 border-t">
                 <div>
                   <p className="font-semibold">{formatCurrency(job.revenue)}</p>
-                  <p className="text-xs text-gray-500">{'Revenue'}</p>
+                  <p className="text-xs text-v-text-secondary">{'Revenue'}</p>
                 </div>
                 <div>
                   <p className="font-semibold">{job.actual_hours}h</p>
-                  <p className="text-xs text-gray-500">{'Hours'}</p>
+                  <p className="text-xs text-v-text-secondary">{'Hours'}</p>
                 </div>
                 <div>
                   <p className="font-semibold text-green-600">{formatCurrency(job.profit)}</p>
-                  <p className="text-xs text-gray-500">{'Profit'}</p>
+                  <p className="text-xs text-v-text-secondary">{'Profit'}</p>
                 </div>
                 <div>
                   <p className="font-semibold text-purple-600">{job.margin_percent?.toFixed(1)}%</p>
-                  <p className="text-xs text-gray-500">{'Margin'}</p>
+                  <p className="text-xs text-v-text-secondary">{'Margin'}</p>
                 </div>
               </div>
 
@@ -212,7 +212,7 @@ export default function JobsPage() {
                   <p className="text-xs font-semibold text-blue-700 mb-1">Products for this job</p>
                   <div className="flex flex-wrap gap-1">
                     {job.quotes.linked_products.map((p, i) => (
-                      <span key={i} className="text-xs bg-blue-50 text-blue-700 px-2 py-0.5 rounded">
+                      <span key={i} className="text-xs bg-blue-900/20 text-blue-700 px-2 py-0.5 rounded">
                         {p.product_name}{p.quantity > 0 ? ` (${p.quantity.toFixed(1)} ${p.unit || ''})` : ''}
                       </span>
                     ))}
@@ -237,14 +237,14 @@ export default function JobsPage() {
               {/* Line items / services */}
               {job.quotes?.line_items && job.quotes.line_items.length > 0 && (
                 <div className="mt-2">
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-v-text-secondary">
                     {job.quotes.line_items.map(li => li.description || li.service).join(', ')}
                   </p>
                 </div>
               )}
 
               {job.notes && (
-                <p className="text-sm text-gray-500 mt-2 italic">"{job.notes}"</p>
+                <p className="text-sm text-v-text-secondary mt-2 italic">"{job.notes}"</p>
               )}
             </div>
           ))}

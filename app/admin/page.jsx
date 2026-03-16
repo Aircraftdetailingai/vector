@@ -14,10 +14,10 @@ const ADMIN_NAV = [
 ];
 
 const STATUS_COLORS = {
-  free: 'bg-gray-100 text-gray-700',
-  pro: 'bg-amber-100 text-amber-800',
-  business: 'bg-blue-100 text-blue-800',
-  enterprise: 'bg-purple-100 text-purple-800',
+  free: 'bg-gray-700/30 text-gray-300',
+  pro: 'bg-amber-900/30 text-amber-400',
+  business: 'bg-blue-900/30 text-blue-400',
+  enterprise: 'bg-purple-900/30 text-purple-400',
 };
 
 export default function AdminDashboard() {
@@ -44,16 +44,16 @@ export default function AdminDashboard() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-gray-500">Loading admin dashboard...</div>
+      <div className="min-h-screen bg-v-charcoal flex items-center justify-center">
+        <div className="text-v-text-secondary">Loading admin dashboard...</div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-red-600">{error}</div>
+      <div className="min-h-screen bg-v-charcoal flex items-center justify-center">
+        <div className="text-red-400">{error}</div>
       </div>
     );
   }
@@ -86,18 +86,18 @@ export default function AdminDashboard() {
   const pieColors = { free: '#9ca3af', pro: '#f59e0b', business: '#3b82f6', enterprise: '#8b5cf6' };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-v-charcoal">
       {/* Admin Nav */}
-      <nav className="bg-white border-b sticky top-0 z-10">
+      <nav className="bg-v-surface border-b border-v-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
           <div className="flex items-center gap-6">
-            <a href="/dashboard" className="text-gray-400 hover:text-gray-600 text-sm">&larr; App</a>
-            <span className="font-bold text-gray-900">Admin</span>
+            <a href="/dashboard" className="text-v-text-secondary hover:text-v-text-primary text-sm">&larr; App</a>
+            <span className="text-v-text-primary font-bold">Admin</span>
             {ADMIN_NAV.map(nav => (
               <a
                 key={nav.href}
                 href={nav.href}
-                className={`text-sm ${nav.href === '/admin' ? 'text-amber-600 font-medium' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`text-sm ${nav.href === '/admin' ? 'text-v-gold font-medium' : 'text-v-text-secondary hover:text-v-text-primary'}`}
               >
                 {nav.label}
               </a>
@@ -110,13 +110,13 @@ export default function AdminDashboard() {
         {/* Key Metrics */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {[
-            { label: 'Total Detailers', value: metrics.totalDetailers, color: 'text-gray-900' },
-            { label: 'Active (30d)', value: metrics.activeDetailers, color: 'text-green-600' },
-            { label: 'MRR', value: `$${formatPriceWhole(metrics.mrr)}`, color: 'text-blue-600' },
-            { label: 'Platform Fees (month)', value: `$${formatPriceWhole(metrics.platformFeesMonth)}`, color: 'text-amber-600' },
+            { label: 'Total Detailers', value: metrics.totalDetailers, color: 'text-v-text-primary' },
+            { label: 'Active (30d)', value: metrics.activeDetailers, color: 'text-green-400' },
+            { label: 'MRR', value: `$${formatPriceWhole(metrics.mrr)}`, color: 'text-blue-400' },
+            { label: 'Platform Fees (month)', value: `$${formatPriceWhole(metrics.platformFeesMonth)}`, color: 'text-amber-400' },
           ].map(m => (
-            <div key={m.label} className="bg-white rounded-xl border p-4">
-              <p className="text-xs text-gray-500 uppercase tracking-wide">{m.label}</p>
+            <div key={m.label} className="bg-v-surface border border-v-border rounded-sm p-4">
+              <p className="text-xs text-v-text-secondary uppercase tracking-wide">{m.label}</p>
               <p className={`text-2xl font-bold mt-1 ${m.color}`}>{m.value}</p>
             </div>
           ))}
@@ -125,8 +125,8 @@ export default function AdminDashboard() {
         {/* Subscription + Points Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Subscription Breakdown */}
-          <div className="bg-white rounded-xl border p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Subscription Breakdown</h3>
+          <div className="bg-v-surface border border-v-border rounded-sm p-5">
+            <h3 className="font-semibold text-v-text-primary mb-4">Subscription Breakdown</h3>
             <div className="flex items-center gap-6">
               {/* Pie visual */}
               <div className="w-24 h-24 rounded-full relative" style={{
@@ -137,8 +137,8 @@ export default function AdminDashboard() {
                   ${pieColors.enterprise} ${((planCounts.free + planCounts.pro + planCounts.business) / total) * 360}deg 360deg
                 )`
               }}>
-                <div className="absolute inset-3 bg-white rounded-full flex items-center justify-center">
-                  <span className="text-sm font-bold text-gray-700">{total}</span>
+                <div className="absolute inset-3 bg-v-surface rounded-full flex items-center justify-center">
+                  <span className="text-sm font-bold text-v-text-primary">{total}</span>
                 </div>
               </div>
               <div className="space-y-2 flex-1">
@@ -146,9 +146,9 @@ export default function AdminDashboard() {
                   <div key={plan} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <div className="w-3 h-3 rounded-full" style={{ backgroundColor: pieColors[plan] }} />
-                      <span className="text-sm capitalize text-gray-700">{plan}</span>
+                      <span className="text-sm capitalize text-v-text-secondary">{plan}</span>
                     </div>
-                    <span className="text-sm font-medium text-gray-900">{count}</span>
+                    <span className="text-sm font-medium text-v-text-primary">{count}</span>
                   </div>
                 ))}
               </div>
@@ -156,17 +156,17 @@ export default function AdminDashboard() {
           </div>
 
           {/* Points Stats */}
-          <div className="bg-white rounded-xl border p-5">
-            <h3 className="font-semibold text-gray-900 mb-4">Points Stats</h3>
+          <div className="bg-v-surface border border-v-border rounded-sm p-5">
+            <h3 className="font-semibold text-v-text-primary mb-4">Points Stats</h3>
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: 'Total Issued', value: points.issued.toLocaleString(), color: 'text-blue-600' },
-                { label: 'Redeemed', value: points.redeemed.toLocaleString(), color: 'text-green-600' },
-                { label: 'Outstanding', value: points.outstanding.toLocaleString(), color: 'text-amber-600' },
-                { label: 'Avg Per User', value: points.avgPerUser.toLocaleString(), color: 'text-gray-600' },
+                { label: 'Total Issued', value: points.issued.toLocaleString(), color: 'text-blue-400' },
+                { label: 'Redeemed', value: points.redeemed.toLocaleString(), color: 'text-green-400' },
+                { label: 'Outstanding', value: points.outstanding.toLocaleString(), color: 'text-amber-400' },
+                { label: 'Avg Per User', value: points.avgPerUser.toLocaleString(), color: 'text-v-text-secondary' },
               ].map(s => (
                 <div key={s.label}>
-                  <p className="text-xs text-gray-500">{s.label}</p>
+                  <p className="text-xs text-v-text-secondary">{s.label}</p>
                   <p className={`text-lg font-bold ${s.color}`}>{s.value}</p>
                 </div>
               ))}
@@ -176,25 +176,25 @@ export default function AdminDashboard() {
 
         {/* Charts Row */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl border p-5">
-            <h3 className="font-semibold text-gray-900 mb-3">Signups (30 days)</h3>
+          <div className="bg-v-surface border border-v-border rounded-sm p-5">
+            <h3 className="font-semibold text-v-text-primary mb-3">Signups (30 days)</h3>
             {renderBarChart(signupsByDay, 'bg-blue-500')}
-            <p className="text-xs text-gray-400 mt-2 text-center">
+            <p className="text-xs text-v-text-secondary mt-2 text-center">
               Total: {Object.values(signupsByDay).reduce((s, v) => s + v, 0)}
             </p>
           </div>
-          <div className="bg-white rounded-xl border p-5">
-            <h3 className="font-semibold text-gray-900 mb-3">Revenue (30 days)</h3>
+          <div className="bg-v-surface border border-v-border rounded-sm p-5">
+            <h3 className="font-semibold text-v-text-primary mb-3">Revenue (30 days)</h3>
             {renderBarChart(revenueByDay, 'bg-green-500', '$')}
-            <p className="text-xs text-gray-400 mt-2 text-center">
+            <p className="text-xs text-v-text-secondary mt-2 text-center">
               Total: ${formatPriceWhole(Object.values(revenueByDay).reduce((s, v) => s + v, 0))}
             </p>
           </div>
         </div>
 
         {/* Recent Activity Tabs */}
-        <div className="bg-white rounded-xl border">
-          <div className="border-b px-5 pt-4">
+        <div className="bg-v-surface border border-v-border rounded-sm">
+          <div className="border-b border-v-border px-5 pt-4">
             <div className="flex gap-4">
               {[
                 { key: 'signups', label: 'Recent Signups' },
@@ -206,8 +206,8 @@ export default function AdminDashboard() {
                   onClick={() => setActiveTab(tab.key)}
                   className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
                     activeTab === tab.key
-                      ? 'border-amber-500 text-amber-600'
-                      : 'border-transparent text-gray-500 hover:text-gray-700'
+                      ? 'border-amber-500 text-amber-500'
+                      : 'border-transparent text-v-text-secondary hover:text-v-text-primary'
                   }`}
                 >
                   {tab.label}
@@ -220,7 +220,7 @@ export default function AdminDashboard() {
             {activeTab === 'signups' && (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b">
+                  <tr className="text-left bg-v-charcoal text-v-text-secondary border-b border-v-border">
                     <th className="pb-2 font-medium">Email</th>
                     <th className="pb-2 font-medium">Company</th>
                     <th className="pb-2 font-medium">Plan</th>
@@ -229,19 +229,19 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {recentSignups.map(d => (
-                    <tr key={d.id} className="border-b last:border-0">
-                      <td className="py-2 text-gray-900">{d.email}</td>
-                      <td className="py-2 text-gray-600">{d.company || '-'}</td>
+                    <tr key={d.id} className="border-b border-v-border last:border-0 hover:bg-white/5">
+                      <td className="py-2 text-v-text-primary">{d.email}</td>
+                      <td className="py-2 text-v-text-secondary">{d.company || '-'}</td>
                       <td className="py-2">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[(d.plan || 'free').toLowerCase()] || STATUS_COLORS.free}`}>
                           {d.plan || 'free'}
                         </span>
                       </td>
-                      <td className="py-2 text-gray-500">{new Date(d.created_at).toLocaleDateString()}</td>
+                      <td className="py-2 text-v-text-secondary">{new Date(d.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                   {recentSignups.length === 0 && (
-                    <tr><td colSpan="4" className="py-4 text-center text-gray-400">No recent signups</td></tr>
+                    <tr><td colSpan="4" className="py-4 text-center text-v-text-secondary">No recent signups</td></tr>
                   )}
                 </tbody>
               </table>
@@ -250,7 +250,7 @@ export default function AdminDashboard() {
             {activeTab === 'quotes' && (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b">
+                  <tr className="text-left bg-v-charcoal text-v-text-secondary border-b border-v-border">
                     <th className="pb-2 font-medium">Client</th>
                     <th className="pb-2 font-medium">Aircraft</th>
                     <th className="pb-2 font-medium">Total</th>
@@ -260,25 +260,25 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {recentQuotes.map(q => (
-                    <tr key={q.id} className="border-b last:border-0">
-                      <td className="py-2 text-gray-900">{q.client_name || '-'}</td>
-                      <td className="py-2 text-gray-600">{q.aircraft_model || '-'}</td>
-                      <td className="py-2 font-medium">${formatPriceWhole(q.total_price || 0)}</td>
+                    <tr key={q.id} className="border-b border-v-border last:border-0 hover:bg-white/5">
+                      <td className="py-2 text-v-text-primary">{q.client_name || '-'}</td>
+                      <td className="py-2 text-v-text-secondary">{q.aircraft_model || '-'}</td>
+                      <td className="py-2 font-medium text-v-text-primary">${formatPriceWhole(q.total_price || 0)}</td>
                       <td className="py-2">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          q.status === 'paid' ? 'bg-green-100 text-green-700'
-                          : q.status === 'sent' ? 'bg-blue-100 text-blue-700'
-                          : q.status === 'accepted' ? 'bg-amber-100 text-amber-700'
-                          : 'bg-gray-100 text-gray-600'
+                          q.status === 'paid' ? 'bg-green-900/30 text-green-400'
+                          : q.status === 'sent' ? 'bg-blue-900/30 text-blue-400'
+                          : q.status === 'accepted' ? 'bg-amber-900/30 text-amber-400'
+                          : 'bg-gray-700/30 text-gray-300'
                         }`}>
                           {q.status || 'draft'}
                         </span>
                       </td>
-                      <td className="py-2 text-gray-500">{new Date(q.created_at).toLocaleDateString()}</td>
+                      <td className="py-2 text-v-text-secondary">{new Date(q.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                   {recentQuotes.length === 0 && (
-                    <tr><td colSpan="5" className="py-4 text-center text-gray-400">No recent quotes</td></tr>
+                    <tr><td colSpan="5" className="py-4 text-center text-v-text-secondary">No recent quotes</td></tr>
                   )}
                 </tbody>
               </table>
@@ -287,7 +287,7 @@ export default function AdminDashboard() {
             {activeTab === 'redemptions' && (
               <table className="w-full text-sm">
                 <thead>
-                  <tr className="text-left text-gray-500 border-b">
+                  <tr className="text-left bg-v-charcoal text-v-text-secondary border-b border-v-border">
                     <th className="pb-2 font-medium">Reward</th>
                     <th className="pb-2 font-medium">Points</th>
                     <th className="pb-2 font-medium">Status</th>
@@ -296,24 +296,24 @@ export default function AdminDashboard() {
                 </thead>
                 <tbody>
                   {recentRedemptions.map(r => (
-                    <tr key={r.id} className="border-b last:border-0">
-                      <td className="py-2 text-gray-900">{r.reward_name}</td>
-                      <td className="py-2 text-gray-600">{r.points_spent}</td>
+                    <tr key={r.id} className="border-b border-v-border last:border-0 hover:bg-white/5">
+                      <td className="py-2 text-v-text-primary">{r.reward_name}</td>
+                      <td className="py-2 text-v-text-secondary">{r.points_spent}</td>
                       <td className="py-2">
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                          r.status === 'completed' ? 'bg-green-100 text-green-700'
-                          : r.status === 'pending' ? 'bg-yellow-100 text-yellow-700'
-                          : r.status === 'cancelled' ? 'bg-red-100 text-red-700'
-                          : 'bg-blue-100 text-blue-700'
+                          r.status === 'completed' ? 'bg-green-900/30 text-green-400'
+                          : r.status === 'pending' ? 'bg-amber-900/30 text-amber-400'
+                          : r.status === 'cancelled' ? 'bg-red-900/30 text-red-400'
+                          : 'bg-blue-900/30 text-blue-400'
                         }`}>
                           {r.status}
                         </span>
                       </td>
-                      <td className="py-2 text-gray-500">{new Date(r.created_at).toLocaleDateString()}</td>
+                      <td className="py-2 text-v-text-secondary">{new Date(r.created_at).toLocaleDateString()}</td>
                     </tr>
                   ))}
                   {recentRedemptions.length === 0 && (
-                    <tr><td colSpan="4" className="py-4 text-center text-gray-400">No redemptions yet</td></tr>
+                    <tr><td colSpan="4" className="py-4 text-center text-v-text-secondary">No redemptions yet</td></tr>
                   )}
                 </tbody>
               </table>

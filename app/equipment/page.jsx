@@ -46,16 +46,16 @@ export default function EquipmentPage() {
   };
 
   const STATUS_OPTIONS = [
-    { value: 'active', label: 'Active', color: 'bg-green-100 text-green-700' },
-    { value: 'needs_repair', label: 'Needs Repair', color: 'bg-red-100 text-red-700' },
-    { value: 'retired', label: 'Retired', color: 'bg-gray-100 text-gray-600' },
+    { value: 'active', label: 'Active', color: 'bg-green-900/30 text-green-400' },
+    { value: 'needs_repair', label: 'Needs Repair', color: 'bg-red-900/30 text-red-400' },
+    { value: 'retired', label: 'Retired', color: 'bg-v-charcoal text-v-text-secondary' },
   ];
 
   const STATUS_COLORS = {
-    active: 'bg-green-100 text-green-700',
-    needs_repair: 'bg-red-100 text-red-700',
-    maintenance: 'bg-amber-100 text-amber-700',
-    retired: 'bg-gray-100 text-gray-600',
+    active: 'bg-green-900/30 text-green-400',
+    needs_repair: 'bg-red-900/30 text-red-400',
+    maintenance: 'bg-amber-900/30 text-amber-400',
+    retired: 'bg-v-charcoal text-v-text-secondary',
   };
 
   const STATUS_LABELS = {
@@ -319,7 +319,7 @@ export default function EquipmentPage() {
   }
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 text-gray-900">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4 text-v-text-primary">
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 text-white">
         <div className="flex items-center space-x-4">
@@ -341,27 +341,27 @@ export default function EquipmentPage() {
         {/* Stats Cards */}
         {stats && (
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">{'Total Investment'}</p>
-              <p className="text-2xl font-bold text-gray-900">{currencySymbol()}{formatPriceWhole(stats.totalInvestment)}</p>
+            <div className="bg-v-surface rounded-lg p-4 shadow">
+              <p className="text-v-text-secondary text-xs">{'Total Investment'}</p>
+              <p className="text-2xl font-bold text-v-text-primary">{currencySymbol()}{formatPriceWhole(stats.totalInvestment)}</p>
             </div>
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">{'Active Equipment'}</p>
+            <div className="bg-v-surface rounded-lg p-4 shadow">
+              <p className="text-v-text-secondary text-xs">{'Active Equipment'}</p>
               <p className="text-2xl font-bold text-green-600">{stats.activeCount || 0}</p>
             </div>
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">{'Total Jobs Done'}</p>
+            <div className="bg-v-surface rounded-lg p-4 shadow">
+              <p className="text-v-text-secondary text-xs">{'Total Jobs Done'}</p>
               <p className="text-2xl font-bold text-blue-600">{stats.totalJobs}</p>
             </div>
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">{'Avg Cost/Job'}</p>
+            <div className="bg-v-surface rounded-lg p-4 shadow">
+              <p className="text-v-text-secondary text-xs">{'Avg Cost/Job'}</p>
               <p className="text-2xl font-bold text-purple-600">
                 {stats.avgCostPerJob ? `${currencySymbol()}${formatPriceWhole(stats.avgCostPerJob)}` : '-'}
               </p>
             </div>
-            <div className="bg-white rounded-lg p-4 shadow">
-              <p className="text-gray-500 text-xs">{'Needs Attention'}</p>
-              <p className={`text-2xl font-bold ${(stats.needsAttention || 0) > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+            <div className="bg-v-surface rounded-lg p-4 shadow">
+              <p className="text-v-text-secondary text-xs">{'Needs Attention'}</p>
+              <p className={`text-2xl font-bold ${(stats.needsAttention || 0) > 0 ? 'text-red-600' : 'text-v-text-secondary'}`}>
                 {stats.needsAttention || 0}
               </p>
             </div>
@@ -370,20 +370,20 @@ export default function EquipmentPage() {
 
         {/* Maintenance Alerts */}
         {attentionItems.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="bg-red-900/20 border border-red-200 rounded-lg p-4 mb-6">
             <h3 className="font-semibold text-red-900 mb-2">{'Needs Attention'}</h3>
             <div className="space-y-2">
               {attentionItems.map((item) => {
                 const maintDays = daysUntil(item.next_maintenance);
                 return (
-                  <div key={item.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
+                  <div key={item.id} className="flex items-center justify-between bg-v-surface rounded-lg px-3 py-2">
                     <div className="flex items-center gap-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_COLORS[item.status] || ''}`}>
                         {STATUS_LABELS[item.status] || item.status}
                       </span>
                       <div>
-                        <p className="font-medium text-gray-900 text-sm">{item.name}</p>
-                        {item.brand && <span className="text-xs text-gray-500">{item.brand} {item.model || ''}</span>}
+                        <p className="font-medium text-v-text-primary text-sm">{item.name}</p>
+                        {item.brand && <span className="text-xs text-v-text-secondary">{item.brand} {item.model || ''}</span>}
                       </div>
                     </div>
                     <div className="text-right">
@@ -413,19 +413,19 @@ export default function EquipmentPage() {
             <h3 className="font-semibold text-emerald-900 mb-3">{'Best ROI Equipment'}</h3>
             <div className="space-y-2">
               {sortedByROI.slice(0, 3).map((item, idx) => (
-                <div key={item.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2">
+                <div key={item.id} className="flex items-center justify-between bg-v-surface rounded-lg px-3 py-2">
                   <div className="flex items-center gap-3">
                     <span className="text-lg">{idx === 0 ? '\u{1F947}' : idx === 1 ? '\u{1F948}' : '\u{1F949}'}</span>
                     <div>
-                      <p className="font-medium text-gray-900">{item.name}</p>
-                      <p className="text-xs text-gray-500">
+                      <p className="font-medium text-v-text-primary">{item.name}</p>
+                      <p className="text-xs text-v-text-secondary">
                         {item.brand && `${item.brand} `}{item.model && `${item.model} - `}{item.jobs_completed} {'jobs'}
                       </p>
                     </div>
                   </div>
                   <div className="text-right">
                     <p className="font-bold text-emerald-600">{currencySymbol()}{formatPriceWhole(item.cost_per_job)}{'/job'}</p>
-                    <p className="text-xs text-gray-400">{currencySymbol()}{formatPriceWhole(item.purchase_price)} {'invested'}</p>
+                    <p className="text-xs text-v-text-secondary">{currencySymbol()}{formatPriceWhole(item.purchase_price)} {'invested'}</p>
                   </div>
                 </div>
               ))}
@@ -447,8 +447,8 @@ export default function EquipmentPage() {
               onClick={() => setFilter(f.key)}
               className={`px-4 py-2 rounded-lg font-medium text-sm whitespace-nowrap ${
                 filter === f.key
-                  ? 'bg-amber-500 text-white'
-                  : 'bg-white text-gray-700 hover:bg-gray-100'
+                  ? 'bg-amber-900/200 text-white'
+                  : 'bg-v-surface text-v-text-secondary hover:bg-white/5'
               }`}
             >
               {f.label}
@@ -458,42 +458,42 @@ export default function EquipmentPage() {
 
         {/* Equipment List */}
         {filteredEquipment.length === 0 ? (
-          <div className="bg-white rounded-lg p-8 text-center">
+          <div className="bg-v-surface rounded-lg p-8 text-center">
             {equipment.length === 0 ? (
               <>
                 <span className="text-4xl">&#128295;</span>
                 <h3 className="text-xl font-semibold mt-4">{'Loading equipment...'.replace('Loading equipment...', 'No results found')}</h3>
-                <p className="text-gray-500 mt-2">{'Add your tools and equipment to track usage, maintenance, and ROI'}</p>
+                <p className="text-v-text-secondary mt-2">{'Add your tools and equipment to track usage, maintenance, and ROI'}</p>
                 <button
                   onClick={() => handleOpenModal()}
-                  className="mt-4 px-4 py-2 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600"
+                  className="mt-4 px-4 py-2 bg-amber-900/200 text-white font-medium rounded-lg hover:bg-amber-600"
                 >
                   {'Add Your First Equipment'}
                 </button>
               </>
             ) : (
               <>
-                <p className="text-gray-500">{'No results found'}</p>
+                <p className="text-v-text-secondary">{'No results found'}</p>
               </>
             )}
           </div>
         ) : (
           <div className="space-y-4">
             {Object.entries(equipmentByCategory).map(([category, items]) => (
-              <div key={category} className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
-                  <h3 className="font-semibold text-gray-700">{CATEGORY_LABELS[category] || category}</h3>
-                  <span className="text-xs text-gray-400">{items.length} {'items'}</span>
+              <div key={category} className="bg-v-surface rounded-lg shadow overflow-hidden">
+                <div className="bg-v-charcoal px-4 py-2 border-b flex justify-between items-center">
+                  <h3 className="font-semibold text-v-text-secondary">{CATEGORY_LABELS[category] || category}</h3>
+                  <span className="text-xs text-v-text-secondary">{items.length} {'items'}</span>
                 </div>
                 <div className="divide-y">
                   {items.map((item) => {
                     const maintDays = daysUntil(item.next_maintenance);
                     const warrantyDays = daysUntil(item.warranty_expiry);
                     return (
-                      <div key={item.id} className="p-4 hover:bg-gray-50">
+                      <div key={item.id} className="p-4 hover:bg-white/5">
                         <div className="flex items-start justify-between gap-3">
                           {item.image_url && (
-                            <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-gray-100 border">
+                            <div className="shrink-0 w-14 h-14 rounded-lg overflow-hidden bg-v-charcoal border">
                               <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
                             </div>
                           )}
@@ -501,20 +501,20 @@ export default function EquipmentPage() {
                             {/* Name + Status row */}
                             <div className="flex items-center gap-2 flex-wrap">
                               {item.product_url ? (
-                                <a href={item.product_url} target="_blank" rel="noopener noreferrer" className="font-semibold text-gray-900 hover:text-amber-600 underline decoration-gray-300 hover:decoration-amber-500">{item.name}</a>
+                                <a href={item.product_url} target="_blank" rel="noopener noreferrer" className="font-semibold text-v-text-primary hover:text-amber-600 underline decoration-gray-300 hover:decoration-amber-500">{item.name}</a>
                               ) : (
-                                <p className="font-semibold text-gray-900">{item.name}</p>
+                                <p className="font-semibold text-v-text-primary">{item.name}</p>
                               )}
-                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-600'}`}>
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${STATUS_COLORS[item.status] || 'bg-v-charcoal text-v-text-secondary'}`}>
                                 {STATUS_LABELS[item.status] || item.status}
                               </span>
                               {item.maintenance_overdue && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 text-red-700 font-medium">
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-red-900/30 text-red-400 font-medium">
                                   {'Overdue'}
                                 </span>
                               )}
                               {item.maintenance_due && !item.maintenance_overdue && (
-                                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 font-medium">
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-amber-900/30 text-amber-400 font-medium">
                                   {'Maintenance Soon'}
                                 </span>
                               )}
@@ -522,13 +522,13 @@ export default function EquipmentPage() {
 
                             {/* Brand / Model */}
                             {(item.brand || item.model) && (
-                              <p className="text-sm text-gray-500 mt-0.5">
+                              <p className="text-sm text-v-text-secondary mt-0.5">
                                 {item.brand}{item.brand && item.model ? ' ' : ''}{item.model}
                               </p>
                             )}
 
                             {/* Key stats row */}
-                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-500 flex-wrap">
+                            <div className="flex items-center gap-4 mt-2 text-sm text-v-text-secondary flex-wrap">
                               {item.purchase_price > 0 && (
                                 <span>{currencySymbol()}{formatPriceWhole(item.purchase_price)}</span>
                               )}
@@ -544,7 +544,7 @@ export default function EquipmentPage() {
                             {/* Warranty + Maintenance row */}
                             <div className="flex items-center gap-4 mt-1 text-xs flex-wrap">
                               {item.warranty_expiry && (
-                                <span className={warrantyDays > 0 ? 'text-green-600' : 'text-gray-400'}>
+                                <span className={warrantyDays > 0 ? 'text-green-600' : 'text-v-text-secondary'}>
                                   {warrantyDays > 0
                                     ? `${'Warranty:'} ${warrantyDays} ${'days'} ${'left'}`
                                     : 'Warranty expired'}
@@ -554,7 +554,7 @@ export default function EquipmentPage() {
                                 <span className={
                                   maintDays < 0 ? 'text-red-600 font-medium' :
                                   maintDays <= 7 ? 'text-amber-600 font-medium' :
-                                  'text-gray-500'
+                                  'text-v-text-secondary'
                                 }>
                                   {maintDays < 0
                                     ? `${'Maintenance overdue by'} (${Math.abs(maintDays)}d)`
@@ -565,7 +565,7 @@ export default function EquipmentPage() {
 
                             {/* Notes */}
                             {item.maintenance_notes && (
-                              <p className="text-xs text-gray-400 mt-1 line-clamp-1">{item.maintenance_notes}</p>
+                              <p className="text-xs text-v-text-secondary mt-1 line-clamp-1">{item.maintenance_notes}</p>
                             )}
                           </div>
 
@@ -573,20 +573,20 @@ export default function EquipmentPage() {
                           <div className="flex items-center gap-1 shrink-0">
                             <button
                               onClick={() => handleIncrementJobs(item.id)}
-                              className="px-2.5 py-1 text-xs bg-green-100 text-green-700 hover:bg-green-200 rounded font-medium"
+                              className="px-2.5 py-1 text-xs bg-green-900/30 text-green-400 hover:bg-green-200 rounded font-medium"
                               title={'Log a completed job'}
                             >
                               {'+1 Job'}
                             </button>
                             <button
                               onClick={() => handleOpenModal(item)}
-                              className="px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded"
+                              className="px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-900/20 rounded"
                             >
                               {'Edit'}
                             </button>
                             <button
                               onClick={() => handleDelete(item.id)}
-                              className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-50 rounded"
+                              className="px-2.5 py-1 text-xs text-red-600 hover:bg-red-900/20 rounded"
                             >
                               {'Delete'}
                             </button>
@@ -605,12 +605,12 @@ export default function EquipmentPage() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg w-full sm:max-w-lg overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b flex justify-between items-center">
               <h2 className="text-lg font-semibold">
                 {editingItem ? 'Edit Equipment' : '+ Add Equipment'}
               </h2>
-              <button onClick={handleCloseModal} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <button onClick={handleCloseModal} className="text-v-text-secondary hover:text-v-text-secondary text-xl">&times;</button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -623,7 +623,7 @@ export default function EquipmentPage() {
                     value={scrapeUrl}
                     onChange={handlePasteUrl}
                     placeholder={'https://www.amazon.com/... or any product page'}
-                    className="flex-1 border border-amber-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-white"
+                    className="flex-1 border border-amber-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 bg-v-surface"
                   />
                   {scraping && (
                     <div className="flex items-center px-3">
@@ -639,10 +639,10 @@ export default function EquipmentPage() {
 
               {/* Image preview from scrape */}
               {formData.image_url && (
-                <div className="flex items-center gap-3 bg-gray-50 rounded-lg p-2">
+                <div className="flex items-center gap-3 bg-v-charcoal rounded-lg p-2">
                   <img src={formData.image_url} alt="Product" className="w-16 h-16 rounded-lg object-cover border" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs text-gray-500">{'Product image detected'}</p>
+                    <p className="text-xs text-v-text-secondary">{'Product image detected'}</p>
                     <button
                       type="button"
                       onClick={() => setFormData({ ...formData, image_url: '' })}
@@ -656,7 +656,7 @@ export default function EquipmentPage() {
 
               {/* Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Equipment Name'} *</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Equipment Name'} *</label>
                 <input
                   type="text"
                   value={formData.name}
@@ -670,7 +670,7 @@ export default function EquipmentPage() {
               {/* Brand + Model */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Brand'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Brand'}</label>
                   <input
                     type="text"
                     value={formData.brand}
@@ -680,7 +680,7 @@ export default function EquipmentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Model'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Model'}</label>
                   <input
                     type="text"
                     value={formData.model}
@@ -694,7 +694,7 @@ export default function EquipmentPage() {
               {/* Category + Status */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Category'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Category'}</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -712,7 +712,7 @@ export default function EquipmentPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Status'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Status'}</label>
                   <select
                     value={formData.status}
                     onChange={(e) => setFormData({ ...formData, status: e.target.value })}
@@ -728,7 +728,7 @@ export default function EquipmentPage() {
               {/* Purchase Price + Date */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Purchase Cost ($)'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Purchase Cost ($)'}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -739,7 +739,7 @@ export default function EquipmentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Purchase Date'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Purchase Date'}</label>
                   <input
                     type="date"
                     value={formData.purchaseDate}
@@ -752,7 +752,7 @@ export default function EquipmentPage() {
               {/* Warranty + Next Maintenance */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Warranty Expires'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Warranty Expires'}</label>
                   <input
                     type="date"
                     value={formData.warrantyExpiry}
@@ -761,7 +761,7 @@ export default function EquipmentPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Next Maintenance'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Next Maintenance'}</label>
                   <input
                     type="date"
                     value={formData.nextMaintenance}
@@ -773,7 +773,7 @@ export default function EquipmentPage() {
 
               {/* Maintenance Notes */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Maintenance Notes'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Maintenance Notes'}</label>
                 <textarea
                   value={formData.maintenanceNotes}
                   onChange={(e) => setFormData({ ...formData, maintenanceNotes: e.target.value })}
@@ -787,14 +787,14 @@ export default function EquipmentPage() {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2 text-v-text-secondary hover:bg-white/5 rounded-lg"
                 >
                   {'Cancel'}
                 </button>
                 <button
                   type="submit"
                   disabled={saving || !formData.name}
-                  className="px-4 py-2 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600 disabled:opacity-50"
+                  className="px-4 py-2 bg-amber-900/200 text-white font-medium rounded-lg hover:bg-amber-600 disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : editingItem ? 'Edit Equipment' : '+ Add Equipment'}
                 </button>

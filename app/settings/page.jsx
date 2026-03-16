@@ -890,8 +890,8 @@ function SettingsContent() {
           <>
             {/* Spacer to prevent content from hiding behind fixed bar */}
             <div className="h-14" />
-            <div className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 shadow-lg border-b animate-[slideDown_0.3s_ease] ${
-              saveSuccess ? 'bg-green-100 border-green-400 text-green-800' : 'bg-amber-50 border-amber-400 text-amber-900'
+            <div className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 shadow-lg border-b border-v-border animate-[slideDown_0.3s_ease] ${
+              saveSuccess ? 'bg-green-900/30 border-green-600/30 text-green-400' : 'bg-v-surface border-v-border text-amber-400'
             }`}>
               <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
                 {saveSuccess ? (
@@ -902,7 +902,7 @@ function SettingsContent() {
                 ) : (
                   <>
                     <div className="flex items-center gap-2">
-                      <span className="text-amber-600 text-lg">&#9888;</span>
+                      <span className="text-amber-500 text-lg">&#9888;</span>
                       <span className="text-sm font-medium">
                         {pendingChanges.size} unsaved change{pendingChanges.size !== 1 ? 's' : ''}
                       </span>
@@ -910,7 +910,7 @@ function SettingsContent() {
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => window.location.reload()}
-                        className="px-4 py-1.5 text-sm border border-amber-400 rounded text-amber-700 hover:bg-amber-100 transition-colors"
+                        className="px-4 py-1.5 text-sm border border-v-border rounded text-v-text-secondary hover:bg-white/5 transition-colors"
                       >
                         Cancel
                       </button>
@@ -931,16 +931,16 @@ function SettingsContent() {
 
 
         {/* Plan & Billing */}
-        <div className="bg-[#0f172a] text-white p-4 rounded">
-          <h2 className="text-lg font-semibold mb-1">{'Billing'}</h2>
+        <div className="bg-v-surface border border-v-border text-v-text-primary p-4 rounded-sm">
+          <h2 className="text-lg font-semibold font-heading text-v-text-primary mb-1">{'Billing'}</h2>
           {user?.is_admin ? (
             <div>
-              <p className="mb-1 capitalize">{user?.plan || 'enterprise'} Plan</p>
+              <p className="mb-1 capitalize text-v-text-primary">{user?.plan || 'enterprise'} Plan</p>
               <span className="inline-block px-3 py-1 rounded bg-green-600 text-white text-sm font-medium">{'Admin Access - All Features'}</span>
             </div>
           ) : (
             <div>
-              <p className="capitalize mb-3">{user?.plan} - ${planPrice}/mo</p>
+              <p className="capitalize mb-3 text-v-text-primary">{user?.plan} - ${planPrice}/mo</p>
               {!hasAllFeatures && (
                 <>
                   {/* Annual/Monthly Toggle */}
@@ -948,7 +948,7 @@ function SettingsContent() {
                     <button
                       onClick={() => setUpgradeBilling('monthly')}
                       className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                        upgradeBilling === 'monthly' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white border border-white/20'
+                        upgradeBilling === 'monthly' ? 'bg-amber-500 text-white' : 'text-v-text-secondary hover:text-v-text-primary border border-v-border'
                       }`}
                     >
                       {'Monthly'}
@@ -956,7 +956,7 @@ function SettingsContent() {
                     <button
                       onClick={() => setUpgradeBilling('annual')}
                       className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                        upgradeBilling === 'annual' ? 'bg-white text-gray-900' : 'text-gray-400 hover:text-white border border-white/20'
+                        upgradeBilling === 'annual' ? 'bg-amber-500 text-white' : 'text-v-text-secondary hover:text-v-text-primary border border-v-border'
                       }`}
                     >
                       {'Annual'} <span className="text-green-500 font-bold">-25%</span>
@@ -966,7 +966,7 @@ function SettingsContent() {
                   <div className="mb-3">
                     <button
                       onClick={() => setShowPromo(!showPromo)}
-                      className="text-sm text-gray-400 hover:text-white transition-colors"
+                      className="text-sm text-v-text-secondary hover:text-v-text-primary transition-colors"
                     >
                       {showPromo ? 'Hide promo code' : 'Have a promo code?'}
                     </button>
@@ -983,10 +983,10 @@ function SettingsContent() {
                           onBlur={() => validatePromo(promoCode)}
                           onKeyDown={(e) => e.key === 'Enter' && validatePromo(promoCode)}
                           placeholder="Enter code"
-                          className="px-3 py-1.5 rounded bg-white/10 border border-white/20 text-white placeholder-gray-500 text-sm w-40"
+                          className="px-3 py-1.5 rounded bg-v-charcoal border border-v-border text-v-text-primary placeholder:text-v-text-secondary text-sm w-40"
                         />
                         {promoValidating && (
-                          <span className="text-xs text-gray-400">{'Checking...'}</span>
+                          <span className="text-xs text-v-text-secondary">{'Checking...'}</span>
                         )}
                         {promoResult && (
                           <span className="text-xs text-green-400 font-medium">
@@ -999,7 +999,7 @@ function SettingsContent() {
                       </div>
                     )}
                     {promoResult?.min_months > 0 && (
-                      <p className="text-xs text-gray-400 mt-1 ml-1">
+                      <p className="text-xs text-v-text-secondary mt-1 ml-1">
                         {promoResult.min_months} month minimum commitment required
                       </p>
                     )}
@@ -1083,29 +1083,29 @@ function SettingsContent() {
         </div>
 
         {/* Stripe Connect */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">{'Stripe Payments'}</h3>
+        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
+          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Stripe Payments'}</h3>
           {stripeError && (
-            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+            <div className="mb-3 p-3 bg-red-900/30 border border-red-600/30 rounded text-red-400 text-sm">
               {stripeError}
-              <button onClick={() => setStripeError(null)} className="ml-2 text-red-500 hover:text-red-700">&times;</button>
+              <button onClick={() => setStripeError(null)} className="ml-2 text-red-400 hover:text-red-300">&times;</button>
             </div>
           )}
           {stripeStatus.connected && stripeStatus.status === 'ACTIVE' ? (
             <div>
               <div className="flex items-center mb-2">
                 <span className="text-green-500 mr-2">&#10003;</span>
-                <span className="text-green-700 font-medium">{'Active'}</span>
+                <span className="text-green-400 font-medium">{'Active'}</span>
               </div>
               {stripeStatus.bankAccount && (
-                <p className="text-sm text-gray-600 mb-2">Account: {stripeStatus.bankAccount}</p>
+                <p className="text-sm text-v-text-secondary mb-2">Account: {stripeStatus.bankAccount}</p>
               )}
-              <p className="text-sm text-gray-500 mb-3">{'Active - You can receive payments'}</p>
+              <p className="text-sm text-v-text-secondary mb-3">{'Active - You can receive payments'}</p>
               <a
                 href="https://dashboard.stripe.com"
                 target="_blank"
                 rel="noreferrer"
-                className="text-blue-600 text-sm underline"
+                className="text-v-gold text-sm underline"
               >
                 {'Manage in Stripe Dashboard'}
               </a>
@@ -1114,9 +1114,9 @@ function SettingsContent() {
             <div>
               <div className="flex items-center mb-2">
                 <span className="text-amber-500 mr-2">&#9888;</span>
-                <span className="text-amber-700 font-medium">{'Pending Verification'}</span>
+                <span className="text-amber-400 font-medium">{'Pending Verification'}</span>
               </div>
-              <p className="text-sm text-gray-600 mb-3">{'Your Stripe account is being reviewed. This usually takes 1-2 business days.'}</p>
+              <p className="text-sm text-v-text-secondary mb-3">{'Your Stripe account is being reviewed. This usually takes 1-2 business days.'}</p>
               <button
                 onClick={handleConnectStripe}
                 disabled={stripeLoading}
@@ -1127,17 +1127,17 @@ function SettingsContent() {
             </div>
           ) : stripeStatus.status === 'INCOMPLETE' ? (
             <div>
-              <div className="bg-red-50 border border-red-200 rounded-lg p-3 mb-3">
+              <div className="bg-red-900/30 border border-red-600/30 rounded-sm p-3 mb-3">
                 <div className="flex items-center mb-1">
-                  <span className="text-red-500 mr-2">&#9888;</span>
-                  <span className="text-red-700 font-medium">{'Stripe disconnected - payments disabled'}</span>
+                  <span className="text-red-400 mr-2">&#9888;</span>
+                  <span className="text-red-400 font-medium">{'Stripe disconnected - payments disabled'}</span>
                 </div>
-                <p className="text-sm text-red-600">{'Your Stripe account needs attention. Online payments are currently disabled on your quotes.'}</p>
+                <p className="text-sm text-red-400">{'Your Stripe account needs attention. Online payments are currently disabled on your quotes.'}</p>
               </div>
               <button
                 onClick={handleConnectStripe}
                 disabled={stripeLoading}
-                className="w-full px-4 py-2 rounded bg-red-500 text-white hover:bg-red-600 disabled:opacity-50 font-medium"
+                className="w-full px-4 py-2 rounded bg-red-600/20 text-red-400 border border-red-600/30 hover:bg-red-600/30 disabled:opacity-50 font-medium"
               >
                 {stripeLoading ? 'Connecting...' : 'Reconnect Stripe'}
               </button>
@@ -1145,10 +1145,10 @@ function SettingsContent() {
           ) : (
             <div>
               <div className="flex items-center mb-2">
-                <span className="text-red-500 mr-2">&#10007;</span>
-                <span className="text-red-700 font-medium">{'Stripe not connected'}</span>
+                <span className="text-red-400 mr-2">&#10007;</span>
+                <span className="text-red-400 font-medium">{'Stripe not connected'}</span>
               </div>
-              <p className="text-sm text-gray-600 mb-3">{'Connect Stripe to receive payments for your quotes.'}</p>
+              <p className="text-sm text-v-text-secondary mb-3">{'Connect Stripe to receive payments for your quotes.'}</p>
               <button
                 onClick={handleConnectStripe}
                 disabled={stripeLoading}
@@ -1161,23 +1161,23 @@ function SettingsContent() {
         </div>
 
         {/* Payment Settings - Test/Live Mode */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">{'Payment Settings'}</h3>
-          <p className="text-sm text-gray-600 mb-4">
+        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
+          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Payment Settings'}</h3>
+          <p className="text-sm text-v-text-secondary mb-4">
             {'Switch between test and live mode for processing payments.'}
           </p>
 
           {stripeModeError && (
-            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded text-red-700 text-sm">
+            <div className="mb-3 p-3 bg-red-900/30 border border-red-600/30 rounded text-red-400 text-sm">
               {stripeModeError}
-              <button onClick={() => setStripeModeError(null)} className="ml-2 text-red-500 hover:text-red-700">&times;</button>
+              <button onClick={() => setStripeModeError(null)} className="ml-2 text-red-400 hover:text-red-300">&times;</button>
             </div>
           )}
 
           <div className="space-y-3">
             <label
-              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
-                stripeMode === 'test' ? 'border-blue-500 bg-blue-50' : 'border-gray-200 hover:border-gray-300'
+              className={`flex items-start p-3 border rounded-sm cursor-pointer transition-colors ${
+                stripeMode === 'test' ? 'border-blue-500 bg-blue-900/20' : 'border-v-border hover:bg-white/5'
               }`}
             >
               <input
@@ -1190,18 +1190,18 @@ function SettingsContent() {
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{'Test Mode'}</span>
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">{'Recommended for setup'}</span>
+                  <span className="font-medium text-v-text-primary">{'Test Mode'}</span>
+                  <span className="text-xs bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded-full">{'Recommended for setup'}</span>
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-v-text-secondary mt-1">
                   {'No real payments are processed. Use Stripe test cards to verify your setup.'}
                 </p>
               </div>
             </label>
 
             <label
-              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
-                stripeMode === 'live' ? 'border-green-500 bg-green-50' : 'border-gray-200 hover:border-gray-300'
+              className={`flex items-start p-3 border rounded-sm cursor-pointer transition-colors ${
+                stripeMode === 'live' ? 'border-green-500 bg-green-900/20' : 'border-v-border hover:bg-white/5'
               }`}
             >
               <input
@@ -1214,12 +1214,12 @@ function SettingsContent() {
               />
               <div>
                 <div className="flex items-center gap-2">
-                  <span className="font-medium">{'Live Mode'}</span>
+                  <span className="font-medium text-v-text-primary">{'Live Mode'}</span>
                   {stripeMode === 'live' && (
-                    <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Active</span>
+                    <span className="text-xs bg-green-900/30 text-green-400 px-2 py-0.5 rounded-full">Active</span>
                   )}
                 </div>
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-v-text-secondary mt-1">
                   {'Real payments will be processed through your connected Stripe account.'}
                 </p>
               </div>
@@ -1227,12 +1227,12 @@ function SettingsContent() {
           </div>
 
           {stripeMode === 'live' && (
-            <div className="mt-3 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+            <div className="mt-3 p-3 bg-amber-900/30 border border-amber-600/30 rounded-sm">
               <div className="flex items-start gap-2">
-                <span className="text-amber-500">&#9888;</span>
+                <span className="text-amber-400">&#9888;</span>
                 <div>
-                  <p className="text-sm font-medium text-amber-800">{'Live mode processes real payments'}</p>
-                  <p className="text-xs text-amber-700 mt-1">
+                  <p className="text-sm font-medium text-amber-400">{'Live mode processes real payments'}</p>
+                  <p className="text-xs text-amber-400/80 mt-1">
                     {'Customers will be charged real money. Make sure your Stripe account is fully verified and your services/pricing are correct before enabling live mode.'}
                   </p>
                 </div>
@@ -1241,30 +1241,30 @@ function SettingsContent() {
           )}
 
           {stripeModeLoading && (
-            <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
-              <span className="inline-block w-3 h-3 border-2 border-gray-400 border-t-transparent rounded-full animate-spin"></span>
+            <p className="text-xs text-v-text-secondary mt-2 flex items-center gap-1">
+              <span className="inline-block w-3 h-3 border-2 border-v-text-secondary border-t-transparent rounded-full animate-spin"></span>
               {'Switching mode...'}
             </p>
           )}
 
           <div className="mt-3 flex items-center gap-2">
             <span className={`w-2 h-2 rounded-full ${stripeMode === 'live' ? 'bg-green-500' : 'bg-blue-500'}`}></span>
-            <span className="text-xs text-gray-500">
+            <span className="text-xs text-v-text-secondary">
               {'Currently in {mode} mode'.replace('{mode}', stripeMode === 'live' ? 'Live' : 'Test')}
             </span>
           </div>
         </div>
 
         {/* Platform Fee */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">{'Platform fee'}</h3>
-          <p className="text-sm text-gray-600 mb-3">
+        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
+          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Platform fee'}</h3>
+          <p className="text-sm text-v-text-secondary mb-3">
             {'Vector charges a {rate} platform fee on each job. Choose who pays it.'.replace('{fee}', user?.plan === 'enterprise' ? '0' : hasAllFeatures ? '1' : user?.plan === 'pro' ? '2' : '5')}
           </p>
           <div className="space-y-3">
             <label
-              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
-                !passFeeToCustomer ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              className={`flex items-start p-3 border rounded-sm cursor-pointer transition-colors ${
+                !passFeeToCustomer ? 'border-amber-500 bg-amber-900/20' : 'border-v-border hover:bg-white/5'
               }`}
             >
               <input
@@ -1275,13 +1275,13 @@ function SettingsContent() {
                 className="mt-1 mr-3"
               />
               <div>
-                <p className="font-medium">{'I absorb the fee'}</p>
-                <p className="text-sm text-gray-500">{'Fee is deducted from your payout. Customer sees only the quote price.'}</p>
+                <p className="font-medium text-v-text-primary">{'I absorb the fee'}</p>
+                <p className="text-sm text-v-text-secondary">{'Fee is deducted from your payout. Customer sees only the quote price.'}</p>
               </div>
             </label>
             <label
-              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
-                passFeeToCustomer ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              className={`flex items-start p-3 border rounded-sm cursor-pointer transition-colors ${
+                passFeeToCustomer ? 'border-amber-500 bg-amber-900/20' : 'border-v-border hover:bg-white/5'
               }`}
             >
               <input
@@ -1292,23 +1292,23 @@ function SettingsContent() {
                 className="mt-1 mr-3"
               />
               <div>
-                <p className="font-medium">{'Pass platform fee to customer'}</p>
-                <p className="text-sm text-gray-500">{'A "Service Fee" line item is added to the customer\'s quote. You receive the full quote amount.'}</p>
+                <p className="font-medium text-v-text-primary">{'Pass platform fee to customer'}</p>
+                <p className="text-sm text-v-text-secondary">{'A "Service Fee" line item is added to the customer\'s quote. You receive the full quote amount.'}</p>
               </div>
             </label>
           </div>
         </div>
 
         {/* Credit Card Processing Fee */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Credit Card Processing Fee</h3>
-          <p className="text-sm text-gray-600 mb-3">
+        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
+          <h3 className="font-semibold font-heading text-v-text-primary mb-2">Credit Card Processing Fee</h3>
+          <p className="text-sm text-v-text-secondary mb-3">
             Stripe charges 2.9% + $0.30 per transaction. Choose how this fee is handled.
           </p>
           <div className="space-y-3">
             <label
-              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
-                ccFeeMode === 'absorb' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              className={`flex items-start p-3 border rounded-sm cursor-pointer transition-colors ${
+                ccFeeMode === 'absorb' ? 'border-amber-500 bg-amber-900/20' : 'border-v-border hover:bg-white/5'
               }`}
             >
               <input
@@ -1319,13 +1319,13 @@ function SettingsContent() {
                 className="mt-1 mr-3"
               />
               <div>
-                <p className="font-medium">Absorb fees</p>
-                <p className="text-sm text-gray-500">You pay the processing fee. Customer sees a clean price with no extra charges.</p>
+                <p className="font-medium text-v-text-primary">Absorb fees</p>
+                <p className="text-sm text-v-text-secondary">You pay the processing fee. Customer sees a clean price with no extra charges.</p>
               </div>
             </label>
             <label
-              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
-                ccFeeMode === 'pass' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              className={`flex items-start p-3 border rounded-sm cursor-pointer transition-colors ${
+                ccFeeMode === 'pass' ? 'border-amber-500 bg-amber-900/20' : 'border-v-border hover:bg-white/5'
               }`}
             >
               <input
@@ -1336,13 +1336,13 @@ function SettingsContent() {
                 className="mt-1 mr-3"
               />
               <div>
-                <p className="font-medium">Pass to customer</p>
-                <p className="text-sm text-gray-500">A &quot;Processing Fee&quot; line item (2.9% + $0.30) is added to the customer&apos;s invoice.</p>
+                <p className="font-medium text-v-text-primary">Pass to customer</p>
+                <p className="text-sm text-v-text-secondary">A &quot;Processing Fee&quot; line item (2.9% + $0.30) is added to the customer&apos;s invoice.</p>
               </div>
             </label>
             <label
-              className={`flex items-start p-3 border rounded-lg cursor-pointer transition-colors ${
-                ccFeeMode === 'customer_choice' ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+              className={`flex items-start p-3 border rounded-sm cursor-pointer transition-colors ${
+                ccFeeMode === 'customer_choice' ? 'border-amber-500 bg-amber-900/20' : 'border-v-border hover:bg-white/5'
               }`}
             >
               <input
@@ -1353,19 +1353,19 @@ function SettingsContent() {
                 className="mt-1 mr-3"
               />
               <div>
-                <p className="font-medium">Customer choice</p>
-                <p className="text-sm text-gray-500">Customer can pay by card (fee included) or request an invoice to pay by check/ACH (no fee).</p>
+                <p className="font-medium text-v-text-primary">Customer choice</p>
+                <p className="text-sm text-v-text-secondary">Customer can pay by card (fee included) or request an invoice to pay by check/ACH (no fee).</p>
               </div>
             </label>
           </div>
         </div>
 
         {/* Language & Currency */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">{'Language'} & {'Currency'}</h3>
+        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
+          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Language'} & {'Currency'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'App Language'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'App Language'}</label>
               <select
                 value={uiLang}
                 onChange={(e) => {
@@ -1373,7 +1373,7 @@ function SettingsContent() {
                   setLanguage(e.target.value);
                   markDirty('language');
                 }}
-                className="w-full border rounded px-3 py-2"
+                className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded px-3 py-2"
               >
                 {LANGUAGES.map((l) => (
                   <option key={l.code} value={l.code}>
@@ -1381,17 +1381,17 @@ function SettingsContent() {
                   </option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-v-text-secondary mt-1">
                 Used for the app and customer-facing emails/quotes
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Currency'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Currency'}</label>
               <select
                 value={currency}
                 onChange={(e) => { setCurrency(e.target.value); markDirty('currency'); }}
                 disabled={currencyLoading}
-                className="w-full border rounded px-3 py-2 disabled:opacity-50"
+                className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded px-3 py-2 disabled:opacity-50"
               >
                 {currencies.length > 0 ? (
                   currencies.map((c) => (
@@ -1403,7 +1403,7 @@ function SettingsContent() {
                   <option value="USD">$ USD - US Dollar</option>
                 )}
               </select>
-              <p className="text-xs text-gray-400 mt-1">
+              <p className="text-xs text-v-text-secondary mt-1">
                 {'All prices displayed in this currency. Stripe handles conversion.'}
               </p>
             </div>
@@ -1412,38 +1412,38 @@ function SettingsContent() {
 
         {/* Services & Tools */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <a href="/settings/services" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
+          <a href="/settings/services" className="bg-v-surface border border-v-border p-4 rounded-sm hover:bg-white/5 transition-colors text-center">
             <div className="text-2xl mb-1">&#9881;</div>
-            <div className="font-medium text-sm">{'Services'}</div>
-            <div className="text-xs text-gray-500">{'Configure rates'}</div>
+            <div className="font-medium text-sm text-v-text-primary">{'Services'}</div>
+            <div className="text-xs text-v-text-secondary">{'Configure rates'}</div>
           </a>
-          <a href="/settings/embed" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
+          <a href="/settings/embed" className="bg-v-surface border border-v-border p-4 rounded-sm hover:bg-white/5 transition-colors text-center">
             <div className="text-2xl mb-1">&#128279;</div>
-            <div className="font-medium text-sm">{'Embed & QR'}</div>
-            <div className="text-xs text-gray-500">{'Website widget'}</div>
+            <div className="font-medium text-sm text-v-text-primary">{'Embed & QR'}</div>
+            <div className="text-xs text-v-text-secondary">{'Website widget'}</div>
           </a>
-          <a href="/settings/lead-intake" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
+          <a href="/settings/lead-intake" className="bg-v-surface border border-v-border p-4 rounded-sm hover:bg-white/5 transition-colors text-center">
             <div className="text-2xl mb-1">&#129302;</div>
-            <div className="font-medium text-sm">{'AI Lead Intake'}</div>
-            <div className="text-xs text-gray-500">{'Custom questions'}</div>
+            <div className="font-medium text-sm text-v-text-primary">{'AI Lead Intake'}</div>
+            <div className="text-xs text-v-text-secondary">{'Custom questions'}</div>
           </a>
-          <a href="/admin/aircraft" className="bg-white p-4 rounded shadow hover:shadow-md transition-shadow text-center">
+          <a href="/admin/aircraft" className="bg-v-surface border border-v-border p-4 rounded-sm hover:bg-white/5 transition-colors text-center">
             <div className="text-2xl mb-1">&#9992;</div>
-            <div className="font-medium text-sm">{'Aircraft DB'}</div>
-            <div className="text-xs text-gray-500">{'Add/edit models'}</div>
+            <div className="font-medium text-sm text-v-text-primary">{'Aircraft DB'}</div>
+            <div className="text-xs text-v-text-secondary">{'Add/edit models'}</div>
           </a>
         </div>
 
 
 
         {/* Minimum Call Out Fee */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">{'Minimum Fee'}</h3>
-          <p className="text-sm text-gray-600 mb-3">
+        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
+          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Minimum Fee'}</h3>
+          <p className="text-sm text-v-text-secondary mb-3">
             {'Set a minimum charge for jobs. If the quote total is less than this amount, the minimum fee will be applied instead.'}
           </p>
           <div className="flex items-center space-x-2">
-            <span className="text-gray-500">$</span>
+            <span className="text-v-text-secondary">$</span>
             <input
               type="text"
               inputMode="decimal"
@@ -1459,35 +1459,35 @@ function SettingsContent() {
                 const num = parseFloat(e.target.value) || 0;
                 setMinimumFee(num);
               }}
-              className="w-28 border rounded px-3 py-2"
+              className="w-28 bg-v-charcoal border border-v-border text-v-text-primary placeholder:text-v-text-secondary rounded px-3 py-2"
               placeholder="0.00"
             />
-            <span className="text-gray-500">{'minimum'}</span>
+            <span className="text-v-text-secondary">{'minimum'}</span>
           </div>
-          <p className="text-xs text-gray-400 mt-2">Applies to all jobs. Quotes below this amount will be bumped up.</p>
+          <p className="text-xs text-v-text-secondary mt-2">Applies to all jobs. Quotes below this amount will be bumped up.</p>
         </div>
 
         {/* Terms & Conditions */}
-        <div className="bg-white p-4 rounded shadow">
-          <h3 className="font-semibold mb-2">Terms & Conditions</h3>
-          <p className="text-sm text-gray-600 mb-4">
+        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
+          <h3 className="font-semibold font-heading text-v-text-primary mb-2">Terms & Conditions</h3>
+          <p className="text-sm text-v-text-secondary mb-4">
             Upload your business terms and conditions. Customers must agree before accepting a quote.
           </p>
 
           {termsSuccess && (
-            <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">
+            <div className="mb-4 p-3 bg-green-900/30 border border-green-600/30 rounded-sm text-green-400 text-sm">
               {termsSuccess}
             </div>
           )}
 
           {(termsPdfUrl || termsUpdatedAt) && (
-            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+            <div className="mb-4 p-3 bg-amber-900/30 border border-amber-600/30 rounded-sm flex items-center justify-between">
               <div>
-                <span className="text-sm text-blue-700 font-medium">
+                <span className="text-sm text-amber-400 font-medium">
                   {termsPdfUrl ? 'PDF uploaded' : 'Text terms saved'}
                 </span>
                 {termsUpdatedAt && (
-                  <span className="text-xs text-blue-500 ml-2">
+                  <span className="text-xs text-amber-400/70 ml-2">
                     Updated {new Date(termsUpdatedAt).toLocaleDateString()}
                   </span>
                 )}
@@ -1495,11 +1495,11 @@ function SettingsContent() {
               <div className="flex items-center gap-2">
                 {termsPdfUrl && (
                   <a href={termsPdfUrl} target="_blank" rel="noopener noreferrer"
-                    className="text-sm text-blue-600 underline hover:text-blue-800">
+                    className="text-sm text-v-gold underline hover:opacity-80">
                     View PDF
                   </a>
                 )}
-                <button onClick={deleteTerms} className="text-sm text-red-500 hover:text-red-700">
+                <button onClick={deleteTerms} className="text-sm text-red-400 hover:text-red-300">
                   Remove
                 </button>
               </div>
@@ -1508,41 +1508,40 @@ function SettingsContent() {
 
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium mb-2">Upload PDF</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-2">Upload PDF</label>
               <input
                 type="file"
                 accept=".pdf"
                 onChange={handleTermsUpload}
                 disabled={termsUploading}
-                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 disabled:opacity-50"
+                className="block w-full text-sm text-v-text-secondary file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-amber-900/30 file:text-amber-400 hover:file:bg-amber-900/50 disabled:opacity-50"
               />
-              {termsUploading && <p className="text-xs text-amber-600 mt-1">Uploading...</p>}
-              <p className="text-xs text-gray-400 mt-1">PDF only, max 5MB</p>
+              {termsUploading && <p className="text-xs text-amber-400 mt-1">Uploading...</p>}
+              <p className="text-xs text-v-text-secondary mt-1">PDF only, max 5MB</p>
             </div>
 
-            <div className="text-center text-sm text-gray-400">- or -</div>
+            <div className="text-center text-sm text-v-text-secondary">- or -</div>
 
             <div>
-              <label className="block text-sm font-medium mb-2">Paste Terms Text</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-2">Paste Terms Text</label>
               <textarea
                 value={termsText}
                 onChange={(e) => setTermsText(e.target.value)}
                 rows={8}
                 placeholder="Enter your terms and conditions here..."
-                className="w-full border rounded-lg p-3 text-sm"
+                className="w-full bg-v-charcoal border border-v-border text-v-text-primary placeholder:text-v-text-secondary rounded-sm p-3 text-sm"
               />
             </div>
 
             <button
               onClick={saveTermsText}
               disabled={termsSaving || !termsText.trim()}
-              className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 transition-colors"
+              className="bg-amber-500 hover:bg-amber-600 text-white px-4 py-2 rounded-sm text-sm font-medium disabled:opacity-50 transition-colors"
             >
               {termsSaving ? 'Saving...' : 'Save Terms Text'}
             </button>
           </div>
         </div>
-
 
 
 
@@ -1552,7 +1551,7 @@ function SettingsContent() {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="page-transition text-gray-500 p-4">Loading...</div>}>
+    <Suspense fallback={<div className="page-transition text-v-text-secondary p-4">Loading...</div>}>
       <SettingsContent />
     </Suspense>
   );

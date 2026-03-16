@@ -106,7 +106,7 @@ export default function ROIPage() {
   }
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex justify-between items-center mb-6 text-white">
         <div className="flex items-center space-x-4">
@@ -123,13 +123,13 @@ export default function ROIPage() {
       {/* Testimonial Prompt Modal */}
       {showTestimonial && testimonialData && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-xl p-5 sm:p-6 sm:max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="bg-v-surface rounded-t-2xl sm:rounded-xl p-5 sm:p-6 sm:max-w-md w-full max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <div className="text-center mb-4">
               <span className="text-5xl">🎉</span>
-              <h2 className="text-xl font-bold text-gray-900 mt-2">
+              <h2 className="text-xl font-bold text-v-text-primary mt-2">
                 {getMilestoneText(testimonialData.currentMilestone)}
               </h2>
-              <p className="text-gray-600 mt-1">
+              <p className="text-v-text-secondary mt-1">
                 Would you share a quick testimonial?
               </p>
             </div>
@@ -158,7 +158,7 @@ export default function ROIPage() {
               rows={3}
             />
 
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-4 text-center">
+            <div className="bg-amber-900/20 border border-amber-200 rounded-lg p-3 mb-4 text-center">
               <p className="text-amber-800 text-sm">
                 <strong>+{testimonialText ? 200 : 100} bonus points</strong> for sharing!
               </p>
@@ -167,14 +167,14 @@ export default function ROIPage() {
             <div className="flex gap-3">
               <button
                 onClick={dismissTestimonial}
-                className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
+                className="flex-1 px-4 py-2 border rounded-lg text-v-text-secondary hover:bg-white/5"
               >
                 Maybe Later
               </button>
               <button
                 onClick={submitTestimonial}
                 disabled={rating === 0 || submitting}
-                className="flex-1 px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-amber-900/200 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50"
               >
                 {submitting ? 'Submitting...' : 'Submit'}
               </button>

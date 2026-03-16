@@ -35,18 +35,18 @@ const TIER_COLORS = {
 
 function MetricCard({ label, value, sub }) {
   return (
-    <div className="bg-white rounded-xl border p-5">
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="text-2xl font-bold text-gray-900 mt-1">{value}</p>
-      {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
+    <div className="bg-v-surface rounded-sm border border-v-border p-5">
+      <p className="text-sm text-v-text-secondary">{label}</p>
+      <p className="text-2xl font-bold text-v-text-primary mt-1">{value}</p>
+      {sub && <p className="text-xs text-v-text-secondary mt-1">{sub}</p>}
     </div>
   );
 }
 
 function ChartCard({ title, children }) {
   return (
-    <div className="bg-white rounded-xl border p-5">
-      <h3 className="font-semibold text-gray-900 mb-4">{title}</h3>
+    <div className="bg-v-surface rounded-sm border border-v-border p-5">
+      <h3 className="font-semibold text-v-text-primary mb-4">{title}</h3>
       {children}
     </div>
   );
@@ -87,14 +87,14 @@ export default function AdminAnalytics() {
 
   if (error && !data) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-v-charcoal flex items-center justify-center">
         <div className="text-red-600">{error}</div>
       </div>
     );
   }
 
   // Prepare tier pie data
-  const tierPieData = data ? Object.entries(data.tierBreakdown)
+  const tierPieData = data?.tierBreakdown ? Object.entries(data.tierBreakdown)
     .filter(([, v]) => v > 0)
     .map(([name, value]) => ({ name: name.charAt(0).toUpperCase() + name.slice(1), value })) : [];
 
@@ -108,23 +108,23 @@ export default function AdminAnalytics() {
   ] : [];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-v-charcoal">
       {/* Nav */}
-      <nav className="bg-white border-b sticky top-0 z-30">
+      <nav className="bg-v-surface border-b border-v-border sticky top-0 z-30">
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center space-x-6">
-            <span className="font-bold text-lg text-gray-900">Admin</span>
+            <span className="text-v-text-primary font-bold text-lg">Admin</span>
             {ADMIN_NAV.map(nav => (
               <a
                 key={nav.href}
                 href={nav.href}
-                className={`text-sm ${nav.href === '/admin/analytics' ? 'text-amber-600 font-medium' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`text-sm ${nav.href === '/admin/analytics' ? 'text-v-gold font-medium' : 'text-v-text-secondary hover:text-v-text-primary'}`}
               >
                 {nav.label}
               </a>
             ))}
           </div>
-          <a href="/dashboard" className="text-sm text-gray-400 hover:text-gray-600">Back to app</a>
+          <a href="/dashboard" className="text-sm text-v-text-secondary hover:text-v-text-primary">Back to app</a>
         </div>
       </nav>
 
@@ -132,8 +132,8 @@ export default function AdminAnalytics() {
         {/* Header + Date Range */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Platform Analytics</h1>
-            <p className="text-sm text-gray-500">Aggregated, anonymized data across all accounts</p>
+            <h1 className="text-2xl font-bold text-v-text-primary font-heading">Platform Analytics</h1>
+            <p className="text-sm text-v-text-secondary">Aggregated, anonymized data across all accounts</p>
           </div>
           <div className="flex gap-2">
             {DATE_RANGES.map(r => (
@@ -143,7 +143,7 @@ export default function AdminAnalytics() {
                 className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
                   days === r.value
                     ? 'bg-amber-500 text-white'
-                    : 'bg-white border text-gray-600 hover:border-gray-400'
+                    : 'bg-v-surface border border-v-border text-v-text-secondary hover:border-v-gold/50'
                 }`}
               >
                 {r.label}
@@ -153,7 +153,7 @@ export default function AdminAnalytics() {
         </div>
 
         {loading && !data ? (
-          <div className="text-center py-20 text-gray-500">Loading analytics...</div>
+          <div className="text-center py-20 text-v-text-secondary">Loading analytics...</div>
         ) : data ? (
           <>
             {/* Summary Metrics */}
@@ -172,14 +172,14 @@ export default function AdminAnalytics() {
                 {data.quoteVolume.length > 0 ? (
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={data.quoteVolume}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="week" tick={{ fontSize: 11 }} tickFormatter={v => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 11 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a3548" />
+                      <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#8A9BB0' }} tickFormatter={v => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 11, fill: '#8A9BB0' }} />
                       <Tooltip labelFormatter={v => `Week of ${v}`} />
                       <Bar dataKey="count" fill="#f59e0b" radius={[4, 4, 0, 0]} name="Quotes" />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <p className="text-gray-400 text-sm py-10 text-center">No data</p>}
+                ) : <p className="text-v-text-secondary text-sm py-10 text-center">No data</p>}
               </ChartCard>
 
               {/* 2. Platform Revenue Trend */}
@@ -187,14 +187,14 @@ export default function AdminAnalytics() {
                 {data.revenueByWeek.length > 0 ? (
                   <ResponsiveContainer width="100%" height={280}>
                     <AreaChart data={data.revenueByWeek}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="week" tick={{ fontSize: 11 }} tickFormatter={v => v.slice(5)} />
-                      <YAxis tick={{ fontSize: 11 }} tickFormatter={v => `$${v}`} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a3548" />
+                      <XAxis dataKey="week" tick={{ fontSize: 11, fill: '#8A9BB0' }} tickFormatter={v => v.slice(5)} />
+                      <YAxis tick={{ fontSize: 11, fill: '#8A9BB0' }} tickFormatter={v => `$${v}`} />
                       <Tooltip formatter={v => [`$${v.toFixed(2)}`, 'Revenue']} labelFormatter={v => `Week of ${v}`} />
                       <Area type="monotone" dataKey="revenue" stroke="#10b981" fill="#10b98133" strokeWidth={2} name="Revenue" />
                     </AreaChart>
                   </ResponsiveContainer>
-                ) : <p className="text-gray-400 text-sm py-10 text-center">No revenue data</p>}
+                ) : <p className="text-v-text-secondary text-sm py-10 text-center">No revenue data</p>}
               </ChartCard>
 
               {/* 3. Avg Quote Value by Aircraft */}
@@ -202,14 +202,14 @@ export default function AdminAnalytics() {
                 {data.avgByAircraft.length > 0 ? (
                   <ResponsiveContainer width="100%" height={Math.max(280, data.avgByAircraft.length * 32)}>
                     <BarChart data={data.avgByAircraft} layout="vertical" margin={{ left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis type="number" tick={{ fontSize: 11 }} tickFormatter={v => `$${v.toLocaleString()}`} />
-                      <YAxis type="category" dataKey="type" tick={{ fontSize: 11 }} width={120} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a3548" />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: '#8A9BB0' }} tickFormatter={v => `$${v.toLocaleString()}`} />
+                      <YAxis type="category" dataKey="type" tick={{ fontSize: 11, fill: '#8A9BB0' }} width={120} />
                       <Tooltip formatter={v => [`$${v.toLocaleString()}`, 'Avg Value']} />
                       <Bar dataKey="avg" fill="#3b82f6" radius={[0, 4, 4, 0]} name="Avg Value" />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <p className="text-gray-400 text-sm py-10 text-center">No data</p>}
+                ) : <p className="text-v-text-secondary text-sm py-10 text-center">No data</p>}
               </ChartCard>
 
               {/* 4. Most Common Services */}
@@ -217,14 +217,14 @@ export default function AdminAnalytics() {
                 {data.topServices.length > 0 ? (
                   <ResponsiveContainer width="100%" height={Math.max(280, data.topServices.slice(0, 10).length * 32)}>
                     <BarChart data={data.topServices.slice(0, 10)} layout="vertical" margin={{ left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis type="number" tick={{ fontSize: 11 }} />
-                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={140} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a3548" />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: '#8A9BB0' }} />
+                      <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: '#8A9BB0' }} width={140} />
                       <Tooltip />
                       <Bar dataKey="count" fill="#f59e0b" radius={[0, 4, 4, 0]} name="Quotes" />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <p className="text-gray-400 text-sm py-10 text-center">No service data</p>}
+                ) : <p className="text-v-text-secondary text-sm py-10 text-center">No service data</p>}
               </ChartCard>
 
               {/* 5. Aircraft Frequency */}
@@ -232,14 +232,14 @@ export default function AdminAnalytics() {
                 {data.aircraftFrequency.length > 0 ? (
                   <ResponsiveContainer width="100%" height={Math.max(280, data.aircraftFrequency.slice(0, 10).length * 32)}>
                     <BarChart data={data.aircraftFrequency.slice(0, 10)} layout="vertical" margin={{ left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis type="number" tick={{ fontSize: 11 }} />
-                      <YAxis type="category" dataKey="type" tick={{ fontSize: 11 }} width={120} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a3548" />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: '#8A9BB0' }} />
+                      <YAxis type="category" dataKey="type" tick={{ fontSize: 11, fill: '#8A9BB0' }} width={120} />
                       <Tooltip />
                       <Bar dataKey="count" fill="#8b5cf6" radius={[0, 4, 4, 0]} name="Quotes" />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <p className="text-gray-400 text-sm py-10 text-center">No data</p>}
+                ) : <p className="text-v-text-secondary text-sm py-10 text-center">No data</p>}
               </ChartCard>
 
               {/* 6. Geographic Distribution */}
@@ -247,14 +247,14 @@ export default function AdminAnalytics() {
                 {data.geoDistribution.length > 0 ? (
                   <ResponsiveContainer width="100%" height={Math.max(280, data.geoDistribution.slice(0, 10).length * 32)}>
                     <BarChart data={data.geoDistribution.slice(0, 10)} layout="vertical" margin={{ left: 20 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis type="number" tick={{ fontSize: 11 }} />
-                      <YAxis type="category" dataKey="airport" tick={{ fontSize: 11 }} width={80} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a3548" />
+                      <XAxis type="number" tick={{ fontSize: 11, fill: '#8A9BB0' }} />
+                      <YAxis type="category" dataKey="airport" tick={{ fontSize: 11, fill: '#8A9BB0' }} width={80} />
                       <Tooltip />
                       <Bar dataKey="count" fill="#06b6d4" radius={[0, 4, 4, 0]} name="Quotes" />
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <p className="text-gray-400 text-sm py-10 text-center">No airport data</p>}
+                ) : <p className="text-v-text-secondary text-sm py-10 text-center">No airport data</p>}
               </ChartCard>
 
               {/* 7. Subscription Tier Breakdown */}
@@ -280,7 +280,7 @@ export default function AdminAnalytics() {
                       <Tooltip />
                     </PieChart>
                   </ResponsiveContainer>
-                ) : <p className="text-gray-400 text-sm py-10 text-center">No data</p>}
+                ) : <p className="text-v-text-secondary text-sm py-10 text-center">No data</p>}
               </ChartCard>
 
               {/* 8. Quote Funnel */}
@@ -288,9 +288,9 @@ export default function AdminAnalytics() {
                 {funnelData.some(d => d.count > 0) ? (
                   <ResponsiveContainer width="100%" height={280}>
                     <BarChart data={funnelData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                      <XAxis dataKey="stage" tick={{ fontSize: 12 }} />
-                      <YAxis tick={{ fontSize: 11 }} />
+                      <CartesianGrid strokeDasharray="3 3" stroke="#2a3548" />
+                      <XAxis dataKey="stage" tick={{ fontSize: 12, fill: '#8A9BB0' }} />
+                      <YAxis tick={{ fontSize: 11, fill: '#8A9BB0' }} />
                       <Tooltip />
                       <Bar dataKey="count" name="Quotes" radius={[4, 4, 0, 0]}>
                         {funnelData.map((_, i) => (
@@ -299,7 +299,7 @@ export default function AdminAnalytics() {
                       </Bar>
                     </BarChart>
                   </ResponsiveContainer>
-                ) : <p className="text-gray-400 text-sm py-10 text-center">No data</p>}
+                ) : <p className="text-v-text-secondary text-sm py-10 text-center">No data</p>}
               </ChartCard>
             </div>
           </>

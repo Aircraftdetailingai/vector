@@ -12,12 +12,12 @@ const ADMIN_NAV = [
 ];
 
 const STATUS_STYLES = {
-  pending: 'bg-yellow-100 text-yellow-800',
-  processing: 'bg-blue-100 text-blue-800',
-  shipped: 'bg-indigo-100 text-indigo-800',
-  delivered: 'bg-green-100 text-green-800',
-  completed: 'bg-green-100 text-green-800',
-  cancelled: 'bg-red-100 text-red-800',
+  pending: 'bg-yellow-900/30 text-yellow-400',
+  processing: 'bg-blue-900/30 text-blue-400',
+  shipped: 'bg-indigo-900/30 text-indigo-400',
+  delivered: 'bg-green-900/30 text-green-400',
+  completed: 'bg-green-900/30 text-green-400',
+  cancelled: 'bg-red-900/30 text-red-400',
 };
 
 export default function RedemptionsPage() {
@@ -105,18 +105,18 @@ export default function RedemptionsPage() {
   const pendingCount = redemptions.filter(r => r.status === 'pending').length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-v-charcoal">
       {/* Admin Nav */}
-      <nav className="bg-white border-b sticky top-0 z-10">
+      <nav className="bg-v-surface border-b border-v-border sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 flex items-center justify-between h-14">
           <div className="flex items-center gap-6">
-            <a href="/dashboard" className="text-gray-400 hover:text-gray-600 text-sm">&larr; App</a>
-            <span className="font-bold text-gray-900">Admin</span>
+            <a href="/dashboard" className="text-v-text-secondary hover:text-v-text-primary text-sm">&larr; App</a>
+            <span className="text-v-text-primary font-bold">Admin</span>
             {ADMIN_NAV.map(nav => (
               <a
                 key={nav.href}
                 href={nav.href}
-                className={`text-sm ${nav.href === '/admin/redemptions' ? 'text-amber-600 font-medium' : 'text-gray-500 hover:text-gray-900'}`}
+                className={`text-sm ${nav.href === '/admin/redemptions' ? 'text-v-gold font-medium' : 'text-v-text-secondary hover:text-v-text-primary'}`}
               >
                 {nav.label}
               </a>
@@ -128,27 +128,27 @@ export default function RedemptionsPage() {
       <div className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900">Redemptions</h1>
+            <h1 className="text-2xl text-v-text-primary font-heading">Redemptions</h1>
             {pendingCount > 0 && (
-              <span className="px-2.5 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+              <span className="px-2.5 py-0.5 bg-yellow-900/30 text-yellow-400 rounded-full text-sm font-medium">
                 {pendingCount} pending
               </span>
             )}
           </div>
         </div>
 
-        {error && <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
-        {success && <div className="p-3 bg-green-50 border border-green-200 rounded-lg text-green-700 text-sm">{success}</div>}
+        {error && <div className="p-3 bg-red-900/30 border border-red-600/30 rounded-lg text-red-400 text-sm">{error}</div>}
+        {success && <div className="p-3 bg-green-900/30 border border-green-600/30 rounded-lg text-green-400 text-sm">{success}</div>}
 
         {/* Filters */}
         <div className="flex items-center gap-4 flex-wrap">
-          <div className="flex bg-white border rounded-lg overflow-hidden">
+          <div className="flex bg-v-surface border border-v-border rounded-sm overflow-hidden">
             {['all', 'pending', 'processing', 'shipped', 'delivered', 'cancelled'].map(s => (
               <button
                 key={s}
                 onClick={() => handleFilterChange(s)}
                 className={`px-3 py-2 text-sm capitalize ${
-                  statusFilter === s ? 'bg-amber-50 text-amber-700 font-medium' : 'text-gray-500 hover:bg-gray-50'
+                  statusFilter === s ? 'bg-amber-500/10 text-amber-500 font-medium' : 'text-v-text-secondary hover:bg-white/5'
                 }`}
               >
                 {s}
@@ -160,32 +160,32 @@ export default function RedemptionsPage() {
             value={search}
             onChange={e => setSearch(e.target.value)}
             placeholder="Search by user or reward..."
-            className="border rounded-lg px-3 py-2 text-sm w-64"
+            className="bg-v-charcoal border border-v-border text-v-text-primary rounded-sm px-3 py-2 text-sm w-64 placeholder:text-v-text-secondary"
           />
         </div>
 
         {/* Tracking Modal */}
         {trackingModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-xl p-6 w-full max-w-sm">
-              <h3 className="font-semibold text-gray-900 mb-3">Add Tracking Number</h3>
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50">
+            <div className="bg-v-surface border border-v-border rounded-sm p-6 w-full max-w-sm">
+              <h3 className="font-semibold text-v-text-primary mb-3">Add Tracking Number</h3>
               <input
                 type="text"
                 value={trackingNumber}
                 onChange={e => setTrackingNumber(e.target.value)}
                 placeholder="Tracking number (optional)"
-                className="w-full border rounded-lg px-3 py-2 mb-4"
+                className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded-sm px-3 py-2 mb-4 placeholder:text-v-text-secondary"
               />
               <div className="flex gap-3">
                 <button
                   onClick={confirmShip}
-                  className="flex-1 py-2 bg-indigo-500 text-white rounded-lg font-medium hover:bg-indigo-600"
+                  className="flex-1 py-2 bg-indigo-500 text-white rounded-sm font-medium hover:bg-indigo-600"
                 >
                   Mark Shipped
                 </button>
                 <button
                   onClick={() => setTrackingModal(null)}
-                  className="flex-1 py-2 border rounded-lg text-gray-600 hover:bg-gray-50"
+                  className="flex-1 py-2 border border-v-border rounded-sm text-v-text-secondary hover:bg-white/5"
                 >
                   Cancel
                 </button>
@@ -196,12 +196,12 @@ export default function RedemptionsPage() {
 
         {/* Redemptions Table */}
         {loading ? (
-          <div className="text-center py-8 text-gray-500">Loading redemptions...</div>
+          <div className="text-center py-8 text-v-text-secondary">Loading redemptions...</div>
         ) : (
-          <div className="bg-white rounded-xl border overflow-x-auto">
+          <div className="bg-v-surface border border-v-border rounded-sm overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-left text-gray-500 border-b bg-gray-50">
+                <tr className="text-left bg-v-charcoal text-v-text-secondary border-b border-v-border">
                   <th className="px-4 py-3 font-medium">User</th>
                   <th className="px-4 py-3 font-medium">Reward</th>
                   <th className="px-4 py-3 font-medium">Points</th>
@@ -212,20 +212,20 @@ export default function RedemptionsPage() {
               </thead>
               <tbody>
                 {filtered.map(r => (
-                  <tr key={r.id} className="border-b last:border-0 hover:bg-gray-50">
+                  <tr key={r.id} className="border-b border-v-border last:border-0 hover:bg-white/5">
                     <td className="px-4 py-3">
-                      <div className="font-medium text-gray-900">{r.detailers?.name || r.detailers?.email || r.detailer_id?.slice(0, 8)}</div>
-                      <div className="text-xs text-gray-500">{r.detailers?.company || r.detailers?.email}</div>
+                      <div className="font-medium text-v-text-primary">{r.detailers?.name || r.detailers?.email || r.detailer_id?.slice(0, 8)}</div>
+                      <div className="text-xs text-v-text-secondary">{r.detailers?.company || r.detailers?.email}</div>
                     </td>
-                    <td className="px-4 py-3 text-gray-900">{r.reward_name}</td>
-                    <td className="px-4 py-3 font-medium text-amber-600">{r.points_spent?.toLocaleString()}</td>
-                    <td className="px-4 py-3 text-gray-500">{new Date(r.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-v-text-primary">{r.reward_name}</td>
+                    <td className="px-4 py-3 font-medium text-amber-500">{r.points_spent?.toLocaleString()}</td>
+                    <td className="px-4 py-3 text-v-text-secondary">{new Date(r.created_at).toLocaleDateString()}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${STATUS_STYLES[r.status] || STATUS_STYLES.pending}`}>
                         {r.status}
                       </span>
                       {r.metadata?.tracking_number && (
-                        <div className="text-xs text-gray-400 mt-1">#{r.metadata.tracking_number}</div>
+                        <div className="text-xs text-v-text-secondary mt-1">#{r.metadata.tracking_number}</div>
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -234,13 +234,13 @@ export default function RedemptionsPage() {
                           <>
                             <button
                               onClick={() => updateStatus(r.id, 'processing')}
-                              className="text-blue-600 hover:underline text-xs"
+                              className="text-blue-400 hover:underline text-xs"
                             >
                               Process
                             </button>
                             <button
                               onClick={() => handleShip(r)}
-                              className="text-indigo-600 hover:underline text-xs"
+                              className="text-indigo-400 hover:underline text-xs"
                             >
                               Ship
                             </button>
@@ -250,7 +250,7 @@ export default function RedemptionsPage() {
                                   updateStatus(r.id, 'cancelled');
                                 }
                               }}
-                              className="text-red-500 hover:underline text-xs"
+                              className="text-red-400 hover:underline text-xs"
                             >
                               Cancel
                             </button>
@@ -260,7 +260,7 @@ export default function RedemptionsPage() {
                           <>
                             <button
                               onClick={() => handleShip(r)}
-                              className="text-indigo-600 hover:underline text-xs"
+                              className="text-indigo-400 hover:underline text-xs"
                             >
                               Ship
                             </button>
@@ -270,7 +270,7 @@ export default function RedemptionsPage() {
                                   updateStatus(r.id, 'cancelled');
                                 }
                               }}
-                              className="text-red-500 hover:underline text-xs"
+                              className="text-red-400 hover:underline text-xs"
                             >
                               Cancel
                             </button>
@@ -279,7 +279,7 @@ export default function RedemptionsPage() {
                         {r.status === 'shipped' && (
                           <button
                             onClick={() => updateStatus(r.id, 'delivered')}
-                            className="text-green-600 hover:underline text-xs"
+                            className="text-green-400 hover:underline text-xs"
                           >
                             Mark Delivered
                           </button>
@@ -290,7 +290,7 @@ export default function RedemptionsPage() {
                 ))}
                 {filtered.length === 0 && (
                   <tr>
-                    <td colSpan="6" className="px-4 py-8 text-center text-gray-400">
+                    <td colSpan="6" className="px-4 py-8 text-center text-v-text-secondary">
                       No redemptions found
                     </td>
                   </tr>

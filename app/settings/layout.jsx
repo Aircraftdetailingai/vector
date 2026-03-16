@@ -12,7 +12,7 @@ export default function SettingsLayout({ children }) {
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f]">
+    <div className="min-h-screen bg-v-charcoal">
       {/* Header */}
       <header className="text-white flex items-center p-4 space-x-2">
         <a href="/dashboard" className="text-2xl">&#8592;</a>
@@ -44,7 +44,7 @@ export default function SettingsLayout({ children }) {
         </nav>
 
         {/* Main content */}
-        <main className="flex-1 text-gray-900">
+        <main className="flex-1 text-v-text-primary">
           {children}
         </main>
       </div>

@@ -348,30 +348,30 @@ export default function OnboardingPage() {
   const chosenServices = COMMON_SERVICES.filter((_, i) => selectedServices[i]);
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] flex items-center justify-center p-4">
-      <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden">
+    <div className="page-transition min-h-screen bg-v-charcoal flex items-center justify-center p-4">
+      <div className="bg-v-surface border border-v-border rounded-sm shadow-2xl w-full max-w-lg overflow-hidden">
         {/* Progress bar */}
         {step > 0 && step < 6 && (
-          <div className="bg-gray-50 px-6 pt-4 pb-2">
+          <div className="bg-v-charcoal px-6 pt-4 pb-2">
             <div className="flex items-center justify-between mb-2">
               {STEPS.map((s, i) => (
                 <div key={i} className="flex flex-col items-center" style={{ width: `${100 / STEPS.length}%` }}>
                   <div
                     className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold transition-colors ${
                       i < step ? 'bg-green-500 text-white'
-                      : i === step ? 'bg-amber-500 text-white'
-                      : 'bg-gray-200 text-gray-400'
+                      : i === step ? 'bg-amber-900/200 text-white'
+                      : 'bg-v-charcoal text-v-text-secondary'
                     }`}
                   >
                     {i < step ? <span dangerouslySetInnerHTML={{ __html: '&#10003;' }} /> : i + 1}
                   </div>
-                  <span className="text-[10px] text-gray-500 mt-1">{s.label}</span>
+                  <span className="text-[10px] text-v-text-secondary mt-1">{s.label}</span>
                 </div>
               ))}
             </div>
-            <div className="w-full bg-gray-200 rounded-full h-1.5">
+            <div className="w-full bg-v-charcoal rounded-full h-1.5">
               <div
-                className="bg-amber-500 h-1.5 rounded-full transition-all duration-500"
+                className="bg-amber-900/200 h-1.5 rounded-full transition-all duration-500"
                 style={{ width: `${(step / (STEPS.length - 1)) * 100}%` }}
               />
             </div>
@@ -389,7 +389,7 @@ export default function OnboardingPage() {
           {step === 0 && (
             <div className="text-center py-6">
               <div className="text-6xl mb-4" dangerouslySetInnerHTML={{ __html: '&#9992;' }} />
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">Welcome to {'Vector'}</h1>
+              <h1 className="text-3xl font-bold text-v-text-primary mb-2">Welcome to {'Vector'}</h1>
               <p className="text-gray-600 mb-6">
                 Let's get your account set up in about 2 minutes. We'll configure your services, rates, and preferences so you can start quoting immediately.
               </p>
@@ -405,7 +405,7 @@ export default function OnboardingPage() {
                     <div className="w-6 h-6 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center text-xs font-bold">
                       {i + 1}
                     </div>
-                    <span className="text-gray-700 text-sm">{item}</span>
+                    <span className="text-v-text-secondary text-sm">{item}</span>
                   </div>
                 ))}
               </div>
@@ -437,7 +437,7 @@ export default function OnboardingPage() {
               <button
                 onClick={handleSkip}
                 disabled={saving || !agreedToTerms}
-                className="mt-3 text-sm text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-3 text-sm text-v-text-secondary hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {saving ? 'Skipping...' : 'Skip for now'}
               </button>
@@ -447,12 +447,12 @@ export default function OnboardingPage() {
           {/* Step 1: Company Info */}
           {step === 1 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">{'Company Information'}</h2>
-              <p className="text-sm text-gray-500 mb-6">Tell us about your business</p>
+              <h2 className="text-xl font-bold text-v-text-primary mb-1">{'Company Information'}</h2>
+              <p className="text-sm text-v-text-secondary mb-6">Tell us about your business</p>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">
                     {'Company Name'} <span className="text-red-500">*</span>
                   </label>
                   <input
@@ -465,7 +465,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Name'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Name'}</label>
                   <input
                     type="text"
                     value={name}
@@ -476,7 +476,7 @@ export default function OnboardingPage() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Phone'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Phone'}</label>
                   <input
                     type="tel"
                     value={phone}
@@ -484,12 +484,12 @@ export default function OnboardingPage() {
                     placeholder="(555) 123-4567"
                     className="w-full border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                   />
-                  <p className="text-xs text-gray-400 mt-1">For account recovery and notifications</p>
+                  <p className="text-xs text-v-text-secondary mt-1">For account recovery and notifications</p>
                 </div>
               </div>
 
               <div className="mt-6 flex justify-between">
-                <button onClick={goBack} className="px-4 py-2 text-gray-500 hover:text-gray-700">
+                <button onClick={goBack} className="px-4 py-2 text-v-text-secondary hover:text-v-text-secondary">
                   {'Back'}
                 </button>
                 <button
@@ -506,8 +506,8 @@ export default function OnboardingPage() {
           {/* Step 2: Services Setup */}
           {step === 2 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">{'Services'}</h2>
-              <p className="text-sm text-gray-500 mb-4">Select the services you offer. You can add more later in {'Settings'}.</p>
+              <h2 className="text-xl font-bold text-v-text-primary mb-1">{'Services'}</h2>
+              <p className="text-sm text-v-text-secondary mb-4">Select the services you offer. You can add more later in {'Settings'}.</p>
 
               <div className="space-y-2 max-h-80 overflow-y-auto pr-1">
                 {COMMON_SERVICES.map((svc, i) => (
@@ -516,8 +516,8 @@ export default function OnboardingPage() {
                     onClick={() => setSelectedServices(prev => ({ ...prev, [i]: !prev[i] }))}
                     className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
                       selectedServices[i]
-                        ? 'bg-amber-50 border-amber-300'
-                        : 'hover:bg-gray-50 border-gray-200'
+                        ? 'bg-amber-900/20 border-amber-300'
+                        : 'hover:bg-v-charcoal border-v-border'
                     }`}
                   >
                     <input
@@ -528,10 +528,10 @@ export default function OnboardingPage() {
                       onClick={(e) => e.stopPropagation()}
                     />
                     <div className="flex-1">
-                      <span className="font-medium text-gray-900">{svc.name}</span>
-                      <span className="text-xs text-gray-500 block">{svc.description}</span>
+                      <span className="font-medium text-v-text-primary">{svc.name}</span>
+                      <span className="text-xs text-v-text-secondary block">{svc.description}</span>
                     </div>
-                    <span className="text-sm text-gray-400">${svc.defaultRate}/hr</span>
+                    <span className="text-sm text-v-text-secondary">${svc.defaultRate}/hr</span>
                   </div>
                 ))}
               </div>
@@ -547,13 +547,13 @@ export default function OnboardingPage() {
                 >
                   {'Select All'}
                 </button>
-                <span className="text-sm text-gray-400">
+                <span className="text-sm text-v-text-secondary">
                   {Object.values(selectedServices).filter(Boolean).length} {'selected'}
                 </span>
               </div>
 
               <div className="mt-4 flex justify-between">
-                <button onClick={goBack} className="px-4 py-2 text-gray-500 hover:text-gray-700">
+                <button onClick={goBack} className="px-4 py-2 text-v-text-secondary hover:text-v-text-secondary">
                   {'Back'}
                 </button>
                 <button
@@ -570,17 +570,17 @@ export default function OnboardingPage() {
           {/* Step 3: Hourly Rates */}
           {step === 3 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Set Your Rates</h2>
-              <p className="text-sm text-gray-500 mb-4">Set your hourly rate for each service. We've filled in industry averages as defaults.</p>
+              <h2 className="text-xl font-bold text-v-text-primary mb-1">Set Your Rates</h2>
+              <p className="text-sm text-v-text-secondary mb-4">Set your hourly rate for each service. We've filled in industry averages as defaults.</p>
 
               <div className="space-y-3 max-h-72 overflow-y-auto pr-1">
                 {chosenServices.map((svc) => (
-                  <div key={svc.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                  <div key={svc.name} className="flex items-center justify-between p-3 bg-v-charcoal rounded-lg">
                     <div className="flex-1">
-                      <span className="font-medium text-gray-900 text-sm">{svc.name}</span>
+                      <span className="font-medium text-v-text-primary text-sm">{svc.name}</span>
                     </div>
                     <div className="flex items-center gap-1">
-                      <span className="text-gray-500">$</span>
+                      <span className="text-v-text-secondary">$</span>
                       <input
                         type="number"
                         value={rates[svc.name] || ''}
@@ -588,14 +588,14 @@ export default function OnboardingPage() {
                         placeholder={String(svc.defaultRate)}
                         className="w-20 border border-gray-300 rounded px-2 py-1.5 text-right focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                       />
-                      <span className="text-gray-400 text-sm">{'/hr'}</span>
+                      <span className="text-v-text-secondary text-sm">{'/hr'}</span>
                     </div>
                   </div>
                 ))}
               </div>
 
               {/* Pro Tip */}
-              <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-200 rounded-lg">
+              <div className="mt-4 p-3 bg-gradient-to-r from-amber-50 to-yellow-50 border border-amber-600/30 rounded-lg">
                 <div className="flex items-start gap-2">
                   <span className="text-xl" dangerouslySetInnerHTML={{ __html: '&#128161;' }} />
                   <div>
@@ -609,7 +609,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="mt-4 flex justify-between">
-                <button onClick={goBack} className="px-4 py-2 text-gray-500 hover:text-gray-700">
+                <button onClick={goBack} className="px-4 py-2 text-v-text-secondary hover:text-v-text-secondary">
                   {'Back'}
                 </button>
                 <button
@@ -626,14 +626,14 @@ export default function OnboardingPage() {
           {/* Step 4: Preferences */}
           {step === 4 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Preferences</h2>
-              <p className="text-sm text-gray-500 mb-6">Set your language, currency, and pricing preferences</p>
+              <h2 className="text-xl font-bold text-v-text-primary mb-1">Preferences</h2>
+              <p className="text-sm text-v-text-secondary mb-6">Set your language, currency, and pricing preferences</p>
 
               <div className="space-y-5">
                 {/* Language & Currency */}
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{'Language'}</label>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Language'}</label>
                     <select
                       value={language}
                       onChange={(e) => setLanguage(e.target.value)}
@@ -645,7 +645,7 @@ export default function OnboardingPage() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{'Currency'}</label>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Currency'}</label>
                     <select
                       value={currency}
                       onChange={(e) => setCurrency(e.target.value)}
@@ -660,9 +660,9 @@ export default function OnboardingPage() {
 
                 {/* Minimum fee */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Minimum Fee'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Minimum Fee'}</label>
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-500">{CURRENCIES.find(c => c.code === currency)?.symbol || '$'}</span>
+                    <span className="text-v-text-secondary">{CURRENCIES.find(c => c.code === currency)?.symbol || '$'}</span>
                     <input
                       type="number"
                       value={minimumFee}
@@ -671,24 +671,24 @@ export default function OnboardingPage() {
                       className="w-32 border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     />
                   </div>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-v-text-secondary mt-1">
                     If a quote total is below this amount, the minimum fee is charged instead. Set to 0 to disable.
                   </p>
                 </div>
 
                 {/* Pass fee toggle */}
-                <div className="p-4 bg-gray-50 rounded-lg">
+                <div className="p-4 bg-v-charcoal rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="font-medium text-gray-900">{'Pass platform fee to customer'}</p>
-                      <p className="text-xs text-gray-500 mt-0.5">
+                      <p className="font-medium text-v-text-primary">{'Pass platform fee to customer'}</p>
+                      <p className="text-xs text-v-text-secondary mt-0.5">
                         When enabled, the platform fee appears as a "Service Fee" line item on the customer's quote instead of being deducted from your earnings.
                       </p>
                     </div>
                     <button
                       onClick={() => setPassFee(!passFee)}
                       className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                        passFee ? 'bg-amber-500' : 'bg-gray-300'
+                        passFee ? 'bg-amber-900/200' : 'bg-v-charcoal'
                       }`}
                     >
                       <span
@@ -702,7 +702,7 @@ export default function OnboardingPage() {
               </div>
 
               <div className="mt-6 flex justify-between">
-                <button onClick={goBack} className="px-4 py-2 text-gray-500 hover:text-gray-700">
+                <button onClick={goBack} className="px-4 py-2 text-v-text-secondary hover:text-v-text-secondary">
                   {'Back'}
                 </button>
                 <button
@@ -719,15 +719,15 @@ export default function OnboardingPage() {
           {/* Step 5: Test Quote */}
           {step === 5 && (
             <div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Build a Test Quote</h2>
-              <p className="text-sm text-gray-500 mb-4">
+              <h2 className="text-xl font-bold text-v-text-primary mb-1">Build a Test Quote</h2>
+              <p className="text-sm text-v-text-secondary mb-4">
                 Pick an aircraft and see how {'Vector'} calculates your quote using the rates you just set.
               </p>
 
               {!testAircraft ? (
                 <div>
                   <div className="mb-3">
-                    <label className="block text-sm font-medium text-gray-700 mb-1">{'Manufacturer'}</label>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Manufacturer'}</label>
                     <select
                       value={selectedMfr}
                       onChange={(e) => fetchModels(e.target.value)}
@@ -746,17 +746,17 @@ export default function OnboardingPage() {
                         <div
                           key={a.id}
                           onClick={() => selectTestAircraft(a)}
-                          className="p-3 cursor-pointer hover:bg-amber-50 transition-colors"
+                          className="p-3 cursor-pointer hover:bg-amber-900/20 transition-colors"
                         >
-                          <p className="font-medium text-gray-900">{a.manufacturer} {a.model}</p>
-                          <p className="text-xs text-gray-500">{a.category} &bull; {a.seats} {'seats'}</p>
+                          <p className="font-medium text-v-text-primary">{a.manufacturer} {a.model}</p>
+                          <p className="text-xs text-v-text-secondary">{a.category} &bull; {a.seats} {'seats'}</p>
                         </div>
                       ))}
                     </div>
                   )}
 
                   {selectedMfr && models.length === 0 && (
-                    <p className="text-gray-400 text-sm text-center py-4">{'Loading aircraft...'}</p>
+                    <p className="text-v-text-secondary text-sm text-center py-4">{'Loading aircraft...'}</p>
                   )}
                 </div>
               ) : (
@@ -788,7 +788,7 @@ export default function OnboardingPage() {
                           key={svc.name}
                           onClick={() => setTestServices(prev => ({ ...prev, [i]: !prev[i] }))}
                           className={`flex items-center justify-between p-2 rounded cursor-pointer text-sm transition-colors ${
-                            testServices[i] ? 'bg-amber-50' : 'bg-gray-50 opacity-60'
+                            testServices[i] ? 'bg-amber-900/20' : 'bg-v-charcoal opacity-60'
                           }`}
                         >
                           <div className="flex items-center gap-2">
@@ -798,11 +798,11 @@ export default function OnboardingPage() {
                               onChange={() => {}}
                               className="w-4 h-4 rounded text-amber-500"
                             />
-                            <span className="text-gray-800">{svc.name}</span>
+                            <span className="text-v-text-primary">{svc.name}</span>
                           </div>
                           <div className="text-right">
                             <span className="font-semibold">{currencySymbol()}{formatPriceWhole(price)}</span>
-                            <span className="text-xs text-gray-400 ml-1">({hours.toFixed(1)}h)</span>
+                            <span className="text-xs text-v-text-secondary ml-1">({hours.toFixed(1)}h)</span>
                           </div>
                         </div>
                       );
@@ -811,7 +811,7 @@ export default function OnboardingPage() {
 
                   {/* Quote total */}
                   <div className="bg-[#0f172a] text-white rounded-lg p-4">
-                    <div className="flex justify-between text-sm text-gray-400 mb-1">
+                    <div className="flex justify-between text-sm text-v-text-secondary mb-1">
                       <span>{'Est. Hours'}</span>
                       <span>{testTotalHours.toFixed(1)}h</span>
                     </div>
@@ -826,14 +826,14 @@ export default function OnboardingPage() {
                     )}
                   </div>
 
-                  <p className="text-xs text-gray-400 mt-3 text-center">
+                  <p className="text-xs text-v-text-secondary mt-3 text-center">
                     This is just a preview. You'll build real quotes from the dashboard.
                   </p>
                 </div>
               )}
 
               <div className="mt-4 flex justify-between">
-                <button onClick={goBack} className="px-4 py-2 text-gray-500 hover:text-gray-700">
+                <button onClick={goBack} className="px-4 py-2 text-v-text-secondary hover:text-v-text-secondary">
                   {'Back'}
                 </button>
                 <button
@@ -850,7 +850,7 @@ export default function OnboardingPage() {
           {step === 6 && (
             <div className="text-center py-4">
               <div className="text-6xl mb-3" dangerouslySetInnerHTML={{ __html: '&#127881;' }} />
-              <h2 className="text-2xl font-bold text-gray-900 mb-2">You're All Set!</h2>
+              <h2 className="text-2xl font-bold text-v-text-primary mb-2">You're All Set!</h2>
               <p className="text-gray-600 mb-6">Your {'Vector'} account is configured and ready to go.</p>
 
               <div className="text-left space-y-3 max-w-xs mx-auto mb-6">
@@ -862,16 +862,16 @@ export default function OnboardingPage() {
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs ${
-                      item.done ? 'bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400'
+                      item.done ? 'bg-green-100 text-green-600' : 'bg-v-charcoal text-v-text-secondary'
                     }`}>
                       <span dangerouslySetInnerHTML={{ __html: item.done ? '&#10003;' : '&#8226;' }} />
                     </div>
-                    <span className={`text-sm ${item.done ? 'text-gray-900' : 'text-gray-400'}`}>{item.label}</span>
+                    <span className={`text-sm ${item.done ? 'text-v-text-primary' : 'text-v-text-secondary'}`}>{item.label}</span>
                   </div>
                 ))}
               </div>
 
-              <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 mb-6">
+              <div className="bg-amber-900/20 border border-amber-600/30 rounded-lg p-3 mb-6">
                 <p className="text-amber-800 text-sm font-medium">+50 points earned for completing onboarding!</p>
               </div>
 

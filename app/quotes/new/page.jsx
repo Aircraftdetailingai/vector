@@ -459,9 +459,9 @@ function NewQuoteContent() {
   const sortedCategories = categoryOrder.filter(c => groupedModels[c]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 pb-40 text-gray-900">
+    <div className="min-h-screen bg-v-charcoal p-4 pb-40 text-v-text-primary">
       {/* Header */}
-      <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-4 bg-gradient-to-b from-[#0f172a] via-[#0f172a] to-transparent flex justify-between items-center text-white">
+      <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-4 bg-gradient-to-b from-v-charcoal via-v-charcoal to-transparent flex justify-between items-center text-white">
         <div className="flex items-center gap-3">
           <a href="/dashboard" className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
             <span>&#8592;</span> Dashboard
@@ -566,7 +566,7 @@ function NewQuoteContent() {
                               : 'border-gray-200 hover:border-amber-300 hover:bg-amber-50/50'
                           }`}
                         >
-                          <p className="font-medium text-gray-900 truncate">{aircraft.model}</p>
+                          <p className="font-medium text-v-text-primary truncate">{aircraft.model}</p>
                           {aircraft.surface_area_sqft && (
                             <p className="text-xs text-gray-400">{aircraft.surface_area_sqft} sq ft</p>
                           )}
@@ -625,7 +625,7 @@ function NewQuoteContent() {
                           }`}>
                             {isSelected && <span className="text-xs">&#10003;</span>}
                           </div>
-                          <p className="font-medium text-gray-900 text-sm truncate">{svc.name}</p>
+                          <p className="font-medium text-v-text-primary text-sm truncate">{svc.name}</p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0 text-sm">
                           {isSelected ? (
@@ -643,12 +643,12 @@ function NewQuoteContent() {
                               <span className="text-gray-300 mx-0.5">@</span>
                               <span className="text-gray-500 text-xs">{currencySymbol()}{parseFloat(svc.hourly_rate || 0).toFixed(0)}/hr</span>
                               <span className="text-gray-300 mx-0.5">=</span>
-                              <span className="font-bold text-gray-900 min-w-[60px] text-right">{currencySymbol()}{formatPrice(price)}</span>
+                              <span className="font-bold text-v-text-primary min-w-[60px] text-right">{currencySymbol()}{formatPrice(price)}</span>
                             </>
                           ) : (
                             <>
                               <span className="text-xs text-gray-400">{hours.toFixed(1)} hrs @ {currencySymbol()}{parseFloat(svc.hourly_rate || 0).toFixed(0)}/hr</span>
-                              <span className="font-bold text-gray-900 ml-2">{currencySymbol()}{formatPrice(price)}</span>
+                              <span className="font-bold text-v-text-primary ml-2">{currencySymbol()}{formatPrice(price)}</span>
                             </>
                           )}
                         </div>
@@ -695,7 +695,7 @@ function NewQuoteContent() {
                           }`}
                         >
                           <div>
-                            <p className="font-medium text-gray-900 text-sm">{pkg.name}</p>
+                            <p className="font-medium text-v-text-primary text-sm">{pkg.name}</p>
                             <p className="text-xs text-gray-400">{Array.isArray(pkg.service_ids) ? pkg.service_ids.length : 0} services{pkg.discount_percent > 0 ? ` \u00B7 ${pkg.discount_percent}% off` : ''}</p>
                           </div>
                           {isSelected && <span className="text-green-600 font-bold text-sm">Selected</span>}
@@ -758,7 +758,7 @@ function NewQuoteContent() {
                         }`}>
                           {isSelected && <span className="text-xs">&#10003;</span>}
                         </div>
-                        <span className="text-sm font-medium text-gray-900">{addon.name}</span>
+                        <span className="text-sm font-medium text-v-text-primary">{addon.name}</span>
                       </div>
                       <span className="text-sm font-medium text-gray-700">
                         {addon.fee_type === 'percent' ? `${addon.amount}%` : `${currencySymbol()}${parseFloat(addon.amount).toFixed(2)}`}

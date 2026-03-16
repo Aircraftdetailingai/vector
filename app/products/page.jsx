@@ -298,7 +298,7 @@ export default function ProductsPage() {
   }
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4 text-gray-900">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4 text-v-text-primary">
       {/* Header */}
       <header className="flex justify-between items-center mb-6 text-white">
         <div className="flex items-center space-x-4">
@@ -315,22 +315,22 @@ export default function ProductsPage() {
       <div className="max-w-5xl mx-auto">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white rounded-lg p-4 shadow">
-            <p className="text-gray-500 text-xs">{'Inventory Value'}</p>
-            <p className="text-2xl font-bold text-gray-900">{currencySymbol()}{formatPriceWhole(totalValue)}</p>
+          <div className="bg-v-surface rounded-lg p-4 shadow">
+            <p className="text-v-text-secondary text-xs">{'Inventory Value'}</p>
+            <p className="text-2xl font-bold text-v-text-primary">{currencySymbol()}{formatPriceWhole(totalValue)}</p>
           </div>
-          <div className="bg-white rounded-lg p-4 shadow">
-            <p className="text-gray-500 text-xs">{'Products Tracked'}</p>
-            <p className="text-2xl font-bold text-gray-900">{products.length}</p>
+          <div className="bg-v-surface rounded-lg p-4 shadow">
+            <p className="text-v-text-secondary text-xs">{'Products Tracked'}</p>
+            <p className="text-2xl font-bold text-v-text-primary">{products.length}</p>
           </div>
           {insights && (
             <>
-              <div className="bg-white rounded-lg p-4 shadow">
-                <p className="text-gray-500 text-xs">{'Material Cost (Month)'}</p>
+              <div className="bg-v-surface rounded-lg p-4 shadow">
+                <p className="text-v-text-secondary text-xs">{'Material Cost (Month)'}</p>
                 <p className="text-2xl font-bold text-blue-600">{currencySymbol()}{formatPriceWhole(insights.summary.totalMaterialCost)}</p>
               </div>
-              <div className="bg-white rounded-lg p-4 shadow">
-                <p className="text-gray-500 text-xs">{'Avg Cost/Job'}</p>
+              <div className="bg-v-surface rounded-lg p-4 shadow">
+                <p className="text-v-text-secondary text-xs">{'Avg Cost/Job'}</p>
                 <p className="text-2xl font-bold text-purple-600">{currencySymbol()}{formatPriceWhole(insights.summary.avgMaterialCostPerJob)}</p>
               </div>
             </>
@@ -339,7 +339,7 @@ export default function ProductsPage() {
 
         {/* Low Stock Alert */}
         {lowStock.length > 0 && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
+          <div className="bg-red-900/20 border border-red-200 rounded-lg p-4 mb-6">
             <div className="flex items-start gap-3">
               <span className="text-xl">&#9888;</span>
               <div className="flex-1">
@@ -357,7 +357,7 @@ export default function ProductsPage() {
                           href={p.product_url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="px-3 py-1 text-xs bg-amber-500 text-white font-medium rounded hover:bg-amber-600 whitespace-nowrap ml-3"
+                          className="px-3 py-1 text-xs bg-amber-900/200 text-white font-medium rounded hover:bg-amber-600 whitespace-nowrap ml-3"
                         >
                           {'Reorder'}
                         </a>
@@ -373,11 +373,11 @@ export default function ProductsPage() {
         {/* Page Header */}
         <div className="flex justify-between items-center mb-4">
           <div>
-            <p className="text-gray-400 text-sm">{'Track your products and materials'}</p>
+            <p className="text-v-text-secondary text-sm">{'Track your products and materials'}</p>
           </div>
           <button
             onClick={() => handleOpenModal()}
-            className="px-4 py-2 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600"
+            className="px-4 py-2 bg-amber-900/200 text-white font-medium rounded-lg hover:bg-amber-600"
           >
             {'+ Add Product'}
           </button>
@@ -385,13 +385,13 @@ export default function ProductsPage() {
 
         {/* Products List */}
         {products.length === 0 ? (
-          <div className="bg-white rounded-lg p-8 text-center">
+          <div className="bg-v-surface rounded-lg p-8 text-center">
             <span className="text-4xl">&#128230;</span>
             <h3 className="text-xl font-semibold mt-4">{'No products yet'}</h3>
-            <p className="text-gray-500 mt-2">{'Add your detailing products to track inventory and costs'}</p>
+            <p className="text-v-text-secondary mt-2">{'Add your detailing products to track inventory and costs'}</p>
             <button
               onClick={() => handleOpenModal()}
-              className="mt-4 px-4 py-2 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600"
+              className="mt-4 px-4 py-2 bg-amber-900/200 text-white font-medium rounded-lg hover:bg-amber-600"
             >
               {'Add Your First Product'}
             </button>
@@ -399,44 +399,44 @@ export default function ProductsPage() {
         ) : (
           <div className="space-y-4">
             {Object.entries(productsByCategory).map(([category, categoryProducts]) => (
-              <div key={category} className="bg-white rounded-lg shadow overflow-hidden">
-                <div className="bg-gray-50 px-4 py-2 border-b flex justify-between items-center">
-                  <h3 className="font-semibold text-gray-700">{CATEGORY_LABELS[category] || category}</h3>
-                  <span className="text-xs text-gray-400">{categoryProducts.length} {'items'}</span>
+              <div key={category} className="bg-v-surface rounded-lg shadow overflow-hidden">
+                <div className="bg-v-charcoal px-4 py-2 border-b flex justify-between items-center">
+                  <h3 className="font-semibold text-v-text-secondary">{CATEGORY_LABELS[category] || category}</h3>
+                  <span className="text-xs text-v-text-secondary">{categoryProducts.length} {'items'}</span>
                 </div>
                 <div className="divide-y">
                   {categoryProducts.map((product) => (
-                    <div key={product.id} className="p-4 hover:bg-gray-50">
+                    <div key={product.id} className="p-4 hover:bg-white/5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3 flex-1 min-w-0">
                           {product.image_url && (
                             <img
                               src={product.image_url}
                               alt=""
-                              className="w-10 h-10 rounded object-cover flex-shrink-0 bg-gray-100"
+                              className="w-10 h-10 rounded object-cover flex-shrink-0 bg-v-charcoal"
                               onError={(e) => { e.target.style.display = 'none'; }}
                             />
                           )}
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
                               {product.brand && (
-                                <span className="text-xs text-gray-400 font-medium">{product.brand}</span>
+                                <span className="text-xs text-v-text-secondary font-medium">{product.brand}</span>
                               )}
-                              <p className="font-medium text-gray-900 truncate">{product.name}</p>
+                              <p className="font-medium text-v-text-primary truncate">{product.name}</p>
                               {product.size && (
-                                <span className="text-xs text-gray-400">{product.size}</span>
+                                <span className="text-xs text-v-text-secondary">{product.size}</span>
                               )}
                               {product.reorder_threshold > 0 && product.current_quantity <= product.reorder_threshold && (
-                                <span className="text-xs bg-red-100 text-red-700 px-2 py-0.5 rounded-full flex-shrink-0">{'Low'}</span>
+                                <span className="text-xs bg-red-900/30 text-red-400 px-2 py-0.5 rounded-full flex-shrink-0">{'Low'}</span>
                               )}
                             </div>
-                            <div className="flex items-center gap-4 mt-1 text-sm text-gray-500">
+                            <div className="flex items-center gap-4 mt-1 text-sm text-v-text-secondary">
                               <span>{'Quantity'}: <strong>{product.current_quantity || 0}</strong> {product.unit}</span>
                               {product.cost_per_unit > 0 && (
                                 <span>${product.cost_per_unit.toFixed(2)}/{product.unit}</span>
                               )}
                               {product.supplier && (
-                                <span className="text-gray-400">{product.supplier}</span>
+                                <span className="text-v-text-secondary">{product.supplier}</span>
                               )}
                               {product.product_url && (
                                 <a href={product.product_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 text-xs">{'Reorder'}</a>
@@ -450,19 +450,19 @@ export default function ProductsPage() {
                               setShowAdjustModal(product);
                               setAdjustAmount('');
                             }}
-                            className="px-3 py-1 text-sm bg-gray-100 text-gray-700 hover:bg-gray-200 rounded"
+                            className="px-3 py-1 text-sm bg-v-charcoal text-v-text-secondary hover:bg-v-charcoal rounded"
                           >
                             {'Adjust Qty'}
                           </button>
                           <button
                             onClick={() => handleOpenModal(product)}
-                            className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-50 rounded"
+                            className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-900/20 rounded"
                           >
                             {'Edit'}
                           </button>
                           <button
                             onClick={() => handleDelete(product.id)}
-                            className="px-3 py-1 text-sm text-red-600 hover:bg-red-50 rounded"
+                            className="px-3 py-1 text-sm text-red-600 hover:bg-red-900/20 rounded"
                           >
                             {'Delete'}
                           </button>
@@ -478,16 +478,16 @@ export default function ProductsPage() {
 
         {/* Business Insights Card */}
         {insights && insights.costBreakdown && (
-          <div className="mt-6 bg-white rounded-lg p-6 shadow">
-            <h3 className="font-semibold text-gray-900 mb-4">{'Cost Breakdown'}</h3>
+          <div className="mt-6 bg-v-surface rounded-lg p-6 shadow">
+            <h3 className="font-semibold text-v-text-primary mb-4">{'Cost Breakdown'}</h3>
             <div className="flex items-center gap-4">
-              <div className="flex-1 h-4 bg-gray-100 rounded-full overflow-hidden flex">
+              <div className="flex-1 h-4 bg-v-charcoal rounded-full overflow-hidden flex">
                 <div
-                  className="bg-blue-500 h-full"
+                  className="bg-blue-900/200 h-full"
                   style={{ width: `${insights.costBreakdown.labor}%` }}
                 ></div>
                 <div
-                  className="bg-amber-500 h-full"
+                  className="bg-amber-900/200 h-full"
                   style={{ width: `${insights.costBreakdown.materials}%` }}
                 ></div>
                 <div
@@ -496,13 +496,13 @@ export default function ProductsPage() {
                 ></div>
               </div>
             </div>
-            <div className="flex justify-between mt-2 text-xs text-gray-500">
+            <div className="flex justify-between mt-2 text-xs text-v-text-secondary">
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-blue-500 rounded"></span>
+                <span className="w-2 h-2 bg-blue-900/200 rounded"></span>
                 {'Labor'} {insights.costBreakdown.labor}%
               </span>
               <span className="flex items-center gap-1">
-                <span className="w-2 h-2 bg-amber-500 rounded"></span>
+                <span className="w-2 h-2 bg-amber-900/200 rounded"></span>
                 {'Materials'} {insights.costBreakdown.materials}%
               </span>
               <span className="flex items-center gap-1">
@@ -517,8 +517,8 @@ export default function ProductsPage() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg w-full sm:max-w-md overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b sticky top-0 bg-white">
+          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg w-full sm:max-w-md overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b sticky top-0 bg-v-surface">
               <h2 className="text-lg font-semibold">
                 {editingProduct ? 'Edit Product' : 'Add Product'}
               </h2>
@@ -527,7 +527,7 @@ export default function ProductsPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Paste Product Link */}
               {!editingProduct && (
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <div className="bg-blue-900/20 border border-blue-200 rounded-lg p-3">
                   <label className="block text-sm font-medium text-blue-800 mb-1">{'Paste Product Link'}</label>
                   <div className="flex gap-2">
                     <input
@@ -535,13 +535,13 @@ export default function ProductsPage() {
                       value={pasteUrl}
                       onChange={handlePasteUrlChange}
                       placeholder={'https://www.chemicalguys.com/product...'}
-                      className="flex-1 border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 bg-white"
+                      className="flex-1 border border-blue-200 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-400 bg-v-surface"
                     />
                     {pasteUrl && !scraping && (
                       <button
                         type="button"
                         onClick={() => handleScrapeUrl(pasteUrl)}
-                        className="px-3 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600"
+                        className="px-3 py-2 bg-blue-900/200 text-white text-sm rounded-lg hover:bg-blue-600"
                       >
                         {'Fetch'}
                       </button>
@@ -563,14 +563,14 @@ export default function ProductsPage() {
               {/* Image preview */}
               {formData.imageUrl && (
                 <div className="flex items-center gap-3">
-                  <img src={formData.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover bg-gray-100 border" onError={(e) => { e.target.style.display = 'none'; }} />
-                  <button type="button" onClick={() => setFormData({ ...formData, imageUrl: '' })} className="text-xs text-gray-400 hover:text-red-500">{'Remove image'}</button>
+                  <img src={formData.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover bg-v-charcoal border" onError={(e) => { e.target.style.display = 'none'; }} />
+                  <button type="button" onClick={() => setFormData({ ...formData, imageUrl: '' })} className="text-xs text-v-text-secondary hover:text-red-500">{'Remove image'}</button>
                 </div>
               )}
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Product Name'} *</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Product Name'} *</label>
                   <input
                     type="text"
                     value={formData.name}
@@ -581,7 +581,7 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Brand'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Brand'}</label>
                   <input
                     type="text"
                     value={formData.brand}
@@ -591,7 +591,7 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Size'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Size'}</label>
                   <input
                     type="text"
                     value={formData.size}
@@ -604,7 +604,7 @@ export default function ProductsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Category'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Category'}</label>
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
@@ -616,7 +616,7 @@ export default function ProductsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Unit'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Unit'}</label>
                   <select
                     value={formData.unit}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
@@ -631,7 +631,7 @@ export default function ProductsPage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Cost per Unit ($)'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Cost per Unit ($)'}</label>
                   <input
                     type="number"
                     step="0.01"
@@ -642,7 +642,7 @@ export default function ProductsPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Current Quantity'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Current Quantity'}</label>
                   <input
                     type="number"
                     step="0.1"
@@ -655,7 +655,7 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Reorder Alert Threshold'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Reorder Alert Threshold'}</label>
                 <input
                   type="number"
                   step="0.1"
@@ -667,7 +667,7 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Supplier (optional)'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Supplier (optional)'}</label>
                 <input
                   type="text"
                   value={formData.supplier}
@@ -678,7 +678,7 @@ export default function ProductsPage() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Notes'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Notes'}</label>
                 <textarea
                   value={formData.notes}
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
@@ -692,14 +692,14 @@ export default function ProductsPage() {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                  className="px-4 py-2 text-v-text-secondary hover:bg-white/5 rounded-lg"
                 >
                   {'Cancel'}
                 </button>
                 <button
                   type="submit"
                   disabled={saving || !formData.name}
-                  className="px-4 py-2 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600 disabled:opacity-50"
+                  className="px-4 py-2 bg-amber-900/200 text-white font-medium rounded-lg hover:bg-amber-600 disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : editingProduct ? 'Update' : '+ Add Product'}
                 </button>
@@ -712,11 +712,11 @@ export default function ProductsPage() {
       {/* Adjust Quantity Modal */}
       {showAdjustModal && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-white rounded-t-2xl sm:rounded-lg w-full sm:max-w-sm overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg w-full sm:max-w-sm overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
             <div className="px-6 py-4 border-b">
               <h2 className="text-lg font-semibold">{'Adjust Inventory'}</h2>
-              <p className="text-sm text-gray-500">{showAdjustModal.name}</p>
-              <p className="text-xs text-gray-400">{'Current'}: {showAdjustModal.current_quantity} {showAdjustModal.unit}</p>
+              <p className="text-sm text-v-text-secondary">{showAdjustModal.name}</p>
+              <p className="text-xs text-v-text-secondary">{'Current'}: {showAdjustModal.current_quantity} {showAdjustModal.unit}</p>
             </div>
 
             <div className="p-6">
@@ -733,14 +733,14 @@ export default function ProductsPage() {
                 <button
                   onClick={() => handleAdjustInventory(false)}
                   disabled={!adjustAmount}
-                  className="px-4 py-2 bg-red-100 text-red-700 font-medium rounded-lg hover:bg-red-200 disabled:opacity-50"
+                  className="px-4 py-2 bg-red-900/30 text-red-400 font-medium rounded-lg hover:bg-red-200 disabled:opacity-50"
                 >
                   - {'Remove'}
                 </button>
                 <button
                   onClick={() => handleAdjustInventory(true)}
                   disabled={!adjustAmount}
-                  className="px-4 py-2 bg-green-100 text-green-700 font-medium rounded-lg hover:bg-green-200 disabled:opacity-50"
+                  className="px-4 py-2 bg-green-900/30 text-green-400 font-medium rounded-lg hover:bg-green-200 disabled:opacity-50"
                 >
                   + {'Add'}
                 </button>
@@ -751,7 +751,7 @@ export default function ProductsPage() {
                   setShowAdjustModal(null);
                   setAdjustAmount('');
                 }}
-                className="w-full mt-3 px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+                className="w-full mt-3 px-4 py-2 text-v-text-secondary hover:bg-white/5 rounded-lg"
               >
                 {'Cancel'}
               </button>

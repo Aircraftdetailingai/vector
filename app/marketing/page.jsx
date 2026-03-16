@@ -10,17 +10,17 @@ const SEGMENTS = [
 ];
 
 const TEMPLATES = [
-  { value: 'promotional', label: 'Promotional', color: 'bg-amber-100 text-amber-700', desc: 'Sales, discounts, new services' },
-  { value: 'seasonal', label: 'Seasonal', color: 'bg-green-100 text-green-700', desc: 'Holiday, seasonal offers' },
-  { value: 'follow-up', label: 'Follow-Up', color: 'bg-blue-100 text-blue-700', desc: 'Check-ins, re-engagement' },
-  { value: 'newsletter', label: 'Newsletter', color: 'bg-purple-100 text-purple-700', desc: 'Updates, tips, news' },
+  { value: 'promotional', label: 'Promotional', color: 'bg-amber-900/30 text-amber-400', desc: 'Sales, discounts, new services' },
+  { value: 'seasonal', label: 'Seasonal', color: 'bg-green-900/30 text-green-400', desc: 'Holiday, seasonal offers' },
+  { value: 'follow-up', label: 'Follow-Up', color: 'bg-blue-900/30 text-blue-400', desc: 'Check-ins, re-engagement' },
+  { value: 'newsletter', label: 'Newsletter', color: 'bg-purple-900/30 text-purple-400', desc: 'Updates, tips, news' },
 ];
 
 const STATUS_COLORS = {
-  draft: 'bg-gray-100 text-gray-600',
-  scheduled: 'bg-blue-100 text-blue-700',
-  sent: 'bg-green-100 text-green-700',
-  sending: 'bg-amber-100 text-amber-700',
+  draft: 'bg-v-charcoal text-v-text-secondary',
+  scheduled: 'bg-blue-900/30 text-blue-400',
+  sent: 'bg-green-900/30 text-green-400',
+  sending: 'bg-amber-900/30 text-amber-400',
 };
 
 const TEMPLATE_STARTERS = {
@@ -238,14 +238,14 @@ export default function MarketingPage() {
 
   if (loading) {
     return (
-      <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] flex items-center justify-center">
+      <div className="page-transition min-h-screen bg-v-charcoal flex items-center justify-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
         <div className="flex items-center gap-3">
@@ -262,31 +262,31 @@ export default function MarketingPage() {
 
       {/* Messages */}
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center justify-between">
+        <div className="bg-red-900/20 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 flex items-center justify-between">
           <span>{error}</span>
           <button onClick={() => setError('')} className="text-red-400 hover:text-red-600">&times;</button>
         </div>
       )}
       {success && (
-        <div className="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">{success}</div>
+        <div className="bg-green-900/20 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4">{success}</div>
       )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-        <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">{'Total Campaigns'}</p>
-          <p className="text-xl font-bold text-gray-900">{stats.total}</p>
+        <div className="bg-v-surface rounded-lg p-3 shadow">
+          <p className="text-v-text-secondary text-xs">{'Total Campaigns'}</p>
+          <p className="text-xl font-bold text-v-text-primary">{stats.total}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">{'Sent'}</p>
+        <div className="bg-v-surface rounded-lg p-3 shadow">
+          <p className="text-v-text-secondary text-xs">{'Sent'}</p>
           <p className="text-xl font-bold text-green-600">{stats.sent}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">{'Drafts'}</p>
-          <p className="text-xl font-bold text-gray-600">{stats.drafts}</p>
+        <div className="bg-v-surface rounded-lg p-3 shadow">
+          <p className="text-v-text-secondary text-xs">{'Drafts'}</p>
+          <p className="text-xl font-bold text-v-text-secondary">{stats.drafts}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">{'Total Emails Sent'}</p>
+        <div className="bg-v-surface rounded-lg p-3 shadow">
+          <p className="text-v-text-secondary text-xs">{'Total Emails Sent'}</p>
           <p className="text-xl font-bold text-blue-600">{stats.totalSent}</p>
         </div>
       </div>
@@ -298,7 +298,7 @@ export default function MarketingPage() {
             key={f}
             onClick={() => setFilter(f)}
             className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-              filter === f ? 'bg-amber-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
+              filter === f ? 'bg-amber-900/200 text-white' : 'bg-white/10 text-white hover:bg-white/20'
             }`}
           >
             {f === 'all' ? 'All' : f === 'draft' ? 'Draft' : f === 'scheduled' ? 'Scheduled' : 'Sent'}
@@ -308,11 +308,11 @@ export default function MarketingPage() {
 
       {/* Campaign List */}
       {filtered.length === 0 ? (
-        <div className="bg-white rounded-lg p-8 text-center shadow">
+        <div className="bg-v-surface rounded-lg p-8 text-center shadow">
           <svg className="w-12 h-12 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
           </svg>
-          <p className="text-gray-500 mb-2">{'No campaigns yet'}</p>
+          <p className="text-v-text-secondary mb-2">{'No campaigns yet'}</p>
           <button onClick={openCreateModal} className="text-amber-600 hover:text-amber-700 font-medium text-sm">
             {'Create your first campaign'}
           </button>
@@ -322,24 +322,24 @@ export default function MarketingPage() {
           {filtered.map(c => (
             <div
               key={c.id}
-              className="bg-white rounded-lg p-4 shadow hover:shadow-md transition-shadow cursor-pointer"
+              className="bg-v-surface rounded-lg p-4 shadow hover:shadow-md transition-shadow cursor-pointer"
               onClick={() => setShowDetail(c)}
             >
               <div className="flex items-start justify-between gap-3">
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-gray-900">{c.name}</h3>
+                    <h3 className="font-bold text-v-text-primary">{c.name}</h3>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_COLORS[c.status] || STATUS_COLORS.draft}`}>
                       {c.status || 'draft'}
                     </span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
-                      TEMPLATES.find(t => t.value === c.template_type)?.color || 'bg-gray-100 text-gray-600'
+                      TEMPLATES.find(t => t.value === c.template_type)?.color || 'bg-v-charcoal text-v-text-secondary'
                     }`}>
                       {c.template_type || 'promotional'}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600 mt-0.5">{c.subject}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-sm text-v-text-secondary mt-0.5">{c.subject}</p>
+                  <p className="text-xs text-v-text-secondary mt-0.5">
                     {SEGMENTS.find(s => s.value === c.segment)?.label || 'All'}
                     {c.recipient_count ? ` · ${c.recipient_count} ${'recipients'}` : ''}
                     {c.sent_count ? ` · ${c.sent_count} ${'sent'}` : ''}
@@ -353,7 +353,7 @@ export default function MarketingPage() {
                       onClick={e => { e.stopPropagation(); sendCampaign(c); }}
                       disabled={sending === c.id}
                       title={'Send Now'}
-                      className="p-2 text-gray-400 hover:text-green-600 hover:bg-green-50 rounded-lg transition"
+                      className="p-2 text-v-text-secondary hover:text-green-600 hover:bg-green-900/20 rounded-lg transition"
                     >
                       {sending === c.id ? (
                         <div className="w-4 h-4 border-2 border-green-400 border-t-transparent rounded-full animate-spin" />
@@ -367,7 +367,7 @@ export default function MarketingPage() {
                   <button
                     onClick={e => { e.stopPropagation(); duplicateCampaign(c); }}
                     title={'Duplicate'}
-                    className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                    className="p-2 text-v-text-secondary hover:text-blue-600 hover:bg-blue-900/20 rounded-lg transition"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
@@ -376,7 +376,7 @@ export default function MarketingPage() {
                   <button
                     onClick={e => { e.stopPropagation(); deleteCampaign(c); }}
                     title={'Delete'}
-                    className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition"
+                    className="p-2 text-v-text-secondary hover:text-red-600 hover:bg-red-900/20 rounded-lg transition"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -392,28 +392,28 @@ export default function MarketingPage() {
       {/* Create Campaign Modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowCreate(false)}>
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl my-8" onClick={e => e.stopPropagation()}>
+          <div className="bg-v-surface rounded-xl max-w-lg w-full p-6 shadow-xl my-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold text-gray-900">{'+ New Campaign'}</h2>
-              <button onClick={() => setShowCreate(false)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+              <h2 className="text-lg font-bold text-v-text-primary">{'+ New Campaign'}</h2>
+              <button onClick={() => setShowCreate(false)} className="text-v-text-secondary hover:text-v-text-secondary text-xl">&times;</button>
             </div>
 
             <div className="space-y-4">
               {/* Campaign Name */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Campaign Name'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Campaign Name'}</label>
                 <input
                   type="text"
                   value={formName}
                   onChange={e => setFormName(e.target.value)}
                   placeholder="e.g. Spring Detailing Special"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                  className="w-full border border-v-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                 />
               </div>
 
               {/* Template Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Template Type'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Template Type'}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {TEMPLATES.map(tmpl => (
                     <button
@@ -422,12 +422,12 @@ export default function MarketingPage() {
                       onClick={() => handleTemplateChange(tmpl.value)}
                       className={`p-2 rounded-lg text-left border transition ${
                         formTemplate === tmpl.value
-                          ? 'border-amber-500 bg-amber-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-amber-500 bg-amber-900/20'
+                          : 'border-v-border hover:border-v-border'
                       }`}
                     >
                       <span className={`text-xs px-2 py-0.5 rounded-full ${tmpl.color}`}>{tmpl.label}</span>
-                      <p className="text-xs text-gray-500 mt-1">{tmpl.desc}</p>
+                      <p className="text-xs text-v-text-secondary mt-1">{tmpl.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -435,7 +435,7 @@ export default function MarketingPage() {
 
               {/* Audience Segment */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Audience'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Audience'}</label>
                 <div className="grid grid-cols-2 gap-2">
                   {SEGMENTS.map(s => (
                     <button
@@ -444,12 +444,12 @@ export default function MarketingPage() {
                       onClick={() => setFormSegment(s.value)}
                       className={`p-2 rounded-lg text-left border transition ${
                         formSegment === s.value
-                          ? 'border-amber-500 bg-amber-50'
-                          : 'border-gray-200 hover:border-gray-300'
+                          ? 'border-amber-500 bg-amber-900/20'
+                          : 'border-v-border hover:border-v-border'
                       }`}
                     >
-                      <p className="text-sm font-medium text-gray-900">{s.label}</p>
-                      <p className="text-xs text-gray-500">{s.desc}</p>
+                      <p className="text-sm font-medium text-v-text-primary">{s.label}</p>
+                      <p className="text-xs text-v-text-secondary">{s.desc}</p>
                     </button>
                   ))}
                 </div>
@@ -457,43 +457,43 @@ export default function MarketingPage() {
 
               {/* Subject */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Email Subject'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Email Subject'}</label>
                 <input
                   type="text"
                   value={formSubject}
                   onChange={e => setFormSubject(e.target.value)}
                   placeholder="e.g. Exclusive 10% Off Your Next Detail!"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                  className="w-full border border-v-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                 />
               </div>
 
               {/* Content */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Email Content'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Email Content'}</label>
                 <textarea
                   value={formContent}
                   onChange={e => setFormContent(e.target.value)}
                   rows={8}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none"
+                  className="w-full border border-v-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none"
                 />
-                <p className="text-xs text-gray-400 mt-1">{'Your company info and unsubscribe link will be added automatically.'}</p>
+                <p className="text-xs text-v-text-secondary mt-1">{'Your company info and unsubscribe link will be added automatically.'}</p>
               </div>
 
               {/* Schedule */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">{'Schedule Send (optional)'}</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Schedule Send (optional)'}</label>
                 <input
                   type="datetime-local"
                   value={formSchedule}
                   onChange={e => setFormSchedule(e.target.value)}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                  className="w-full border border-v-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                 />
-                <p className="text-xs text-gray-400 mt-1">{'Leave empty to save as draft and send manually.'}</p>
+                <p className="text-xs text-v-text-secondary mt-1">{'Leave empty to save as draft and send manually.'}</p>
               </div>
             </div>
 
             <div className="flex gap-2 mt-6">
-              <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50 text-sm">
+              <button onClick={() => setShowCreate(false)} className="flex-1 px-4 py-2 border rounded-lg text-v-text-secondary hover:bg-white/5 text-sm">
                 {'Cancel'}
               </button>
               <button
@@ -511,70 +511,70 @@ export default function MarketingPage() {
       {/* Campaign Detail Modal */}
       {showDetail && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setShowDetail(null)}>
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl my-8" onClick={e => e.stopPropagation()}>
+          <div className="bg-v-surface rounded-xl max-w-lg w-full p-6 shadow-xl my-8" onClick={e => e.stopPropagation()}>
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h2 className="text-lg font-bold text-gray-900">{showDetail.name}</h2>
-                <p className="text-sm text-gray-500">{formatDate(showDetail.created_at)}</p>
+                <h2 className="text-lg font-bold text-v-text-primary">{showDetail.name}</h2>
+                <p className="text-sm text-v-text-secondary">{formatDate(showDetail.created_at)}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${STATUS_COLORS[showDetail.status] || STATUS_COLORS.draft}`}>
                   {(showDetail.status || 'draft').toUpperCase()}
                 </span>
-                <button onClick={() => setShowDetail(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+                <button onClick={() => setShowDetail(null)} className="text-v-text-secondary hover:text-v-text-secondary text-xl">&times;</button>
               </div>
             </div>
 
             {/* Details */}
             <div className="space-y-3 mb-4">
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 w-20">{'Type'}:</span>
+                <span className="text-sm text-v-text-secondary w-20">{'Type'}:</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full ${
-                  TEMPLATES.find(tmpl => tmpl.value === showDetail.template_type)?.color || 'bg-gray-100 text-gray-600'
+                  TEMPLATES.find(tmpl => tmpl.value === showDetail.template_type)?.color || 'bg-v-charcoal text-v-text-secondary'
                 }`}>
                   {showDetail.template_type || 'promotional'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 w-20">{'Audience'}:</span>
-                <span className="text-sm font-medium text-gray-900">
+                <span className="text-sm text-v-text-secondary w-20">{'Audience'}:</span>
+                <span className="text-sm font-medium text-v-text-primary">
                   {SEGMENTS.find(s => s.value === showDetail.segment)?.label || 'All Customers'}
                 </span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500 w-20">{'Subject'}:</span>
-                <span className="text-sm font-medium text-gray-900">{showDetail.subject}</span>
+                <span className="text-sm text-v-text-secondary w-20">{'Subject'}:</span>
+                <span className="text-sm font-medium text-v-text-primary">{showDetail.subject}</span>
               </div>
               {showDetail.recipient_count > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 w-20">{'recipients'}:</span>
-                  <span className="text-sm text-gray-900">{showDetail.recipient_count}</span>
+                  <span className="text-sm text-v-text-secondary w-20">{'recipients'}:</span>
+                  <span className="text-sm text-v-text-primary">{showDetail.recipient_count}</span>
                 </div>
               )}
               {showDetail.sent_count > 0 && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 w-20">{'Sent'}:</span>
+                  <span className="text-sm text-v-text-secondary w-20">{'Sent'}:</span>
                   <span className="text-sm text-green-600 font-medium">{showDetail.sent_count}</span>
                 </div>
               )}
               {showDetail.sent_at && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 w-20">{'Sent at'}:</span>
-                  <span className="text-sm text-gray-900">{formatDate(showDetail.sent_at)}</span>
+                  <span className="text-sm text-v-text-secondary w-20">{'Sent at'}:</span>
+                  <span className="text-sm text-v-text-primary">{formatDate(showDetail.sent_at)}</span>
                 </div>
               )}
               {showDetail.scheduled_at && showDetail.status === 'scheduled' && (
                 <div className="flex items-center gap-2">
-                  <span className="text-sm text-gray-500 w-20">{'Scheduled'}:</span>
+                  <span className="text-sm text-v-text-secondary w-20">{'Scheduled'}:</span>
                   <span className="text-sm text-blue-600 font-medium">{formatDate(showDetail.scheduled_at)}</span>
                 </div>
               )}
             </div>
 
             {/* Content Preview */}
-            <div className="bg-gray-50 rounded-lg p-4 mb-4">
-              <p className="text-xs text-gray-400 uppercase mb-2">{'Email Preview'}</p>
-              <div className="text-sm text-gray-700 whitespace-pre-line">{showDetail.content}</div>
+            <div className="bg-v-charcoal rounded-lg p-4 mb-4">
+              <p className="text-xs text-v-text-secondary uppercase mb-2">{'Email Preview'}</p>
+              <div className="text-sm text-v-text-secondary whitespace-pre-line">{showDetail.content}</div>
             </div>
 
             {/* Actions */}
@@ -590,13 +590,13 @@ export default function MarketingPage() {
               )}
               <button
                 onClick={() => duplicateCampaign(showDetail)}
-                className="flex-1 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100"
+                className="flex-1 px-4 py-2 bg-blue-900/20 text-blue-700 rounded-lg text-sm font-medium hover:bg-blue-100"
               >
                 {'Duplicate'}
               </button>
               <button
                 onClick={() => { deleteCampaign(showDetail); }}
-                className="px-4 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100"
+                className="px-4 py-2 bg-red-900/20 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100"
               >
                 {'Delete'}
               </button>

@@ -4,14 +4,14 @@ import { useRouter } from 'next/navigation';
 import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 
 const statusColors = {
-  draft: 'bg-gray-100 text-gray-700',
-  sent: 'bg-blue-100 text-blue-700',
-  viewed: 'bg-amber-100 text-amber-700',
-  paid: 'bg-green-100 text-green-700',
-  approved: 'bg-green-100 text-green-700',
-  completed: 'bg-purple-100 text-purple-700',
-  expired: 'bg-red-100 text-red-700',
-  scheduled: 'bg-indigo-100 text-indigo-700',
+  draft: 'bg-v-charcoal text-v-text-secondary',
+  sent: 'bg-blue-900/30 text-blue-400',
+  viewed: 'bg-amber-900/30 text-amber-400',
+  paid: 'bg-green-900/30 text-green-400',
+  approved: 'bg-green-900/30 text-green-400',
+  completed: 'bg-purple-900/30 text-purple-400',
+  expired: 'bg-red-900/30 text-red-400',
+  scheduled: 'bg-indigo-900/30 text-indigo-400',
 };
 
 export default function RecurringPage() {
@@ -156,7 +156,7 @@ export default function RecurringPage() {
   };
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
         <div className="flex items-center space-x-3">
@@ -193,7 +193,7 @@ export default function RecurringPage() {
             onClick={() => { setFilter(f); setLoading(true); }}
             className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-colors ${
               filter === f
-                ? 'bg-amber-500 text-white'
+                ? 'bg-amber-900/200 text-white'
                 : 'bg-white/10 text-white/70 hover:bg-white/20'
             }`}
           >
@@ -204,7 +204,7 @@ export default function RecurringPage() {
 
       {/* Upcoming This Week */}
       {upcomingThisWeek.length > 0 && (
-        <div className="bg-amber-500/20 border border-amber-500/30 rounded-lg p-4 mb-4">
+        <div className="bg-amber-900/200/20 border border-amber-500/30 rounded-lg p-4 mb-4">
           <h3 className="text-amber-300 font-medium text-sm mb-2">{'Upcoming This Week'}</h3>
           <div className="space-y-2">
             {upcomingThisWeek.map(r => (
@@ -225,7 +225,7 @@ export default function RecurringPage() {
       {loading ? (
         <div className="text-white text-center py-12">{'Loading recurring services...'}</div>
       ) : error ? (
-        <div className="bg-red-500/20 border border-red-500/50 rounded-lg p-4 text-red-200">{error}</div>
+        <div className="bg-red-900/200/20 border border-red-500/50 rounded-lg p-4 text-red-200">{error}</div>
       ) : recurring.length === 0 ? (
         <div className="bg-white/10 rounded-lg p-8 text-center">
           <p className="text-white/60 text-lg mb-2">{'No recurring services yet'}</p>
@@ -234,7 +234,7 @@ export default function RecurringPage() {
           </p>
           <a
             href="/dashboard"
-            className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium inline-block"
+            className="px-6 py-3 bg-amber-900/200 text-white rounded-lg hover:bg-amber-600 transition-colors font-medium inline-block"
           >
             {'Create a Quote'}
           </a>
@@ -242,21 +242,21 @@ export default function RecurringPage() {
       ) : (
         <div className="space-y-3">
           {recurring.map((item) => (
-            <div key={item.id} className="bg-white rounded-lg p-4">
+            <div key={item.id} className="bg-v-surface rounded-lg p-4">
               <div className="flex items-start justify-between mb-3">
                 <div>
-                  <h3 className="font-semibold text-gray-900">
+                  <h3 className="font-semibold text-v-text-primary">
                     {item.customer_name || item.client_name || 'Customer'}
                   </h3>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-v-text-secondary">
                     {item.aircraft_model || item.aircraft_type || 'Aircraft'}
                   </p>
                 </div>
                 <div className="flex items-center space-x-2">
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[item.status] || 'bg-gray-100 text-gray-700'}`}>
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${statusColors[item.status] || 'bg-v-charcoal text-v-text-secondary'}`}>
                     {item.status}
                   </span>
-                  <span className="text-lg font-bold text-gray-900">
+                  <span className="text-lg font-bold text-v-text-primary">
                     ${formatPrice(item.total_price)}
                   </span>
                 </div>
@@ -265,12 +265,12 @@ export default function RecurringPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                 {/* Interval */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">{'Frequency'}</label>
+                  <label className="block text-xs text-v-text-secondary mb-1">{'Frequency'}</label>
                   <select
                     value={item.recurring_interval || 'monthly'}
                     onChange={(e) => updateInterval(item.id, e.target.value)}
                     disabled={updating === item.id}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full px-2 py-1.5 border border-v-border rounded text-sm focus:ring-2 focus:ring-amber-500 outline-none"
                   >
                     <option value="weekly">{'Weekly'}</option>
                     <option value="biweekly">{'Every 2 weeks'}</option>
@@ -283,26 +283,26 @@ export default function RecurringPage() {
 
                 {/* Next Date */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">{'Next Service'}</label>
+                  <label className="block text-xs text-v-text-secondary mb-1">{'Next Service'}</label>
                   <input
                     type="date"
                     value={item.next_service_date || ''}
                     onChange={(e) => updateNextDate(item.id, e.target.value)}
                     disabled={updating === item.id}
-                    className="w-full px-2 py-1.5 border border-gray-300 rounded text-sm focus:ring-2 focus:ring-amber-500 outline-none"
+                    className="w-full px-2 py-1.5 border border-v-border rounded text-sm focus:ring-2 focus:ring-amber-500 outline-none"
                   />
                 </div>
 
                 {/* Toggle */}
                 <div>
-                  <label className="block text-xs text-gray-500 mb-1">{'Status'}</label>
+                  <label className="block text-xs text-v-text-secondary mb-1">{'Status'}</label>
                   <button
                     onClick={() => toggleEnabled(item.id, item.recurring_enabled)}
                     disabled={updating === item.id}
                     className={`w-full px-3 py-1.5 rounded text-sm font-medium transition-colors ${
                       item.recurring_enabled
-                        ? 'bg-green-100 text-green-700 hover:bg-green-200'
-                        : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                        ? 'bg-green-900/30 text-green-400 hover:bg-green-200'
+                        : 'bg-v-charcoal text-v-text-secondary hover:bg-v-charcoal'
                     }`}
                   >
                     {item.recurring_enabled ? 'Active' : 'Paused'}
@@ -310,7 +310,7 @@ export default function RecurringPage() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between text-xs text-gray-400">
+              <div className="flex items-center justify-between text-xs text-v-text-secondary">
                 <span>
                   {item.customer_email || item.client_email || 'No email'}
                   {item.customer_phone || item.client_phone ? ` | ${item.customer_phone || item.client_phone}` : ''}

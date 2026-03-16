@@ -77,7 +77,7 @@ export default function EmbedSettingsPage() {
   }
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex justify-between items-center mb-6 text-white">
         <div className="flex items-center space-x-4">
@@ -89,14 +89,14 @@ export default function EmbedSettingsPage() {
 
       <div className="max-w-4xl mx-auto space-y-6">
         {/* QR Code Section */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-v-surface rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">QR Code</h2>
-          <p className="text-gray-600 text-sm mb-4">
+          <p className="text-v-text-secondary text-sm mb-4">
             Print this QR code on business cards, flyers, or hangar signage. Customers scan to request a quote.
           </p>
 
           <div className="flex flex-col md:flex-row items-center gap-6">
-            <div className="bg-white p-4 border rounded-lg">
+            <div className="bg-v-surface p-4 border rounded-lg">
               <img
                 ref={qrRef}
                 src={qrCodeUrl}
@@ -106,24 +106,24 @@ export default function EmbedSettingsPage() {
             </div>
 
             <div className="flex-1 space-y-3">
-              <p className="text-sm text-gray-500">
-                Links to: <span className="font-mono text-xs bg-gray-100 px-2 py-1 rounded">{directLink}</span>
+              <p className="text-sm text-v-text-secondary">
+                Links to: <span className="font-mono text-xs bg-v-charcoal px-2 py-1 rounded">{directLink}</span>
               </p>
               <div className="flex gap-2">
                 <button
                   onClick={downloadQR}
-                  className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
+                  className="px-4 py-2 bg-amber-900/200 text-white rounded hover:bg-amber-600"
                 >
                   {'Download'} PNG
                 </button>
                 <button
                   onClick={() => copyToClipboard(directLink, 'link')}
-                  className="px-4 py-2 border border-gray-300 rounded hover:bg-gray-50"
+                  className="px-4 py-2 border border-v-border rounded hover:bg-white/5"
                 >
                   {copied === 'link' ? 'Copied to clipboard' : 'Copy Link'}
                 </button>
               </div>
-              <p className="text-xs text-gray-400">
+              <p className="text-xs text-v-text-secondary">
                 Tip: Add this QR code to your invoice footer so customers can easily request their next detail.
               </p>
             </div>
@@ -131,9 +131,9 @@ export default function EmbedSettingsPage() {
         </div>
 
         {/* Chat Widget Section */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-v-surface rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Chat Widget</h2>
-          <p className="text-gray-600 text-sm mb-4">
+          <p className="text-v-text-secondary text-sm mb-4">
             Add an AI-powered quote widget to your website. It appears as a floating chat bubble.
           </p>
 
@@ -179,9 +179,9 @@ export default function EmbedSettingsPage() {
           </div>
 
           {/* Preview */}
-          <div className="bg-gray-100 rounded-lg p-4 mb-4">
-            <p className="text-xs text-gray-500 mb-2">Preview:</p>
-            <div className="relative h-24 bg-white rounded border">
+          <div className="bg-v-charcoal rounded-lg p-4 mb-4">
+            <p className="text-xs text-v-text-secondary mb-2">Preview:</p>
+            <div className="relative h-24 bg-v-surface rounded border">
               <div
                 className={`absolute bottom-2 ${widgetPosition === 'right' ? 'right-2' : 'left-2'} px-4 py-2 rounded-full text-white text-sm font-medium shadow-lg`}
                 style={{ backgroundColor: widgetColor }}
@@ -203,15 +203,15 @@ export default function EmbedSettingsPage() {
               {copied === 'widget' ? 'Copied to clipboard' : 'Copy'}
             </button>
           </div>
-          <p className="text-xs text-gray-500 mt-2">
+          <p className="text-xs text-v-text-secondary mt-2">
             Paste this code before the closing <code>&lt;/body&gt;</code> tag on your website.
           </p>
         </div>
 
         {/* iFrame Embed Section */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-v-surface rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Embedded Form (iFrame)</h2>
-          <p className="text-gray-600 text-sm mb-4">
+          <p className="text-v-text-secondary text-sm mb-4">
             Embed a full quote request form directly into a page on your website.
           </p>
 
@@ -229,9 +229,9 @@ export default function EmbedSettingsPage() {
         </div>
 
         {/* Direct Link Section */}
-        <div className="bg-white rounded-lg shadow p-6">
+        <div className="bg-v-surface rounded-lg shadow p-6">
           <h2 className="text-lg font-semibold mb-4">Direct Link</h2>
-          <p className="text-gray-600 text-sm mb-4">
+          <p className="text-v-text-secondary text-sm mb-4">
             Share this link in emails, social media, or anywhere else.
           </p>
 
@@ -240,11 +240,11 @@ export default function EmbedSettingsPage() {
               type="text"
               readOnly
               value={directLink}
-              className="flex-1 bg-gray-100 border rounded px-3 py-2 font-mono text-sm"
+              className="flex-1 bg-v-charcoal border rounded px-3 py-2 font-mono text-sm"
             />
             <button
               onClick={() => copyToClipboard(directLink, 'direct')}
-              className="px-4 py-2 bg-amber-500 text-white rounded hover:bg-amber-600"
+              className="px-4 py-2 bg-amber-900/200 text-white rounded hover:bg-amber-600"
             >
               {copied === 'direct' ? 'Copied to clipboard' : 'Copy'}
             </button>
@@ -252,7 +252,7 @@ export default function EmbedSettingsPage() {
         </div>
 
         {/* Usage Tips */}
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
+        <div className="bg-blue-900/20 border border-blue-200 rounded-lg p-6">
           <h3 className="font-semibold text-blue-900 mb-2">Tips for Getting More Leads</h3>
           <ul className="text-sm text-blue-800 space-y-2">
             <li>&#8226; Add the QR code to your business cards and leave them at FBOs</li>

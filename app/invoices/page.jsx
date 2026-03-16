@@ -3,10 +3,10 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
 const statusColors = {
-  paid: 'bg-green-100 text-green-700',
-  unpaid: 'bg-amber-100 text-amber-700',
-  overdue: 'bg-red-100 text-red-700',
-  void: 'bg-gray-100 text-gray-500',
+  paid: 'bg-green-900/30 text-green-400',
+  unpaid: 'bg-amber-900/30 text-amber-400',
+  overdue: 'bg-red-900/30 text-red-400',
+  void: 'bg-v-charcoal text-v-text-secondary',
 };
 
 function formatCurrency(val) {
@@ -209,7 +209,7 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
   };
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
         <div className="flex items-center gap-3">
@@ -222,7 +222,7 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
               key={f}
               onClick={() => setFilter(f)}
               className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                filter === f ? 'bg-amber-500 text-white' : 'bg-white/10 text-white hover:bg-white/20'
+                filter === f ? 'bg-amber-900/200 text-white' : 'bg-white/10 text-white hover:bg-white/20'
               }`}
             >
               {filterLabels[f]}
@@ -239,16 +239,16 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
 
       {/* Summary */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-4">
-        <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">{'Total Invoices'}</p>
-          <p className="text-xl font-bold text-gray-900">{invoices.length}</p>
+        <div className="bg-v-surface rounded-lg p-3 shadow">
+          <p className="text-v-text-secondary text-xs">{'Total Invoices'}</p>
+          <p className="text-xl font-bold text-v-text-primary">{invoices.length}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">{'Outstanding'}</p>
+        <div className="bg-v-surface rounded-lg p-3 shadow">
+          <p className="text-v-text-secondary text-xs">{'Outstanding'}</p>
           <p className="text-xl font-bold text-amber-600">{formatCurrency(totalUnpaid)}</p>
         </div>
-        <div className="bg-white rounded-lg p-3 shadow">
-          <p className="text-gray-500 text-xs">{'Collected'}</p>
+        <div className="bg-v-surface rounded-lg p-3 shadow">
+          <p className="text-v-text-secondary text-xs">{'Collected'}</p>
           <p className="text-xl font-bold text-green-600">{formatCurrency(totalPaid)}</p>
         </div>
       </div>
@@ -265,40 +265,40 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
       {!loading && (
         <div className="space-y-2">
           {filtered.length === 0 ? (
-            <div className="bg-white rounded-lg p-8 text-center shadow">
-              <p className="text-gray-500">{'No invoices yet. Create one from a completed job.'}</p>
+            <div className="bg-v-surface rounded-lg p-8 text-center shadow">
+              <p className="text-v-text-secondary">{'No invoices yet. Create one from a completed job.'}</p>
             </div>
           ) : (
             filtered.map(inv => (
               <div
                 key={inv.id}
-                className="bg-white rounded-lg p-4 shadow hover:shadow-md transition-shadow cursor-pointer"
+                className="bg-v-surface rounded-lg p-4 shadow hover:shadow-md transition-shadow cursor-pointer"
                 onClick={() => setViewInvoice(inv)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-bold text-gray-900">{inv.invoice_number}</span>
+                      <span className="font-bold text-v-text-primary">{inv.invoice_number}</span>
                       <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[inv.status] || statusColors.unpaid}`}>
                         {inv.status || 'Unpaid'}
                       </span>
                     </div>
-                    <p className="text-sm text-gray-600 mt-0.5">
+                    <p className="text-sm text-v-text-secondary mt-0.5">
                       {inv.customer_name || 'Customer'}
                       {inv.aircraft ? ` \u00B7 ${inv.aircraft}` : ''}
                     </p>
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-v-text-secondary">
                       {new Date(inv.created_at).toLocaleDateString()}
                       {inv.emailed_at ? ` \u00B7 ${'Emailed'}` : ''}
                       {inv.payment_method ? ` \u00B7 ${inv.payment_method}` : ''}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-lg font-bold text-gray-900">{formatCurrency(inv.total)}</p>
+                    <p className="text-lg font-bold text-v-text-primary">{formatCurrency(inv.total)}</p>
                     <div className="flex gap-1 mt-1">
                       <button
                         onClick={(e) => { e.stopPropagation(); downloadPDF(inv); }}
-                        className="text-xs px-2 py-1 bg-gray-100 rounded hover:bg-gray-200 text-gray-600"
+                        className="text-xs px-2 py-1 bg-v-charcoal rounded hover:bg-v-charcoal text-v-text-secondary"
                         title={'Download PDF'}
                       >
                         {'PDF'}
@@ -332,47 +332,47 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
       {/* View Invoice Modal */}
       {viewInvoice && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto" onClick={() => setViewInvoice(null)}>
-          <div className="bg-white rounded-xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+          <div className="bg-v-surface rounded-xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-xl font-bold text-gray-900">{viewInvoice.invoice_number}</h2>
-                <p className="text-sm text-gray-500">{new Date(viewInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                <h2 className="text-xl font-bold text-v-text-primary">{viewInvoice.invoice_number}</h2>
+                <p className="text-sm text-v-text-secondary">{new Date(viewInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
               </div>
               <div className="flex items-center gap-2">
                 <span className={`text-xs px-3 py-1 rounded-full font-medium ${statusColors[viewInvoice.status] || statusColors.unpaid}`}>
                   {(viewInvoice.status || 'Unpaid').toUpperCase()}
                 </span>
-                <button onClick={() => setViewInvoice(null)} className="text-gray-400 hover:text-gray-600 text-xl">&times;</button>
+                <button onClick={() => setViewInvoice(null)} className="text-v-text-secondary hover:text-v-text-secondary text-xl">&times;</button>
               </div>
             </div>
 
             {/* From / To */}
-            <div className="grid grid-cols-2 gap-4 bg-gray-50 rounded-lg p-3 mb-4 text-sm">
+            <div className="grid grid-cols-2 gap-4 bg-v-charcoal rounded-lg p-3 mb-4 text-sm">
               <div>
-                <p className="text-xs text-gray-400 uppercase">{'From'}</p>
+                <p className="text-xs text-v-text-secondary uppercase">{'From'}</p>
                 <p className="font-semibold">{viewInvoice.detailer_company || viewInvoice.detailer_name}</p>
-                {viewInvoice.detailer_email && <p className="text-gray-500">{viewInvoice.detailer_email}</p>}
-                {viewInvoice.detailer_phone && <p className="text-gray-500">{viewInvoice.detailer_phone}</p>}
+                {viewInvoice.detailer_email && <p className="text-v-text-secondary">{viewInvoice.detailer_email}</p>}
+                {viewInvoice.detailer_phone && <p className="text-v-text-secondary">{viewInvoice.detailer_phone}</p>}
               </div>
               <div>
-                <p className="text-xs text-gray-400 uppercase">{'Bill To'}</p>
+                <p className="text-xs text-v-text-secondary uppercase">{'Bill To'}</p>
                 <p className="font-semibold">{viewInvoice.customer_name || 'Customer'}</p>
-                {viewInvoice.customer_company && <p className="text-gray-500">{viewInvoice.customer_company}</p>}
-                {viewInvoice.customer_email && <p className="text-gray-500">{viewInvoice.customer_email}</p>}
+                {viewInvoice.customer_company && <p className="text-v-text-secondary">{viewInvoice.customer_company}</p>}
+                {viewInvoice.customer_email && <p className="text-v-text-secondary">{viewInvoice.customer_email}</p>}
               </div>
             </div>
 
-            {viewInvoice.aircraft && <p className="text-sm text-gray-600 mb-1">{'Aircraft'}: <strong>{viewInvoice.aircraft}</strong>{viewInvoice.tail_number ? ` (${viewInvoice.tail_number})` : ''}</p>}
-            {viewInvoice.airport && <p className="text-sm text-gray-600 mb-3">{'Airport'}: <strong>{viewInvoice.airport}</strong></p>}
+            {viewInvoice.aircraft && <p className="text-sm text-v-text-secondary mb-1">{'Aircraft'}: <strong>{viewInvoice.aircraft}</strong>{viewInvoice.tail_number ? ` (${viewInvoice.tail_number})` : ''}</p>}
+            {viewInvoice.airport && <p className="text-sm text-v-text-secondary mb-3">{'Airport'}: <strong>{viewInvoice.airport}</strong></p>}
 
             {/* Line items */}
             {(viewInvoice.line_items || []).length > 0 && (
               <div className="border rounded-lg overflow-hidden mb-3">
                 <table className="w-full text-sm">
-                  <thead className="bg-gray-50">
+                  <thead className="bg-v-charcoal">
                     <tr>
-                      <th className="text-left px-3 py-2 text-gray-500 text-xs uppercase">{'Services'}</th>
-                      <th className="text-right px-3 py-2 text-gray-500 text-xs uppercase">{'Amount'}</th>
+                      <th className="text-left px-3 py-2 text-v-text-secondary text-xs uppercase">{'Services'}</th>
+                      <th className="text-right px-3 py-2 text-v-text-secondary text-xs uppercase">{'Amount'}</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -391,7 +391,7 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
             {(viewInvoice.addon_fees || []).length > 0 && (
               <div className="space-y-1 mb-3">
                 {viewInvoice.addon_fees.map((a, i) => (
-                  <div key={i} className="flex justify-between text-sm text-gray-500">
+                  <div key={i} className="flex justify-between text-sm text-v-text-secondary">
                     <span>{a.name}</span>
                     <span>{formatCurrency(a.calculated || a.amount || 0)}</span>
                   </div>
@@ -402,7 +402,7 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
             {/* Fee + Total */}
             <div className="border-t-2 border-[#1e3a5f] pt-3">
               {viewInvoice.platform_fee > 0 && (
-                <div className="flex justify-between text-sm text-gray-400 mb-1">
+                <div className="flex justify-between text-sm text-v-text-secondary mb-1">
                   <span>{'Platform fee'} ({(viewInvoice.platform_fee_rate * 100).toFixed(0)}%)</span>
                   <span>{formatCurrency(viewInvoice.platform_fee)}</span>
                 </div>
@@ -414,18 +414,18 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
             </div>
 
             {viewInvoice.notes && (
-              <div className="mt-3 p-3 bg-amber-50 rounded-lg border border-amber-200 text-sm text-amber-800">
+              <div className="mt-3 p-3 bg-amber-900/20 rounded-lg border border-amber-200 text-sm text-amber-800">
                 <strong>{'Notes'}:</strong> {viewInvoice.notes}
               </div>
             )}
 
             {viewInvoice.payment_method && (
-              <p className="text-sm text-gray-500 mt-2">{'Payment method'}: {viewInvoice.payment_method}</p>
+              <p className="text-sm text-v-text-secondary mt-2">{'Payment method'}: {viewInvoice.payment_method}</p>
             )}
 
             {/* Actions */}
             <div className="flex gap-2 mt-4 flex-wrap">
-              <button onClick={() => downloadPDF(viewInvoice)} className="px-4 py-2 bg-gray-100 rounded-lg text-sm font-medium hover:bg-gray-200">
+              <button onClick={() => downloadPDF(viewInvoice)} className="px-4 py-2 bg-v-charcoal rounded-lg text-sm font-medium hover:bg-v-charcoal">
                 {'Download PDF'}
               </button>
               <button
@@ -451,9 +451,9 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
       {/* Mark Paid Modal */}
       {markPaidModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setMarkPaidModal(null)}>
-          <div className="bg-white rounded-xl max-w-sm w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-v-surface rounded-xl max-w-sm w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-3">{'Mark as Paid'}</h3>
-            <p className="text-sm text-gray-600 mb-3">{markPaidModal.invoice_number} &mdash; {formatCurrency(markPaidModal.total)}</p>
+            <p className="text-sm text-v-text-secondary mb-3">{markPaidModal.invoice_number} &mdash; {formatCurrency(markPaidModal.total)}</p>
             <label className="block text-sm font-medium mb-1">{'Payment method'}</label>
             <div className="flex gap-2 mb-4">
               {['cash', 'check', 'wire', 'other'].map(m => (
@@ -461,7 +461,7 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
                   key={m}
                   onClick={() => setPaymentMethod(m)}
                   className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
-                    paymentMethod === m ? 'bg-amber-500 text-white border-amber-500' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                    paymentMethod === m ? 'bg-amber-900/200 text-white border-amber-500' : 'bg-v-surface text-v-text-secondary border-v-border hover:bg-white/5'
                   }`}
                 >
                   {m === 'cash' ? 'Cash' : m === 'check' ? 'Check' : m === 'wire' ? 'Wire' : 'Other'}
@@ -469,7 +469,7 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
               ))}
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setMarkPaidModal(null)} className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50">{'Cancel'}</button>
+              <button onClick={() => setMarkPaidModal(null)} className="flex-1 px-4 py-2 border rounded-lg text-v-text-secondary hover:bg-white/5">{'Cancel'}</button>
               <button
                 onClick={markAsPaid}
                 disabled={actionLoading}
@@ -485,19 +485,19 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
       {/* Create Invoice Modal */}
       {createModal && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
-          <div className="bg-white rounded-xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+          <div className="bg-v-surface rounded-xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold mb-3">{'Create Invoice from Job'}</h3>
-            <p className="text-sm text-gray-600 mb-3">Select a paid or completed job to generate an invoice.</p>
+            <p className="text-sm text-v-text-secondary mb-3">Select a paid or completed job to generate an invoice.</p>
             {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
             {paidQuotes.length === 0 ? (
-              <p className="text-gray-400 text-center py-6">{'No paid jobs without invoices found.'}</p>
+              <p className="text-v-text-secondary text-center py-6">{'No paid jobs without invoices found.'}</p>
             ) : (
               <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
                 {paidQuotes.map(q => (
                   <label
                     key={q.id}
                     className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                      selectedQuoteId === q.id ? 'border-amber-500 bg-amber-50' : 'border-gray-200 hover:border-gray-300'
+                      selectedQuoteId === q.id ? 'border-amber-500 bg-amber-900/20' : 'border-v-border hover:border-v-border'
                     }`}
                   >
                     <div className="flex items-center gap-2">
@@ -511,16 +511,16 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
                       />
                       <div>
                         <p className="text-sm font-medium">{q.client_name || q.customer_name || 'Customer'}</p>
-                        <p className="text-xs text-gray-500">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &middot; {new Date(q.created_at).toLocaleDateString()}</p>
+                        <p className="text-xs text-v-text-secondary">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &middot; {new Date(q.created_at).toLocaleDateString()}</p>
                       </div>
                     </div>
-                    <span className="font-bold text-gray-900">{formatCurrency(q.total_price)}</span>
+                    <span className="font-bold text-v-text-primary">{formatCurrency(q.total_price)}</span>
                   </label>
                 ))}
               </div>
             )}
             <div className="flex gap-2">
-              <button onClick={() => setCreateModal(false)} className="flex-1 px-4 py-2 border rounded-lg text-gray-600 hover:bg-gray-50">{'Cancel'}</button>
+              <button onClick={() => setCreateModal(false)} className="flex-1 px-4 py-2 border rounded-lg text-v-text-secondary hover:bg-white/5">{'Cancel'}</button>
               <button
                 onClick={createInvoice}
                 disabled={!selectedQuoteId || actionLoading}

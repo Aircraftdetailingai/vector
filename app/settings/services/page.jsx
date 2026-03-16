@@ -519,11 +519,11 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="page-transition min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
       <header className="flex justify-between items-center mb-6 text-white">
         <div className="flex items-center space-x-4">
-          <a href="/settings" className="text-gray-400 hover:text-white">&larr; {'Settings'}</a>
+          <a href="/settings" className="text-v-text-secondary hover:text-white">&larr; {'Settings'}</a>
           <h1 className="text-2xl font-bold">{'Services'}</h1>
         </div>
         <a href="/dashboard" className="text-amber-400 hover:underline">{'Dashboard'}</a>
@@ -540,19 +540,19 @@ export default function ServicesPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
         {/* Left: Services */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-v-surface rounded-lg shadow-lg overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <div>
               <h2 className="text-lg font-semibold">{'Services'}</h2>
-              <p className="text-sm text-gray-500">Drag to packages on the right</p>
+              <p className="text-sm text-v-text-secondary">Drag to packages on the right</p>
             </div>
             <div className="flex gap-2">
               {services.length === 0 && (
-                <button onClick={importDefaults} disabled={saving} className="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-50">
+                <button onClick={importDefaults} disabled={saving} className="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-900/20">
                   Import Defaults
                 </button>
               )}
-              <button onClick={() => setShowServiceModal(true)} className="px-3 py-1.5 text-sm bg-amber-500 text-white rounded hover:bg-amber-600">
+              <button onClick={() => setShowServiceModal(true)} className="px-3 py-1.5 text-sm bg-amber-900/200 text-white rounded hover:bg-amber-600">
                 + Add
               </button>
             </div>
@@ -560,24 +560,24 @@ export default function ServicesPage() {
           <div className="p-4">
             {services.length === 0 ? (
               <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                <p className="text-gray-500 mb-2">No services yet</p>
+                <p className="text-v-text-secondary mb-2">No services yet</p>
                 <button onClick={importDefaults} className="text-amber-600 hover:underline">Import suggested services</button>
               </div>
             ) : (
               <div className="space-y-2">
                 {services.map((svc) => (
                   <div key={svc.id} draggable onDragStart={(e) => handleDragStart(e, svc)} onDragEnd={handleDragEnd}
-                    className={`flex items-center justify-between p-3 bg-gray-50 rounded-lg border cursor-grab hover:border-amber-400 hover:bg-amber-50 transition-all group ${draggedService?.id === svc.id ? 'opacity-50 border-amber-400' : ''}`}>
+                    className={`flex items-center justify-between p-3 bg-v-charcoal rounded-lg border cursor-grab hover:border-amber-400 hover:bg-amber-900/20 transition-all group ${draggedService?.id === svc.id ? 'opacity-50 border-amber-400' : ''}`}>
                     <div className="flex items-center gap-3">
                       <span className="text-gray-300 group-hover:text-amber-400">&#9776;</span>
                       <div>
                         <p className="font-medium">{svc.name}</p>
-                        {svc.description && <p className="text-xs text-gray-500">{svc.description}</p>}
-                        <p className="text-[10px] text-gray-400">
+                        {svc.description && <p className="text-xs text-v-text-secondary">{svc.description}</p>}
+                        <p className="text-[10px] text-v-text-secondary">
                           {HOURS_FIELD_OPTIONS[svc.hours_field] || 'Ext Wash (default)'}
                           {svc.default_hours > 0 && <span className="ml-1">&#183; {svc.default_hours}h default</span>}
                           {getServiceLinkCount(svc.id) > 0 && (
-                            <span className="ml-2 px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded text-[9px] font-medium">
+                            <span className="ml-2 px-1.5 py-0.5 bg-blue-900/30 text-blue-400 rounded text-[9px] font-medium">
                               {getServiceLinkCount(svc.id)} linked
                             </span>
                           )}
@@ -587,13 +587,13 @@ export default function ServicesPage() {
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <span className="text-lg font-bold text-amber-600">${svc.hourly_rate || 0}</span>
-                        <span className="text-xs text-gray-400">/hr</span>
+                        <span className="text-xs text-v-text-secondary">/hr</span>
                         {parseFloat(svc.product_cost_per_hour) > 0 && (
-                          <p className="text-[10px] text-gray-400">${svc.product_cost_per_hour} product/hr</p>
+                          <p className="text-[10px] text-v-text-secondary">${svc.product_cost_per_hour} product/hr</p>
                         )}
                       </div>
-                      <button onClick={() => openEditService(svc)} className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded">&#9998;</button>
-                      <button onClick={() => deleteService(svc)} className="p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded">&#128465;</button>
+                      <button onClick={() => openEditService(svc)} className="p-1.5 text-v-text-secondary hover:text-blue-600 hover:bg-blue-900/20 rounded">&#9998;</button>
+                      <button onClick={() => deleteService(svc)} className="p-1.5 text-v-text-secondary hover:text-red-600 hover:bg-red-900/20 rounded">&#128465;</button>
                     </div>
                   </div>
                 ))}
@@ -603,43 +603,43 @@ export default function ServicesPage() {
         </div>
 
         {/* Right: Packages */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden"
+        <div className="bg-v-surface rounded-lg shadow-lg overflow-hidden"
           onDragOver={(e) => { e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; }}
           onDrop={handleDropOnArea}>
           <div className="p-4 border-b flex justify-between items-center">
             <div>
               <h2 className="text-lg font-semibold">Packages</h2>
-              <p className="text-sm text-gray-500">
+              <p className="text-sm text-v-text-secondary">
                 {draggedService ? 'Drop service here!' : 'Bundle services with a discount'}
               </p>
             </div>
             <button
               onClick={() => { setNewPackage({ name: '', description: '', discount_percent: '', service_ids: [] }); setShowPackageBuilder(true); }}
               disabled={services.length === 0}
-              className="px-3 py-1.5 text-sm bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50">
+              className="px-3 py-1.5 text-sm bg-green-900/200 text-white rounded hover:bg-green-600 disabled:opacity-50">
               + Create
             </button>
           </div>
           <div className="p-4">
             {/* Package Builder */}
             {showPackageBuilder && (
-              <div className="mb-4 p-4 border-2 border-dashed border-green-400 rounded-lg bg-green-50">
+              <div className="mb-4 p-4 border-2 border-dashed border-green-400 rounded-lg bg-green-900/20">
                 <h3 className="font-medium mb-3">{'Create'} Package</h3>
                 <input type="text" placeholder="Package name (e.g., Quick Turn)" value={newPackage.name}
                   onChange={(e) => setNewPackage({ ...newPackage, name: e.target.value })} className="w-full border rounded px-3 py-2 mb-3" />
                 {/* Drop Zone */}
                 <div onDragOver={handleDragOverNew} onDragLeave={handleDragLeaveNew}
                   onDrop={(e) => { e.stopPropagation(); handleDropNew(e); }}
-                  className={`min-h-[100px] border-2 border-dashed rounded-lg p-3 mb-3 transition-colors ${dragOver === 'new' ? 'border-amber-500 bg-amber-50 scale-[1.02]' : 'border-gray-300'}`}>
+                  className={`min-h-[100px] border-2 border-dashed rounded-lg p-3 mb-3 transition-colors ${dragOver === 'new' ? 'border-amber-500 bg-amber-900/20 scale-[1.02]' : 'border-v-border'}`}>
                   {newPackage.service_ids.length === 0 ? (
-                    <p className="text-center text-gray-400 py-6">Drag services here</p>
+                    <p className="text-center text-v-text-secondary py-6">Drag services here</p>
                   ) : (
                     <div className="space-y-2">
                       {newPackage.service_ids.map(id => {
                         const svc = getServiceById(id);
                         return svc ? (
-                          <div key={id} className="flex justify-between items-center bg-white p-2 rounded border">
-                            <span>{svc.name} <span className="text-xs text-gray-400">(${svc.hourly_rate}/hr)</span></span>
+                          <div key={id} className="flex justify-between items-center bg-v-surface p-2 rounded border">
+                            <span>{svc.name} <span className="text-xs text-v-text-secondary">(${svc.hourly_rate}/hr)</span></span>
                             <button onClick={() => removeFromPackage(id)} className="text-red-500 hover:text-red-700">&times;</button>
                           </div>
                         ) : null;
@@ -655,14 +655,14 @@ export default function ServicesPage() {
                     <input type="number" placeholder="0" min="0" max="100" value={newPackage.discount_percent}
                       onChange={(e) => setNewPackage({ ...newPackage, discount_percent: e.target.value })}
                       className="w-full border rounded pl-3 pr-8 py-2" />
-                    <span className="absolute right-3 top-2 text-gray-400">%</span>
-                    <span className="text-[10px] text-gray-400 mt-0.5 block text-center">discount</span>
+                    <span className="absolute right-3 top-2 text-v-text-secondary">%</span>
+                    <span className="text-[10px] text-v-text-secondary mt-0.5 block text-center">discount</span>
                   </div>
                 </div>
                 <div className="flex justify-end gap-2">
                   <button onClick={() => setShowPackageBuilder(false)} className="px-4 py-2 border rounded">{'Cancel'}</button>
                   <button onClick={addPackage} disabled={saving || !newPackage.name || newPackage.service_ids.length === 0}
-                    className="px-4 py-2 bg-green-500 text-white rounded disabled:opacity-50">{'Save'}</button>
+                    className="px-4 py-2 bg-green-900/200 text-white rounded disabled:opacity-50">{'Save'}</button>
                 </div>
               </div>
             )}
@@ -670,8 +670,8 @@ export default function ServicesPage() {
             {/* Existing Packages */}
             {packages.length === 0 && !showPackageBuilder ? (
               <div className="text-center py-12 border-2 border-dashed rounded-lg">
-                <p className="text-gray-500 mb-2">No packages yet</p>
-                <p className="text-sm text-gray-400">Create a package to bundle services</p>
+                <p className="text-v-text-secondary mb-2">No packages yet</p>
+                <p className="text-sm text-v-text-secondary">Create a package to bundle services</p>
               </div>
             ) : (
               <div className="space-y-3">
@@ -689,12 +689,12 @@ export default function ServicesPage() {
                     <div className="flex justify-between items-start">
                       <div>
                         <h4 className="font-semibold text-green-800">{pkg.name}</h4>
-                        {pkg.description && <p className="text-sm text-gray-600">{pkg.description}</p>}
+                        {pkg.description && <p className="text-sm text-v-text-secondary">{pkg.description}</p>}
                         <div className="flex flex-wrap gap-1 mt-2">
                           {(pkg.service_ids || []).map(id => {
                             const svc = getServiceById(id);
                             return svc ? (
-                              <span key={id} className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded">{svc.name}</span>
+                              <span key={id} className="text-xs bg-green-900/30 text-green-400 px-2 py-0.5 rounded">{svc.name}</span>
                             ) : null;
                           })}
                         </div>
@@ -703,11 +703,11 @@ export default function ServicesPage() {
                         {(pkg.discount_percent || 0) > 0 ? (
                           <p className="text-xl font-bold text-green-600">{pkg.discount_percent}% off</p>
                         ) : (
-                          <p className="text-sm text-gray-400">No discount</p>
+                          <p className="text-sm text-v-text-secondary">No discount</p>
                         )}
                         <div className="flex gap-1 mt-1">
-                          <button onClick={() => setEditingPackage({ ...pkg })} className="p-1 text-gray-400 hover:text-blue-600">&#9998;</button>
-                          <button onClick={() => deletePackage(pkg)} className="p-1 text-gray-400 hover:text-red-600">&#128465;</button>
+                          <button onClick={() => setEditingPackage({ ...pkg })} className="p-1 text-v-text-secondary hover:text-blue-600">&#9998;</button>
+                          <button onClick={() => deletePackage(pkg)} className="p-1 text-v-text-secondary hover:text-red-600">&#128465;</button>
                         </div>
                       </div>
                     </div>
@@ -720,15 +720,15 @@ export default function ServicesPage() {
       </div>
 
       {/* Add-on Fees Section */}
-      <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div className="bg-v-surface rounded-lg shadow-lg overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center">
           <div>
             <h2 className="text-lg font-semibold">{'Add-on Fees'}</h2>
-            <p className="text-sm text-gray-500">Flat or percentage surcharges added on top of service pricing (hazmat, after-hours, rush, etc.)</p>
+            <p className="text-sm text-v-text-secondary">Flat or percentage surcharges added on top of service pricing (hazmat, after-hours, rush, etc.)</p>
           </div>
           <div className="flex gap-2">
             {addonFees.length === 0 && (
-              <button onClick={importDefaultAddons} disabled={saving} className="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-50">
+              <button onClick={importDefaultAddons} disabled={saving} className="px-3 py-1.5 text-sm border border-blue-500 text-blue-600 rounded hover:bg-blue-900/20">
                 Import Defaults
               </button>
             )}
@@ -740,7 +740,7 @@ export default function ServicesPage() {
         <div className="p-4">
           {addonFees.length === 0 ? (
             <div className="text-center py-12 border-2 border-dashed rounded-lg">
-              <p className="text-gray-500 mb-2">No add-on fees yet</p>
+              <p className="text-v-text-secondary mb-2">No add-on fees yet</p>
               <button onClick={importDefaultAddons} disabled={saving} className="text-orange-600 hover:underline">
                 Import suggested fees
               </button>
@@ -752,18 +752,18 @@ export default function ServicesPage() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h4 className="font-semibold text-orange-800">{fee.name}</h4>
-                      {fee.description && <p className="text-xs text-gray-600 mt-1">{fee.description}</p>}
+                      {fee.description && <p className="text-xs text-v-text-secondary mt-1">{fee.description}</p>}
                     </div>
                     <div className="flex gap-1">
-                      <button onClick={() => setEditingAddon({ ...fee })} className="p-1 text-gray-400 hover:text-blue-600">&#9998;</button>
-                      <button onClick={() => deleteAddonFee(fee)} className="p-1 text-gray-400 hover:text-red-600">&#128465;</button>
+                      <button onClick={() => setEditingAddon({ ...fee })} className="p-1 text-v-text-secondary hover:text-blue-600">&#9998;</button>
+                      <button onClick={() => deleteAddonFee(fee)} className="p-1 text-v-text-secondary hover:text-red-600">&#128465;</button>
                     </div>
                   </div>
                   <div className="mt-2">
                     <span className="text-xl font-bold text-orange-600">
                       {fee.fee_type === 'percent' ? `${fee.amount}%` : `${currencySymbol()}${fee.amount}`}
                     </span>
-                    <span className="text-xs text-gray-500 ml-2">
+                    <span className="text-xs text-v-text-secondary ml-2">
                       {fee.fee_type === 'percent' ? 'of subtotal' : 'flat fee'}
                     </span>
                   </div>
@@ -778,29 +778,29 @@ export default function ServicesPage() {
       {showServiceModal && (
         <Modal onClose={() => { setShowServiceModal(false); setError(''); }}>
           <h3 className="text-lg font-semibold mb-4">{'Add'} {'Services'}</h3>
-          {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+          {error && <div className="mb-4 p-3 bg-red-900/20 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Name'} *</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Name'} *</label>
               <input type="text" value={newService.name} onChange={(e) => setNewService({ ...newService, name: e.target.value })}
                 placeholder="e.g., Full Interior Detail" className="w-full border rounded-lg px-3 py-2" autoFocus />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Description'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Description'}</label>
               <textarea value={newService.description} onChange={(e) => setNewService({ ...newService, description: e.target.value })}
                 placeholder="What's included?" rows={2} className="w-full border rounded-lg px-3 py-2 resize-y min-h-[60px]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate *</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Hourly Rate *</label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                <span className="absolute left-3 top-2.5 text-v-text-secondary">$</span>
                 <input type="number" value={newService.hourly_rate} onChange={(e) => setNewService({ ...newService, hourly_rate: e.target.value })}
                   placeholder="120" className="w-full border rounded-lg pl-7 pr-12 py-2" />
-                <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
+                <span className="absolute right-3 top-2.5 text-v-text-secondary">/hr</span>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Aircraft Hours Field</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Aircraft Hours Field</label>
               <select value={newService.hours_field || 'ext_wash_hours'}
                 onChange={(e) => setNewService({ ...newService, hours_field: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2">
@@ -808,28 +808,28 @@ export default function ServicesPage() {
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1">Which aircraft time estimate to use for this service</p>
+              <p className="text-xs text-v-text-secondary mt-1">Which aircraft time estimate to use for this service</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Default Hours</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Default Hours</label>
               <input type="number" step="0.5" min="0" value={newService.default_hours || ''} onChange={(e) => setNewService({ ...newService, default_hours: e.target.value })}
                 placeholder="Auto from aircraft" className="w-full border rounded-lg px-3 py-2" />
-              <p className="text-xs text-gray-400 mt-1">Override aircraft hours with a fixed default. Leave blank to auto-calculate from aircraft data.</p>
+              <p className="text-xs text-v-text-secondary mt-1">Override aircraft hours with a fixed default. Leave blank to auto-calculate from aircraft data.</p>
             </div>
             <div className="border-t pt-4">
-              <p className="text-sm font-medium text-gray-700 mb-3">Product Cost Tracking <span className="text-xs text-gray-400 font-normal">(internal only)</span></p>
+              <p className="text-sm font-medium text-v-text-secondary mb-3">Product Cost Tracking <span className="text-xs text-v-text-secondary font-normal">(internal only)</span></p>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Cost / Hour</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Product Cost / Hour</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                  <span className="absolute left-3 top-2.5 text-v-text-secondary">$</span>
                   <input type="number" step="0.01" value={newService.product_cost_per_hour} onChange={(e) => setNewService({ ...newService, product_cost_per_hour: e.target.value })}
                     placeholder="0.00" className="w-full border rounded-lg pl-7 pr-12 py-2" />
-                  <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
+                  <span className="absolute right-3 top-2.5 text-v-text-secondary">/hr</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Average product/material cost per hour of this service</p>
+                <p className="text-xs text-v-text-secondary mt-1">Average product/material cost per hour of this service</p>
               </div>
               <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Notes</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Product Notes</label>
                 <textarea value={newService.product_notes} onChange={(e) => setNewService({ ...newService, product_notes: e.target.value })}
                   placeholder="e.g., 1oz IronX, 2oz ceramic per hour" rows={2} className="w-full border rounded-lg px-3 py-2 resize-y min-h-[40px]" />
               </div>
@@ -838,7 +838,7 @@ export default function ServicesPage() {
           <div className="flex justify-end gap-3 mt-6">
             <button onClick={() => setShowServiceModal(false)} className="px-4 py-2 border rounded-lg">{'Cancel'}</button>
             <button onClick={addService} disabled={saving || !newService.name || !newService.hourly_rate}
-              className="px-4 py-2 bg-amber-500 text-white rounded-lg disabled:opacity-50">{'Add'}</button>
+              className="px-4 py-2 bg-amber-900/200 text-white rounded-lg disabled:opacity-50">{'Add'}</button>
           </div>
         </Modal>
       )}
@@ -847,29 +847,29 @@ export default function ServicesPage() {
       {editingService && (
         <Modal onClose={() => { setEditingService(null); setLinkedProducts([]); setLinkedEquipment([]); setError(''); }}>
           <h3 className="text-lg font-semibold mb-4">{'Edit'} {'Services'}</h3>
-          {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+          {error && <div className="mb-4 p-3 bg-red-900/20 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Name'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Name'}</label>
               <input type="text" value={editingService.name} onChange={(e) => setEditingService({ ...editingService, name: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Description'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Description'}</label>
               <textarea value={editingService.description || ''} onChange={(e) => setEditingService({ ...editingService, description: e.target.value })}
                 rows={2} className="w-full border rounded-lg px-3 py-2 resize-y min-h-[60px]" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Hourly Rate</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Hourly Rate</label>
               <div className="relative">
-                <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                <span className="absolute left-3 top-2.5 text-v-text-secondary">$</span>
                 <input type="number" value={editingService.hourly_rate || ''} onChange={(e) => setEditingService({ ...editingService, hourly_rate: e.target.value })}
                   className="w-full border rounded-lg pl-7 pr-12 py-2" />
-                <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
+                <span className="absolute right-3 top-2.5 text-v-text-secondary">/hr</span>
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Aircraft Hours Field</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Aircraft Hours Field</label>
               <select value={editingService.hours_field || 'ext_wash_hours'}
                 onChange={(e) => setEditingService({ ...editingService, hours_field: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2">
@@ -877,28 +877,28 @@ export default function ServicesPage() {
                   <option key={value} value={value}>{label}</option>
                 ))}
               </select>
-              <p className="text-xs text-gray-400 mt-1">Which aircraft time estimate to use for this service</p>
+              <p className="text-xs text-v-text-secondary mt-1">Which aircraft time estimate to use for this service</p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Default Hours</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Default Hours</label>
               <input type="number" step="0.5" min="0" value={editingService.default_hours || ''} onChange={(e) => setEditingService({ ...editingService, default_hours: e.target.value })}
                 placeholder="Auto from aircraft" className="w-full border rounded-lg px-3 py-2" />
-              <p className="text-xs text-gray-400 mt-1">Override aircraft hours with a fixed default. Leave blank to auto-calculate from aircraft data.</p>
+              <p className="text-xs text-v-text-secondary mt-1">Override aircraft hours with a fixed default. Leave blank to auto-calculate from aircraft data.</p>
             </div>
             <div className="border-t pt-4">
-              <p className="text-sm font-medium text-gray-700 mb-3">Product Cost Tracking <span className="text-xs text-gray-400 font-normal">(internal only)</span></p>
+              <p className="text-sm font-medium text-v-text-secondary mb-3">Product Cost Tracking <span className="text-xs text-v-text-secondary font-normal">(internal only)</span></p>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Cost / Hour</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Product Cost / Hour</label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2.5 text-gray-400">$</span>
+                  <span className="absolute left-3 top-2.5 text-v-text-secondary">$</span>
                   <input type="number" step="0.01" value={editingService.product_cost_per_hour || ''} onChange={(e) => setEditingService({ ...editingService, product_cost_per_hour: e.target.value })}
                     placeholder="0.00" className="w-full border rounded-lg pl-7 pr-12 py-2" />
-                  <span className="absolute right-3 top-2.5 text-gray-400">/hr</span>
+                  <span className="absolute right-3 top-2.5 text-v-text-secondary">/hr</span>
                 </div>
-                <p className="text-xs text-gray-400 mt-1">Average product/material cost per hour of this service</p>
+                <p className="text-xs text-v-text-secondary mt-1">Average product/material cost per hour of this service</p>
               </div>
               <div className="mt-3">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Product Notes</label>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Product Notes</label>
                 <textarea value={editingService.product_notes || ''} onChange={(e) => setEditingService({ ...editingService, product_notes: e.target.value })}
                   placeholder="e.g., 1oz IronX, 2oz ceramic per hour" rows={2} className="w-full border rounded-lg px-3 py-2 resize-y min-h-[40px]" />
               </div>
@@ -906,19 +906,19 @@ export default function ServicesPage() {
 
             {/* Linked Products Section */}
             <div className="border-t pt-4">
-              <p className="text-sm font-medium text-gray-700 mb-1">Products Needed</p>
-              <p className="text-xs text-gray-400 mb-3">Link inventory products to auto-populate on quotes and jobs</p>
+              <p className="text-sm font-medium text-v-text-secondary mb-1">Products Needed</p>
+              <p className="text-xs text-v-text-secondary mb-3">Link inventory products to auto-populate on quotes and jobs</p>
               {linkLoading ? (
-                <p className="text-xs text-gray-400 py-2">Loading links...</p>
+                <p className="text-xs text-v-text-secondary py-2">Loading links...</p>
               ) : (
                 <>
                   {linkedProducts.length > 0 && (
                     <div className="space-y-2 mb-3">
                       {linkedProducts.map(link => (
-                        <div key={link.id} className="flex items-center gap-2 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                        <div key={link.id} className="flex items-center gap-2 p-2 bg-blue-900/20 rounded-lg border border-blue-200">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{link.products?.name}</p>
-                            <p className="text-[10px] text-gray-500">{link.products?.category} &middot; {currencySymbol()}{link.products?.cost_per_unit}/{link.products?.unit}</p>
+                            <p className="text-sm font-medium text-v-text-primary truncate">{link.products?.name}</p>
+                            <p className="text-[10px] text-v-text-secondary">{link.products?.category} &middot; {currencySymbol()}{link.products?.cost_per_unit}/{link.products?.unit}</p>
                           </div>
                           <div className="flex items-center gap-1">
                             <input
@@ -933,7 +933,7 @@ export default function ServicesPage() {
                               className="w-16 border rounded px-1.5 py-1 text-xs text-right"
                               title="Quantity per hour"
                             />
-                            <span className="text-[10px] text-gray-500">/hr</span>
+                            <span className="text-[10px] text-v-text-secondary">/hr</span>
                           </div>
                           <button onClick={() => removeProductLink(link.id)} className="text-red-400 hover:text-red-600 text-sm">&times;</button>
                         </div>
@@ -965,10 +965,10 @@ export default function ServicesPage() {
 
             {/* Linked Equipment Section */}
             <div className="border-t pt-4">
-              <p className="text-sm font-medium text-gray-700 mb-1">Tools / Equipment Needed</p>
-              <p className="text-xs text-gray-400 mb-3">Link tools your crew needs for this service</p>
+              <p className="text-sm font-medium text-v-text-secondary mb-1">Tools / Equipment Needed</p>
+              <p className="text-xs text-v-text-secondary mb-3">Link tools your crew needs for this service</p>
               {linkLoading ? (
-                <p className="text-xs text-gray-400 py-2">Loading links...</p>
+                <p className="text-xs text-v-text-secondary py-2">Loading links...</p>
               ) : (
                 <>
                   {linkedEquipment.length > 0 && (
@@ -976,8 +976,8 @@ export default function ServicesPage() {
                       {linkedEquipment.map(link => (
                         <div key={link.id} className="flex items-center gap-2 p-2 bg-purple-50 rounded-lg border border-purple-200">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{link.equipment?.name}</p>
-                            <p className="text-[10px] text-gray-500">{link.equipment?.brand} {link.equipment?.model}</p>
+                            <p className="text-sm font-medium text-v-text-primary truncate">{link.equipment?.name}</p>
+                            <p className="text-[10px] text-v-text-secondary">{link.equipment?.brand} {link.equipment?.model}</p>
                           </div>
                           <button onClick={() => removeEquipmentLink(link.id)} className="text-red-400 hover:text-red-600 text-sm">&times;</button>
                         </div>
@@ -1009,7 +1009,7 @@ export default function ServicesPage() {
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <button onClick={() => { setEditingService(null); setLinkedProducts([]); setLinkedEquipment([]); }} className="px-4 py-2 border rounded-lg">{'Cancel'}</button>
-            <button onClick={updateService} disabled={saving} className="px-4 py-2 bg-amber-500 text-white rounded-lg disabled:opacity-50">{'Save'}</button>
+            <button onClick={updateService} disabled={saving} className="px-4 py-2 bg-amber-900/200 text-white rounded-lg disabled:opacity-50">{'Save'}</button>
           </div>
         </Modal>
       )}
@@ -1030,8 +1030,8 @@ export default function ServicesPage() {
                 {(editingPackage.service_ids || []).map(id => {
                   const svc = getServiceById(id);
                   return svc ? (
-                    <div key={id} className="flex justify-between items-center bg-gray-50 p-2 rounded">
-                      <span>{svc.name} <span className="text-xs text-gray-400">(${svc.hourly_rate}/hr)</span></span>
+                    <div key={id} className="flex justify-between items-center bg-v-charcoal p-2 rounded">
+                      <span>{svc.name} <span className="text-xs text-v-text-secondary">(${svc.hourly_rate}/hr)</span></span>
                       <button onClick={() => setEditingPackage({ ...editingPackage, service_ids: editingPackage.service_ids.filter(sid => sid !== id) })}
                         className="text-red-500">&times;</button>
                     </div>
@@ -1052,19 +1052,19 @@ export default function ServicesPage() {
               </select>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Bundle Discount %</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Bundle Discount %</label>
               <div className="relative">
                 <input type="number" placeholder="0" min="0" max="100" value={editingPackage.discount_percent || ''}
                   onChange={(e) => setEditingPackage({ ...editingPackage, discount_percent: e.target.value })}
                   className="w-full border rounded-lg pr-8 px-3 py-2" />
-                <span className="absolute right-3 top-2.5 text-gray-400">%</span>
+                <span className="absolute right-3 top-2.5 text-v-text-secondary">%</span>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Package price = sum of service rates x aircraft hours, minus this discount</p>
+              <p className="text-xs text-v-text-secondary mt-1">Package price = sum of service rates x aircraft hours, minus this discount</p>
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <button onClick={() => setEditingPackage(null)} className="px-4 py-2 border rounded-lg">{'Cancel'}</button>
-            <button onClick={updatePackage} disabled={saving} className="px-4 py-2 bg-green-500 text-white rounded-lg disabled:opacity-50">{'Save'}</button>
+            <button onClick={updatePackage} disabled={saving} className="px-4 py-2 bg-green-900/200 text-white rounded-lg disabled:opacity-50">{'Save'}</button>
           </div>
         </Modal>
       )}
@@ -1073,25 +1073,25 @@ export default function ServicesPage() {
       {showAddonModal && (
         <Modal onClose={() => { setShowAddonModal(false); setError(''); }}>
           <h3 className="text-lg font-semibold mb-4">{'Add'}</h3>
-          {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+          {error && <div className="mb-4 p-3 bg-red-900/20 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Name'} *</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Name'} *</label>
               <input type="text" value={newAddon.name} onChange={(e) => setNewAddon({ ...newAddon, name: e.target.value })}
                 placeholder="e.g., After Hours" className="w-full border rounded-lg px-3 py-2" autoFocus />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Description'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Description'}</label>
               <input type="text" value={newAddon.description} onChange={(e) => setNewAddon({ ...newAddon, description: e.target.value })}
                 placeholder="Optional description" className="w-full border rounded-lg px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fee Type</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Fee Type</label>
               <div className="flex gap-2">
                 {['flat', 'percent'].map(t => (
                   <button key={t} type="button" onClick={() => setNewAddon({ ...newAddon, fee_type: t })}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      newAddon.fee_type === t ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      newAddon.fee_type === t ? 'bg-orange-500 text-white border-orange-500' : 'bg-v-surface text-v-text-secondary border-v-border hover:bg-white/5'
                     }`}>
                     {t === 'flat' ? 'Flat $' : 'Percent %'}
                   </button>
@@ -1099,13 +1099,13 @@ export default function ServicesPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Amount'} *</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Amount'} *</label>
               <div className="relative">
-                {newAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-gray-400">$</span>}
+                {newAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-v-text-secondary">$</span>}
                 <input type="number" value={newAddon.amount} onChange={(e) => setNewAddon({ ...newAddon, amount: e.target.value })}
                   placeholder={newAddon.fee_type === 'flat' ? '150' : '25'}
                   className={`w-full border rounded-lg py-2 ${newAddon.fee_type === 'flat' ? 'pl-7 pr-3' : 'pl-3 pr-8'}`} />
-                {newAddon.fee_type === 'percent' && <span className="absolute right-3 top-2.5 text-gray-400">%</span>}
+                {newAddon.fee_type === 'percent' && <span className="absolute right-3 top-2.5 text-v-text-secondary">%</span>}
               </div>
             </div>
           </div>
@@ -1121,25 +1121,25 @@ export default function ServicesPage() {
       {editingAddon && (
         <Modal onClose={() => { setEditingAddon(null); setError(''); }}>
           <h3 className="text-lg font-semibold mb-4">{'Edit'}</h3>
-          {error && <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
+          {error && <div className="mb-4 p-3 bg-red-900/20 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>}
           <div className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Name'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Name'}</label>
               <input type="text" value={editingAddon.name} onChange={(e) => setEditingAddon({ ...editingAddon, name: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Description'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Description'}</label>
               <input type="text" value={editingAddon.description || ''} onChange={(e) => setEditingAddon({ ...editingAddon, description: e.target.value })}
                 className="w-full border rounded-lg px-3 py-2" />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Fee Type</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Fee Type</label>
               <div className="flex gap-2">
                 {['flat', 'percent'].map(t => (
                   <button key={t} type="button" onClick={() => setEditingAddon({ ...editingAddon, fee_type: t })}
                     className={`flex-1 py-2 rounded-lg text-sm font-medium border transition-colors ${
-                      editingAddon.fee_type === t ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-gray-600 border-gray-300 hover:bg-gray-50'
+                      editingAddon.fee_type === t ? 'bg-orange-500 text-white border-orange-500' : 'bg-v-surface text-v-text-secondary border-v-border hover:bg-white/5'
                     }`}>
                     {t === 'flat' ? 'Flat $' : 'Percent %'}
                   </button>
@@ -1147,12 +1147,12 @@ export default function ServicesPage() {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">{'Amount'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Amount'}</label>
               <div className="relative">
-                {editingAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-gray-400">$</span>}
+                {editingAddon.fee_type === 'flat' && <span className="absolute left-3 top-2.5 text-v-text-secondary">$</span>}
                 <input type="number" value={editingAddon.amount || ''} onChange={(e) => setEditingAddon({ ...editingAddon, amount: e.target.value })}
                   className={`w-full border rounded-lg py-2 ${editingAddon.fee_type === 'flat' ? 'pl-7 pr-3' : 'pl-3 pr-8'}`} />
-                {editingAddon.fee_type === 'percent' && <span className="absolute right-3 top-2.5 text-gray-400">%</span>}
+                {editingAddon.fee_type === 'percent' && <span className="absolute right-3 top-2.5 text-v-text-secondary">%</span>}
               </div>
             </div>
           </div>
@@ -1169,7 +1169,7 @@ export default function ServicesPage() {
 function Modal({ children, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-      <div className="bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+      <div className="bg-v-surface rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
         {children}
       </div>
     </div>

@@ -37,18 +37,18 @@ const SCRIPT_TYPE_LABELS = {
 };
 
 const SCRIPT_TYPE_COLORS = {
-  cold_call: 'bg-blue-100 text-blue-700',
+  cold_call: 'bg-blue-900/30 text-blue-400',
   cold_walkin: 'bg-orange-100 text-orange-700',
-  email: 'bg-purple-100 text-purple-700',
+  email: 'bg-purple-900/30 text-purple-400',
   linkedin: 'bg-sky-100 text-sky-700',
-  follow_up: 'bg-amber-100 text-amber-700',
-  objection_handler: 'bg-red-100 text-red-700',
-  voicemail: 'bg-indigo-100 text-indigo-700',
+  follow_up: 'bg-amber-900/30 text-amber-400',
+  objection_handler: 'bg-red-900/30 text-red-400',
+  voicemail: 'bg-indigo-900/30 text-indigo-400',
   gatekeeper: 'bg-teal-100 text-teal-700',
   leave_behind: 'bg-emerald-100 text-emerald-700',
-  discovery: 'bg-cyan-100 text-cyan-700',
+  discovery: 'bg-cyan-900/30 text-cyan-400',
   proposal: 'bg-violet-100 text-violet-700',
-  general: 'bg-gray-100 text-gray-700',
+  general: 'bg-v-charcoal text-v-text-secondary',
 };
 
 const PROGRESS_STEPS = [
@@ -208,13 +208,13 @@ export default function SalesAssistantPage() {
   const selectedContactType = CONTACT_TYPES.find(ct => ct.value === contactType);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
+    <div className="min-h-screen bg-v-charcoal p-4">
       <header className="text-white flex items-center justify-between mb-6">
         <div className="flex items-center space-x-4">
           <a href="/growth" className="text-2xl hover:text-amber-400">&#8592;</a>
           <div>
             <h1 className="text-2xl font-bold">{'AI Sales Assistant'}</h1>
-            <p className="text-sm text-gray-400">{'Research prospects and generate personalized cold call, email, and LinkedIn scripts'}</p>
+            <p className="text-sm text-v-text-secondary">{'Research prospects and generate personalized cold call, email, and LinkedIn scripts'}</p>
           </div>
         </div>
         <button
@@ -231,9 +231,9 @@ export default function SalesAssistantPage() {
           <div className="space-y-4">
             <h2 className="text-white text-lg font-semibold">Past Generations</h2>
             {historyLoading ? (
-              <div className="text-gray-400 text-center py-8">{'Loading...'}</div>
+              <div className="text-v-text-secondary text-center py-8">{'Loading...'}</div>
             ) : history.length === 0 ? (
-              <div className="text-gray-400 text-center py-8">No saved scripts yet. Generate your first one!</div>
+              <div className="text-v-text-secondary text-center py-8">No saved scripts yet. Generate your first one!</div>
             ) : (
               history.map((item) => (
                 <button
@@ -247,11 +247,11 @@ export default function SalesAssistantPage() {
                         {item.company_name || item.customer_type}
                       </p>
                       {item.contact_name && (
-                        <p className="text-gray-400 text-sm">{item.contact_name}{item.contact_title ? ` - ${item.contact_title}` : ''}</p>
+                        <p className="text-v-text-secondary text-sm">{item.contact_name}{item.contact_title ? ` - ${item.contact_title}` : ''}</p>
                       )}
-                      <p className="text-gray-500 text-xs mt-1">{item.customer_type}</p>
+                      <p className="text-v-text-secondary text-xs mt-1">{item.customer_type}</p>
                     </div>
-                    <span className="text-gray-500 text-xs">
+                    <span className="text-v-text-secondary text-xs">
                       {new Date(item.created_at).toLocaleDateString()}
                     </span>
                   </div>
@@ -262,12 +262,12 @@ export default function SalesAssistantPage() {
         ) : (
           <>
             {/* Generator Form */}
-            <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+            <div className="bg-v-surface rounded-xl shadow-lg overflow-hidden mb-6">
               <div className="p-6 space-y-5">
 
                 {/* Company Name - Prominent */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Company'}</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Company'}</label>
                   <input
                     type="text"
                     value={companyName}
@@ -275,12 +275,12 @@ export default function SalesAssistantPage() {
                     placeholder="e.g., NetJets, Meridian Teterboro, Jet Aviation"
                     className="w-full border-2 border-indigo-200 rounded-lg px-4 py-3 text-lg focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-colors"
                   />
-                  <p className="text-xs text-gray-400 mt-1">AI will research the company, fleet, news, and decision makers</p>
+                  <p className="text-xs text-v-text-secondary mt-1">AI will research the company, fleet, news, and decision makers</p>
                 </div>
 
                 {/* Contact Type Selector */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">How are you reaching out? *</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-2">How are you reaching out? *</label>
                   <div className="grid grid-cols-2 md:grid-cols-5 gap-2">
                     {CONTACT_TYPES.map(ct => (
                       <button
@@ -288,12 +288,12 @@ export default function SalesAssistantPage() {
                         onClick={() => setContactType(ct.value)}
                         className={`p-3 rounded-lg border-2 text-left transition-all ${
                           contactType === ct.value
-                            ? 'border-amber-500 bg-amber-50'
-                            : 'border-gray-200 hover:border-gray-300 bg-white'
+                            ? 'border-amber-500 bg-amber-900/20'
+                            : 'border-v-border hover:border-v-border bg-v-surface'
                         }`}
                       >
-                        <p className={`text-sm font-medium ${contactType === ct.value ? 'text-amber-700' : 'text-gray-900'}`}>{ct.label}</p>
-                        <p className="text-[10px] text-gray-400 mt-0.5 leading-tight">{ct.description}</p>
+                        <p className={`text-sm font-medium ${contactType === ct.value ? 'text-amber-700' : 'text-v-text-primary'}`}>{ct.label}</p>
+                        <p className="text-[10px] text-v-text-secondary mt-0.5 leading-tight">{ct.description}</p>
                       </button>
                     ))}
                   </div>
@@ -301,7 +301,7 @@ export default function SalesAssistantPage() {
 
                 {/* Customer Type */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Type'} *</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Type'} *</label>
                   <select
                     value={customerType}
                     onChange={(e) => setCustomerType(e.target.value)}
@@ -316,7 +316,7 @@ export default function SalesAssistantPage() {
 
                 {/* Notes with Smart Prompts */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">{'Notes'} & Context</label>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Notes'} & Context</label>
                   <textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
@@ -330,16 +330,16 @@ export default function SalesAssistantPage() {
                 <div className="border rounded-lg overflow-hidden">
                   <button
                     onClick={() => setShowDetails(!showDetails)}
-                    className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 hover:bg-gray-100 transition-colors"
+                    className="w-full flex items-center justify-between px-4 py-3 bg-v-charcoal hover:bg-white/5 transition-colors"
                   >
-                    <span className="text-sm font-medium text-gray-700">Contact & Location Details</span>
-                    <span className="text-gray-400 text-sm">{showDetails ? '&#9650;' : '&#9660;'}</span>
+                    <span className="text-sm font-medium text-v-text-secondary">Contact & Location Details</span>
+                    <span className="text-v-text-secondary text-sm">{showDetails ? '&#9650;' : '&#9660;'}</span>
                   </button>
                   {showDetails && (
-                    <div className="p-4 space-y-4 border-t bg-gray-50/50">
+                    <div className="p-4 space-y-4 border-t bg-v-charcoal/50">
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Location / {'Airport'}</label>
+                          <label className="block text-sm font-medium text-v-text-secondary mb-1">Location / {'Airport'}</label>
                           <input
                             type="text"
                             value={location}
@@ -349,7 +349,7 @@ export default function SalesAssistantPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">{'Name'}</label>
+                          <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Name'}</label>
                           <input
                             type="text"
                             value={contactName}
@@ -359,7 +359,7 @@ export default function SalesAssistantPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Contact Title</label>
+                          <label className="block text-sm font-medium text-v-text-secondary mb-1">Contact Title</label>
                           <input
                             type="text"
                             value={contactTitle}
@@ -369,7 +369,7 @@ export default function SalesAssistantPage() {
                           />
                         </div>
                         <div>
-                          <label className="block text-sm font-medium text-gray-700 mb-1">Website URL</label>
+                          <label className="block text-sm font-medium text-v-text-secondary mb-1">Website URL</label>
                           <input
                             type="url"
                             value={websiteUrl}
@@ -379,7 +379,7 @@ export default function SalesAssistantPage() {
                           />
                         </div>
                         <div className="md:col-span-2">
-                          <label className="block text-sm font-medium text-gray-700 mb-1">LinkedIn URL</label>
+                          <label className="block text-sm font-medium text-v-text-secondary mb-1">LinkedIn URL</label>
                           <input
                             type="url"
                             value={linkedinUrl}
@@ -394,7 +394,7 @@ export default function SalesAssistantPage() {
                 </div>
 
                 {error && (
-                  <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
+                  <div className="p-3 bg-red-900/20 border border-red-200 rounded-lg text-red-700 text-sm">{error}</div>
                 )}
 
                 <button
@@ -426,9 +426,9 @@ export default function SalesAssistantPage() {
                       ) : i === progressStep ? (
                         <span className="text-amber-400 animate-pulse text-lg">&#9679;</span>
                       ) : (
-                        <span className="text-gray-600 text-lg">&#9675;</span>
+                        <span className="text-v-text-secondary text-lg">&#9675;</span>
                       )}
-                      <span className={`text-sm ${i <= progressStep ? 'text-white' : 'text-gray-500'}`}>
+                      <span className={`text-sm ${i <= progressStep ? 'text-white' : 'text-v-text-secondary'}`}>
                         {step}
                       </span>
                     </div>
@@ -439,7 +439,7 @@ export default function SalesAssistantPage() {
 
             {/* Company Intel Display */}
             {companyIntel && (
-              <div className="bg-white rounded-xl shadow-lg overflow-hidden mb-6">
+              <div className="bg-v-surface rounded-xl shadow-lg overflow-hidden mb-6">
                 <div className="p-4 bg-gradient-to-r from-indigo-600 to-purple-600">
                   <h3 className="text-white font-semibold flex items-center gap-2">
                     <span dangerouslySetInnerHTML={{ __html: '&#128202;' }} /> Company Intel
@@ -449,47 +449,47 @@ export default function SalesAssistantPage() {
                   {/* Structured intel fields */}
                   {companyIntel.fleet && (
                     <div className="mb-3">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Fleet</p>
-                      <p className="text-sm text-gray-900">{companyIntel.fleet}</p>
+                      <p className="text-xs font-semibold text-v-text-secondary uppercase tracking-wide">Fleet</p>
+                      <p className="text-sm text-v-text-primary">{companyIntel.fleet}</p>
                     </div>
                   )}
                   {companyIntel.locations && (
                     <div className="mb-3">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Based At</p>
-                      <p className="text-sm text-gray-900">{companyIntel.locations}</p>
+                      <p className="text-xs font-semibold text-v-text-secondary uppercase tracking-wide">Based At</p>
+                      <p className="text-sm text-v-text-primary">{companyIntel.locations}</p>
                     </div>
                   )}
                   {companyIntel.recent_news && (
                     <div className="mb-3">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Recent News</p>
-                      <p className="text-sm text-gray-900">{companyIntel.recent_news}</p>
+                      <p className="text-xs font-semibold text-v-text-secondary uppercase tracking-wide">Recent News</p>
+                      <p className="text-sm text-v-text-primary">{companyIntel.recent_news}</p>
                     </div>
                   )}
                   {companyIntel.decision_maker && (
                     <div className="mb-3">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Likely Decision Maker</p>
-                      <p className="text-sm text-gray-900">{companyIntel.decision_maker}</p>
+                      <p className="text-xs font-semibold text-v-text-secondary uppercase tracking-wide">Likely Decision Maker</p>
+                      <p className="text-sm text-v-text-primary">{companyIntel.decision_maker}</p>
                     </div>
                   )}
                   {companyIntel.opportunity_score && (
                     <div className="mb-3">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Opportunity Score</p>
+                      <p className="text-xs font-semibold text-v-text-secondary uppercase tracking-wide">Opportunity Score</p>
                       <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div className="flex-1 h-2 bg-v-charcoal rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full ${
-                              companyIntel.opportunity_score >= 8 ? 'bg-green-500' :
-                              companyIntel.opportunity_score >= 5 ? 'bg-amber-500' : 'bg-red-500'
+                              companyIntel.opportunity_score >= 8 ? 'bg-green-900/200' :
+                              companyIntel.opportunity_score >= 5 ? 'bg-amber-900/200' : 'bg-red-900/200'
                             }`}
                             style={{ width: `${companyIntel.opportunity_score * 10}%` }}
                           />
                         </div>
-                        <span className="text-sm font-bold text-gray-900">{companyIntel.opportunity_score}/10</span>
+                        <span className="text-sm font-bold text-v-text-primary">{companyIntel.opportunity_score}/10</span>
                       </div>
                     </div>
                   )}
                   {companyIntel.airport_info && (
-                    <div className="mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                    <div className="mb-3 p-3 bg-blue-900/20 rounded-lg border border-blue-200">
                       <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">Airport Intel</p>
                       <p className="text-sm text-blue-900">{companyIntel.airport_info}</p>
                     </div>
@@ -497,8 +497,8 @@ export default function SalesAssistantPage() {
                   {/* Full summary */}
                   {companyIntel.summary && (
                     <div className="mt-4 pt-4 border-t">
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Full Research Summary</p>
-                      <div className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">{companyIntel.summary}</div>
+                      <p className="text-xs font-semibold text-v-text-secondary uppercase tracking-wide mb-2">Full Research Summary</p>
+                      <div className="text-sm text-v-text-secondary leading-relaxed whitespace-pre-line">{companyIntel.summary}</div>
                     </div>
                   )}
                 </div>
@@ -512,25 +512,25 @@ export default function SalesAssistantPage() {
                   {selectedContactType ? `${selectedContactType.label} Scripts` : 'Generated Scripts'}
                 </h2>
                 {scripts.map((script, idx) => (
-                  <div key={idx} className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  <div key={idx} className="bg-v-surface rounded-xl shadow-lg overflow-hidden">
                     <div className="p-4 border-b flex justify-between items-center">
                       <div className="flex items-center gap-3">
                         <span className={`text-xs px-2 py-1 rounded-full font-medium ${SCRIPT_TYPE_COLORS[script.type] || SCRIPT_TYPE_COLORS.general}`}>
                           {SCRIPT_TYPE_LABELS[script.type] || script.type}
                         </span>
-                        <h3 className="font-semibold text-gray-900">{script.title}</h3>
+                        <h3 className="font-semibold text-v-text-primary">{script.title}</h3>
                       </div>
                       <button
                         onClick={() => copyScript(script.content, idx)}
-                        className="px-3 py-1.5 text-sm border rounded-lg hover:bg-gray-50 transition-colors"
+                        className="px-3 py-1.5 text-sm border rounded-lg hover:bg-white/5 transition-colors"
                       >
                         {copied === idx ? '&#10003; Copied' : 'Copy'}
                       </button>
                     </div>
                     <div className="p-4">
-                      <div className="whitespace-pre-line text-gray-800 text-sm leading-relaxed">{script.content}</div>
+                      <div className="whitespace-pre-line text-v-text-primary text-sm leading-relaxed">{script.content}</div>
                       {script.tips && (
-                        <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                        <div className="mt-4 p-3 bg-amber-900/20 rounded-lg border border-amber-200">
                           <p className="text-xs font-medium text-amber-800 mb-1">Tips</p>
                           <p className="text-sm text-amber-700">{script.tips}</p>
                         </div>
