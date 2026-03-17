@@ -1,5 +1,6 @@
 import { getAuthUser } from '@/lib/auth';
 import { createClient } from '@supabase/supabase-js';
+import { sendCustomerIntroEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -10,7 +11,7 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-// GET - Check onboarding status
+// GET - Check onboarding status (expanded for resume support)
 export async function GET(request) {
   try {
     const user = await getAuthUser(request);
@@ -21,7 +22,7 @@ export async function GET(request) {
 
     const { data } = await supabase
       .from('detailers')
-      .select('onboarding_complete, onboarding_step, company, name, phone')
+      .select('onboarding_complete, onboarding_step, company, name, phone, country, home_airport, logo_url, theme_primary, theme_colors, portal_theme')
       .eq('id', user.id)
       .single();
 
@@ -31,6 +32,12 @@ export async function GET(request) {
       company: data?.company || '',
       name: data?.name || '',
       phone: data?.phone || '',
+      country: data?.country || '',
+      home_airport: data?.home_airport || '',
+      logo_url: data?.logo_url || null,
+      theme_primary: data?.theme_primary || '#C9A84C',
+      theme_colors: data?.theme_colors || [],
+      portal_theme: data?.portal_theme || 'dark',
     });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
@@ -49,7 +56,38 @@ export async function POST(request) {
     const body = await request.json();
     const { action } = body;
 
-    // Save company info
+    // Save business profile (Step 1)
+    if (action === 'save_profile') {
+      const { company, name, phone, country, home_airport, agreed_to_terms_at, terms_accepted_version } = body;
+      const updates = { onboarding_step: 1 };
+      if (company) updates.company = company;
+      if (name) updates.name = name;
+      if (phone) updates.phone = phone;
+      if (country) updates.country = country;
+      if (home_airport) updates.home_airport = home_airport;
+      if (agreed_to_terms_at) updates.agreed_to_terms_at = agreed_to_terms_at;
+      if (terms_accepted_version) updates.terms_accepted_version = terms_accepted_version;
+
+      // Column-stripping retry
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const { error: updateErr } = await supabase.from('detailers').update(updates).eq('id', user.id);
+        if (!updateErr) break;
+        const colMatch = updateErr.message?.match(/column "([^"]+)".*does not exist/)
+          || updateErr.message?.match(/Could not find the '([^']+)' column/);
+        if (colMatch) { delete updates[colMatch[1]]; continue; }
+        break;
+      }
+
+      const { data: updated } = await supabase
+        .from('detailers')
+        .select('id, email, name, company, phone, plan, status')
+        .eq('id', user.id)
+        .single();
+
+      return Response.json({ success: true, user: updated });
+    }
+
+    // Legacy: save_company (keep for backwards compat)
     if (action === 'save_company') {
       const { company, name, phone, agreed_to_terms_at, terms_accepted_version } = body;
       const updates = { onboarding_step: 2 };
@@ -66,7 +104,6 @@ export async function POST(request) {
         await supabase.from('detailers').update(updates).eq('id', user.id);
       }
 
-      // Update localStorage user
       const { data: updated } = await supabase
         .from('detailers')
         .select('id, email, name, company, phone, plan, status')
@@ -76,7 +113,7 @@ export async function POST(request) {
       return Response.json({ success: true, user: updated });
     }
 
-    // Save services
+    // Save services (Step 2)
     if (action === 'save_services') {
       const { services } = body;
       if (services && services.length > 0) {
@@ -87,16 +124,15 @@ export async function POST(request) {
           hourly_rate: parseFloat(svc.hourly_rate) || 0,
           hours_field: svc.hours_field || 'ext_wash_hours',
         }));
-
         await supabase.from('services').insert(toInsert);
       }
-      await supabase.from('detailers').update({ onboarding_step: 3 }).eq('id', user.id);
+      await supabase.from('detailers').update({ onboarding_step: 2 }).eq('id', user.id);
       return Response.json({ success: true });
     }
 
-    // Save rates
+    // Save rates (legacy)
     if (action === 'save_rates') {
-      const { rates } = body; // Array of { service_id, hourly_rate }
+      const { rates } = body;
       if (rates && rates.length > 0) {
         for (const r of rates) {
           await supabase
@@ -110,7 +146,7 @@ export async function POST(request) {
       return Response.json({ success: true });
     }
 
-    // Save preferences
+    // Save preferences (legacy)
     if (action === 'save_preferences') {
       const { minimum_fee, pass_fee_to_customer, preferred_language, preferred_currency } = body;
       const updates = { onboarding_step: 5 };
@@ -119,7 +155,6 @@ export async function POST(request) {
       if (preferred_language) updates.preferred_language = preferred_language;
       if (preferred_currency) updates.preferred_currency = preferred_currency;
 
-      // Use column-stripping retry for new columns
       const { error: updateErr } = await supabase.from('detailers').update(updates).eq('id', user.id);
       if (updateErr && updateErr.message?.includes('column')) {
         delete updates.preferred_language;
@@ -129,11 +164,46 @@ export async function POST(request) {
       return Response.json({ success: true });
     }
 
+    // Send customer invite email (Step 4)
+    if (action === 'send_customer_invite') {
+      const { email, name: customerName } = body;
+      if (!email) return Response.json({ error: 'Customer email required' }, { status: 400 });
+
+      // Create customer record
+      const normalizedEmail = email.toLowerCase().trim();
+      await supabase.from('customers').upsert({
+        detailer_id: user.id,
+        email: normalizedEmail,
+        name: customerName || '',
+      }, { onConflict: 'detailer_id,email' });
+
+      // Get detailer info for email
+      const { data: detailer } = await supabase
+        .from('detailers')
+        .select('id, email, name, company')
+        .eq('id', user.id)
+        .single();
+
+      // Send intro email
+      try {
+        await sendCustomerIntroEmail({
+          customerEmail: normalizedEmail,
+          customerName: customerName || '',
+          detailer,
+        });
+      } catch (e) {
+        console.error('Customer intro email error:', e);
+      }
+
+      await supabase.from('detailers').update({ onboarding_step: 4 }).eq('id', user.id);
+      return Response.json({ success: true });
+    }
+
     // Complete onboarding
     if (action === 'complete') {
       await supabase
         .from('detailers')
-        .update({ onboarding_complete: true, onboarding_step: 6 })
+        .update({ onboarding_complete: true, onboarding_step: 5 })
         .eq('id', user.id);
 
       // Award 50 points

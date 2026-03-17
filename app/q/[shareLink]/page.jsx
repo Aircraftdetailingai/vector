@@ -68,12 +68,18 @@ export default function QuoteViewPage() {
   useEffect(() => {
     if (!detailer) return;
     const s = document.documentElement.style;
+    const isLight = detailer.portal_theme === 'light';
     s.setProperty('--brand-primary', detailer.theme_primary || '#C9A84C');
     s.setProperty('--brand-accent', detailer.theme_accent || '#0D1B2A');
-    s.setProperty('--brand-bg', detailer.theme_bg || '#0A0E17');
-    s.setProperty('--brand-surface', detailer.theme_surface || '#111827');
+    s.setProperty('--brand-bg', isLight ? '#FFFFFF' : (detailer.theme_bg || '#0A0E17'));
+    s.setProperty('--brand-surface', isLight ? '#F3F4F6' : (detailer.theme_surface || '#111827'));
+    s.setProperty('--brand-text', isLight ? '#1F2937' : '#F5F5F5');
+    s.setProperty('--brand-text-secondary', isLight ? '#6B7280' : '#8A9BB0');
+    s.setProperty('--brand-border', isLight ? '#E5E7EB' : '#1A2236');
+    s.setProperty('--brand-border-strong', isLight ? '#D1D5DB' : '#2A3A50');
+    s.setProperty('--brand-btn-text', isLight ? '#FFFFFF' : (detailer.theme_bg || '#0A0E17'));
     return () => {
-      ['--brand-primary', '--brand-accent', '--brand-bg', '--brand-surface'].forEach(v => s.removeProperty(v));
+      ['--brand-primary', '--brand-accent', '--brand-bg', '--brand-surface', '--brand-text', '--brand-text-secondary', '--brand-border', '--brand-border-strong', '--brand-btn-text'].forEach(v => s.removeProperty(v));
     };
   }, [detailer]);
 
@@ -261,7 +267,7 @@ export default function QuoteViewPage() {
       <div className="min-h-screen flex items-center justify-center bg-[var(--brand-bg,#0A0E17)]">
         <div className="text-center">
           <div className="w-8 h-8 border-2 border-[var(--brand-primary,#C9A84C)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-[#8A9BB0] text-sm tracking-widest uppercase">Loading</p>
+          <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm tracking-widest uppercase">Loading</p>
         </div>
       </div>
     );
@@ -273,9 +279,9 @@ export default function QuoteViewPage() {
       <div className="min-h-screen flex items-center justify-center bg-[var(--brand-bg,#0A0E17)] p-4">
         <div className="bg-[var(--brand-surface,#111827)] w-full max-w-[640px] rounded-[4px] p-10 text-center">
           <div className="w-12 h-[1px] bg-[var(--brand-primary,#C9A84C)] mx-auto mb-8" />
-          <p className="text-[#8A9BB0] text-xs tracking-[0.2em] uppercase mb-3">Error</p>
-          <h1 className="font-heading text-2xl font-light text-[#F5F5F5] mb-3" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>Quote Not Found</h1>
-          <p className="text-[#8A9BB0] text-sm">This quote link may be invalid or has been removed.</p>
+          <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-xs tracking-[0.2em] uppercase mb-3">Error</p>
+          <h1 className="font-heading text-2xl font-light text-[var(--brand-text,#F5F5F5)] mb-3" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>Quote Not Found</h1>
+          <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm">This quote link may be invalid or has been removed.</p>
         </div>
       </div>
     );
@@ -291,35 +297,35 @@ export default function QuoteViewPage() {
         <div className="bg-[var(--brand-surface,#111827)] w-full max-w-[640px] rounded-[4px] p-10">
           {/* Header */}
           <div className="text-center mb-10">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-2">Quote</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Quote</p>
             <div className="w-12 h-[1px] bg-[var(--brand-primary,#C9A84C)] mx-auto mb-6" />
-            <p className="text-[#8A9BB0] text-xs tracking-[0.2em] uppercase mb-6">Expired</p>
-            <p className="text-[#8A9BB0] text-sm">
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-xs tracking-[0.2em] uppercase mb-6">Expired</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm">
               This quote expired on {formatDate(quote.valid_until)}.
             </p>
           </div>
 
           {!requestSent ? (
             <>
-              <p className="text-[#8A9BB0] text-sm text-center mb-6">Would you like to request an updated quote?</p>
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm text-center mb-6">Would you like to request an updated quote?</p>
               <button
                 onClick={handleRequestNewQuote}
                 disabled={paymentLoading}
-                className="w-full py-4 bg-[var(--brand-primary,#C9A84C)] text-[#0A0E17] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-50 transition-colors"
+                className="w-full py-4 bg-[var(--brand-primary,#C9A84C)] text-[var(--brand-btn-text,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-50 transition-colors"
               >
                 {paymentLoading ? 'Requesting...' : 'Request New Quote'}
               </button>
             </>
           ) : (
-            <div className="border border-[#2A3A50] p-6 text-center">
+            <div className="border border-[var(--brand-border-strong,#2A3A50)] p-6 text-center">
               <p className="text-[var(--brand-primary,#C9A84C)] text-sm tracking-[0.15em] uppercase mb-1">Request Sent</p>
-              <p className="text-[#8A9BB0] text-sm">{detailer?.company || 'The detailer'} will send you an updated quote soon.</p>
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm">{detailer?.company || 'The detailer'} will send you an updated quote soon.</p>
             </div>
           )}
 
           {detailer && (
-            <div className="mt-8 pt-6 border-t border-[#1A2236] text-center">
-              <p className="text-[#8A9BB0] text-xs tracking-[0.15em] uppercase mb-3">Or contact directly</p>
+            <div className="mt-8 pt-6 border-t border-[var(--brand-border,#1A2236)] text-center">
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-xs tracking-[0.15em] uppercase mb-3">Or contact directly</p>
               <div className="flex justify-center gap-6 text-sm">
                 {detailer.phone && <a href={`tel:${detailer.phone}`} className="text-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.phone}</a>}
                 {detailer.email && <a href={`mailto:${detailer.email}`} className="text-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.email}</a>}
@@ -328,7 +334,7 @@ export default function QuoteViewPage() {
           )}
         </div>
 
-        <p className="text-[#8A9BB0]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
+        <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
       </div>
     );
   }
@@ -356,17 +362,17 @@ export default function QuoteViewPage() {
         <div className="bg-[var(--brand-surface,#111827)] w-full max-w-[640px] rounded-[4px] px-8 py-10 sm:px-10">
           {/* Header */}
           <div className="text-center mb-8">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-2">Next Step</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Next Step</p>
             <div className="w-12 h-[1px] bg-[var(--brand-primary,#C9A84C)] mx-auto mb-4" />
-            <h2 className="text-[#F5F5F5] text-xl font-light tracking-wide" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>Schedule Your Service</h2>
-            <p className="text-[#8A9BB0] text-sm mt-2">Pick a date that works for you</p>
+            <h2 className="text-[var(--brand-text,#F5F5F5)] text-xl font-light tracking-wide" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>Schedule Your Service</h2>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm mt-2">Pick a date that works for you</p>
           </div>
 
           {/* Aircraft summary */}
-          <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#1A2236]">
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-[var(--brand-border,#1A2236)]">
             <div>
-              <p className="text-[#F5F5F5] text-sm font-medium">{quote.aircraft_model || quote.aircraft_type}</p>
-              {quote.tail_number && <p className="text-[#8A9BB0] text-xs font-mono">{quote.tail_number}</p>}
+              <p className="text-[var(--brand-text,#F5F5F5)] text-sm font-medium">{quote.aircraft_model || quote.aircraft_type}</p>
+              {quote.tail_number && <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-xs font-mono">{quote.tail_number}</p>}
             </div>
             <p className="text-[var(--brand-primary,#C9A84C)] text-lg font-light">{sym}{formatPrice(quote.total_price)}</p>
           </div>
@@ -380,11 +386,11 @@ export default function QuoteViewPage() {
             <div className="mb-8">
               {/* Month navigation */}
               <div className="flex items-center justify-between mb-4">
-                <button onClick={prevMonth} className="text-[#8A9BB0] hover:text-[#F5F5F5] p-2 transition-colors">
+                <button onClick={prevMonth} className="text-[var(--brand-text-secondary,#8A9BB0)] hover:text-[var(--brand-text,#F5F5F5)] p-2 transition-colors">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path d="M15 19l-7-7 7-7" /></svg>
                 </button>
-                <p className="text-[#F5F5F5] text-sm tracking-[0.15em] uppercase">{monthLabel}</p>
-                <button onClick={nextMonth} className="text-[#8A9BB0] hover:text-[#F5F5F5] p-2 transition-colors">
+                <p className="text-[var(--brand-text,#F5F5F5)] text-sm tracking-[0.15em] uppercase">{monthLabel}</p>
+                <button onClick={nextMonth} className="text-[var(--brand-text-secondary,#8A9BB0)] hover:text-[var(--brand-text,#F5F5F5)] p-2 transition-colors">
                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path d="M9 5l7 7-7 7" /></svg>
                 </button>
               </div>
@@ -392,7 +398,7 @@ export default function QuoteViewPage() {
               {/* Day headers */}
               <div className="grid grid-cols-7 gap-1 mb-2">
                 {['S','M','T','W','T','F','S'].map((d, i) => (
-                  <div key={i} className="text-center text-[10px] text-[#8A9BB0]/60 uppercase tracking-wider py-1">{d}</div>
+                  <div key={i} className="text-center text-[10px] text-[var(--brand-text-secondary,#8A9BB0)]/60 uppercase tracking-wider py-1">{d}</div>
                 ))}
               </div>
 
@@ -410,10 +416,10 @@ export default function QuoteViewPage() {
                       className={`
                         aspect-square flex items-center justify-center rounded-sm text-sm transition-all relative
                         ${isSelected
-                          ? 'bg-[var(--brand-primary,#C9A84C)] text-[#0A0E17] font-medium'
+                          ? 'bg-[var(--brand-primary,#C9A84C)] text-[var(--brand-btn-text,#0A0E17)] font-medium'
                           : cell.available
-                            ? 'text-[#F5F5F5] hover:bg-[var(--brand-primary,#C9A84C)]/20 border border-[#2A3A50] hover:border-[var(--brand-primary,#C9A84C)]'
-                            : 'text-[#8A9BB0]/25 cursor-not-allowed'
+                            ? 'text-[var(--brand-text,#F5F5F5)] hover:bg-[var(--brand-primary,#C9A84C)]/20 border border-[var(--brand-border-strong,#2A3A50)] hover:border-[var(--brand-primary,#C9A84C)]'
+                            : 'text-[var(--brand-text-secondary,#8A9BB0)]/25 cursor-not-allowed'
                         }
                       `}
                     >
@@ -425,7 +431,7 @@ export default function QuoteViewPage() {
               </div>
 
               {availableDates.length === 0 && !availabilityLoading && (
-                <p className="text-[#8A9BB0] text-sm text-center mt-4">No available dates found. Please contact us directly.</p>
+                <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm text-center mt-4">No available dates found. Please contact us directly.</p>
               )}
             </div>
           )}
@@ -433,7 +439,7 @@ export default function QuoteViewPage() {
           {/* Selected date display */}
           {selectedDate && (
             <div className="border border-[var(--brand-primary,#C9A84C)]/30 bg-[var(--brand-primary,#C9A84C)]/5 p-4 mb-6 text-center rounded-sm">
-              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-1">Selected Date</p>
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-1">Selected Date</p>
               <p className="text-[var(--brand-primary,#C9A84C)] text-lg font-light">
                 {new Date(selectedDate + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
@@ -442,7 +448,7 @@ export default function QuoteViewPage() {
 
           {/* Time preference */}
           <div className="mb-6">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Time Preference</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Time Preference</p>
             <div className="grid grid-cols-3 gap-2">
               {['Morning', 'Afternoon', 'No preference'].map(opt => (
                 <button
@@ -451,7 +457,7 @@ export default function QuoteViewPage() {
                   className={`py-2.5 text-xs tracking-[0.1em] uppercase border rounded-sm transition-colors ${
                     timePreference === opt
                       ? 'border-[var(--brand-primary,#C9A84C)] text-[var(--brand-primary,#C9A84C)] bg-[var(--brand-primary,#C9A84C)]/10'
-                      : 'border-[#2A3A50] text-[#8A9BB0] hover:border-[#8A9BB0]'
+                      : 'border-[var(--brand-border-strong,#2A3A50)] text-[var(--brand-text-secondary,#8A9BB0)] hover:border-[#8A9BB0]'
                   }`}
                 >
                   {opt}
@@ -462,13 +468,13 @@ export default function QuoteViewPage() {
 
           {/* Special instructions */}
           <div className="mb-6">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Special Instructions <span className="normal-case tracking-normal">(optional)</span></p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Special Instructions <span className="normal-case tracking-normal">(optional)</span></p>
             <textarea
               value={schedulingNotes}
               onChange={(e) => setSchedulingNotes(e.target.value)}
               placeholder="Access details, gate codes, special requests..."
               rows={3}
-              className="w-full bg-transparent border border-[#2A3A50] text-[#F5F5F5] text-sm p-3 rounded-sm placeholder:text-[#8A9BB0]/40 focus:border-[var(--brand-primary,#C9A84C)] focus:outline-none transition-colors resize-none"
+              className="w-full bg-transparent border border-[var(--brand-border-strong,#2A3A50)] text-[var(--brand-text,#F5F5F5)] text-sm p-3 rounded-sm placeholder:text-[var(--brand-text-secondary,#8A9BB0)]/40 focus:border-[var(--brand-primary,#C9A84C)] focus:outline-none transition-colors resize-none"
             />
           </div>
 
@@ -483,7 +489,7 @@ export default function QuoteViewPage() {
           <button
             onClick={handleSchedule}
             disabled={!selectedDate || schedulingLoading}
-            className="w-full py-4 bg-[var(--brand-primary,#C9A84C)] text-[#0A0E17] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-all"
+            className="w-full py-4 bg-[var(--brand-primary,#C9A84C)] text-[var(--brand-btn-text,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-all"
           >
             {schedulingLoading ? 'Scheduling...' : 'Confirm Schedule'}
           </button>
@@ -491,15 +497,15 @@ export default function QuoteViewPage() {
           {/* Skip */}
           <button
             onClick={() => setSkipScheduling(true)}
-            className="w-full py-3 text-[#8A9BB0]/60 text-xs tracking-[0.15em] uppercase hover:text-[#8A9BB0] transition-colors mt-2"
+            className="w-full py-3 text-[var(--brand-text-secondary,#8A9BB0)]/60 text-xs tracking-[0.15em] uppercase hover:text-[var(--brand-text-secondary,#8A9BB0)] transition-colors mt-2"
           >
             Skip for now
           </button>
 
           {/* Contact */}
           {detailer && (detailer.phone || detailer.email) && (
-            <div className="mt-6 pt-6 border-t border-[#1A2236] text-center">
-              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Need help?</p>
+            <div className="mt-6 pt-6 border-t border-[var(--brand-border,#1A2236)] text-center">
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Need help?</p>
               <div className="flex justify-center gap-6 text-sm">
                 {detailer.phone && <a href={`tel:${detailer.phone}`} className="text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.phone}</a>}
                 {detailer.email && <a href={`mailto:${detailer.email}`} className="text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.email}</a>}
@@ -507,7 +513,7 @@ export default function QuoteViewPage() {
             </div>
           )}
         </div>
-        <p className="text-[#8A9BB0]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
+        <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
       </div>
     );
   }
@@ -519,7 +525,7 @@ export default function QuoteViewPage() {
         <div className="bg-[var(--brand-surface,#111827)] w-full max-w-[640px] rounded-[4px] p-10">
           {/* Header */}
           <div className="text-center mb-10">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-2">Quote</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Quote</p>
             <div className="w-12 h-[1px] bg-[var(--brand-primary,#C9A84C)] mx-auto mb-6" />
             <p className="text-[var(--brand-primary,#C9A84C)] text-xs tracking-[0.2em] uppercase">Confirmed</p>
           </div>
@@ -527,54 +533,54 @@ export default function QuoteViewPage() {
           {/* Company */}
           {detailer && (
             <div className="text-center mb-8">
-              <h1 className="font-heading text-2xl font-light text-[#F5F5F5]" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>{detailer.company}</h1>
+              <h1 className="font-heading text-2xl font-light text-[var(--brand-text,#F5F5F5)]" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>{detailer.company}</h1>
             </div>
           )}
 
           {/* Scheduled Date */}
           {quote.scheduled_date && (
             <div className="border border-[var(--brand-primary,#C9A84C)]/30 bg-[var(--brand-primary,#C9A84C)]/5 p-6 mb-8 text-center rounded-sm">
-              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-1">Scheduled For</p>
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-1">Scheduled For</p>
               <p className="text-[var(--brand-primary,#C9A84C)] text-xl font-light">
                 {new Date(quote.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
               </p>
               {quote.time_preference && quote.time_preference !== 'No preference' && (
-                <p className="text-[#8A9BB0] text-xs mt-2">{quote.time_preference}</p>
+                <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-xs mt-2">{quote.time_preference}</p>
               )}
             </div>
           )}
 
           {/* Aircraft */}
           <div className="mb-8">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-1">Aircraft</p>
-            <p className="text-[#F5F5F5] text-[1.2rem]">{quote.aircraft_model || quote.aircraft_type}</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-1">Aircraft</p>
+            <p className="text-[var(--brand-text,#F5F5F5)] text-[1.2rem]">{quote.aircraft_model || quote.aircraft_type}</p>
             {quote.tail_number && (
               <>
-                <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mt-4 mb-1">Registration</p>
-                <p className="text-[#F5F5F5] font-mono">{quote.tail_number}</p>
+                <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mt-4 mb-1">Registration</p>
+                <p className="text-[var(--brand-text,#F5F5F5)] font-mono">{quote.tail_number}</p>
               </>
             )}
           </div>
 
           {/* Services */}
           <div className="mb-8">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Services</p>
-            <div className="divide-y divide-[#1A2236]">
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Services</p>
+            <div className="divide-y divide-[var(--brand-border,#1A2236)]">
               {services.map((svc, i) => (
                 <div key={i} className="flex justify-between py-3">
-                  <span className="text-[#F5F5F5] text-sm">{svc.name}</span>
-                  {svc.amount > 0 && <span className="text-[#8A9BB0] text-sm">{sym}{formatPrice(svc.amount)}</span>}
+                  <span className="text-[var(--brand-text,#F5F5F5)] text-sm">{svc.name}</span>
+                  {svc.amount > 0 && <span className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm">{sym}{formatPrice(svc.amount)}</span>}
                 </div>
               ))}
             </div>
           </div>
 
           {/* Total */}
-          <div className="border-t border-[#2A3A50] pt-6 mb-8 text-center">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-2">Total Paid</p>
+          <div className="border-t border-[var(--brand-border-strong,#2A3A50)] pt-6 mb-8 text-center">
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Total Paid</p>
             <p className="text-[var(--brand-primary,#C9A84C)] text-[2.5rem] font-light">{sym}{formatPrice(quote.total_price)}</p>
             {quote.paid_at && (
-              <p className="text-[#8A9BB0] text-xs mt-2">{formatDate(quote.paid_at)}</p>
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-xs mt-2">{formatDate(quote.paid_at)}</p>
             )}
           </div>
 
@@ -583,7 +589,7 @@ export default function QuoteViewPage() {
             href={`/api/quotes/${quote.id}/pdf?token=${params.shareLink}`}
             target="_blank"
             rel="noreferrer"
-            className="block w-full py-4 border border-[#2A3A50] text-[#8A9BB0] text-sm tracking-[0.2em] uppercase text-center hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors mb-4"
+            className="block w-full py-4 border border-[var(--brand-border-strong,#2A3A50)] text-[var(--brand-text-secondary,#8A9BB0)] text-sm tracking-[0.2em] uppercase text-center hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors mb-4"
           >
             Download PDF
           </a>
@@ -593,20 +599,20 @@ export default function QuoteViewPage() {
             <button
               onClick={handleSendTips}
               disabled={paymentLoading}
-              className="w-full py-4 border border-[#2A3A50] text-[#8A9BB0] text-sm tracking-[0.2em] uppercase hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] disabled:opacity-50 transition-colors"
+              className="w-full py-4 border border-[var(--brand-border-strong,#2A3A50)] text-[var(--brand-text-secondary,#8A9BB0)] text-sm tracking-[0.2em] uppercase hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] disabled:opacity-50 transition-colors"
             >
               {paymentLoading ? 'Sending...' : 'Send Me Preparation Tips'}
             </button>
           ) : (
-            <div className="border border-[#2A3A50] p-4 text-center">
+            <div className="border border-[var(--brand-border-strong,#2A3A50)] p-4 text-center">
               <p className="text-[var(--brand-primary,#C9A84C)] text-sm tracking-[0.15em] uppercase">Tips sent to your email</p>
             </div>
           )}
 
           {/* Contact */}
           {detailer && (
-            <div className="mt-8 pt-6 border-t border-[#1A2236] text-center">
-              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Questions</p>
+            <div className="mt-8 pt-6 border-t border-[var(--brand-border,#1A2236)] text-center">
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Questions</p>
               <div className="flex justify-center gap-6 text-sm">
                 {detailer.phone && <a href={`tel:${detailer.phone}`} className="text-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.phone}</a>}
                 {detailer.email && <a href={`mailto:${detailer.email}`} className="text-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.email}</a>}
@@ -615,7 +621,7 @@ export default function QuoteViewPage() {
           )}
         </div>
 
-        <p className="text-[#8A9BB0]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
+        <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
       </div>
     );
   }
@@ -637,9 +643,9 @@ export default function QuoteViewPage() {
       <div className="bg-[var(--brand-surface,#111827)] w-full max-w-[640px] rounded-[4px] px-8 py-10 sm:px-10">
         {/* Header */}
         <div className="text-center mb-10">
-          <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-2">Quote</p>
+          <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Quote</p>
           <div className="w-12 h-[1px] bg-[var(--brand-primary,#C9A84C)] mx-auto mb-4" />
-          <p className="text-[#8A9BB0]/60 text-xs font-mono">{quoteNumber}</p>
+          <p className="text-[var(--brand-text-secondary,#8A9BB0)]/60 text-xs font-mono">{quoteNumber}</p>
         </div>
 
         {/* Company / Logo */}
@@ -648,9 +654,9 @@ export default function QuoteViewPage() {
             {detailer.theme_logo_url ? (
               <img src={detailer.theme_logo_url} alt={detailer.company} className="h-10 mx-auto mb-3 object-contain" />
             ) : null}
-            <h1 className="font-heading text-3xl font-light text-[#F5F5F5] mb-1" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>{detailer.company}</h1>
+            <h1 className="font-heading text-3xl font-light text-[var(--brand-text,#F5F5F5)] mb-1" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>{detailer.company}</h1>
             {(detailer.phone || detailer.email) && (
-              <p className="text-[#8A9BB0]/60 text-xs">
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)]/60 text-xs">
                 {[detailer.phone, detailer.email].filter(Boolean).join(' \u00B7 ')}
               </p>
             )}
@@ -660,34 +666,34 @@ export default function QuoteViewPage() {
         {/* Aircraft + Tail */}
         <div className="grid grid-cols-2 gap-6 mb-8">
           <div>
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-1">Aircraft</p>
-            <p className="text-[#F5F5F5] text-[1.2rem]">{quote.aircraft_model || quote.aircraft_type}</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-1">Aircraft</p>
+            <p className="text-[var(--brand-text,#F5F5F5)] text-[1.2rem]">{quote.aircraft_model || quote.aircraft_type}</p>
           </div>
           {quote.tail_number && (
             <div>
-              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-1">Registration</p>
-              <p className="text-[#F5F5F5] text-[1.2rem] font-mono">{quote.tail_number}</p>
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-1">Registration</p>
+              <p className="text-[var(--brand-text,#F5F5F5)] text-[1.2rem] font-mono">{quote.tail_number}</p>
             </div>
           )}
           {quote.airport && (
             <div>
-              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-1">Location</p>
-              <p className="text-[#F5F5F5] text-[1.2rem] font-mono">{quote.airport}</p>
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-1">Location</p>
+              <p className="text-[var(--brand-text,#F5F5F5)] text-[1.2rem] font-mono">{quote.airport}</p>
             </div>
           )}
         </div>
 
         {/* Services */}
         <div className="mb-8">
-          <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Services</p>
+          <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Services</p>
 
           {/* Full breakdown */}
           {!quote.minimum_fee_applied && detailer?.quote_display_preference === 'full_breakdown' && services.length > 0 && (
-            <div className="divide-y divide-[#1A2236]">
+            <div className="divide-y divide-[var(--brand-border,#1A2236)]">
               {services.map((svc, i) => (
                 <div key={i} className="flex justify-between py-3">
-                  <span className="text-[#F5F5F5] text-sm">{svc.name}</span>
-                  {svc.amount > 0 && <span className="text-[#8A9BB0] text-sm">{sym}{formatPrice(svc.amount)}</span>}
+                  <span className="text-[var(--brand-text,#F5F5F5)] text-sm">{svc.name}</span>
+                  {svc.amount > 0 && <span className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm">{sym}{formatPrice(svc.amount)}</span>}
                 </div>
               ))}
             </div>
@@ -695,24 +701,24 @@ export default function QuoteViewPage() {
 
           {/* Labor/products split */}
           {!quote.minimum_fee_applied && detailer?.quote_display_preference === 'labor_products' && (
-            <div className="divide-y divide-[#1A2236]">
+            <div className="divide-y divide-[var(--brand-border,#1A2236)]">
               <div className="flex justify-between py-3">
-                <span className="text-[#F5F5F5] text-sm">Labor</span>
-                <span className="text-[#8A9BB0] text-sm">{sym}{formatPrice(parseFloat(quote.labor_total) || basePrice * 0.7)}</span>
+                <span className="text-[var(--brand-text,#F5F5F5)] text-sm">Labor</span>
+                <span className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm">{sym}{formatPrice(parseFloat(quote.labor_total) || basePrice * 0.7)}</span>
               </div>
               <div className="flex justify-between py-3">
-                <span className="text-[#F5F5F5] text-sm">Products & Materials</span>
-                <span className="text-[#8A9BB0] text-sm">{sym}{formatPrice(parseFloat(quote.products_total) || basePrice * 0.3)}</span>
+                <span className="text-[var(--brand-text,#F5F5F5)] text-sm">Products & Materials</span>
+                <span className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm">{sym}{formatPrice(parseFloat(quote.products_total) || basePrice * 0.3)}</span>
               </div>
             </div>
           )}
 
           {/* Default: service names only */}
           {(quote.minimum_fee_applied || (!detailer?.quote_display_preference || detailer?.quote_display_preference === 'total_only')) && services.length > 0 && (
-            <div className="divide-y divide-[#1A2236]">
+            <div className="divide-y divide-[var(--brand-border,#1A2236)]">
               {services.map((svc, i) => (
                 <div key={i} className="py-3">
-                  <span className="text-[#F5F5F5] text-sm">{svc.name}</span>
+                  <span className="text-[var(--brand-text,#F5F5F5)] text-sm">{svc.name}</span>
                 </div>
               ))}
             </div>
@@ -722,18 +728,18 @@ export default function QuoteViewPage() {
         {/* Package discount */}
         {!quote.minimum_fee_applied && quote.discount_percent > 0 && (
           <div className="flex justify-between py-2 text-sm">
-            <span className="text-[#8A9BB0]">Package Discount ({quote.discount_percent}%)</span>
+            <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Package Discount ({quote.discount_percent}%)</span>
             <span className="text-[var(--brand-primary,#C9A84C)]">Included</span>
           </div>
         )}
 
         {/* Add-on fees */}
         {!quote.minimum_fee_applied && quote.addon_fees && quote.addon_fees.length > 0 && (
-          <div className="border-t border-[#1A2236] pt-2 mb-2">
+          <div className="border-t border-[var(--brand-border,#1A2236)] pt-2 mb-2">
             {quote.addon_fees.map((fee, i) => (
               <div key={i} className="flex justify-between py-2 text-sm">
-                <span className="text-[#8A9BB0]">{fee.name}{fee.fee_type === 'percent' ? ` (${fee.amount}%)` : ''}</span>
-                <span className="text-[#8A9BB0]">+{sym}{formatPrice(fee.calculated)}</span>
+                <span className="text-[var(--brand-text-secondary,#8A9BB0)]">{fee.name}{fee.fee_type === 'percent' ? ` (${fee.amount}%)` : ''}</span>
+                <span className="text-[var(--brand-text-secondary,#8A9BB0)]">+{sym}{formatPrice(fee.calculated)}</span>
               </div>
             ))}
           </div>
@@ -742,23 +748,23 @@ export default function QuoteViewPage() {
         {/* Service fee + CC fee */}
         {passFee && serviceFee > 0 && (
           <div className="flex justify-between py-2 text-sm">
-            <span className="text-[#8A9BB0]">Service Fee ({Math.round(feeRate * 100)}%)</span>
-            <span className="text-[#8A9BB0]">+{sym}{formatPrice(serviceFee)}</span>
+            <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Service Fee ({Math.round(feeRate * 100)}%)</span>
+            <span className="text-[var(--brand-text-secondary,#8A9BB0)]">+{sym}{formatPrice(serviceFee)}</span>
           </div>
         )}
         {showCcFee && ccFee > 0 && (
           <div className="flex justify-between py-2 text-sm">
-            <span className="text-[#8A9BB0]">Processing Fee</span>
-            <span className="text-[#8A9BB0]">+{sym}{formatPrice(ccFee)}</span>
+            <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Processing Fee</span>
+            <span className="text-[var(--brand-text-secondary,#8A9BB0)]">+{sym}{formatPrice(ccFee)}</span>
           </div>
         )}
 
         {/* Total */}
-        <div className="border-t border-[#2A3A50] pt-8 mb-2 text-center">
-          <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-2">Total</p>
+        <div className="border-t border-[var(--brand-border-strong,#2A3A50)] pt-8 mb-2 text-center">
+          <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Total</p>
           <p className="text-[var(--brand-primary,#C9A84C)] text-[2.5rem] font-light">{sym}{formatPrice(displayTotal)}</p>
           {ccFeeMode === 'customer_choice' && (
-            <p className="text-[#8A9BB0]/60 text-xs mt-2">
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)]/60 text-xs mt-2">
               Card payment includes +{sym}{formatPrice(ccFee)} processing fee
             </p>
           )}
@@ -767,21 +773,31 @@ export default function QuoteViewPage() {
         {/* Notes */}
         {quote.notes && (
           <div className="border-l-2 border-[var(--brand-primary,#C9A84C)]/40 pl-4 my-6">
-            <p className="text-[#8A9BB0] text-sm leading-relaxed">{quote.notes}</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm leading-relaxed">{quote.notes}</p>
+          </div>
+        )}
+
+        {/* Disclaimer */}
+        {detailer?.disclaimer_text && (
+          <div className="border border-[var(--brand-border,#1A2236)] bg-[var(--brand-surface,#111827)]/50 p-4 mb-4 rounded">
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Disclaimer</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)]/70 text-xs whitespace-pre-wrap leading-relaxed">
+              {detailer.disclaimer_text}
+            </p>
           </div>
         )}
 
         {/* Terms & Conditions */}
         {(detailer?.terms_text || detailer?.terms_pdf_url) && !isPaid && !isExpired && (
-          <div className="border border-[#1A2236] p-5 mb-4">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Terms & Conditions</p>
+          <div className="border border-[var(--brand-border,#1A2236)] p-5 mb-4">
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Terms & Conditions</p>
             {detailer.terms_pdf_url ? (
               <a href={detailer.terms_pdf_url} target="_blank" rel="noopener noreferrer"
                 className="text-[var(--brand-primary,#C9A84C)] text-sm hover:text-[var(--brand-primary,#C9A84C)] transition-colors">
                 View Terms & Conditions (PDF)
               </a>
             ) : detailer.terms_text ? (
-              <div className="text-[#8A9BB0]/70 text-xs max-h-40 overflow-y-auto whitespace-pre-wrap leading-relaxed">
+              <div className="text-[var(--brand-text-secondary,#8A9BB0)]/70 text-xs max-h-40 overflow-y-auto whitespace-pre-wrap leading-relaxed">
                 {detailer.terms_text}
               </div>
             ) : null}
@@ -799,11 +815,11 @@ export default function QuoteViewPage() {
                 onChange={(e) => setAgreedToTerms(e.target.checked)}
                 className="sr-only peer"
               />
-              <div className="w-5 h-5 border border-[#2A3A50] peer-checked:border-[var(--brand-primary,#C9A84C)] peer-checked:bg-[var(--brand-primary,#C9A84C)] transition-colors flex items-center justify-center">
-                {agreedToTerms && <span className="text-[#0A0E17] text-xs font-bold">&#10003;</span>}
+              <div className="w-5 h-5 border border-[var(--brand-border-strong,#2A3A50)] peer-checked:border-[var(--brand-primary,#C9A84C)] peer-checked:bg-[var(--brand-primary,#C9A84C)] transition-colors flex items-center justify-center">
+                {agreedToTerms && <span className="text-[var(--brand-btn-text,#0A0E17)] text-xs font-bold">&#10003;</span>}
               </div>
             </div>
-            <span className="text-[#8A9BB0] text-sm leading-snug">
+            <span className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm leading-snug">
               I agree to the {(detailer?.terms_text || detailer?.terms_pdf_url) ? 'above ' : ''}Terms & Conditions for this service
             </span>
           </label>
@@ -814,7 +830,7 @@ export default function QuoteViewPage() {
           <div className="border border-red-500/30 bg-red-500/5 p-4 mb-4">
             <p className="text-red-400 text-sm">{paymentError}</p>
             {detailer && (
-              <p className="text-[#8A9BB0] text-xs mt-2">
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-xs mt-2">
                 Contact {detailer.company}: {' '}
                 {detailer.phone && <a href={`tel:${detailer.phone}`} className="text-[var(--brand-primary,#C9A84C)]">{detailer.phone}</a>}
                 {detailer.phone && detailer.email && ' or '}
@@ -826,9 +842,9 @@ export default function QuoteViewPage() {
 
         {/* CTA Buttons */}
         {invoiceAccepted ? (
-          <div className="border border-[#2A3A50] p-6 text-center">
+          <div className="border border-[var(--brand-border-strong,#2A3A50)] p-6 text-center">
             <p className="text-[var(--brand-primary,#C9A84C)] text-sm tracking-[0.15em] uppercase mb-1">Invoice Requested</p>
-            <p className="text-[#8A9BB0] text-sm">{detailer?.company || 'The detailer'} has been notified and will send you an invoice.</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm">{detailer?.company || 'The detailer'} has been notified and will send you an invoice.</p>
           </div>
         ) : stripeConnected ? (
           detailer?.cc_fee_mode === 'customer_choice' ? (
@@ -836,18 +852,18 @@ export default function QuoteViewPage() {
               <button
                 onClick={handlePayment}
                 disabled={paymentLoading || !agreedToTerms}
-                className="w-full py-4 bg-[var(--brand-primary,#C9A84C)] text-[#0A0E17] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-colors"
+                className="w-full py-4 bg-[var(--brand-primary,#C9A84C)] text-[var(--brand-btn-text,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-colors"
               >
                 {paymentLoading ? 'Processing...' : 'Accept & Pay by Card'}
               </button>
               <button
                 onClick={handleRequestInvoice}
                 disabled={invoiceRequesting || !agreedToTerms}
-                className="w-full py-4 border border-[#2A3A50] text-[#8A9BB0] text-sm tracking-[0.2em] uppercase hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] disabled:opacity-40 transition-colors"
+                className="w-full py-4 border border-[var(--brand-border-strong,#2A3A50)] text-[var(--brand-text-secondary,#8A9BB0)] text-sm tracking-[0.2em] uppercase hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] disabled:opacity-40 transition-colors"
               >
                 {invoiceRequesting ? 'Submitting...' : 'Request Invoice'}
               </button>
-              <p className="text-[#8A9BB0]/50 text-[10px] tracking-[0.1em] text-center uppercase">
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)]/50 text-[10px] tracking-[0.1em] text-center uppercase">
                 Card includes processing fee &middot; Invoice has no additional fees
               </p>
             </div>
@@ -855,30 +871,30 @@ export default function QuoteViewPage() {
             <button
               onClick={handlePayment}
               disabled={paymentLoading || !agreedToTerms}
-              className="w-full py-4 bg-[var(--brand-primary,#C9A84C)] text-[#0A0E17] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-colors"
+              className="w-full py-4 bg-[var(--brand-primary,#C9A84C)] text-[var(--brand-btn-text,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-colors"
             >
               {paymentLoading ? 'Processing...' : 'Accept & Pay'}
             </button>
           )
         ) : (
-          <div className="border border-[#2A3A50] p-6 text-center">
-            <p className="text-[#8A9BB0] text-sm tracking-[0.15em] uppercase mb-1">Payment Details to Follow</p>
-            <p className="text-[#8A9BB0]/70 text-sm">{detailer?.company || 'The detailer'} will contact you with payment arrangements.</p>
+          <div className="border border-[var(--brand-border-strong,#2A3A50)] p-6 text-center">
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm tracking-[0.15em] uppercase mb-1">Payment Details to Follow</p>
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)]/70 text-sm">{detailer?.company || 'The detailer'} will contact you with payment arrangements.</p>
           </div>
         )}
 
         {/* Valid until */}
-        <p className="text-[#8A9BB0]/40 text-[10px] tracking-[0.15em] uppercase text-center mt-6">
+        <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.15em] uppercase text-center mt-6">
           Valid until {formatDate(quote.valid_until)}
         </p>
-        <p className="text-[#8A9BB0]/30 text-[10px] text-center mt-1">
+        <p className="text-[var(--brand-text-secondary,#8A9BB0)]/30 text-[10px] text-center mt-1">
           Dates subject to availability, confirmed upon payment.
         </p>
 
         {/* Questions / Contact */}
         {detailer && (detailer.phone || detailer.email) && (
-          <div className="mt-8 pt-6 border-t border-[#1A2236] text-center">
-            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Questions about this quote?</p>
+          <div className="mt-8 pt-6 border-t border-[var(--brand-border,#1A2236)] text-center">
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Questions about this quote?</p>
             <div className="flex justify-center gap-6 text-sm">
               {detailer.phone && <a href={`tel:${detailer.phone}`} className="text-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.phone}</a>}
               {detailer.email && <a href={`mailto:${detailer.email}`} className="text-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.email}</a>}
@@ -892,7 +908,7 @@ export default function QuoteViewPage() {
             href={`/api/quotes/${quote.id}/pdf?token=${params.shareLink}`}
             target="_blank"
             rel="noreferrer"
-            className="text-[#8A9BB0]/50 text-[10px] tracking-[0.15em] uppercase hover:text-[var(--brand-primary,#C9A84C)] transition-colors"
+            className="text-[var(--brand-text-secondary,#8A9BB0)]/50 text-[10px] tracking-[0.15em] uppercase hover:text-[var(--brand-primary,#C9A84C)] transition-colors"
           >
             Download PDF
           </a>
@@ -900,7 +916,7 @@ export default function QuoteViewPage() {
       </div>
 
       {/* Footer */}
-      <p className="text-[#8A9BB0]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
+      <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
     </div>
   );
 }

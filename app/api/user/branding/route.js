@@ -18,7 +18,7 @@ export async function GET(request) {
     const supabase = getSupabase();
     const { data, error } = await supabase
       .from('detailers')
-      .select('logo_url, theme_primary, theme_accent, theme_bg, theme_surface, theme_logo_url, website_url, font_heading, font_subheading, font_body, font_embed_url, theme_colors')
+      .select('logo_url, theme_primary, theme_accent, theme_bg, theme_surface, theme_logo_url, website_url, font_heading, font_subheading, font_body, font_embed_url, theme_colors, portal_theme, disclaimer_text')
       .eq('id', user.id)
       .single();
 
@@ -37,6 +37,8 @@ export async function GET(request) {
       font_body: data?.font_body || null,
       font_embed_url: data?.font_embed_url || null,
       theme_colors: data?.theme_colors || [],
+      portal_theme: data?.portal_theme || 'dark',
+      disclaimer_text: data?.disclaimer_text || null,
     });
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
@@ -88,6 +90,11 @@ export async function POST(request) {
     if (body.font_subheading !== undefined) updates.font_subheading = body.font_subheading || null;
     if (body.font_body !== undefined) updates.font_body = body.font_body || null;
     if (body.font_embed_url !== undefined) updates.font_embed_url = body.font_embed_url || null;
+    if (body.portal_theme !== undefined) {
+      if (!['dark', 'light'].includes(body.portal_theme)) return Response.json({ error: 'Invalid portal_theme' }, { status: 400 });
+      updates.portal_theme = body.portal_theme;
+    }
+    if (body.disclaimer_text !== undefined) updates.disclaimer_text = body.disclaimer_text?.trim() || null;
 
     if (Object.keys(updates).length === 0) {
       return Response.json({ error: 'No fields to update' }, { status: 400 });

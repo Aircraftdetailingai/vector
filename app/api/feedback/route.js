@@ -25,7 +25,7 @@ export async function GET(request) {
   // Find quote by feedback_token
   const { data: quote, error } = await supabase
     .from('quotes')
-    .select('id, client_name, client_email, aircraft_model, aircraft_type, total_price, detailer_id, feedback_token')
+    .select('id, client_name, client_email, aircraft_model, aircraft_type, total_price, detailer_id, feedback_token, completed_at')
     .eq('feedback_token', token)
     .single();
 
@@ -44,10 +44,10 @@ export async function GET(request) {
     return Response.json({ error: 'Feedback already submitted', alreadySubmitted: true }, { status: 400 });
   }
 
-  // Get detailer info
+  // Get detailer info with branding
   const { data: detailer } = await supabase
     .from('detailers')
-    .select('id, name, company')
+    .select('id, name, company, theme_primary, theme_accent, theme_bg, theme_surface, theme_logo_url, logo_url, font_heading, font_body, font_embed_url')
     .eq('id', quote.detailer_id)
     .single();
 
@@ -56,10 +56,19 @@ export async function GET(request) {
       id: quote.id,
       clientName: quote.client_name,
       aircraft: quote.aircraft_model || quote.aircraft_type || 'Aircraft',
+      completedAt: quote.completed_at || null,
     },
     detailer: {
       name: detailer?.name,
       company: detailer?.company || detailer?.name || 'your detailing professional',
+      theme_primary: detailer?.theme_primary || null,
+      theme_accent: detailer?.theme_accent || null,
+      theme_bg: detailer?.theme_bg || null,
+      theme_surface: detailer?.theme_surface || null,
+      logo_url: detailer?.theme_logo_url || detailer?.logo_url || null,
+      font_heading: detailer?.font_heading || null,
+      font_body: detailer?.font_body || null,
+      font_embed_url: detailer?.font_embed_url || null,
     },
   });
 }
@@ -111,6 +120,7 @@ export async function POST(request) {
       customer_name: quote.client_name,
       rating: parseInt(rating),
       comment: (comment || '').trim().slice(0, 1000),
+      is_public: true,
     })
     .select()
     .single();
