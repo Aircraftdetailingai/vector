@@ -31,6 +31,21 @@ export default function QuoteViewPage() {
   const [invoiceRequesting, setInvoiceRequesting] = useState(false);
   const [invoiceAccepted, setInvoiceAccepted] = useState(false);
 
+  // Scheduling state
+  const [availableDates, setAvailableDates] = useState([]);
+  const [availabilityLoading, setAvailabilityLoading] = useState(false);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [timePreference, setTimePreference] = useState('No preference');
+  const [schedulingNotes, setSchedulingNotes] = useState('');
+  const [schedulingLoading, setSchedulingLoading] = useState(false);
+  const [schedulingError, setSchedulingError] = useState('');
+  const [justScheduled, setJustScheduled] = useState(false);
+  const [skipScheduling, setSkipScheduling] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
+
   useEffect(() => {
     const fetchQuote = async () => {
       try {
@@ -77,7 +92,60 @@ export default function QuoteViewPage() {
 
   const sym = getCurrencySymbol(detailer?.preferred_currency || 'USD');
   const isExpired = quote && new Date() > new Date(quote.valid_until);
-  const isPaid = quote && (quote.status === 'paid' || quote.status === 'approved' || quote.status === 'accepted');
+  const isPaid = quote && (quote.status === 'paid' || quote.status === 'approved' || quote.status === 'accepted' || quote.status === 'scheduled');
+  const isScheduled = quote && (quote.status === 'scheduled' || quote.scheduled_date);
+  const hasAvailability = detailer?.availability != null;
+  const needsScheduling = isPaid && !isScheduled && hasAvailability && !skipScheduling;
+
+  // Fetch availability when scheduling is needed
+  useEffect(() => {
+    if (!needsScheduling || !quote?.id) return;
+    setAvailabilityLoading(true);
+    fetch(`/api/quotes/${quote.id}/availability?share_link=${params.shareLink}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.available && data.dates) {
+          setAvailableDates(data.dates);
+          // Set calendar to first available month
+          if (data.dates.length > 0) {
+            const first = new Date(data.dates[0].date + 'T12:00');
+            setCalendarMonth(new Date(first.getFullYear(), first.getMonth(), 1));
+          }
+        }
+      })
+      .catch(console.error)
+      .finally(() => setAvailabilityLoading(false));
+  }, [needsScheduling, quote?.id]);
+
+  const handleSchedule = async () => {
+    if (!selectedDate) return;
+    setSchedulingLoading(true);
+    setSchedulingError('');
+    try {
+      const res = await fetch(`/api/quotes/${quote.id}/schedule`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          shareLink: params.shareLink,
+          scheduledDate: selectedDate,
+          timePreference,
+          schedulingNotes: schedulingNotes.trim() || null,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setQuote(prev => ({ ...prev, scheduled_date: data.scheduled_date, status: 'scheduled', time_preference: timePreference, scheduling_notes: schedulingNotes }));
+        setJustScheduled(true);
+      } else {
+        const data = await res.json();
+        setSchedulingError(data.error || 'Failed to schedule. Please try again.');
+      }
+    } catch (err) {
+      setSchedulingError('Network error. Please try again.');
+    } finally {
+      setSchedulingLoading(false);
+    }
+  };
 
   const handlePayment = async () => {
     setPaymentError('');
@@ -265,7 +333,186 @@ export default function QuoteViewPage() {
     );
   }
 
-  // --- PAID ---
+  // --- SCHEDULING STEP (after payment/acceptance) ---
+  if (needsScheduling && !justScheduled) {
+    const availableDateSet = new Set(availableDates.map(d => d.date));
+    const cm = calendarMonth;
+    const daysInMonth = new Date(cm.getFullYear(), cm.getMonth() + 1, 0).getDate();
+    const firstDayOfWeek = new Date(cm.getFullYear(), cm.getMonth(), 1).getDay();
+    const monthLabel = cm.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    const calendarCells = [];
+    for (let i = 0; i < firstDayOfWeek; i++) calendarCells.push(null);
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${cm.getFullYear()}-${String(cm.getMonth() + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      calendarCells.push({ day: d, date: dateStr, available: availableDateSet.has(dateStr) });
+    }
+
+    const prevMonth = () => setCalendarMonth(new Date(cm.getFullYear(), cm.getMonth() - 1, 1));
+    const nextMonth = () => setCalendarMonth(new Date(cm.getFullYear(), cm.getMonth() + 1, 1));
+
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--brand-bg,#0A0E17)] p-4" style={brandFontBody ? { fontFamily: brandFontBody } : undefined}>
+        <div className="bg-[var(--brand-surface,#111827)] w-full max-w-[640px] rounded-[4px] px-8 py-10 sm:px-10">
+          {/* Header */}
+          <div className="text-center mb-8">
+            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-2">Next Step</p>
+            <div className="w-12 h-[1px] bg-[var(--brand-primary,#C9A84C)] mx-auto mb-4" />
+            <h2 className="text-[#F5F5F5] text-xl font-light tracking-wide" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>Schedule Your Service</h2>
+            <p className="text-[#8A9BB0] text-sm mt-2">Pick a date that works for you</p>
+          </div>
+
+          {/* Aircraft summary */}
+          <div className="flex items-center justify-between mb-8 pb-4 border-b border-[#1A2236]">
+            <div>
+              <p className="text-[#F5F5F5] text-sm font-medium">{quote.aircraft_model || quote.aircraft_type}</p>
+              {quote.tail_number && <p className="text-[#8A9BB0] text-xs font-mono">{quote.tail_number}</p>}
+            </div>
+            <p className="text-[var(--brand-primary,#C9A84C)] text-lg font-light">{sym}{formatPrice(quote.total_price)}</p>
+          </div>
+
+          {/* Calendar */}
+          {availabilityLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="w-6 h-6 border-2 border-[var(--brand-primary,#C9A84C)] border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : (
+            <div className="mb-8">
+              {/* Month navigation */}
+              <div className="flex items-center justify-between mb-4">
+                <button onClick={prevMonth} className="text-[#8A9BB0] hover:text-[#F5F5F5] p-2 transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path d="M15 19l-7-7 7-7" /></svg>
+                </button>
+                <p className="text-[#F5F5F5] text-sm tracking-[0.15em] uppercase">{monthLabel}</p>
+                <button onClick={nextMonth} className="text-[#8A9BB0] hover:text-[#F5F5F5] p-2 transition-colors">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path d="M9 5l7 7-7 7" /></svg>
+                </button>
+              </div>
+
+              {/* Day headers */}
+              <div className="grid grid-cols-7 gap-1 mb-2">
+                {['S','M','T','W','T','F','S'].map((d, i) => (
+                  <div key={i} className="text-center text-[10px] text-[#8A9BB0]/60 uppercase tracking-wider py-1">{d}</div>
+                ))}
+              </div>
+
+              {/* Calendar grid */}
+              <div className="grid grid-cols-7 gap-1">
+                {calendarCells.map((cell, i) => {
+                  if (!cell) return <div key={`empty-${i}`} />;
+                  const isSelected = selectedDate === cell.date;
+                  const isToday = cell.date === new Date().toISOString().split('T')[0];
+                  return (
+                    <button
+                      key={cell.date}
+                      disabled={!cell.available}
+                      onClick={() => setSelectedDate(cell.date)}
+                      className={`
+                        aspect-square flex items-center justify-center rounded-sm text-sm transition-all relative
+                        ${isSelected
+                          ? 'bg-[var(--brand-primary,#C9A84C)] text-[#0A0E17] font-medium'
+                          : cell.available
+                            ? 'text-[#F5F5F5] hover:bg-[var(--brand-primary,#C9A84C)]/20 border border-[#2A3A50] hover:border-[var(--brand-primary,#C9A84C)]'
+                            : 'text-[#8A9BB0]/25 cursor-not-allowed'
+                        }
+                      `}
+                    >
+                      {cell.day}
+                      {isToday && !isSelected && <span className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[var(--brand-primary,#C9A84C)]" />}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {availableDates.length === 0 && !availabilityLoading && (
+                <p className="text-[#8A9BB0] text-sm text-center mt-4">No available dates found. Please contact us directly.</p>
+              )}
+            </div>
+          )}
+
+          {/* Selected date display */}
+          {selectedDate && (
+            <div className="border border-[var(--brand-primary,#C9A84C)]/30 bg-[var(--brand-primary,#C9A84C)]/5 p-4 mb-6 text-center rounded-sm">
+              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-1">Selected Date</p>
+              <p className="text-[var(--brand-primary,#C9A84C)] text-lg font-light">
+                {new Date(selectedDate + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+            </div>
+          )}
+
+          {/* Time preference */}
+          <div className="mb-6">
+            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Time Preference</p>
+            <div className="grid grid-cols-3 gap-2">
+              {['Morning', 'Afternoon', 'No preference'].map(opt => (
+                <button
+                  key={opt}
+                  onClick={() => setTimePreference(opt)}
+                  className={`py-2.5 text-xs tracking-[0.1em] uppercase border rounded-sm transition-colors ${
+                    timePreference === opt
+                      ? 'border-[var(--brand-primary,#C9A84C)] text-[var(--brand-primary,#C9A84C)] bg-[var(--brand-primary,#C9A84C)]/10'
+                      : 'border-[#2A3A50] text-[#8A9BB0] hover:border-[#8A9BB0]'
+                  }`}
+                >
+                  {opt}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Special instructions */}
+          <div className="mb-6">
+            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Special Instructions <span className="normal-case tracking-normal">(optional)</span></p>
+            <textarea
+              value={schedulingNotes}
+              onChange={(e) => setSchedulingNotes(e.target.value)}
+              placeholder="Access details, gate codes, special requests..."
+              rows={3}
+              className="w-full bg-transparent border border-[#2A3A50] text-[#F5F5F5] text-sm p-3 rounded-sm placeholder:text-[#8A9BB0]/40 focus:border-[var(--brand-primary,#C9A84C)] focus:outline-none transition-colors resize-none"
+            />
+          </div>
+
+          {/* Error */}
+          {schedulingError && (
+            <div className="border border-red-500/30 bg-red-500/5 p-4 mb-4 rounded-sm">
+              <p className="text-red-400 text-sm">{schedulingError}</p>
+            </div>
+          )}
+
+          {/* Confirm button */}
+          <button
+            onClick={handleSchedule}
+            disabled={!selectedDate || schedulingLoading}
+            className="w-full py-4 bg-[var(--brand-primary,#C9A84C)] text-[#0A0E17] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-all"
+          >
+            {schedulingLoading ? 'Scheduling...' : 'Confirm Schedule'}
+          </button>
+
+          {/* Skip */}
+          <button
+            onClick={() => setSkipScheduling(true)}
+            className="w-full py-3 text-[#8A9BB0]/60 text-xs tracking-[0.15em] uppercase hover:text-[#8A9BB0] transition-colors mt-2"
+          >
+            Skip for now
+          </button>
+
+          {/* Contact */}
+          {detailer && (detailer.phone || detailer.email) && (
+            <div className="mt-6 pt-6 border-t border-[#1A2236] text-center">
+              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Need help?</p>
+              <div className="flex justify-center gap-6 text-sm">
+                {detailer.phone && <a href={`tel:${detailer.phone}`} className="text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.phone}</a>}
+                {detailer.email && <a href={`mailto:${detailer.email}`} className="text-[var(--brand-primary,#C9A84C)] transition-colors">{detailer.email}</a>}
+              </div>
+            </div>
+          )}
+        </div>
+        <p className="text-[#8A9BB0]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
+      </div>
+    );
+  }
+
+  // --- PAID / CONFIRMED ---
   if (isPaid) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--brand-bg,#0A0E17)] p-4">
@@ -281,6 +528,19 @@ export default function QuoteViewPage() {
           {detailer && (
             <div className="text-center mb-8">
               <h1 className="font-heading text-2xl font-light text-[#F5F5F5]" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>{detailer.company}</h1>
+            </div>
+          )}
+
+          {/* Scheduled Date */}
+          {quote.scheduled_date && (
+            <div className="border border-[var(--brand-primary,#C9A84C)]/30 bg-[var(--brand-primary,#C9A84C)]/5 p-6 mb-8 text-center rounded-sm">
+              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-1">Scheduled For</p>
+              <p className="text-[var(--brand-primary,#C9A84C)] text-xl font-light">
+                {new Date(quote.scheduled_date).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}
+              </p>
+              {quote.time_preference && quote.time_preference !== 'No preference' && (
+                <p className="text-[#8A9BB0] text-xs mt-2">{quote.time_preference}</p>
+              )}
             </div>
           )}
 

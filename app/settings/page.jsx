@@ -103,6 +103,10 @@ function SettingsContent() {
   const [promoResult, setPromoResult] = useState(null); // { valid, description, min_months, ... }
   const [promoError, setPromoError] = useState('');
 
+  // Availability state
+  const [availability, setAvailability] = useState(null);
+  const [newBlockedDate, setNewBlockedDate] = useState('');
+
   // Terms & Conditions state
   const [termsText, setTermsText] = useState('');
   const [termsPdfUrl, setTermsPdfUrl] = useState(null);
@@ -202,6 +206,12 @@ function SettingsContent() {
           setSmsEnabled(data.sms_enabled || false);
         }).catch(() => {});
       }
+      // Fetch availability
+      fetch('/api/user/availability', {
+        headers: { Authorization: `Bearer ${token}` },
+      }).then(r => r.json()).then(data => {
+        if (data.availability) setAvailability(data.availability);
+      }).catch(() => {});
       // Fetch terms & conditions
       fetch('/api/settings/terms', {
         headers: { Authorization: `Bearer ${token}` },
@@ -1084,6 +1094,56 @@ function SettingsContent() {
     }
   };
 
+  const saveAvailability = async (avail) => {
+    await fetch('/api/user/availability', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('vector_token')}` },
+      body: JSON.stringify({ availability: avail }),
+    });
+  };
+
+  const initAvailability = () => ({
+    weeklySchedule: { '0': null, '1': { start: '08:00', end: '17:00' }, '2': { start: '08:00', end: '17:00' }, '3': { start: '08:00', end: '17:00' }, '4': { start: '08:00', end: '17:00' }, '5': { start: '08:00', end: '17:00' }, '6': null },
+    blockedDates: [],
+    leadTimeDays: 2,
+    maxAdvanceDays: 90,
+  });
+
+  const toggleDay = (dayKey) => {
+    const avail = availability || initAvailability();
+    const updated = { ...avail, weeklySchedule: { ...avail.weeklySchedule } };
+    updated.weeklySchedule[dayKey] = updated.weeklySchedule[dayKey] ? null : { start: '08:00', end: '17:00' };
+    setAvailability(updated);
+    markDirty('availability');
+  };
+
+  const updateDayTime = (dayKey, field, value) => {
+    const avail = availability || initAvailability();
+    setAvailability({ ...avail, weeklySchedule: { ...avail.weeklySchedule, [dayKey]: { ...avail.weeklySchedule[dayKey], [field]: value } } });
+    markDirty('availability');
+  };
+
+  const updateAvailabilityField = (field, value) => {
+    const avail = availability || initAvailability();
+    setAvailability({ ...avail, [field]: value });
+    markDirty('availability');
+  };
+
+  const addBlockedDate = () => {
+    if (!newBlockedDate) return;
+    const avail = availability || initAvailability();
+    if (avail.blockedDates?.includes(newBlockedDate)) return;
+    setAvailability({ ...avail, blockedDates: [...(avail.blockedDates || []), newBlockedDate].sort() });
+    setNewBlockedDate('');
+    markDirty('availability');
+  };
+
+  const removeBlockedDate = (date) => {
+    const avail = availability || initAvailability();
+    setAvailability({ ...avail, blockedDates: (avail.blockedDates || []).filter(d => d !== date) });
+    markDirty('availability');
+  };
+
   const saveAllChanges = async () => {
     setSaving(true);
     try {
@@ -1110,6 +1170,7 @@ function SettingsContent() {
       }
       if (pendingChanges.has('smsEnabled')) promises.push(saveSmsSettings({ sms_enabled: smsEnabled }));
       if (pendingChanges.has('productRatios')) promises.push(saveProductRatios(productRatios || {}));
+      if (pendingChanges.has('availability')) promises.push(saveAvailability(availability));
       await Promise.all(promises);
       setPendingChanges(new Set());
       setSaveSuccess(true);
@@ -2176,7 +2237,91 @@ function SettingsContent() {
           </div>
         </div>
 
+        {/* Availability & Scheduling */}
+        <div className="pb-6 mb-2">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Availability & Scheduling</h3>
+          <p className="text-sm text-v-text-secondary mb-6">
+            Set your working hours so customers can self-schedule after paying. Leave unconfigured to skip the scheduling step.
+          </p>
 
+          {/* Weekly Schedule */}
+          <p className="text-xs font-medium text-v-text-secondary uppercase tracking-wide mb-3">Working Days</p>
+          <div className="space-y-3 mb-6">
+            {['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((dayName, idx) => {
+              const dayKey = String(idx);
+              const dayConfig = availability?.weeklySchedule?.[dayKey];
+              const isEnabled = dayConfig !== null && dayConfig !== undefined;
+              return (
+                <div key={idx} className="flex items-center gap-4">
+                  <div onClick={() => toggleDay(dayKey)} className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer flex-shrink-0 ${isEnabled ? 'bg-amber-500' : 'bg-gray-600'}`}>
+                    <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${isEnabled ? 'translate-x-5' : ''}`} />
+                  </div>
+                  <span className="w-24 text-sm text-v-text-primary">{dayName}</span>
+                  {isEnabled && (
+                    <div className="flex items-center gap-2">
+                      <input type="time" value={dayConfig?.start || '08:00'}
+                        onChange={(e) => updateDayTime(dayKey, 'start', e.target.value)}
+                        className="bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-1 text-sm" />
+                      <span className="text-v-text-secondary text-sm">to</span>
+                      <input type="time" value={dayConfig?.end || '17:00'}
+                        onChange={(e) => updateDayTime(dayKey, 'end', e.target.value)}
+                        className="bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-1 text-sm" />
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Lead Time & Max Advance */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Minimum Lead Time</label>
+              <div className="flex items-center gap-2">
+                <input type="number" min="0" max="30"
+                  value={availability?.leadTimeDays ?? 2}
+                  onChange={(e) => updateAvailabilityField('leadTimeDays', parseInt(e.target.value) || 0)}
+                  className="w-20 bg-v-charcoal border border-v-border text-v-text-primary rounded px-3 py-2 text-sm" />
+                <span className="text-v-text-secondary text-sm">days in advance</span>
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Max Advance Booking</label>
+              <div className="flex items-center gap-2">
+                <input type="number" min="7" max="365"
+                  value={availability?.maxAdvanceDays ?? 90}
+                  onChange={(e) => updateAvailabilityField('maxAdvanceDays', parseInt(e.target.value) || 90)}
+                  className="w-20 bg-v-charcoal border border-v-border text-v-text-primary rounded px-3 py-2 text-sm" />
+                <span className="text-v-text-secondary text-sm">days out</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Blocked Dates */}
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-v-text-secondary mb-2">Blocked Dates</label>
+            <p className="text-xs text-v-text-secondary mb-2">Block specific dates (vacations, holidays, fully booked days)</p>
+            <div className="flex items-center gap-2 mb-3">
+              <input type="date" value={newBlockedDate}
+                onChange={(e) => setNewBlockedDate(e.target.value)}
+                className="bg-v-charcoal border border-v-border text-v-text-primary rounded px-3 py-2 text-sm" />
+              <button onClick={addBlockedDate}
+                className="px-3 py-2 bg-amber-500 text-white rounded text-sm font-medium hover:bg-amber-600 transition-colors">
+                Block Date
+              </button>
+            </div>
+            {(availability?.blockedDates || []).length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {(availability?.blockedDates || []).map(date => (
+                  <div key={date} className="flex items-center gap-1 bg-v-charcoal border border-v-border rounded px-2 py-1 text-sm">
+                    <span className="text-v-text-primary">{new Date(date + 'T12:00').toLocaleDateString()}</span>
+                    <button onClick={() => removeBlockedDate(date)} className="text-red-400 hover:text-red-300 ml-1">&times;</button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
 
       </div>
   );
