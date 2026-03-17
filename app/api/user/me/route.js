@@ -30,6 +30,7 @@ function buildUserResponse(data, isAdmin) {
     terms_accepted_version: data.terms_accepted_version || null,
     created_at: data.created_at || null,
     onboarding_completed: data.onboarding_completed || null,
+    listed_in_directory: data.listed_in_directory || false,
   };
 }
 
@@ -47,7 +48,7 @@ export async function GET(request) {
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('detailers')
-    .select('id, email, name, phone, company, plan, status, rates, notification_settings, price_reminder_months, quote_display_preference, efficiency_factor, default_labor_rate, sms_enabled, preferred_currency, country, terms_accepted_version, created_at, onboarding_completed')
+    .select('id, email, name, phone, company, plan, status, rates, notification_settings, price_reminder_months, quote_display_preference, efficiency_factor, default_labor_rate, sms_enabled, preferred_currency, country, listed_in_directory, terms_accepted_version, created_at, onboarding_completed')
     .eq('id', user.id)
     .single();
 

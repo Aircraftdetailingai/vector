@@ -58,6 +58,7 @@ function SettingsContent() {
   const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
   const [newLocation, setNewLocation] = useState('');
   const [homeAirport, setHomeAirport] = useState('');
+  const [listedInDirectory, setListedInDirectory] = useState(false);
 
   // Quote viewed notification opt-in
   const [notifyQuoteViewed, setNotifyQuoteViewed] = useState(false);
@@ -167,6 +168,7 @@ function SettingsContent() {
     setLaborRate(u.default_labor_rate || 25);
     setHomeAirport(u.home_airport || '');
     setCountry(u.country || '');
+    setListedInDirectory(u.listed_in_directory || false);
       setNotifyQuoteViewed(u.notify_quote_viewed || false);
       setAutoDiscountEnabled(u.notification_settings?.autoDiscountEnabled || false);
       setFollowupDiscountPercent(u.followup_discount_percent || 10);
@@ -843,6 +845,20 @@ function SettingsContent() {
     setUser(newUser);
   };
 
+  const saveDirectoryListing = async (val) => {
+    await fetch('/api/user/directory-listing', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('vector_token')}`,
+      },
+      body: JSON.stringify({ listed_in_directory: val }),
+    });
+    const newUser = { ...user, listed_in_directory: val };
+    localStorage.setItem('vector_user', JSON.stringify(newUser));
+    setUser(newUser);
+  };
+
   const saveFollowupDiscount = async (pct) => {
     await fetch('/api/user/followup-discount', {
       method: 'POST',
@@ -1018,6 +1034,7 @@ function SettingsContent() {
       if (pendingChanges.has('minimumFee')) promises.push(saveMinimumFee(parseFloat(minimumFee) || 0, []));
       if (pendingChanges.has('currency')) promises.push(saveCurrency(currency));
       if (pendingChanges.has('country')) promises.push(saveCountry(country));
+      if (pendingChanges.has('directoryListing')) promises.push(saveDirectoryListing(listedInDirectory));
       if (pendingChanges.has('language')) promises.push(saveLanguage(language));
       // homeAirport removed
       if (pendingChanges.has('passFee')) promises.push(savePassFee(passFeeToCustomer));
@@ -1136,6 +1153,25 @@ function SettingsContent() {
                 className="w-full bg-transparent border-0 border-b border-v-border/50 text-v-text-secondary px-0 py-2 text-sm cursor-not-allowed"
               />
             </div>
+          </div>
+        </div>
+
+        {/* Public Directory */}
+        <div className="pb-6 mb-2">
+          <h2 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Public Directory</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-v-text-primary">List my business in the public directory</p>
+              <p className="text-xs text-v-text-secondary mt-1">
+                Your company name, country, airport, and accepted currency will be visible at /find-a-detailer. Email and phone are never shown.
+              </p>
+            </div>
+            <button
+              onClick={() => { setListedInDirectory(!listedInDirectory); markDirty('directoryListing'); }}
+              className={`relative shrink-0 w-11 h-6 rounded-full transition-colors ${listedInDirectory ? 'bg-v-gold' : 'bg-v-border'}`}
+            >
+              <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${listedInDirectory ? 'translate-x-5' : ''}`} />
+            </button>
           </div>
         </div>
 
