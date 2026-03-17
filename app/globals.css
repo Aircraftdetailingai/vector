@@ -1,3 +1,6 @@
+@import 'react-grid-layout/css/styles.css';
+@import 'react-resizable/css/styles.css';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -259,4 +262,16 @@ iframe[src*="vercel"] {
 
 body > div[style*="position: fixed"]:last-of-type {
   display: none !important;
+}
+
+/* ========== REACT-GRID-LAYOUT OVERRIDES ========== */
+
+.react-grid-item.react-grid-placeholder {
+  background: rgba(201, 168, 76, 0.15) !important;
+  border: 1px dashed rgba(201, 168, 76, 0.4) !important;
+  border-radius: 0.75rem;
+}
+
+.react-grid-item > .react-resizable-handle::after {
+  border-color: rgba(201, 168, 76, 0.4) !important;
 }
