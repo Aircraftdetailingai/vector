@@ -1,62 +1,51 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import NotificationBell from '../../components/NotificationBell.jsx';
-import GlobalSearch from '../../components/GlobalSearch.jsx';
+import AppShell from '../../components/AppShell.jsx';
 import LoadingSpinner from '../../components/LoadingSpinner.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import AddCustomerModal from '../../components/AddCustomerModal.jsx';
 import { formatPriceWhole, currencySymbol } from '../../lib/formatPrice';
 import DashboardTour from '../../components/DashboardTour.jsx';
-import DashboardLanguageSelector from '../../components/DashboardLanguageSelector.jsx';
-import PointsBadge from '../../components/PointsBadge.jsx';
 import TermsConsentModal from '../../components/TermsConsentModal.jsx';
 import OnboardingChecklist from '../../components/OnboardingChecklist.jsx';
 import { TERMS_VERSION } from '../../lib/terms';
 
 
-// Stripe Connect Warning Banner Component
 function StripeWarningBanner({ onConnect, loading, error, onClearError, status }) {
   const isDisconnected = status === 'INCOMPLETE' || status === 'PENDING';
-
   return (
-    <div className={`bg-v-surface border ${isDisconnected ? 'border-v-danger/40' : 'border-v-gold/40'} rounded p-4 mb-4`}>
+    <div className="flex items-center justify-between py-4 px-0 border-b border-v-border-subtle">
       {error && (
-        <div className="mb-3 p-3 bg-v-danger/10 border border-v-danger/30 rounded text-v-danger text-sm flex justify-between items-start">
+        <div className="mb-3 p-3 text-v-danger text-sm flex justify-between items-start w-full">
           <span>{error}</span>
           <button onClick={onClearError} className="ml-2 text-v-danger hover:text-red-400">&times;</button>
         </div>
       )}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center">
-          <span className={`${isDisconnected ? 'text-v-danger' : 'text-v-gold'} text-xl mr-3`}>&#9888;</span>
-          <div>
-            <p className="text-v-text-primary font-medium">
-              {isDisconnected ? 'Stripe disconnected - payments disabled' : 'Stripe not connected'}
-            </p>
-            <p className="text-v-text-secondary text-sm">
-              {isDisconnected
-                ? 'Online payments are currently disabled. Quotes can still be sent but customers cannot pay online.'
-                : 'You cannot receive payments until you connect Stripe.'}
-            </p>
-          </div>
+      <div className="flex items-center gap-4">
+        <div className={`w-2 h-2 rounded-full ${isDisconnected ? 'bg-v-danger' : 'bg-v-gold'}`} />
+        <div>
+          <p className="text-v-text-primary text-sm">
+            {isDisconnected ? 'Stripe disconnected' : 'Stripe not connected'}
+          </p>
+          <p className="text-v-text-secondary text-xs mt-0.5">
+            {isDisconnected ? 'Online payments are currently disabled.' : 'Connect to receive payments.'}
+          </p>
         </div>
-        <button
-          onClick={onConnect}
-          disabled={loading}
-          className="px-4 py-2 rounded bg-v-gold text-v-charcoal font-medium hover:bg-v-gold-dim disabled:opacity-50"
-        >
-          {loading ? 'Connecting...' : isDisconnected ? 'Reconnect Stripe' : 'Connect Stripe'}
-        </button>
       </div>
+      <button
+        onClick={onConnect}
+        disabled={loading}
+        className="px-5 py-2 text-xs uppercase tracking-widest text-v-gold border border-v-gold/30 hover:border-v-gold hover:bg-v-gold/5 transition-colors disabled:opacity-50"
+      >
+        {loading ? 'Connecting...' : isDisconnected ? 'Reconnect' : 'Connect Stripe'}
+      </button>
     </div>
   );
 }
 
-// Expiring Quotes Widget
 function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
   const [extending, setExtending] = useState(null);
-
   if (expiring.length === 0 && expired.length === 0) return null;
 
   const handleExtend = async (quoteId, days = 7) => {
@@ -68,9 +57,7 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({ days }),
       });
-      if (res.ok) {
-        window.location.reload();
-      }
+      if (res.ok) window.location.reload();
     } catch (err) {
       console.error('Extend failed:', err);
     } finally {
@@ -91,62 +78,46 @@ function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
   };
 
   return (
-    <div className="space-y-3">
-      {expiring.length > 0 && (
-        <div className="bg-v-surface border border-v-gold/30 rounded p-4">
-          <h3 className="font-medium text-sm text-v-gold mb-2 flex items-center gap-2 tracking-wide">
-            <span>&#9200;</span> Expiring Soon ({expiring.length})
-          </h3>
-          <div className="space-y-2">
-            {expiring.map((q) => (
-              <div key={q.id} className="flex items-center justify-between bg-v-surface-light rounded px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium text-v-text-primary">{q.client_name || 'Customer'}</p>
-                  <p className="text-xs text-v-text-secondary">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &#183; <span className="font-data">{currencySymbol()}{(q.total_price || 0).toLocaleString()}</span></p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-v-gold font-medium font-data">{formatExpiry(q.valid_until)}</span>
-                  <button
-                    onClick={() => handleExtend(q.id)}
-                    disabled={extending === q.id}
-                    className="px-3 py-2 text-xs bg-v-gold text-v-charcoal rounded hover:bg-v-gold-dim disabled:opacity-50 font-medium min-h-[36px]"
-                  >
-                    {extending === q.id ? '...' : '+7 Days'}
-                  </button>
-                </div>
-              </div>
-            ))}
+    <div className="space-y-0">
+      {expiring.length > 0 && expiring.map((q) => (
+        <div key={q.id} className="flex items-center justify-between h-14 border-b border-v-border-subtle">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-1.5 h-1.5 rounded-full bg-v-gold flex-shrink-0" />
+            <span className="text-sm text-v-text-primary truncate">{q.client_name || 'Customer'}</span>
+            <span className="text-xs text-v-text-secondary hidden sm:inline">{q.aircraft_model || ''}</span>
+          </div>
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <span className="text-xs text-v-gold font-data">{formatExpiry(q.valid_until)}</span>
+            <span className="text-sm text-v-text-primary font-data">{currencySymbol()}{(q.total_price || 0).toLocaleString()}</span>
+            <button
+              onClick={() => handleExtend(q.id)}
+              disabled={extending === q.id}
+              className="text-xs text-v-text-secondary hover:text-v-gold transition-colors uppercase tracking-wider"
+            >
+              {extending === q.id ? '...' : '+7d'}
+            </button>
           </div>
         </div>
-      )}
-
-      {expired.length > 0 && (
-        <div className="bg-v-surface border border-v-danger/30 rounded p-4">
-          <h3 className="font-medium text-sm text-v-danger mb-2 flex items-center gap-2 tracking-wide">
-            <span>&#128683;</span> Recently Expired ({expired.length})
-          </h3>
-          <div className="space-y-2">
-            {expired.slice(0, 5).map((q) => (
-              <div key={q.id} className="flex items-center justify-between bg-v-surface-light rounded px-3 py-2">
-                <div>
-                  <p className="text-sm font-medium text-v-text-primary">{q.client_name || 'Customer'}</p>
-                  <p className="text-xs text-v-text-secondary">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &#183; <span className="font-data">{currencySymbol()}{(q.total_price || 0).toLocaleString()}</span></p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-v-danger font-data">{formatExpiry(q.valid_until)}</span>
-                  <button
-                    onClick={() => handleExtend(q.id)}
-                    disabled={extending === q.id}
-                    className="px-3 py-2 text-xs border border-v-border text-v-text-secondary rounded hover:text-v-text-primary hover:border-v-gold disabled:opacity-50 font-medium min-h-[36px]"
-                  >
-                    {extending === q.id ? '...' : 'Reactivate'}
-                  </button>
-                </div>
-              </div>
-            ))}
+      ))}
+      {expired.length > 0 && expired.slice(0, 3).map((q) => (
+        <div key={q.id} className="flex items-center justify-between h-14 border-b border-v-border-subtle">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-1.5 h-1.5 rounded-full bg-v-danger flex-shrink-0" />
+            <span className="text-sm text-v-text-primary truncate">{q.client_name || 'Customer'}</span>
+            <span className="text-xs text-v-text-secondary line-through hidden sm:inline">expired</span>
+          </div>
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <span className="text-xs text-v-danger font-data">{formatExpiry(q.valid_until)}</span>
+            <button
+              onClick={() => handleExtend(q.id)}
+              disabled={extending === q.id}
+              className="text-xs text-v-text-secondary hover:text-v-gold transition-colors uppercase tracking-wider"
+            >
+              {extending === q.id ? '...' : 'Reactivate'}
+            </button>
           </div>
         </div>
-      )}
+      ))}
     </div>
   );
 }
@@ -157,7 +128,6 @@ function DashboardContent() {
   const [user, setUser] = useState(null);
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [availableServices, setAvailableServices] = useState([]);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [stripeStatus, setStripeStatus] = useState({ connected: false, status: 'CHECKING' });
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripeError, setStripeError] = useState(null);
@@ -170,10 +140,7 @@ function DashboardContent() {
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     const stored = localStorage.getItem('vector_user');
-    if (!token || !stored) {
-      router.push('/login');
-      return;
-    }
+    if (!token || !stored) { router.push('/login'); return; }
     let parsedUser;
     try { parsedUser = JSON.parse(stored); } catch { localStorage.removeItem('vector_user'); router.push('/login'); return; }
     setUser(parsedUser);
@@ -181,17 +148,13 @@ function DashboardContent() {
 
     const refreshUser = async () => {
       try {
-        const res = await fetch('/api/user/me', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
           const data = await res.json();
           if (data.user) {
             setUser(data.user);
             localStorage.setItem('vector_user', JSON.stringify(data.user));
-            if (data.user.terms_accepted_version !== TERMS_VERSION) {
-              setShowTermsModal(true);
-            }
+            if (data.user.terms_accepted_version !== TERMS_VERSION) setShowTermsModal(true);
           }
         }
       } catch (e) {}
@@ -200,15 +163,10 @@ function DashboardContent() {
 
     const checkOnboarding = async () => {
       try {
-        const res = await fetch('/api/onboarding', {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const res = await fetch('/api/onboarding', { headers: { Authorization: `Bearer ${token}` } });
         if (res.ok) {
           const data = await res.json();
-          if (data.onboarding_complete === false) {
-            router.push('/onboarding');
-            return true;
-          }
+          if (data.onboarding_complete === false) { router.push('/onboarding'); return true; }
         }
       } catch (e) {}
       return false;
@@ -216,7 +174,6 @@ function DashboardContent() {
 
     const fetchDashboardData = async () => {
       const headers = { Authorization: `Bearer ${token}` };
-
       fetch('/api/points/earn', {
         method: 'POST',
         headers: { ...headers, 'Content-Type': 'application/json' },
@@ -232,27 +189,19 @@ function DashboardContent() {
       ]);
 
       if (stripeRes.status === 'fulfilled' && stripeRes.value.ok) {
-        const data = await stripeRes.value.json();
-        setStripeStatus(data);
+        setStripeStatus(await stripeRes.value.json());
       } else {
         setStripeStatus({ connected: false, status: 'UNKNOWN' });
       }
-
       if (servicesRes.status === 'fulfilled' && servicesRes.value.ok) {
-        const data = await servicesRes.value.json();
-        setAvailableServices(data.services || []);
+        setAvailableServices((await servicesRes.value.json()).services || []);
       }
-
       if (statsRes.status === 'fulfilled' && statsRes.value.ok) {
-        const data = await statsRes.value.json();
-        setQuickStats(data);
+        setQuickStats(await statsRes.value.json());
       }
-
       if (quotesRes.status === 'fulfilled' && quotesRes.value.ok) {
-        const data = await quotesRes.value.json();
-        setRecentQuotes(data.quotes || []);
+        setRecentQuotes((await quotesRes.value.json()).quotes || []);
       }
-
       if (upcomingRes.status === 'fulfilled' && upcomingRes.value.ok) {
         const data = await upcomingRes.value.json();
         const now = new Date();
@@ -267,9 +216,7 @@ function DashboardContent() {
     };
 
     checkOnboarding().then(redirected => {
-      if (!redirected) {
-        fetchDashboardData().catch(err => console.error('Dashboard fetch error:', err));
-      }
+      if (!redirected) fetchDashboardData().catch(err => console.error('Dashboard fetch error:', err));
     });
   }, [router]);
 
@@ -278,26 +225,14 @@ function DashboardContent() {
     setStripeError(null);
     try {
       const token = localStorage.getItem('vector_token');
-      if (!token) {
-        setStripeError('Not logged in - please refresh and try again');
-        return;
-      }
+      if (!token) { setStripeError('Not logged in'); return; }
       const res = await fetch('/api/stripe/connect', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
       const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else if (data.error) {
-        const errorMsg = data.details ? `${data.error}: ${data.details}` : data.error;
-        setStripeError(errorMsg);
-      } else {
-        setStripeError('No redirect URL received - please try again');
-      }
+      if (data.url) window.location.href = data.url;
+      else setStripeError(data.details ? `${data.error}: ${data.details}` : data.error || 'Failed');
     } catch (err) {
       setStripeError(`Network error: ${err.message}`);
     } finally {
@@ -305,15 +240,7 @@ function DashboardContent() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem('vector_token');
-    localStorage.removeItem('vector_user');
-    router.push('/login');
-  };
-
-  if (loading) {
-    return <LoadingSpinner message="Loading dashboard..." />;
-  }
+  if (loading) return <LoadingSpinner message="Loading..." />;
 
   const STATUS_COLORS = {
     sent: 'text-v-gold',
@@ -325,253 +252,194 @@ function DashboardContent() {
     expired: 'text-v-text-secondary',
   };
 
+  const conversionRate = quickStats?.allTime && (quickStats.allTime.quotes || 0) > 0
+    ? `${Math.round(((quickStats.allTime.booked || 0) / quickStats.allTime.quotes) * 100)}%`
+    : '--';
+
   return (
-    <div className="page-transition min-h-screen overflow-y-auto bg-v-charcoal p-4 pb-40">
-      <DashboardTour />
+    <AppShell title="Dashboard">
+      <div className="px-6 md:px-10 py-8 pb-40 max-w-[1200px]">
+        <DashboardTour />
 
-      {/* Header */}
-      <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-1 bg-v-charcoal/95 backdrop-blur-sm border-b border-v-border/50 flex justify-between items-center">
-        <div className="flex items-center space-x-3">
-          <span className="text-v-gold text-xl">&#9992;</span>
-          <span className="text-v-text-primary text-xl font-light tracking-wide">Vector</span>
-          {user && <span className="text-v-text-secondary text-sm font-light hidden sm:inline tracking-wide">{user.company}</span>}
-        </div>
-        <div className="flex items-center gap-2 sm:gap-4 text-sm">
-          <DashboardLanguageSelector />
-          <GlobalSearch />
-          <PointsBadge />
-          <NotificationBell />
-          {/* Desktop nav */}
-          <div className="hidden md:flex items-center space-x-4">
-            {[
-              { href: '/quotes', label: 'Quotes' },
-              { href: '/calendar', label: 'Calendar' },
-              { href: '/customers', label: 'Customers' },
-              { href: '/team', label: 'Team' },
-              { href: '/settings', label: 'Settings' },
-            ].map(link => (
-              <a key={link.href} href={link.href} className="text-v-text-secondary hover:text-v-gold transition-colors tracking-wide text-sm">{link.label}</a>
-            ))}
-            <button onClick={handleLogout} className="text-v-text-secondary hover:text-v-gold transition-colors tracking-wide text-sm">Logout</button>
-          </div>
-          {/* Mobile menu */}
-          <div className="md:hidden relative">
-            <button
-              onClick={() => setMobileMenuOpen(prev => !prev)}
-              className="p-2 rounded hover:bg-v-surface-light"
-              aria-label="Menu"
-            >
-              <svg className="w-6 h-6 text-v-text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6h16M4 12h16M4 18h16"/>
-              </svg>
-            </button>
-            {mobileMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-48 bg-v-surface rounded border border-v-border shadow-xl py-2 z-50">
-                {[
-                  { href: '/quotes', label: 'Quotes' },
-                  { href: '/calendar', label: 'Calendar' },
-                  { href: '/customers', label: 'Customers' },
-                  { href: '/team', label: 'Team' },
-                  { href: '/rewards', label: 'Rewards' },
-                  { href: '/settings', label: 'Settings' },
-                ].map(link => (
-                  <a key={link.href} href={link.href} className="block px-4 py-3 text-sm text-v-text-secondary hover:text-v-gold hover:bg-v-surface-light transition-colors">{link.label}</a>
-                ))}
-                <button onClick={handleLogout} className="block w-full text-left px-4 py-3 text-sm text-v-text-secondary hover:text-v-gold hover:bg-v-surface-light border-t border-v-border transition-colors">Logout</button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
+        {/* Page Title */}
+        <h1 className="font-heading text-[2rem] font-light text-v-text-primary mb-10" style={{ letterSpacing: '0.15em' }}>
+          DASHBOARD
+        </h1>
 
-      {/* Stripe Warning Banner */}
-      {!stripeStatus.connected && stripeStatus.status !== 'CHECKING' && (
-        <StripeWarningBanner
-          onConnect={handleConnectStripe}
-          loading={stripeLoading}
-          error={stripeError}
-          onClearError={() => setStripeError(null)}
-          status={stripeStatus.status}
-        />
-      )}
+        {/* Stripe Warning */}
+        {!stripeStatus.connected && stripeStatus.status !== 'CHECKING' && (
+          <StripeWarningBanner
+            onConnect={handleConnectStripe}
+            loading={stripeLoading}
+            error={stripeError}
+            onClearError={() => setStripeError(null)}
+            status={stripeStatus.status}
+          />
+        )}
 
-      {/* Services Setup Prompt */}
-      {user && availableServices.length === 0 && (
-        <div data-tour="services-prompt" className="bg-v-surface border border-v-border rounded p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center">
-            <span className="text-v-gold text-xl mr-3">&#9432;</span>
+        {/* Services Setup */}
+        {user && availableServices.length === 0 && (
+          <div data-tour="services-prompt" className="flex items-center justify-between py-5 border-b border-v-border-subtle">
             <div>
-              <p className="text-v-text-primary font-medium">Set up your service menu</p>
-              <p className="text-v-text-secondary text-sm">Add services you offer to start building quotes.</p>
+              <p className="text-sm text-v-text-primary">Set up your service menu</p>
+              <p className="text-xs text-v-text-secondary mt-0.5">Add services to start building quotes.</p>
             </div>
+            <a
+              href="/settings/services"
+              className="px-5 py-2 text-xs uppercase tracking-widest text-v-charcoal bg-v-gold hover:bg-v-gold-dim transition-colors"
+            >
+              Get Started
+            </a>
           </div>
-          <a
-            href="/settings/services"
-            className="px-4 py-3 rounded bg-v-gold text-v-charcoal font-medium hover:bg-v-gold-dim min-h-[44px] whitespace-nowrap"
-          >
-            Add services to get started
-          </a>
-        </div>
-      )}
+        )}
 
-      {/* Business Overview */}
-      <div className="mb-4 space-y-4">
-        <div data-tour="quick-stats">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-lg font-heading text-v-text-primary section-heading">Business Overview</h2>
-            <a href="/analytics" className="text-sm text-v-gold hover:text-v-gold-dim transition-colors">View Full Analytics</a>
-          </div>
-
-          {/* KPI Cards */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
-            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-gold p-6">
-              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Total Revenue</p>
-              <p className="text-4xl font-light text-v-gold font-data mt-2 tracking-wide">{currencySymbol()}{(quickStats?.monthRevenue || 0).toLocaleString()}</p>
-              <p className="text-xs text-v-text-secondary mt-2">This Month</p>
-            </div>
-            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-gold p-6">
-              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Conversion Rate</p>
-              <p className="text-4xl font-light text-v-gold font-data mt-2 tracking-wide">
-                {quickStats?.allTime ? (
-                  (quickStats.allTime.quotes || 0) > 0
-                    ? `${Math.round(((quickStats.allTime.booked || 0) / quickStats.allTime.quotes) * 100)}%`
-                    : '0%'
-                ) : '--'}
-              </p>
-              <p className="text-xs text-v-text-secondary mt-2">
-                {quickStats?.allTime ? `${quickStats.allTime.booked || 0} / ${quickStats.allTime.quotes || 0} sent` : ''}
-              </p>
-            </div>
-            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-danger p-6">
-              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Outstanding</p>
-              <p className="text-4xl font-light text-v-danger font-data mt-2 tracking-wide">{quickStats?.outstandingInvoices || 0}</p>
-              <p className="text-xs text-v-text-secondary mt-2 font-data">{currencySymbol()}{(quickStats?.outstandingTotal || 0).toLocaleString()}</p>
-            </div>
-            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-gold p-6">
-              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Avg Job Value</p>
-              <p className="text-4xl font-light text-v-gold font-data mt-2 tracking-wide">{currencySymbol()}{formatPriceWhole(quickStats?.avgJobValue)}</p>
-            </div>
-            <div className="bg-v-surface border border-v-border rounded-sm border-l-2 border-l-v-success p-6">
-              <p className="text-v-text-secondary text-xs uppercase tracking-widest">Jobs Completed</p>
-              <p className="text-4xl font-light text-v-success font-data mt-2 tracking-wide">{quickStats?.monthJobs || 0}</p>
-              <p className="text-xs text-v-text-secondary mt-2">This Month</p>
-            </div>
+        {/* KPI Section */}
+        <div data-tour="quick-stats" className="mt-10">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-10 gap-y-8">
+            {[
+              { label: 'Revenue', value: `${currencySymbol()}${(quickStats?.monthRevenue || 0).toLocaleString()}`, sub: 'This Month' },
+              { label: 'Conversion', value: conversionRate, sub: quickStats?.allTime ? `${quickStats.allTime.booked || 0} of ${quickStats.allTime.quotes || 0}` : '' },
+              { label: 'Outstanding', value: `${quickStats?.outstandingInvoices || 0}`, sub: `${currencySymbol()}${(quickStats?.outstandingTotal || 0).toLocaleString()}`, danger: true },
+              { label: 'Avg Job', value: `${currencySymbol()}${formatPriceWhole(quickStats?.avgJobValue)}` },
+              { label: 'Completed', value: `${quickStats?.monthJobs || 0}`, sub: 'This Month' },
+            ].map((kpi) => (
+              <div key={kpi.label} className="min-w-0">
+                <p className={`text-[2.5rem] leading-none font-extralight font-data tracking-wide ${kpi.danger ? 'text-v-danger' : 'text-v-gold'}`}>
+                  {kpi.value}
+                </p>
+                <div className="w-full h-px bg-v-gold/40 mt-3 mb-2" />
+                <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">{kpi.label}</p>
+                {kpi.sub && <p className="text-[10px] text-v-text-secondary/60 font-data mt-0.5">{kpi.sub}</p>}
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Quick Actions */}
-        <div className="flex gap-2 flex-wrap">
+        <div className="flex gap-3 mt-10">
           <a
             href="/quotes/new"
-            className="flex items-center gap-1.5 px-4 py-2 bg-v-gold text-v-charcoal rounded text-sm font-medium hover:bg-v-gold-dim min-h-[44px]"
+            className="px-6 py-2.5 text-xs uppercase tracking-widest text-v-charcoal bg-v-gold hover:bg-v-gold-dim transition-colors"
           >
-            <span>+</span> New Quote
+            New Quote
           </a>
-          <button onClick={() => setShowAddCustomerModal(true)} className="flex items-center gap-1.5 px-4 py-2 border border-v-border text-v-text-secondary rounded text-sm hover:text-v-text-primary hover:border-v-gold/50 min-h-[44px] transition-colors">
+          <button
+            onClick={() => setShowAddCustomerModal(true)}
+            className="px-6 py-2.5 text-xs uppercase tracking-widest text-v-text-secondary border border-v-border-subtle hover:border-v-gold/40 hover:text-v-text-primary transition-colors"
+          >
             Add Customer
           </button>
-          <a href="/calendar" className="flex items-center gap-1.5 px-4 py-2 border border-v-border text-v-text-secondary rounded text-sm hover:text-v-text-primary hover:border-v-gold/50 min-h-[44px] transition-colors">
-            Calendar
-          </a>
-          <a href="/quotes" className="flex items-center gap-1.5 px-4 py-2 border border-v-border text-v-text-secondary rounded text-sm hover:text-v-text-primary hover:border-v-gold/50 min-h-[44px] transition-colors">
-            All Quotes
-          </a>
         </div>
-      </div>
 
-      {/* Recent Quotes & Upcoming Jobs */}
-      <div className="space-y-4">
-        <ExpiringQuotesWidget expiring={quickStats?.expiringQuotes} expired={quickStats?.recentlyExpired} />
+        {/* Section Divider */}
+        <div className="mt-12 mb-8 border-t border-v-border-subtle" />
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Expiring Quotes */}
+        {(quickStats?.expiringQuotes?.length > 0 || quickStats?.recentlyExpired?.length > 0) && (
+          <>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary mb-4">Attention Required</p>
+            <ExpiringQuotesWidget expiring={quickStats?.expiringQuotes} expired={quickStats?.recentlyExpired} />
+            <div className="mt-8 mb-8 border-t border-v-border-subtle" />
+          </>
+        )}
+
+        {/* Recent Quotes & Upcoming Jobs */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
           {/* Recent Quotes */}
-          <div className="bg-v-surface border border-v-border rounded p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-heading text-sm text-v-text-secondary tracking-widest uppercase">Recent Quotes</h3>
-              <a href="/quotes" className="text-xs text-v-gold hover:text-v-gold-dim transition-colors">View All</a>
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Recent Quotes</p>
+              <a href="/quotes" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">View All</a>
             </div>
             {recentQuotes.length > 0 ? (
-              <div className="space-y-1">
+              <div>
                 {recentQuotes.slice(0, 5).map((q) => (
-                  <a key={q.id} href={`/quotes/${q.id}`} className="flex items-center justify-between py-2 hover:bg-v-surface-light rounded px-2 -mx-2 transition-colors">
+                  <a
+                    key={q.id}
+                    href={`/quotes/${q.id}`}
+                    className="flex items-center justify-between h-14 border-b border-v-border-subtle hover:bg-white/[0.02] transition-colors -mx-2 px-2"
+                  >
                     <div className="min-w-0 flex-1">
                       <p className="text-sm text-v-text-primary truncate">{q.aircraft_name || q.aircraft_model || 'Unknown Aircraft'}</p>
-                      <p className="text-xs text-v-text-secondary truncate">{q.customer_name || q.customer_email || ''}</p>
+                      <p className="text-xs text-v-text-secondary/60 truncate">{q.customer_name || q.customer_email || ''}</p>
                     </div>
-                    <div className="flex items-center gap-3 ml-2 shrink-0">
-                      <span className={`text-xs font-medium ${STATUS_COLORS[q.status] || 'text-v-text-secondary'}`}>{q.status}</span>
-                      <span className="text-sm text-v-text-primary font-data">{currencySymbol()}{formatPriceWhole(q.total_price)}</span>
+                    <div className="flex items-center gap-4 ml-3 flex-shrink-0">
+                      <span className={`text-[10px] uppercase tracking-wider ${STATUS_COLORS[q.status] || 'text-v-text-secondary'}`}>{q.status}</span>
+                      <span className="text-sm text-v-text-primary font-data min-w-[60px] text-right">{currencySymbol()}{formatPriceWhole(q.total_price)}</span>
                     </div>
                   </a>
                 ))}
               </div>
             ) : (
-              <p className="text-sm text-v-text-secondary text-center py-4">No quotes yet. Create your first quote.</p>
+              <p className="text-sm text-v-text-secondary/60 py-8">No quotes yet</p>
             )}
           </div>
 
           {/* Upcoming Jobs */}
-          <div className="bg-v-surface border border-v-border rounded p-4">
-            <div className="flex justify-between items-center mb-3">
-              <h3 className="font-heading text-sm text-v-text-secondary tracking-widest uppercase">Upcoming Jobs <span className="text-xs text-v-text-secondary font-normal normal-case">(Next 7 Days)</span></h3>
-              <a href="/calendar" className="text-xs text-v-gold hover:text-v-gold-dim transition-colors">View Calendar</a>
+          <div>
+            <div className="flex items-center justify-between mb-5">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Upcoming Jobs</p>
+              <a href="/calendar" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">Calendar</a>
             </div>
             {upcomingJobs.length > 0 ? (
-              <div className="space-y-1">
+              <div>
                 {upcomingJobs.map((job) => {
                   const d = new Date(job.scheduled_date);
                   const isToday = d.toDateString() === new Date().toDateString();
                   return (
-                    <div key={job.id} className="flex items-center justify-between py-2 px-2 -mx-2 hover:bg-v-surface-light rounded transition-colors">
+                    <div
+                      key={job.id}
+                      className="flex items-center justify-between h-14 border-b border-v-border-subtle hover:bg-white/[0.02] transition-colors -mx-2 px-2"
+                    >
                       <div className="min-w-0 flex-1">
                         <p className="text-sm text-v-text-primary truncate">{job.aircraft_name || job.aircraft_model || 'Unknown Aircraft'}</p>
-                        <p className="text-xs text-v-text-secondary truncate">{job.customer_name || job.client_name || ''}</p>
+                        <p className="text-xs text-v-text-secondary/60 truncate">{job.customer_name || job.client_name || ''}</p>
                       </div>
-                      <div className="text-right shrink-0 ml-2">
-                        <p className={`text-xs font-medium ${isToday ? 'text-v-gold' : 'text-v-text-secondary'}`}>
+                      <div className="flex items-center gap-4 ml-3 flex-shrink-0">
+                        <span className={`text-[10px] uppercase tracking-wider ${isToday ? 'text-v-gold' : 'text-v-text-secondary'}`}>
                           {isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                        </p>
-                        <p className="text-sm text-v-text-primary font-data">{currencySymbol()}{formatPriceWhole(job.total_price)}</p>
+                        </span>
+                        <span className="text-sm text-v-text-primary font-data min-w-[60px] text-right">{currencySymbol()}{formatPriceWhole(job.total_price)}</span>
                       </div>
                     </div>
                   );
                 })}
               </div>
             ) : (
-              <p className="text-sm text-v-text-secondary text-center py-4">No upcoming jobs scheduled</p>
+              <p className="text-sm text-v-text-secondary/60 py-8">No upcoming jobs</p>
             )}
           </div>
         </div>
+
+        {/* Terms Modal */}
+        <TermsConsentModal
+          isOpen={showTermsModal}
+          onAccept={() => {
+            setShowTermsModal(false);
+            setUser(prev => ({ ...prev, terms_accepted_version: TERMS_VERSION }));
+          }}
+        />
+
+        {/* Onboarding */}
+        {user && !showTermsModal && <OnboardingChecklist user={user} />}
+
+        {/* Add Customer Modal */}
+        <AddCustomerModal
+          isOpen={showAddCustomerModal}
+          onClose={() => setShowAddCustomerModal(false)}
+          onSuccess={(data) => {
+            toastSuccess(data?.created ? 'Customer added!' : 'Customer saved!');
+            const token = localStorage.getItem('vector_token');
+            if (token) {
+              fetch('/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } })
+                .then(r => r.ok ? r.json() : null)
+                .then(d => { if (d) setQuickStats(d); })
+                .catch(() => {});
+            }
+          }}
+        />
       </div>
-
-      {/* Terms Consent Modal */}
-      <TermsConsentModal
-        isOpen={showTermsModal}
-        onAccept={() => {
-          setShowTermsModal(false);
-          setUser(prev => ({ ...prev, terms_accepted_version: TERMS_VERSION }));
-        }}
-      />
-
-      {/* Onboarding Checklist */}
-      {user && !showTermsModal && <OnboardingChecklist user={user} />}
-
-      {/* Add Customer Modal */}
-      <AddCustomerModal
-        isOpen={showAddCustomerModal}
-        onClose={() => setShowAddCustomerModal(false)}
-        onSuccess={(data) => {
-          toastSuccess(data?.created ? 'Customer added!' : 'Customer saved!');
-          const token = localStorage.getItem('vector_token');
-          if (token) {
-            fetch('/api/dashboard/stats', { headers: { Authorization: `Bearer ${token}` } })
-              .then(r => r.ok ? r.json() : null)
-              .then(d => { if (d) setQuickStats(d); })
-              .catch(() => {});
-          }
-        }}
-      />
-    </div>
+    </AppShell>
   );
 }
 

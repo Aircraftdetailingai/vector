@@ -12,6 +12,7 @@
   --v-gold: #C9A84C;
   --v-gold-dim: #A68A3E;
   --v-border: #2A3A50;
+  --v-border-subtle: #1A2236;
   --v-text-primary: #F5F5F5;
   --v-text-secondary: #8A9BB0;
 }
@@ -83,16 +84,15 @@ input, textarea, select {
   animation: slideUp 0.3s ease-out;
 }
 
-/* ========== CARD HOVER ========== */
+/* ========== CARD HOVER (subtle, no shadow) ========== */
 
 .card-hover {
-  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
 }
 
 .card-hover:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.3);
-  border-color: var(--v-gold);
+  border-color: rgba(201, 168, 76, 0.2);
+  background-color: rgba(255, 255, 255, 0.01);
 }
 
 /* ========== SIDEBAR / DROPDOWN TRANSITIONS ========== */
@@ -233,6 +233,13 @@ input, textarea, select {
     inset 0 1px 0 0 rgba(201, 168, 76, 0.08),
     inset 0 0 40px rgba(201, 168, 76, 0.03),
     0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* ========== SIDEBAR NAV ========== */
+
+.sidebar-nav-item {
+  border-left: 3px solid transparent;
+  transition: color 0.2s ease, background-color 0.2s ease, border-color 0.2s ease;
 }
 
 /* ========== FORCE HIDE VERCEL TOOLBAR ========== */
