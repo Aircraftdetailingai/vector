@@ -213,9 +213,9 @@ export async function POST(request, { params }) {
     }
   }
 
-  // Use request origin for the quote link (works in both dev and prod)
-  const origin = request.headers.get('origin') || request.headers.get('referer')?.replace(/\/[^/]*$/) || 'https://app.vectorav.ai';
-  const quoteLink = `${origin}/q/${quote.share_link}`;
+  // Always use the canonical app URL for quote links sent to customers
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai';
+  const quoteLink = `${appUrl}/q/${quote.share_link}`;
   let emailSent = false;
   let emailError = null;
   let smsSent = false;

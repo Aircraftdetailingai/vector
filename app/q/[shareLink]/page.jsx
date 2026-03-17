@@ -586,6 +586,17 @@ export default function QuoteViewPage() {
           Dates subject to availability, confirmed upon payment.
         </p>
 
+        {/* Questions / Contact */}
+        {detailer && (detailer.phone || detailer.email) && (
+          <div className="mt-8 pt-6 border-t border-[#1A2236] text-center">
+            <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-3">Questions about this quote?</p>
+            <div className="flex justify-center gap-6 text-sm">
+              {detailer.phone && <a href={`tel:${detailer.phone}`} className="text-[#C9A84C] hover:text-[#D4B85A] transition-colors">{detailer.phone}</a>}
+              {detailer.email && <a href={`mailto:${detailer.email}`} className="text-[#C9A84C] hover:text-[#D4B85A] transition-colors">{detailer.email}</a>}
+            </div>
+          </div>
+        )}
+
         {/* Download PDF */}
         <div className="mt-6 text-center">
           <a
