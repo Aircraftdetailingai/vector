@@ -70,9 +70,11 @@ export async function POST(request) {
     const ColorThief = (await import('colorthief')).default;
     const ct = new ColorThief();
     const palette = await ct.getPalette(buffer, 5);
+    console.log('[extract-colors] palette:', JSON.stringify(palette));
 
     // All 5 colors as hex for swatches
     const rawColors = palette.map(([r, g, b]) => rgbToHex(r, g, b));
+    console.log('[extract-colors] rawColors:', rawColors);
 
     // Filter out very dark or very light colors for presets
     const filtered = palette.filter(([r, g, b]) => {

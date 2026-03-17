@@ -376,6 +376,24 @@ function SettingsContent() {
         setWebsiteUrl(data.website_url || '');
         if (data.theme_colors && data.theme_colors.length > 0) {
           setBrandColors(data.theme_colors);
+        } else if (data.logo_url) {
+          // Logo exists but no colors extracted yet — trigger extraction
+          try {
+            const colRes = await fetch('/api/user/extract-colors', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ logo_url: data.logo_url }),
+            });
+            if (colRes.ok) {
+              const colData = await colRes.json();
+              if (colData.rawColors && colData.rawColors.length > 0) {
+                setBrandColors(colData.rawColors);
+              }
+              if (colData.presets) setThemePresets(colData.presets);
+            }
+          } catch (e) {
+            console.log('Auto color extraction failed:', e);
+          }
         }
         if (data.font_heading || data.font_body) {
           setExtractedFonts({
