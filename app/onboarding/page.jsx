@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { TERMS_VERSION } from '@/lib/terms';
+import { getAllCurrencies } from '@/lib/currency';
 
 const LANGUAGES = [
   { code: 'en', label: 'English', flag: '\u{1F1FA}\u{1F1F8}' },
@@ -18,17 +19,7 @@ const LANGUAGES = [
   { code: 'zh', label: 'Chinese (Simplified)', flag: '\u{1F1E8}\u{1F1F3}' },
 ];
 
-const CURRENCIES = [
-  { code: 'USD', symbol: '$', label: 'US Dollar' },
-  { code: 'EUR', symbol: '\u20AC', label: 'Euro' },
-  { code: 'GBP', symbol: '\u00A3', label: 'British Pound' },
-  { code: 'CAD', symbol: 'C$', label: 'Canadian Dollar' },
-  { code: 'AUD', symbol: 'A$', label: 'Australian Dollar' },
-  { code: 'JPY', symbol: '\u00A5', label: 'Japanese Yen' },
-  { code: 'CHF', symbol: 'CHF', label: 'Swiss Franc' },
-  { code: 'MXN', symbol: 'MX$', label: 'Mexican Peso' },
-  { code: 'BRL', symbol: 'R$', label: 'Brazilian Real' },
-];
+const CURRENCIES = getAllCurrencies().map(c => ({ code: c.code, symbol: c.symbol, label: c.name, flag: c.flag }));
 
 const COMMON_SERVICES = [
   { name: 'Exterior Wash', description: 'Full exterior aircraft wash and dry', hours_field: 'ext_wash_hours', defaultRate: 85 },
@@ -652,7 +643,7 @@ export default function OnboardingPage() {
                       className="w-full border border-gray-300 rounded-lg px-3 py-2.5 focus:ring-2 focus:ring-amber-500 focus:border-amber-500"
                     >
                       {CURRENCIES.map(c => (
-                        <option key={c.code} value={c.code}>{c.symbol} {c.code} — {c.label}</option>
+                        <option key={c.code} value={c.code}>{c.flag} {c.symbol} {c.code} — {c.label}</option>
                       ))}
                     </select>
                   </div>

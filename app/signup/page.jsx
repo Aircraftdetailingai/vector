@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
+import { STRIPE_COUNTRIES } from '@/lib/currency';
 
 function SignupForm() {
   const searchParams = useSearchParams();
@@ -10,7 +11,7 @@ function SignupForm() {
   const [loading, setLoading] = useState(true);
   const [invite, setInvite] = useState(null);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '', company: '', email: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState({ name: '', company: '', email: '', password: '', confirmPassword: '', country: 'US' });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
 
@@ -53,6 +54,7 @@ function SignupForm() {
           password: form.password,
           name: form.name.trim(),
           company: form.company.trim() || null,
+          country: form.country || null,
           invite_token: inviteToken,
         }),
       });
@@ -158,6 +160,21 @@ function SignupForm() {
                 placeholder="Your Aviation Company"
                 className="w-full bg-v-surface-light border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
               />
+            </div>
+
+            <div>
+              <label className="block text-sm text-v-text-secondary mb-1">Country</label>
+              <select
+                value={form.country}
+                onChange={(e) => setForm(f => ({ ...f, country: e.target.value }))}
+                className="w-full bg-v-surface-light border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-primary outline-none focus:border-v-gold/50"
+              >
+                {STRIPE_COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {c.name}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div>

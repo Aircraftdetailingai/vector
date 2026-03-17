@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
+import { getAllCurrencies, CURRENCY_MAP } from '@/lib/currency';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,30 +10,6 @@ function getSupabase() {
   if (!url || !key) return null;
   return createClient(url, key);
 }
-
-// Stripe-supported currencies
-const CURRENCIES = [
-  { code: 'USD', name: 'US Dollar', symbol: '$' },
-  { code: 'EUR', name: 'Euro', symbol: '€' },
-  { code: 'GBP', name: 'British Pound', symbol: '£' },
-  { code: 'CAD', name: 'Canadian Dollar', symbol: 'C$' },
-  { code: 'AUD', name: 'Australian Dollar', symbol: 'A$' },
-  { code: 'NZD', name: 'New Zealand Dollar', symbol: 'NZ$' },
-  { code: 'CHF', name: 'Swiss Franc', symbol: 'CHF' },
-  { code: 'JPY', name: 'Japanese Yen', symbol: '¥' },
-  { code: 'SGD', name: 'Singapore Dollar', symbol: 'S$' },
-  { code: 'HKD', name: 'Hong Kong Dollar', symbol: 'HK$' },
-  { code: 'MXN', name: 'Mexican Peso', symbol: 'MX$' },
-  { code: 'BRL', name: 'Brazilian Real', symbol: 'R$' },
-  { code: 'INR', name: 'Indian Rupee', symbol: '₹' },
-  { code: 'AED', name: 'UAE Dirham', symbol: 'د.إ' },
-  { code: 'ZAR', name: 'South African Rand', symbol: 'R' },
-  { code: 'SEK', name: 'Swedish Krona', symbol: 'kr' },
-  { code: 'NOK', name: 'Norwegian Krone', symbol: 'kr' },
-  { code: 'DKK', name: 'Danish Krone', symbol: 'kr' },
-  { code: 'PLN', name: 'Polish Złoty', symbol: 'zł' },
-  { code: 'CZK', name: 'Czech Koruna', symbol: 'Kč' },
-];
 
 // GET - Get user's currency preference
 export async function GET(request) {
@@ -54,12 +31,13 @@ export async function GET(request) {
       .single();
 
     const currentCurrency = detailer?.preferred_currency || 'USD';
-    const currencyInfo = CURRENCIES.find(c => c.code === currentCurrency) || CURRENCIES[0];
+    const currencyInfo = CURRENCY_MAP[currentCurrency] || CURRENCY_MAP.USD;
+    const currencies = getAllCurrencies();
 
     return Response.json({
       currency: currentCurrency,
       currencyInfo,
-      currencies: CURRENCIES,
+      currencies,
     });
 
   } catch (err) {
@@ -83,7 +61,7 @@ export async function POST(request) {
     const { currency } = await request.json();
 
     // Validate currency
-    const currencyInfo = CURRENCIES.find(c => c.code === currency);
+    const currencyInfo = CURRENCY_MAP[currency];
     if (!currencyInfo) {
       return Response.json({ error: 'Invalid currency code' }, { status: 400 });
     }

@@ -2,7 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { DEFAULT_PRODUCT_RATIOS, SERVICE_TYPE_LABELS } from '../../lib/product-calculator';
-import { setUserCurrency } from '@/lib/currency';
+import { setUserCurrency, STRIPE_COUNTRIES } from '@/lib/currency';
 import { currencySymbol } from '@/lib/formatPrice';
 import { restartTour } from '@/components/DashboardTour';
 import { useTranslation, LANGUAGES } from '@/lib/i18n';
@@ -51,6 +51,7 @@ function SettingsContent() {
   const [currency, setCurrency] = useState('USD');
   const [currencies, setCurrencies] = useState([]);
   const [currencyLoading, setCurrencyLoading] = useState(false);
+  const [country, setCountry] = useState('');
   const [language, setLanguage] = useState('en');
   const [languages, setLanguages] = useState([]);
   const [minimumFee, setMinimumFee] = useState(0);
@@ -165,6 +166,7 @@ function SettingsContent() {
     setEfficiencyFactor(u.efficiency_factor || 1.0);
     setLaborRate(u.default_labor_rate || 25);
     setHomeAirport(u.home_airport || '');
+    setCountry(u.country || '');
       setNotifyQuoteViewed(u.notify_quote_viewed || false);
       setAutoDiscountEnabled(u.notification_settings?.autoDiscountEnabled || false);
       setFollowupDiscountPercent(u.followup_discount_percent || 10);
@@ -605,6 +607,23 @@ function SettingsContent() {
     }
   };
 
+  const saveCountry = async (code) => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      await fetch('/api/user/country', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ country: code }),
+      });
+      const stored = localStorage.getItem('vector_user');
+      if (stored) {
+        try { const u = JSON.parse(stored); u.country = code; localStorage.setItem('vector_user', JSON.stringify(u)); } catch {}
+      }
+    } catch (err) {
+      console.error('Failed to save country:', err);
+    }
+  };
+
   const fetchLanguage = async () => {
     try {
       const token = localStorage.getItem('vector_token');
@@ -998,6 +1017,7 @@ function SettingsContent() {
       if (pendingChanges.has('efficiencyFactor')) promises.push(saveEfficiencyFactor(efficiencyFactor));
       if (pendingChanges.has('minimumFee')) promises.push(saveMinimumFee(parseFloat(minimumFee) || 0, []));
       if (pendingChanges.has('currency')) promises.push(saveCurrency(currency));
+      if (pendingChanges.has('country')) promises.push(saveCountry(country));
       if (pendingChanges.has('language')) promises.push(saveLanguage(language));
       // homeAirport removed
       if (pendingChanges.has('passFee')) promises.push(savePassFee(passFeeToCustomer));
@@ -1737,12 +1757,33 @@ function SettingsContent() {
           </div>
         </div>
 
-        {/* Language & Currency */}
+        {/* Region, Language & Currency */}
         <div className="pb-6 mb-2">
-          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Language'} & {'Currency'}</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Region, Language & Currency</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div>
-              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'App Language'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Country</label>
+              <select
+                value={country}
+                onChange={(e) => {
+                  setCountry(e.target.value);
+                  markDirty('country');
+                }}
+                className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded px-3 py-2"
+              >
+                <option value="">Select country...</option>
+                {STRIPE_COUNTRIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.flag} {c.name}
+                  </option>
+                ))}
+              </select>
+              <p className="text-xs text-v-text-secondary mt-1">
+                Stripe-supported countries for payments
+              </p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">App Language</label>
               <select
                 value={uiLang}
                 onChange={(e) => {
@@ -1763,7 +1804,7 @@ function SettingsContent() {
               </p>
             </div>
             <div>
-              <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Currency'}</label>
+              <label className="block text-sm font-medium text-v-text-secondary mb-1">Currency</label>
               <select
                 value={currency}
                 onChange={(e) => { setCurrency(e.target.value); markDirty('currency'); }}
@@ -1773,15 +1814,15 @@ function SettingsContent() {
                 {currencies.length > 0 ? (
                   currencies.map((c) => (
                     <option key={c.code} value={c.code}>
-                      {c.symbol} {c.code} - {c.name}
+                      {c.flag} {c.symbol} {c.code} — {c.name}
                     </option>
                   ))
                 ) : (
-                  <option value="USD">$ USD - US Dollar</option>
+                  <option value="USD">$ USD — US Dollar</option>
                 )}
               </select>
               <p className="text-xs text-v-text-secondary mt-1">
-                {'All prices displayed in this currency. Stripe handles conversion.'}
+                All prices displayed in this currency. Stripe handles conversion.
               </p>
             </div>
           </div>

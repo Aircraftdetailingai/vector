@@ -17,7 +17,7 @@ export async function POST(request) {
     const supabase = getSupabase();
     if (!supabase) return Response.json({ error: 'Server error' }, { status: 500 });
 
-    const { email, password, name, company, invite_token } = await request.json();
+    const { email, password, name, company, country, invite_token } = await request.json();
 
     if (!email || !password || !name || !invite_token) {
       return Response.json({ error: 'Name, email, password, and invite token are required' }, { status: 400 });
@@ -71,6 +71,7 @@ export async function POST(request) {
         email: normalizedEmail,
         name: name.trim(),
         company: company?.trim() || null,
+        country: country || null,
         password_hash: passwordHash,
         plan: invite.plan,
         status: 'active',
