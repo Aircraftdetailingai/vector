@@ -135,7 +135,7 @@ export default function CustomerSelector({
           className={`flex-1 py-2 px-3 rounded text-sm font-medium border transition-colors ${
             customerMode === "existing"
               ? "bg-amber-500 text-white border-amber-500"
-              : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+              : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
           }`}
         >
           Select Existing
@@ -149,7 +149,7 @@ export default function CustomerSelector({
           className={`flex-1 py-2 px-3 rounded text-sm font-medium border transition-colors ${
             customerMode === "new"
               ? "bg-amber-500 text-white border-amber-500"
-              : "bg-white text-gray-600 border-gray-300 hover:bg-gray-50"
+              : "bg-white/5 text-gray-400 border-white/10 hover:bg-white/10"
           }`}
         >
           New Customer
@@ -161,25 +161,25 @@ export default function CustomerSelector({
         <div>
           {selectedCustomer ? (
             // Selected customer chip
-            <div className="bg-amber-50 border border-amber-300 rounded-lg p-3">
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
               <div className="flex justify-between items-start">
                 <div>
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-white">
                     {selectedCustomer.name}
                     {selectedCustomer.company_name && (
-                      <span className="text-gray-500 font-normal ml-2">
+                      <span className="text-gray-400 font-normal ml-2">
                         {selectedCustomer.company_name}
                       </span>
                     )}
                   </p>
-                  <p className="text-sm text-gray-600">{selectedCustomer.email}</p>
+                  <p className="text-sm text-gray-400">{selectedCustomer.email}</p>
                   {selectedCustomer.phone && (
                     <p className="text-sm text-gray-500">{selectedCustomer.phone}</p>
                   )}
                   {Array.isArray(selectedCustomer.tags) && selectedCustomer.tags.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
                       {selectedCustomer.tags.map((tag) => (
-                        <span key={tag} className="px-1.5 py-0.5 bg-amber-100 text-amber-800 rounded text-xs font-medium">
+                        <span key={tag} className="px-1.5 py-0.5 bg-amber-500/20 text-amber-300 rounded text-xs font-medium">
                           {tag}
                         </span>
                       ))}
@@ -200,7 +200,7 @@ export default function CustomerSelector({
                 <button
                   type="button"
                   onClick={onClear}
-                  className="text-gray-400 hover:text-red-500 text-lg leading-none"
+                  className="text-gray-500 hover:text-red-400 text-lg leading-none"
                 >
                   &times;
                 </button>
@@ -215,14 +215,14 @@ export default function CustomerSelector({
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => setDropdownOpen(true)}
                 placeholder="Search by name, email, or company..."
-                className="w-full border rounded px-3 py-2 pr-8 text-gray-900 bg-white"
+                className="w-full border border-white/10 rounded px-3 py-2 pr-8 text-white bg-white/5 placeholder-gray-500"
               />
               {searching && (
                 <span className="absolute right-3 top-2.5 text-gray-400 text-sm">...</span>
               )}
 
               {dropdownOpen && (
-                <div className="absolute z-50 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                <div className="absolute z-50 w-full mt-1 bg-[#1e293b] border border-white/10 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                   {searchResults.length === 0 ? (
                     <div className="p-3 text-gray-500 text-sm text-center">
                       {searching ? "Searching..." : searchQuery ? "No customers found" : "No existing customers"}
@@ -232,11 +232,11 @@ export default function CustomerSelector({
                       <div
                         key={customer.id || customer.email}
                         onClick={() => handleSelect(customer)}
-                        className="p-3 hover:bg-amber-50 cursor-pointer border-b last:border-b-0"
+                        className="p-3 hover:bg-amber-500/10 cursor-pointer border-b border-white/5 last:border-b-0"
                       >
                         <div className="flex justify-between items-start">
                           <div>
-                            <p className="font-medium text-gray-900">
+                            <p className="font-medium text-white">
                               {customer.name}
                               {customer.company_name && (
                                 <span className="text-gray-400 font-normal text-sm ml-2">
@@ -248,7 +248,7 @@ export default function CustomerSelector({
                             {Array.isArray(customer.tags) && customer.tags.length > 0 && (
                               <div className="flex flex-wrap gap-1 mt-0.5">
                                 {customer.tags.slice(0, 3).map((tag) => (
-                                  <span key={tag} className="px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">
+                                  <span key={tag} className="px-1.5 py-0.5 bg-white/10 text-gray-400 rounded text-xs">
                                     {tag}
                                   </span>
                                 ))}
@@ -282,7 +282,7 @@ export default function CustomerSelector({
                       onClear();
                       setDropdownOpen(false);
                     }}
-                    className="p-3 text-center text-amber-600 hover:bg-amber-50 cursor-pointer border-t font-medium text-sm"
+                    className="p-3 text-center text-amber-400 hover:bg-amber-500/10 cursor-pointer border-t border-white/10 font-medium text-sm"
                   >
                     + Add New Customer
                   </div>
@@ -297,54 +297,54 @@ export default function CustomerSelector({
       {customerMode === "new" && (
         <div className="space-y-3">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Company Name <span className="text-gray-400 font-normal">(optional)</span>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Company Name <span className="text-gray-500 font-normal">(optional)</span>
             </label>
             <input
               type="text"
               value={newCustomerFields.companyName || ""}
               onChange={(e) => onFieldChange({ companyName: e.target.value })}
               placeholder="ABC Aviation"
-              className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
+              className="w-full border border-white/10 rounded px-3 py-2 text-white bg-white/5 placeholder-gray-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Customer Name <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Customer Name <span className="text-red-400">*</span>
             </label>
             <input
               type="text"
               value={newCustomerFields.name || ""}
               onChange={(e) => onFieldChange({ name: e.target.value })}
               placeholder="John Smith"
-              className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
+              className="w-full border border-white/10 rounded px-3 py-2 text-white bg-white/5 placeholder-gray-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email <span className="text-red-500">*</span>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Email <span className="text-red-400">*</span>
             </label>
             <input
               type="email"
               value={newCustomerFields.email || ""}
               onChange={(e) => onFieldChange({ email: e.target.value })}
               placeholder="john@example.com"
-              className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
+              className="w-full border border-white/10 rounded px-3 py-2 text-white bg-white/5 placeholder-gray-500"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Phone <span className="text-gray-400 font-normal">(optional)</span>
+            <label className="block text-sm font-medium text-gray-300 mb-1">
+              Phone <span className="text-gray-500 font-normal">(optional)</span>
             </label>
             <input
               type="tel"
               value={newCustomerFields.phone || ""}
               onChange={(e) => onFieldChange({ phone: e.target.value })}
               placeholder="(555) 123-4567"
-              className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
+              className="w-full border border-white/10 rounded px-3 py-2 text-white bg-white/5 placeholder-gray-500"
             />
           </div>
-          {saveError && <p className="text-red-600 text-sm">{saveError}</p>}
+          {saveError && <p className="text-red-400 text-sm">{saveError}</p>}
           <button
             type="button"
             onClick={handleSaveNewCustomer}

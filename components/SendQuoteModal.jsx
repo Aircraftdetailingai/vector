@@ -520,9 +520,9 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
         }}
         className={`cursor-pointer border rounded p-3 flex items-center justify-between mb-2 ${
           locked ? "opacity-60" : ""
-        } ${isSelected ? "border-amber-500" : "border-gray-300"}`}
+        } ${isSelected ? "border-amber-500 bg-amber-500/10" : "border-white/10"}`}
       >
-        <span>{label}</span>
+        <span className="text-white">{label}</span>
         {locked && (
           <a
             href="/settings?upgrade=business"
@@ -538,19 +538,19 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
 
   return (
     <div className="modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50">
-      <div className="modal-content bg-white text-gray-900 rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
+      <div className="modal-content bg-[#111827] text-white border border-white/10 rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
         <div>
             <h2 className="text-xl font-semibold mb-2">{'Send to Client'}</h2>
-            <p className="mb-4 text-gray-600">
+            <p className="mb-4 text-gray-400">
               {aircraftName && `${'Aircraft'}: ${aircraftName}`}{quote?.airport ? ` • ${quote.airport}` : ''} • {'Total'}: {currencySymbol()}{formatPrice(totalPrice)}
             </p>
-            {error && <p className="text-red-600 mb-2">{error}</p>}
+            {error && <p className="text-red-400 mb-2">{error}</p>}
 
             {/* Quote Limit Upgrade Prompt */}
             {quoteLimitHit && (
-              <div className="bg-amber-50 border border-amber-300 rounded-lg p-4 mb-4">
-                <p className="font-semibold text-amber-900 mb-1">{'Quote limit reached this month'}</p>
-                <p className="text-sm text-amber-800 mb-3">
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-4 mb-4">
+                <p className="font-semibold text-amber-400 mb-1">{'Quote limit reached this month'}</p>
+                <p className="text-sm text-amber-300 mb-3">
                   You&apos;ve used {quoteLimitHit.quotesUsed} of {quoteLimitHit.quotesLimit} free quotes this month.
                   {'Upgrade for Unlimited'}.
                 </p>
@@ -596,14 +596,14 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
             )}
 
             {/* Customer Selection */}
-            <label className="block mb-2 text-sm font-medium">{'Customer'}</label>
+            <label className="block mb-2 text-sm font-medium text-gray-300">{'Customer'}</label>
             {customerLocked && selectedCustomer ? (
-              <div className="mb-3 p-3 bg-gray-50 border border-gray-200 rounded-lg flex items-center justify-between">
+              <div className="mb-3 p-3 bg-white/5 border border-white/10 rounded-lg flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-gray-900">{selectedCustomer.name}</p>
-                  <p className="text-xs text-gray-500">{selectedCustomer.email}</p>
+                  <p className="text-sm font-medium text-white">{selectedCustomer.name}</p>
+                  <p className="text-xs text-gray-400">{selectedCustomer.email}</p>
                 </div>
-                <span className="text-xs text-gray-400 bg-gray-100 px-2 py-1 rounded">Pre-selected</span>
+                <span className="text-xs text-gray-500 bg-white/10 px-2 py-1 rounded">Pre-selected</span>
               </div>
             ) : (
               <CustomerSelector
@@ -622,13 +622,13 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
               <button
                 type="button"
                 onClick={() => setShowContacts(!showContacts)}
-                className="w-full flex items-center justify-between text-sm font-medium text-gray-700 py-2 px-3 bg-gray-50 rounded-lg hover:bg-gray-100"
+                className="w-full flex items-center justify-between text-sm font-medium text-gray-300 py-2 px-3 bg-white/5 rounded-lg hover:bg-white/10"
               >
-                <span>Aircraft Contact Info {(pocName || emergencyName) && <span className="text-green-600 ml-1">&#10003;</span>}</span>
-                <span className="text-gray-400">{showContacts ? '\u25B2' : '\u25BC'}</span>
+                <span>Aircraft Contact Info {(pocName || emergencyName) && <span className="text-green-400 ml-1">&#10003;</span>}</span>
+                <span className="text-gray-500">{showContacts ? '\u25B2' : '\u25BC'}</span>
               </button>
               {showContacts && (
-                <div className="mt-2 space-y-3 p-3 border border-gray-200 rounded-lg bg-gray-50">
+                <div className="mt-2 space-y-3 p-3 border border-white/10 rounded-lg bg-white/5">
                   {/* POC Section */}
                   <div>
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Who should we contact about this aircraft?</p>
@@ -638,27 +638,27 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                         value={pocName}
                         onChange={(e) => setPocName(e.target.value)}
                         placeholder="Contact name"
-                        className="col-span-2 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                        className="col-span-2 border border-white/10 bg-white/5 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                       />
                       <input
                         type="tel"
                         value={pocPhone}
                         onChange={(e) => setPocPhone(e.target.value)}
                         placeholder={'Phone'}
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                        className="border border-white/10 bg-white/5 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                       />
                       <input
                         type="email"
                         value={pocEmail}
                         onChange={(e) => setPocEmail(e.target.value)}
                         placeholder={'Email'}
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                        className="border border-white/10 bg-white/5 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                       />
                     </div>
                     <select
                       value={pocRole}
                       onChange={(e) => setPocRole(e.target.value)}
-                      className="mt-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                      className="mt-2 w-full border border-white/10 bg-white/5 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                     >
                       <option value="">Select role...</option>
                       <option value="Owner">Owner</option>
@@ -678,14 +678,14 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                         value={emergencyName}
                         onChange={(e) => setEmergencyName(e.target.value)}
                         placeholder="Emergency contact name"
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                        className="border border-white/10 bg-white/5 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                       />
                       <input
                         type="tel"
                         value={emergencyPhone}
                         onChange={(e) => setEmergencyPhone(e.target.value)}
                         placeholder="Emergency phone"
-                        className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                        className="border border-white/10 bg-white/5 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                       />
                     </div>
                   </div>
@@ -697,7 +697,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                       onChange={(e) => setContactNotes(e.target.value)}
                       placeholder="Contact notes (e.g., best time to call, gate access code...)"
                       rows={2}
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none"
+                      className="w-full border border-white/10 bg-white/5 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none resize-none"
                     />
                   </div>
                 </div>
@@ -711,7 +711,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
             </div>
 
             {/* Schedule Send Option */}
-            <div className="mb-3 border-t pt-3">
+            <div className="mb-3 border-t border-white/10 pt-3">
               <label className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -728,15 +728,15 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                     value={scheduledDate}
                     onChange={(e) => setScheduledDate(e.target.value)}
                     min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
+                    className="w-full border border-white/10 bg-white/5 text-white rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none"
                   />
-                  <p className="text-xs text-gray-400 mt-1">Quote will be sent automatically at this time.</p>
+                  <p className="text-xs text-gray-500 mt-1">Quote will be sent automatically at this time.</p>
                 </div>
               )}
             </div>
 
             {/* Recurring Service Option */}
-            <div className="mb-3 border-t pt-3">
+            <div className="mb-3 border-t border-white/10 pt-3">
               <label className="flex items-center cursor-pointer">
                 <input
                   type="checkbox"
@@ -749,11 +749,11 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
 
               {isRecurring && (
                 <div className="mt-3 pl-6">
-                  <label className="block mb-2 text-sm font-medium">{'Frequency'}</label>
+                  <label className="block mb-2 text-sm font-medium text-gray-300">{'Frequency'}</label>
                   <select
                     value={recurringInterval}
                     onChange={(e) => setRecurringInterval(e.target.value)}
-                    className="w-full border rounded px-3 py-2 mb-2"
+                    className="w-full border border-white/10 bg-white/5 text-white rounded px-3 py-2 mb-2"
                   >
                     <option value="4_weeks">{'Every 4 weeks'} (Recommended)</option>
                     <option value="monthly">{'Monthly'}</option>
@@ -762,12 +762,12 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                   </select>
 
                   {recurringInterval === "4_weeks" && (
-                    <div className="bg-amber-50 border border-amber-200 rounded p-2 text-xs text-amber-800">
+                    <div className="bg-amber-500/10 border border-amber-500/30 rounded p-2 text-xs text-amber-300">
                       <span className="font-semibold">Smart choice!</span> Billing every 4 weeks = 13 cycles/year vs 12 months = 8% more annual revenue.
                     </div>
                   )}
                   {recurringInterval === "monthly" && (
-                    <div className="bg-blue-50 border border-blue-200 rounded p-2 text-xs text-blue-700">
+                    <div className="bg-blue-500/10 border border-blue-500/30 rounded p-2 text-xs text-blue-400">
                       <span className="font-semibold">Tip:</span> Consider 4-week billing for 8% more annual revenue. Most customers won't notice the difference!
                     </div>
                   )}
@@ -780,7 +780,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                 type="button"
                 onClick={onClose}
                 disabled={loading || draftLoading}
-                className="px-4 py-3 border rounded-lg text-gray-700 min-h-[44px] font-medium"
+                className="px-4 py-3 border border-white/10 rounded-lg text-gray-300 hover:bg-white/5 min-h-[44px] font-medium"
               >
                 {'Cancel'}
               </button>
@@ -797,7 +797,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                 type="button"
                 onClick={handleSaveDraft}
                 disabled={loading || draftLoading}
-                className="px-4 py-3 rounded-lg border border-amber-500 text-amber-600 hover:bg-amber-50 disabled:opacity-50 min-h-[44px] font-medium flex items-center justify-center gap-2"
+                className="px-4 py-3 rounded-lg border border-amber-500/30 text-amber-400 hover:bg-amber-500/10 disabled:opacity-50 min-h-[44px] font-medium flex items-center justify-center gap-2"
               >
                 {draftLoading ? 'Saving...' : 'Save as Draft'}
               </button>
