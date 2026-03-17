@@ -100,6 +100,19 @@ export default function PortalPage() {
 
   const T = (key, replacements) => t(lang, key, replacements);
 
+  // Inject detailer theme as CSS variables
+  useEffect(() => {
+    if (!detailer) return;
+    const s = document.documentElement.style;
+    s.setProperty('--brand-primary', detailer.theme_primary || '#C9A84C');
+    s.setProperty('--brand-accent', detailer.theme_accent || '#0D1B2A');
+    s.setProperty('--brand-bg', detailer.theme_bg || '#0A0E17');
+    s.setProperty('--brand-surface', detailer.theme_surface || '#111827');
+    return () => {
+      ['--brand-primary', '--brand-accent', '--brand-bg', '--brand-surface'].forEach(v => s.removeProperty(v));
+    };
+  }, [detailer]);
+
   const isPaid = quote && ['paid', 'approved', 'accepted', 'scheduled', 'in_progress', 'completed'].includes(quote.status);
   const isExpired = quote && !isPaid && new Date() > new Date(quote.valid_until);
   const canPay = quote && !isPaid && !isExpired && stripeConnected && ['sent', 'viewed'].includes(quote.status);

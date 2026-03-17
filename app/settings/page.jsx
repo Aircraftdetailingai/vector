@@ -107,6 +107,14 @@ function SettingsContent() {
   const [termsUploading, setTermsUploading] = useState(false);
   const [termsSuccess, setTermsSuccess] = useState('');
 
+  // Branding state
+  const [logoUrl, setLogoUrl] = useState(null);
+  const [logoUploading, setLogoUploading] = useState(false);
+  const [themePresets, setThemePresets] = useState([]);
+  const [selectedTheme, setSelectedTheme] = useState({ primary: '#C9A84C', accent: '#0D1B2A', bg: '#0A0E17', surface: '#111827', logo_url: null });
+  const [themeSaving, setThemeSaving] = useState(false);
+  const [themeSuccess, setThemeSuccess] = useState('');
+
   // Profile state
   const [profileName, setProfileName] = useState('');
   const [profileCompany, setProfileCompany] = useState('');
@@ -297,6 +305,97 @@ function SettingsContent() {
     }
   };
 
+  const fetchBranding = async () => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/user/branding', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setLogoUrl(data.logo_url || null);
+        setSelectedTheme({
+          primary: data.theme_primary || '#C9A84C',
+          accent: data.theme_accent || '#0D1B2A',
+          bg: data.theme_bg || '#0A0E17',
+          surface: data.theme_surface || '#111827',
+          logo_url: data.theme_logo_url || null,
+        });
+      }
+    } catch {}
+  };
+
+  const handleLogoUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setLogoUploading(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch('/api/user/branding/upload', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error);
+      setLogoUrl(data.logo_url);
+      // Auto-extract colors
+      const colRes = await fetch('/api/user/extract-colors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ logo_url: data.logo_url }),
+      });
+      if (colRes.ok) {
+        const colData = await colRes.json();
+        setThemePresets(colData.presets || []);
+      }
+    } catch (err) {
+      console.error('Logo upload failed:', err);
+    } finally {
+      setLogoUploading(false);
+    }
+  };
+
+  const saveTheme = async (theme) => {
+    setThemeSaving(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/user/branding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          theme_primary: theme.primary,
+          theme_accent: theme.accent,
+          theme_bg: theme.bg,
+          theme_surface: theme.surface,
+          theme_logo_url: theme.logo_url || null,
+        }),
+      });
+      if (res.ok) {
+        setSelectedTheme(theme);
+        setThemeSuccess('Theme saved');
+        setTimeout(() => setThemeSuccess(''), 3000);
+        // Update localStorage for sidebar
+        const stored = localStorage.getItem('vector_user');
+        if (stored) {
+          try {
+            const u = JSON.parse(stored);
+            u.theme_primary = theme.primary;
+            u.theme_logo_url = theme.logo_url;
+            localStorage.setItem('vector_user', JSON.stringify(u));
+            document.documentElement.style.setProperty('--v-gold', theme.primary);
+          } catch {}
+        }
+      }
+    } catch (err) {
+      console.error('Failed to save theme:', err);
+    } finally {
+      setThemeSaving(false);
+    }
+  };
+
   const fetchProductRatios = async () => {
     try {
       const token = localStorage.getItem('vector_token');
@@ -394,6 +493,7 @@ function SettingsContent() {
     fetchAddonFees();
     fetchPassFee();
     fetchCcFee();
+    fetchBranding();
     fetchProductRatios();
     fetchReferralData();
   }, []);
@@ -921,7 +1021,7 @@ function SettingsContent() {
           <>
             {/* Spacer to prevent content from hiding behind fixed bar */}
             <div className="h-14" />
-            <div className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 shadow-lg border-b border-v-border animate-[slideDown_0.3s_ease] ${
+            <div className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 border-b border-v-border animate-[slideDown_0.3s_ease] ${
               saveSuccess ? 'bg-green-900/30 border-green-600/30 text-green-400' : 'bg-v-surface border-v-border text-amber-400'
             }`}>
               <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
@@ -948,7 +1048,7 @@ function SettingsContent() {
                       <button
                         onClick={saveAllChanges}
                         disabled={saving}
-                        className="px-6 py-1.5 text-sm bg-gradient-to-r from-amber-500 to-amber-600 text-white rounded font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity"
+                        className="px-6 py-1.5 text-xs uppercase tracking-widest bg-v-gold text-v-charcoal font-semibold hover:bg-v-gold-dim disabled:opacity-50 transition-colors"
                       >
                         {saving ? 'Saving...' : 'Save Changes'}
                       </button>
@@ -962,8 +1062,8 @@ function SettingsContent() {
 
 
         {/* Profile */}
-        <div id="profile" className="bg-v-surface border border-v-border text-v-text-primary p-4 rounded-sm">
-          <h2 className="text-lg font-semibold font-heading text-v-text-primary mb-3">Profile</h2>
+        <div id="profile" className="pb-6 mb-2">
+          <h2 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Profile</h2>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-v-text-secondary mb-1">Your Name</label>
@@ -972,7 +1072,7 @@ function SettingsContent() {
                 value={profileName}
                 onChange={(e) => { setProfileName(e.target.value); markDirty('profile'); }}
                 placeholder="Full name"
-                className="w-full bg-v-charcoal border border-v-border text-v-text-primary placeholder:text-v-text-secondary rounded px-3 py-2 text-sm"
+                className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
               />
             </div>
             <div>
@@ -982,7 +1082,7 @@ function SettingsContent() {
                 value={profileCompany}
                 onChange={(e) => { setProfileCompany(e.target.value); markDirty('profile'); }}
                 placeholder="Your business name"
-                className="w-full bg-v-charcoal border border-v-border text-v-text-primary placeholder:text-v-text-secondary rounded px-3 py-2 text-sm"
+                className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
               />
             </div>
             <div>
@@ -992,7 +1092,7 @@ function SettingsContent() {
                 value={profilePhone}
                 onChange={(e) => { setProfilePhone(e.target.value); markDirty('profile'); }}
                 placeholder="(555) 123-4567"
-                className="w-full bg-v-charcoal border border-v-border text-v-text-primary placeholder:text-v-text-secondary rounded px-3 py-2 text-sm"
+                className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
               />
             </div>
             <div>
@@ -1001,19 +1101,109 @@ function SettingsContent() {
                 type="email"
                 value={user?.email || ''}
                 disabled
-                className="w-full bg-v-charcoal border border-v-border text-v-text-secondary rounded px-3 py-2 text-sm cursor-not-allowed"
+                className="w-full bg-transparent border-0 border-b border-v-border/50 text-v-text-secondary px-0 py-2 text-sm cursor-not-allowed"
               />
             </div>
           </div>
         </div>
 
+        {/* Branding */}
+        <div id="branding" className="pb-6 mb-2">
+          <h2 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Branding</h2>
+          <p className="text-v-text-secondary text-sm mb-4">Customize how your quotes and portal look to customers.</p>
+
+          {/* Logo Upload */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-v-text-secondary mb-2">Company Logo</label>
+            <div className="flex items-center gap-4">
+              {logoUrl ? (
+                <div className="w-16 h-16 bg-v-surface border border-v-border rounded flex items-center justify-center overflow-hidden">
+                  <img src={logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                </div>
+              ) : (
+                <div className="w-16 h-16 bg-v-surface border border-v-border border-dashed rounded flex items-center justify-center text-v-text-secondary text-xs">
+                  No logo
+                </div>
+              )}
+              <label className="cursor-pointer px-4 py-2 border border-v-border text-v-text-secondary text-sm hover:border-v-gold hover:text-v-gold transition-colors">
+                {logoUploading ? 'Uploading...' : logoUrl ? 'Change Logo' : 'Upload Logo'}
+                <input type="file" accept="image/png,image/jpeg,image/webp" onChange={handleLogoUpload} className="hidden" disabled={logoUploading} />
+              </label>
+            </div>
+            <p className="text-v-text-secondary/50 text-xs mt-2">PNG, JPG, or WebP. Max 2MB.</p>
+          </div>
+
+          {/* Theme Picker */}
+          <div>
+            <label className="block text-sm font-medium text-v-text-secondary mb-3">Theme</label>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {/* Vector Default */}
+              <button
+                onClick={() => saveTheme({ primary: '#C9A84C', accent: '#0D1B2A', bg: '#0A0E17', surface: '#111827', logo_url: null })}
+                disabled={themeSaving}
+                className={`border p-3 text-left transition-colors ${
+                  selectedTheme.primary === '#C9A84C' && !selectedTheme.logo_url
+                    ? 'border-v-gold'
+                    : 'border-v-border hover:border-v-gold/50'
+                }`}
+              >
+                <div className="flex gap-0.5 mb-2">
+                  <div className="w-full h-6 rounded-sm" style={{ background: '#0A0E17' }} />
+                  <div className="w-full h-6 rounded-sm" style={{ background: '#111827' }} />
+                  <div className="w-3 h-6 rounded-sm flex-shrink-0" style={{ background: '#C9A84C' }} />
+                </div>
+                <p className="text-xs text-v-text-primary">Vector Default</p>
+                <p className="text-[10px] text-v-text-secondary">Gold & Charcoal</p>
+              </button>
+
+              {/* Generated presets */}
+              {themePresets.map((preset, i) => {
+                const isSelected = selectedTheme.primary === preset.primary && selectedTheme.logo_url === logoUrl;
+                return (
+                  <button
+                    key={i}
+                    onClick={() => saveTheme({ ...preset, logo_url: logoUrl })}
+                    disabled={themeSaving}
+                    className={`border p-3 text-left transition-colors ${
+                      isSelected ? 'border-v-gold' : 'border-v-border hover:border-v-gold/50'
+                    }`}
+                  >
+                    <div className="flex gap-0.5 mb-2">
+                      <div className="w-full h-6 rounded-sm" style={{ background: preset.bg }} />
+                      <div className="w-full h-6 rounded-sm" style={{ background: preset.surface }} />
+                      <div className="w-3 h-6 rounded-sm flex-shrink-0" style={{ background: preset.primary }} />
+                    </div>
+                    <p className="text-xs text-v-text-primary">{preset.name}</p>
+                    <div className="flex items-center gap-1 mt-0.5">
+                      <div className="w-3 h-3 rounded-full border border-v-border" style={{ background: preset.primary }} />
+                      <p className="text-[10px] text-v-text-secondary">{preset.primary}</p>
+                    </div>
+                  </button>
+                );
+              })}
+
+              {/* Placeholder cards if no presets */}
+              {themePresets.length === 0 && [1, 2, 3].map(i => (
+                <div key={i} className="border border-v-border/30 border-dashed p-3">
+                  <div className="h-6 mb-2 bg-v-surface/50 rounded-sm" />
+                  <p className="text-xs text-v-text-secondary/40">Upload logo to generate</p>
+                </div>
+              ))}
+            </div>
+
+            {themeSuccess && (
+              <p className="text-v-gold text-xs mt-2">{themeSuccess}</p>
+            )}
+          </div>
+        </div>
+
         {/* Plan & Billing */}
-        <div id="billing" className="bg-v-surface border border-v-border text-v-text-primary p-4 rounded-sm">
-          <h2 className="text-lg font-semibold font-heading text-v-text-primary mb-1">{'Billing'}</h2>
+        <div id="billing" className="pb-6 mb-2">
+          <h2 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Billing'}</h2>
           {user?.is_admin ? (
             <div>
               <p className="mb-1 capitalize text-v-text-primary">{user?.plan || 'enterprise'} Plan</p>
-              <span className="inline-block px-3 py-1 rounded bg-green-600 text-white text-sm font-medium">{'Admin Access - All Features'}</span>
+              <span className="inline-block px-3 py-1 rounded bg-v-gold text-white text-sm font-medium">{'Admin Access - All Features'}</span>
             </div>
           ) : (
             <div>
@@ -1100,7 +1290,7 @@ function SettingsContent() {
                             else if (data.error) alert(data.error);
                           } catch (e) { alert('Upgrade failed'); }
                         }}
-                        className="px-4 py-2 rounded bg-gradient-to-r from-blue-500 to-blue-600 text-white text-sm"
+                        className="px-4 py-2 bg-v-gold text-v-charcoal text-xs uppercase tracking-widest font-semibold hover:bg-v-gold-dim transition-colors"
                       >
                         Pro - ${upgradeBilling === 'annual' ? '59' : '79'}/mo
                         {upgradeBilling === 'annual' && <span className="ml-1 text-xs opacity-75">($708/yr)</span>}
@@ -1146,7 +1336,7 @@ function SettingsContent() {
                             else if (data.error) alert(data.error);
                           } catch (e) { alert('Upgrade failed'); }
                         }}
-                        className="px-4 py-2 rounded bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm"
+                        className="px-4 py-2 border border-v-gold text-v-gold text-xs uppercase tracking-widest font-semibold hover:bg-v-gold/10 transition-colors"
                       >
                         Enterprise - ${upgradeBilling === 'annual' ? '224' : '299'}/mo
                         {upgradeBilling === 'annual' && <span className="ml-1 text-xs opacity-75">($2,688/yr)</span>}
@@ -1160,8 +1350,8 @@ function SettingsContent() {
         </div>
 
         {/* Stripe Connect */}
-        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
-          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Stripe Payments'}</h3>
+        <div className="pb-6 mb-2">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Stripe Payments'}</h3>
           {stripeError && (
             <div className="mb-3 p-3 bg-red-900/30 border border-red-600/30 rounded text-red-400 text-sm">
               {stripeError}
@@ -1238,8 +1428,8 @@ function SettingsContent() {
         </div>
 
         {/* Payment Settings - Test/Live Mode */}
-        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
-          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Payment Settings'}</h3>
+        <div className="pb-6 mb-2">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Payment Settings'}</h3>
           <p className="text-sm text-v-text-secondary mb-4">
             {'Switch between test and live mode for processing payments.'}
           </p>
@@ -1254,7 +1444,7 @@ function SettingsContent() {
           <div className="space-y-3">
             <label
               className={`flex items-start p-3 border rounded-sm cursor-pointer transition-colors ${
-                stripeMode === 'test' ? 'border-blue-500 bg-blue-900/20' : 'border-v-border hover:bg-white/5'
+                stripeMode === 'test' ? 'border-v-gold bg-v-gold/10' : 'border-v-border hover:bg-white/5'
               }`}
             >
               <input
@@ -1268,7 +1458,7 @@ function SettingsContent() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="font-medium text-v-text-primary">{'Test Mode'}</span>
-                  <span className="text-xs bg-blue-900/30 text-blue-400 px-2 py-0.5 rounded-full">{'Recommended for setup'}</span>
+                  <span className="text-xs bg-v-gold/10 text-v-gold px-2 py-0.5 rounded-full">{'Recommended for setup'}</span>
                 </div>
                 <p className="text-sm text-v-text-secondary mt-1">
                   {'No real payments are processed. Use Stripe test cards to verify your setup.'}
@@ -1325,7 +1515,7 @@ function SettingsContent() {
           )}
 
           <div className="mt-3 flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${stripeMode === 'live' ? 'bg-green-500' : 'bg-blue-500'}`}></span>
+            <span className={`w-2 h-2 rounded-full ${stripeMode === 'live' ? 'bg-v-gold' : 'bg-v-gold'}`}></span>
             <span className="text-xs text-v-text-secondary">
               {'Currently in {mode} mode'.replace('{mode}', stripeMode === 'live' ? 'Live' : 'Test')}
             </span>
@@ -1333,8 +1523,8 @@ function SettingsContent() {
         </div>
 
         {/* Platform Fee */}
-        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
-          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Platform fee'}</h3>
+        <div className="pb-6 mb-2">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Platform fee'}</h3>
           <p className="text-sm text-v-text-secondary mb-3">
             {'Vector charges a {rate} platform fee on each job. Choose who pays it.'.replace('{fee}', user?.plan === 'enterprise' ? '0' : hasAllFeatures ? '1' : user?.plan === 'pro' ? '2' : '5')}
           </p>
@@ -1377,8 +1567,8 @@ function SettingsContent() {
         </div>
 
         {/* Credit Card Processing Fee */}
-        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
-          <h3 className="font-semibold font-heading text-v-text-primary mb-2">Credit Card Processing Fee</h3>
+        <div className="pb-6 mb-2">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Credit Card Processing Fee</h3>
           <p className="text-sm text-v-text-secondary mb-3">
             Stripe charges 2.9% + $0.30 per transaction. Choose how this fee is handled.
           </p>
@@ -1438,8 +1628,8 @@ function SettingsContent() {
         </div>
 
         {/* Language & Currency */}
-        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
-          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Language'} & {'Currency'}</h3>
+        <div className="pb-6 mb-2">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Language'} & {'Currency'}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-v-text-secondary mb-1">{'App Language'}</label>
@@ -1488,8 +1678,8 @@ function SettingsContent() {
         </div>
 
         {/* Notifications */}
-        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
-          <h3 className="font-semibold font-heading text-v-text-primary mb-2">Notifications</h3>
+        <div className="pb-6 mb-2">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Notifications</h3>
           <label className="flex items-center justify-between cursor-pointer py-2">
             <div>
               <p className="text-sm font-medium text-v-text-primary">Quote viewed notifications</p>
@@ -1531,8 +1721,8 @@ function SettingsContent() {
 
 
         {/* Minimum Call Out Fee */}
-        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
-          <h3 className="font-semibold font-heading text-v-text-primary mb-2">{'Minimum Fee'}</h3>
+        <div className="pb-6 mb-2">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Minimum Fee'}</h3>
           <p className="text-sm text-v-text-secondary mb-3">
             {'Set a minimum charge for jobs. If the quote total is less than this amount, the minimum fee will be applied instead.'}
           </p>
@@ -1562,8 +1752,8 @@ function SettingsContent() {
         </div>
 
         {/* Terms & Conditions */}
-        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
-          <h3 className="font-semibold font-heading text-v-text-primary mb-2">Terms & Conditions</h3>
+        <div className="pb-6 mb-2">
+          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Terms & Conditions</h3>
           <p className="text-sm text-v-text-secondary mb-4">
             Upload your business terms and conditions. Customers must agree before accepting a quote.
           </p>

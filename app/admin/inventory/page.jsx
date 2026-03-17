@@ -240,14 +240,14 @@ export default function InventoryPage() {
           <h1 className="text-2xl font-bold text-v-text-primary font-heading">Reward Inventory</h1>
           <button
             onClick={() => { setForm({ ...EMPTY_FORM }); setEditingId(null); setShowForm(true); }}
-            className="px-4 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600"
+            className="text-v-gold hover:text-v-gold-dim text-sm font-medium border-b border-v-gold/50 hover:border-v-gold transition-colors"
           >
             + Add New Product
           </button>
         </div>
 
-        {error && <div className="p-3 bg-red-900/30 border border-red-600/30 rounded-lg text-red-400 text-sm">{error}</div>}
-        {success && <div className="p-3 bg-green-900/30 border border-green-600/30 rounded-lg text-green-400 text-sm">{success}</div>}
+        {error && <div className="p-3 bg-red-900/30 border border-red-600/30 rounded-sm text-red-400 text-sm">{error}</div>}
+        {success && <div className="p-3 bg-green-900/30 border border-green-600/30 rounded-sm text-green-400 text-sm">{success}</div>}
 
         {/* Add/Edit Form */}
         {showForm && (
@@ -260,7 +260,7 @@ export default function InventoryPage() {
                   type="text"
                   value={form.name}
                   onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                   placeholder="Product name"
                 />
               </div>
@@ -270,7 +270,7 @@ export default function InventoryPage() {
                   type="number"
                   value={form.points_cost}
                   onChange={e => setForm(f => ({ ...f, points_cost: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                   placeholder="500"
                 />
               </div>
@@ -279,7 +279,7 @@ export default function InventoryPage() {
                 <textarea
                   value={form.description}
                   onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                   rows={2}
                   placeholder="Product description..."
                 />
@@ -305,7 +305,7 @@ export default function InventoryPage() {
                   type="number"
                   value={form.quantity_available}
                   onChange={e => setForm(f => ({ ...f, quantity_available: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                   placeholder="0"
                 />
               </div>
@@ -314,7 +314,7 @@ export default function InventoryPage() {
                 <select
                   value={form.category}
                   onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                 >
                   {CATEGORIES.map(c => (
                     <option key={c} value={c.toLowerCase()}>{c}</option>
@@ -326,7 +326,7 @@ export default function InventoryPage() {
                 <select
                   value={form.min_tier}
                   onChange={e => setForm(f => ({ ...f, min_tier: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                 >
                   {TIERS.map(t => (
                     <option key={t} value={t} className="capitalize">{t.charAt(0).toUpperCase() + t.slice(1)}</option>
@@ -338,7 +338,7 @@ export default function InventoryPage() {
                 <select
                   value={form.reward_type}
                   onChange={e => setForm(f => ({ ...f, reward_type: e.target.value }))}
-                  className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                 >
                   {REWARD_TYPES.map(t => (
                     <option key={t} value={t.toLowerCase()}>{t}</option>
@@ -354,7 +354,7 @@ export default function InventoryPage() {
                     type="number"
                     value={form.discount_percent}
                     onChange={e => setForm(f => ({ ...f, discount_percent: e.target.value }))}
-                    className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                    className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                     placeholder="10"
                   />
                 </div>
@@ -367,7 +367,7 @@ export default function InventoryPage() {
                       type="number"
                       value={form.credit_months}
                       onChange={e => setForm(f => ({ ...f, credit_months: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                      className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                       placeholder="1"
                     />
                   </div>
@@ -376,7 +376,7 @@ export default function InventoryPage() {
                     <select
                       value={form.credit_plan}
                       onChange={e => setForm(f => ({ ...f, credit_plan: e.target.value }))}
-                      className="w-full border rounded-lg px-3 py-2 bg-v-charcoal border-v-border text-v-text-primary"
+                      className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
                     >
                       <option value="pro">Pro</option>
                       <option value="business">Business</option>
@@ -413,13 +413,13 @@ export default function InventoryPage() {
               <button
                 onClick={handleSave}
                 disabled={saving}
-                className="px-5 py-2 bg-amber-500 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50"
+                className="px-5 py-2 bg-v-gold text-v-charcoal text-xs uppercase tracking-widest font-semibold hover:bg-v-gold-dim disabled:opacity-50 transition-colors"
               >
                 {saving ? 'Saving...' : editingId ? 'Update' : 'Create'}
               </button>
               <button
                 onClick={() => { setShowForm(false); setEditingId(null); setForm({ ...EMPTY_FORM }); }}
-                className="px-5 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5"
+                className="px-5 py-2 border border-v-border text-v-text-secondary hover:bg-white/5 transition-colors"
               >
                 Cancel
               </button>
@@ -432,7 +432,7 @@ export default function InventoryPage() {
           <select
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm bg-v-charcoal border-v-border text-v-text-primary"
+            className="bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 text-sm focus:border-v-gold outline-none"
           >
             <option value="all">All Categories</option>
             {CATEGORIES.map(c => (
@@ -442,7 +442,7 @@ export default function InventoryPage() {
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
-            className="border rounded-lg px-3 py-2 text-sm bg-v-charcoal border-v-border text-v-text-primary"
+            className="bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 text-sm focus:border-v-gold outline-none"
           >
             <option value="created">Newest First</option>
             <option value="stock">Stock (low to high)</option>
@@ -497,13 +497,13 @@ export default function InventoryPage() {
                       </td>
                       <td className="px-4 py-3 text-v-text-secondary">{item.redeemed_count || 0}</td>
                       <td className="px-4 py-3">
-                        <span className="px-2 py-0.5 bg-v-charcoal text-v-text-secondary rounded text-xs capitalize">{item.category}</span>
+                        <span className="text-xs text-v-text-secondary capitalize">{item.category}</span>
                       </td>
                       <td className="px-4 py-3 text-xs capitalize text-v-text-secondary">{item.min_tier}</td>
                       <td className="px-4 py-3">
                         <button
                           onClick={() => handleToggleActive(item)}
-                          className={`w-9 h-5 rounded-full relative transition-colors ${item.active ? 'bg-green-500' : 'bg-v-charcoal'}`}
+                          className={`w-9 h-5 rounded-full relative transition-colors ${item.active ? 'bg-v-gold' : 'bg-v-charcoal'}`}
                         >
                           <span className={`absolute top-0.5 w-4 h-4 bg-white rounded-full transition-transform ${item.active ? 'left-[18px]' : 'left-0.5'}`} />
                         </button>

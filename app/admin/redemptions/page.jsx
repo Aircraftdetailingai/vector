@@ -13,8 +13,8 @@ const ADMIN_NAV = [
 
 const STATUS_STYLES = {
   pending: 'bg-yellow-900/30 text-yellow-400',
-  processing: 'bg-blue-900/30 text-blue-400',
-  shipped: 'bg-indigo-900/30 text-indigo-400',
+  processing: 'bg-v-gold/10 text-v-gold',
+  shipped: 'bg-v-gold/10 text-v-gold',
   delivered: 'bg-green-900/30 text-green-400',
   completed: 'bg-green-900/30 text-green-400',
   cancelled: 'bg-red-900/30 text-red-400',
@@ -137,8 +137,8 @@ export default function RedemptionsPage() {
           </div>
         </div>
 
-        {error && <div className="p-3 bg-red-900/30 border border-red-600/30 rounded-lg text-red-400 text-sm">{error}</div>}
-        {success && <div className="p-3 bg-green-900/30 border border-green-600/30 rounded-lg text-green-400 text-sm">{success}</div>}
+        {error && <div className="p-3 bg-red-900/30 border border-red-600/30 rounded-sm text-red-400 text-sm">{error}</div>}
+        {success && <div className="p-3 bg-green-900/30 border border-green-600/30 rounded-sm text-green-400 text-sm">{success}</div>}
 
         {/* Filters */}
         <div className="flex items-center gap-4 flex-wrap">
@@ -179,7 +179,7 @@ export default function RedemptionsPage() {
               <div className="flex gap-3">
                 <button
                   onClick={confirmShip}
-                  className="flex-1 py-2 bg-indigo-500 text-white rounded-sm font-medium hover:bg-indigo-600"
+                  className="flex-1 py-2 bg-v-gold text-v-charcoal text-xs uppercase tracking-widest font-semibold hover:bg-v-gold-dim transition-colors"
                 >
                   Mark Shipped
                 </button>
@@ -240,7 +240,7 @@ export default function RedemptionsPage() {
                             </button>
                             <button
                               onClick={() => handleShip(r)}
-                              className="text-indigo-400 hover:underline text-xs"
+                              className="text-v-gold hover:underline text-xs"
                             >
                               Ship
                             </button>
@@ -260,7 +260,7 @@ export default function RedemptionsPage() {
                           <>
                             <button
                               onClick={() => handleShip(r)}
-                              className="text-indigo-400 hover:underline text-xs"
+                              className="text-v-gold hover:underline text-xs"
                             >
                               Ship
                             </button>

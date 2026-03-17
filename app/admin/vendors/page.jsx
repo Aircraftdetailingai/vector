@@ -5,7 +5,7 @@ import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice
 
 const COMMISSION_TIERS = [
   { key: 'basic', name: 'Basic', rate: '10%', color: 'bg-gray-700/30 text-gray-300' },
-  { key: 'pro', name: 'Pro', rate: '25%', color: 'bg-blue-900/30 text-blue-400' },
+  { key: 'pro', name: 'Pro', rate: '25%', color: 'bg-v-gold/10 text-v-gold' },
   { key: 'partner', name: 'Partner', rate: '60%', color: 'bg-amber-900/30 text-amber-400' },
 ];
 
@@ -349,14 +349,14 @@ export default function AdminVendorsPage() {
                     <button
                       onClick={() => updateVendorStatus(vendor.id, 'active')}
                       disabled={updating === vendor.id}
-                      className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+                      className="px-6 py-2 bg-green-500 text-white rounded-sm hover:bg-green-600 disabled:opacity-50"
                     >
                       {updating === vendor.id ? 'Approving...' : 'Approve'}
                     </button>
                     <button
                       onClick={() => updateVendorStatus(vendor.id, 'rejected')}
                       disabled={updating === vendor.id}
-                      className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+                      className="px-6 py-2 bg-red-500 text-white rounded-sm hover:bg-red-600 disabled:opacity-50"
                     >
                       Reject
                     </button>
@@ -421,14 +421,14 @@ export default function AdminVendorsPage() {
                         <button
                           onClick={() => updateProductStatus(product.id, 'active')}
                           disabled={updating === product.id}
-                          className="px-6 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 disabled:opacity-50"
+                          className="px-6 py-2 bg-green-500 text-white rounded-sm hover:bg-green-600 disabled:opacity-50"
                         >
                           {updating === product.id ? 'Approving...' : 'Approve'}
                         </button>
                         <button
                           onClick={() => updateProductStatus(product.id, 'rejected')}
                           disabled={updating === product.id}
-                          className="px-6 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 disabled:opacity-50"
+                          className="px-6 py-2 bg-red-500 text-white rounded-sm hover:bg-red-600 disabled:opacity-50"
                         >
                           Reject
                         </button>

@@ -35,18 +35,18 @@ const TIER_COLORS = {
 
 function MetricCard({ label, value, sub }) {
   return (
-    <div className="bg-v-surface rounded-sm border border-v-border p-5">
-      <p className="text-sm text-v-text-secondary">{label}</p>
-      <p className="text-2xl font-bold text-v-text-primary mt-1">{value}</p>
-      {sub && <p className="text-xs text-v-text-secondary mt-1">{sub}</p>}
+    <div className="p-4">
+      <p className="text-3xl font-bold text-v-text-primary font-data">{value}</p>
+      <p className="text-xs uppercase tracking-widest text-v-text-secondary mt-1">{label}</p>
+      {sub && <p className="text-xs text-v-text-secondary/60 mt-0.5">{sub}</p>}
     </div>
   );
 }
 
 function ChartCard({ title, children }) {
   return (
-    <div className="bg-v-surface rounded-sm border border-v-border p-5">
-      <h3 className="font-semibold text-v-text-primary mb-4">{title}</h3>
+    <div className="bg-v-surface border border-v-border p-5">
+      <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{title}</h3>
       {children}
     </div>
   );
@@ -140,10 +140,10 @@ export default function AdminAnalytics() {
               <button
                 key={r.value}
                 onClick={() => handleRangeChange(r.value)}
-                className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${
+                className={`px-3 py-1.5 text-xs uppercase tracking-wider font-medium transition-colors ${
                   days === r.value
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-v-surface border border-v-border text-v-text-secondary hover:border-v-gold/50'
+                    ? 'bg-v-gold text-v-charcoal'
+                    : 'border border-v-border text-v-text-secondary hover:border-v-gold/50'
                 }`}
               >
                 {r.label}

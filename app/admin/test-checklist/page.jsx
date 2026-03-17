@@ -80,7 +80,7 @@ export default function TestChecklistPage() {
           </div>
 
           {/* Progress bar */}
-          <div className="mt-4 bg-v-surface rounded-lg shadow p-4">
+          <div className="mt-4 bg-v-surface rounded-sm shadow p-4">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm font-medium text-v-text-secondary">
                 {totalDone} of {totalItems} complete
@@ -108,7 +108,7 @@ export default function TestChecklistPage() {
           {Object.entries(grouped).map(([category, items]) => {
             const catDone = items.filter(i => checked[i.id]).length;
             return (
-              <div key={category} className="bg-v-surface rounded-lg shadow overflow-hidden">
+              <div key={category} className="bg-v-surface rounded-sm shadow overflow-hidden">
                 <div className="px-4 py-3 bg-v-charcoal border-b flex justify-between items-center">
                   <h2 className="text-sm font-semibold text-v-text-secondary uppercase tracking-wide">{category}</h2>
                   <span className="text-xs text-v-text-secondary">{catDone}/{items.length}</span>

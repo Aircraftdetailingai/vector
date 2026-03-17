@@ -6,22 +6,22 @@ import { useToast } from '@/components/Toast';
 import AddCustomerModal from '@/components/AddCustomerModal';
 
 const TAG_COLORS = {
-  'VIP': 'bg-amber-500/20 text-amber-300 border-amber-500/30',
-  'Recurring': 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30',
-  'Corporate': 'bg-indigo-500/20 text-indigo-300 border-indigo-500/30',
-  'FBO': 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30',
-  'Owner-Pilot': 'bg-orange-500/20 text-orange-300 border-orange-500/30',
-  'Fleet': 'bg-purple-500/20 text-purple-300 border-purple-500/30',
-  'Referral': 'bg-pink-500/20 text-pink-300 border-pink-500/30',
-  'High-Value': 'bg-teal-500/20 text-teal-300 border-teal-500/30',
-  'Prospect': 'bg-sky-500/20 text-sky-300 border-sky-500/30',
-  'Inactive': 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  'Charter': 'bg-rose-500/20 text-rose-300 border-rose-500/30',
-  'Private': 'bg-violet-500/20 text-violet-300 border-violet-500/30',
+  'VIP': 'bg-transparent text-v-gold border-v-gold/50',
+  'Recurring': 'bg-transparent text-cyan-400 border-cyan-400/40',
+  'Corporate': 'bg-transparent text-v-gold-dim border-v-gold-dim/40',
+  'FBO': 'bg-transparent text-emerald-400 border-emerald-400/40',
+  'Owner-Pilot': 'bg-transparent text-orange-400 border-orange-400/40',
+  'Fleet': 'bg-transparent text-v-gold border-v-gold/40',
+  'Referral': 'bg-transparent text-pink-400 border-pink-400/40',
+  'High-Value': 'bg-transparent text-teal-400 border-teal-400/40',
+  'Prospect': 'bg-transparent text-sky-400 border-sky-400/40',
+  'Inactive': 'bg-transparent text-gray-500 border-gray-500/40',
+  'Charter': 'bg-transparent text-rose-400 border-rose-400/40',
+  'Private': 'bg-transparent text-v-gold-dim border-v-gold-dim/40',
 };
 
 function getTagStyle(tagName) {
-  return TAG_COLORS[tagName] || 'bg-gray-500/20 text-gray-400 border-gray-500/30';
+  return TAG_COLORS[tagName] || 'bg-transparent text-gray-500 border-gray-500/40';
 }
 
 export default function CustomersPage() {
@@ -869,9 +869,12 @@ export default function CustomersPage() {
 
                       {/* Tags */}
                       <div className="col-span-3">
-                        <div className="flex flex-wrap gap-1">
-                          {tags.map((tag) => (
-                            <span key={tag} className={`px-2 py-0.5 rounded text-xs font-medium border ${getTagStyle(tag)}`}>
+                        <div className="flex flex-wrap gap-1 items-center">
+                          {tags.includes('VIP') && (
+                            <span key="vip-star" className="text-v-gold text-sm" title="VIP">&#9733;</span>
+                          )}
+                          {tags.filter(t => t !== 'VIP').map((tag) => (
+                            <span key={tag} className={`px-2 py-0.5 rounded-sm text-xs font-medium border ${getTagStyle(tag)}`}>
                               {tag}
                             </span>
                           ))}

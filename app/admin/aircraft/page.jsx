@@ -523,7 +523,7 @@ export default function AdminAircraftPage() {
             </button>
             <button
               onClick={openAddModal}
-              className="px-3 py-2 bg-amber-500 text-white rounded-sm hover:bg-amber-600 text-sm"
+              className="text-v-gold hover:text-v-gold-dim text-sm font-medium border-b border-v-gold/50 hover:border-v-gold transition-colors"
             >
               + Add Aircraft
             </button>
@@ -544,7 +544,7 @@ export default function AdminAircraftPage() {
               onClick={() => setActiveTab(tab.key)}
               className={`flex-1 px-4 py-2 text-sm font-medium rounded-sm transition-colors ${
                 activeTab === tab.key
-                  ? 'bg-amber-500 text-white'
+                  ? 'bg-v-gold text-v-charcoal'
                   : 'text-v-text-secondary hover:text-v-text-primary hover:bg-white/5'
               }`}
             >
@@ -624,7 +624,7 @@ export default function AdminAircraftPage() {
                 Columns
               </button>
               {showColumnPicker && (
-                <div className="absolute right-0 top-full mt-1 bg-v-surface border border-v-border rounded-sm shadow-lg z-30 w-56 py-2">
+                <div className="absolute right-0 top-full mt-1 bg-v-surface border border-v-border rounded-sm z-30 w-56 py-2">
                   <div className="px-3 pb-2 mb-2 border-b border-v-border flex justify-between items-center">
                     <span className="text-xs font-semibold text-v-text-secondary uppercase">Hour Columns</span>
                     <button

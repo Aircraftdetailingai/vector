@@ -273,7 +273,7 @@ export default function DataIntelligencePage() {
       </header>
 
       {/* Tabs */}
-      <div className="flex space-x-1 mb-6 bg-white/10 rounded-lg p-1 max-w-lg">
+      <div className="flex space-x-1 mb-6 bg-white/10 rounded-sm p-1 max-w-lg">
         {['overview', 'details', 'logs', 'history'].map(t => (
           <button
             key={t}
@@ -294,19 +294,19 @@ export default function DataIntelligencePage() {
         <div className="max-w-5xl space-y-6">
           {/* KPI Cards */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="bg-v-surface rounded-lg p-4 shadow">
+            <div className="bg-v-surface rounded-sm p-4 shadow">
               <p className="text-v-text-secondary text-xs">Total Hours Logged</p>
               <p className="text-2xl font-bold text-v-text-primary">{stats?.total_logs || 0}</p>
             </div>
-            <div className="bg-v-surface rounded-lg p-4 shadow">
+            <div className="bg-v-surface rounded-sm p-4 shadow">
               <p className="text-v-text-secondary text-xs">Aircraft Covered</p>
-              <p className="text-2xl font-bold text-blue-600">{stats?.unique_aircraft || 0}</p>
+              <p className="text-2xl font-bold text-v-gold">{stats?.unique_aircraft || 0}</p>
             </div>
-            <div className="bg-v-surface rounded-lg p-4 shadow">
+            <div className="bg-v-surface rounded-sm p-4 shadow">
               <p className="text-v-text-secondary text-xs">Detailers Contributing</p>
-              <p className="text-2xl font-bold text-purple-600">{stats?.unique_detailers || 0}</p>
+              <p className="text-2xl font-bold text-v-gold-dim">{stats?.unique_detailers || 0}</p>
             </div>
-            <div className="bg-v-surface rounded-lg p-4 shadow">
+            <div className="bg-v-surface rounded-sm p-4 shadow">
               <p className="text-v-text-secondary text-xs">Flagged for Review</p>
               <p className="text-2xl font-bold text-red-600">{stats?.flagged_count || 0}</p>
             </div>
@@ -314,11 +314,11 @@ export default function DataIntelligencePage() {
 
           {/* Suggestions */}
           {suggestions.length > 0 && (
-            <div className="bg-v-surface rounded-xl p-6 shadow">
+            <div className="bg-v-surface rounded-sm p-6 shadow">
               <h2 className="text-lg font-bold text-v-text-primary mb-4">Smart Suggestions</h2>
               <div className="space-y-3">
                 {suggestions.map((s, i) => (
-                  <div key={i} className="flex items-start gap-3 p-3 bg-amber-900/20 rounded-lg border border-amber-200">
+                  <div key={i} className="flex items-start gap-3 p-3 bg-amber-900/20 rounded-sm border border-amber-200">
                     <span className="text-xl" dangerouslySetInnerHTML={{ __html: '&#128161;' }} />
                     <p className="text-sm text-amber-800">{s}</p>
                   </div>
@@ -328,12 +328,12 @@ export default function DataIntelligencePage() {
           )}
 
           {/* Quick Actions */}
-          <div className="bg-v-surface rounded-xl p-6 shadow">
+          <div className="bg-v-surface rounded-sm p-6 shadow">
             <h2 className="text-lg font-bold text-v-text-primary mb-4">Quick Actions</h2>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <button
                 onClick={() => { setVarianceThreshold(10); setTab('details'); }}
-                className="p-4 bg-red-900/20 border border-red-200 rounded-lg text-left hover:bg-red-100 transition-colors"
+                className="p-4 bg-red-900/20 border border-red-200 rounded-sm text-left hover:bg-red-100 transition-colors"
               >
                 <p className="font-medium text-red-900">Review Flagged Items</p>
                 <p className="text-xs text-red-700 mt-1">
@@ -342,25 +342,25 @@ export default function DataIntelligencePage() {
               </button>
               <button
                 onClick={() => { setVarianceThreshold(0); setTab('details'); }}
-                className="p-4 bg-blue-900/20 border border-blue-200 rounded-lg text-left hover:bg-blue-100 transition-colors"
+                className="p-4 bg-v-surface border border-v-gold/20 rounded-sm text-left hover:bg-v-gold/10 transition-colors"
               >
-                <p className="font-medium text-blue-900">Browse All Data</p>
-                <p className="text-xs text-blue-700 mt-1">
+                <p className="font-medium text-v-gold">Browse All Data</p>
+                <p className="text-xs text-v-gold-dim mt-1">
                   View all aircraft with real data
                 </p>
               </button>
               <button
                 onClick={() => setTab('logs')}
-                className="p-4 bg-purple-50 border border-purple-200 rounded-lg text-left hover:bg-purple-100 transition-colors"
+                className="p-4 bg-v-surface border border-v-gold/20 rounded-sm text-left hover:bg-v-gold/10 transition-colors"
               >
-                <p className="font-medium text-purple-900">Detailer Logs</p>
-                <p className="text-xs text-purple-700 mt-1">
+                <p className="font-medium text-v-gold">Detailer Logs</p>
+                <p className="text-xs text-v-gold-dim mt-1">
                   Raw hours from all detailers
                 </p>
               </button>
               <button
                 onClick={() => setTab('history')}
-                className="p-4 bg-green-900/20 border border-green-200 rounded-lg text-left hover:bg-green-100 transition-colors"
+                className="p-4 bg-green-900/20 border border-green-200 rounded-sm text-left hover:bg-green-100 transition-colors"
               >
                 <p className="font-medium text-green-900">Update History</p>
                 <p className="text-xs text-green-700 mt-1">
@@ -372,13 +372,13 @@ export default function DataIntelligencePage() {
 
           {/* Coverage */}
           {data.length > 0 && (
-            <div className="bg-v-surface rounded-xl p-6 shadow">
+            <div className="bg-v-surface rounded-sm p-6 shadow">
               <h2 className="text-lg font-bold text-v-text-primary mb-4">Data Coverage by Service</h2>
               <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                 {HOURS_FIELDS.map(hf => {
                   const count = data.filter(d => d.hours_field === hf.value).length;
                   return (
-                    <div key={hf.value} className="p-3 bg-v-charcoal rounded-lg text-center">
+                    <div key={hf.value} className="p-3 bg-v-charcoal rounded-sm text-center">
                       <p className="text-xs text-v-text-secondary">{hf.label}</p>
                       <p className="text-lg font-bold text-v-text-primary">{count}</p>
                       <p className="text-[10px] text-v-text-secondary">aircraft</p>
@@ -395,7 +395,7 @@ export default function DataIntelligencePage() {
       {tab === 'details' && (
         <div className="max-w-6xl">
           {/* Filters */}
-          <div className="bg-v-surface rounded-lg p-4 shadow mb-4">
+          <div className="bg-v-surface rounded-sm p-4 shadow mb-4">
             <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
               <div>
                 <label className="block text-xs text-v-text-secondary mb-1">Category</label>
@@ -501,7 +501,7 @@ export default function DataIntelligencePage() {
               {selectedCount > 0 && (
                 <button
                   onClick={() => setShowBulkModal(true)}
-                  className="px-4 py-2 bg-amber-900/200 text-white rounded-lg text-sm font-medium hover:bg-amber-600"
+                  className="px-4 py-2 bg-amber-900/200 text-white rounded-sm text-sm font-medium hover:bg-amber-600"
                 >
                   Bulk Update {selectedCount} Items
                 </button>
@@ -510,7 +510,7 @@ export default function DataIntelligencePage() {
           )}
 
           {/* Data Table */}
-          <div className="bg-v-surface rounded-lg shadow overflow-hidden">
+          <div className="bg-v-surface rounded-sm shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-v-charcoal border-b">
@@ -543,7 +543,7 @@ export default function DataIntelligencePage() {
                       const rowBg = isOver
                         ? 'bg-red-900/20 border-l-4 border-l-red-400'
                         : isUnder
-                        ? 'bg-blue-900/20 border-l-4 border-l-blue-400'
+                        ? 'bg-v-gold/5 border-l-4 border-l-v-gold'
                         : '';
                       const lowSamples = item.sample_count < 10;
 
@@ -574,7 +574,7 @@ export default function DataIntelligencePage() {
                           </td>
                           <td className="px-3 py-3 text-right">
                             <span className={`font-semibold ${
-                              item.variance_percent > 10 ? 'text-red-600' : item.variance_percent < -10 ? 'text-blue-600' : 'text-green-600'
+                              item.variance_percent > 10 ? 'text-red-600' : item.variance_percent < -10 ? 'text-v-gold' : 'text-green-600'
                             }`}>
                               {item.variance_percent > 0 ? '+' : ''}{item.variance_percent.toFixed(1)}%
                             </span>
@@ -607,7 +607,7 @@ export default function DataIntelligencePage() {
       {/* Detailer Logs Tab */}
       {tab === 'logs' && (
         <div className="max-w-6xl">
-          <div className="bg-v-surface rounded-lg p-4 shadow mb-4">
+          <div className="bg-v-surface rounded-sm p-4 shadow mb-4">
             <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               <div>
                 <label className="block text-xs text-v-text-secondary mb-1">Manufacturer</label>
@@ -646,7 +646,7 @@ export default function DataIntelligencePage() {
             </div>
           </div>
 
-          <div className="bg-v-surface rounded-lg shadow overflow-hidden">
+          <div className="bg-v-surface rounded-sm shadow overflow-hidden">
             <div className="p-4 border-b">
               <h2 className="font-bold text-v-text-primary">Hours Collected from Detailers</h2>
               <p className="text-sm text-v-text-secondary">Individual service hours logged after job completion</p>
@@ -686,7 +686,7 @@ export default function DataIntelligencePage() {
                           <td className="px-3 py-3 text-right font-mono font-semibold">{parseFloat(log.actual_hours).toFixed(1)}h</td>
                           <td className="px-3 py-3 text-right">
                             <span className={`font-semibold ${
-                              log.variance_percent > 10 ? 'text-red-600' : log.variance_percent < -10 ? 'text-blue-600' : 'text-green-600'
+                              log.variance_percent > 10 ? 'text-red-600' : log.variance_percent < -10 ? 'text-v-gold' : 'text-green-600'
                             }`}>
                               {log.variance_percent > 0 ? '+' : ''}{log.variance_percent.toFixed(1)}%
                             </span>
@@ -710,7 +710,7 @@ export default function DataIntelligencePage() {
       {/* History Tab */}
       {tab === 'history' && (
         <div className="max-w-5xl">
-          <div className="bg-v-surface rounded-lg shadow overflow-hidden">
+          <div className="bg-v-surface rounded-sm shadow overflow-hidden">
             <div className="p-4 border-b">
               <h2 className="font-bold text-v-text-primary">Default Hours Update History</h2>
               <p className="text-sm text-v-text-secondary">All changes made to aircraft default hours</p>
@@ -762,18 +762,18 @@ export default function DataIntelligencePage() {
       {/* Update Default Modal */}
       {showModal && modalItem && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-v-surface rounded-xl max-w-md w-full p-6 shadow-xl">
+          <div className="bg-v-surface rounded-sm max-w-md w-full p-6">
             <h3 className="text-lg font-bold text-v-text-primary mb-1">Update Default Hours</h3>
             <p className="text-sm text-v-text-secondary mb-4">
               {modalItem.manufacturer} {modalItem.model} - {modalItem.hours_field_label}
             </p>
 
             <div className="grid grid-cols-2 gap-4 mb-4">
-              <div className="p-3 bg-v-charcoal rounded-lg">
+              <div className="p-3 bg-v-charcoal rounded-sm">
                 <p className="text-xs text-v-text-secondary">Current Default</p>
                 <p className="text-xl font-bold">{modalItem.current_default.toFixed(2)}h</p>
               </div>
-              <div className="p-3 bg-amber-900/20 rounded-lg">
+              <div className="p-3 bg-amber-900/20 rounded-sm">
                 <p className="text-xs text-amber-600">Field Average</p>
                 <p className="text-xl font-bold text-amber-700">{modalItem.avg_actual.toFixed(2)}h</p>
               </div>
@@ -783,7 +783,7 @@ export default function DataIntelligencePage() {
               <p>Sample Size: <strong>{modalItem.sample_count}</strong></p>
               <p>Range: {modalItem.min_actual.toFixed(1)} - {modalItem.max_actual.toFixed(1)}h</p>
               {modalItem.stddev > 0 && <p>Std Deviation: {modalItem.stddev.toFixed(2)}h</p>}
-              <p>Variance: <strong className={modalItem.variance_flag === 'over' ? 'text-red-600' : modalItem.variance_flag === 'under' ? 'text-blue-600' : 'text-green-600'}>
+              <p>Variance: <strong className={modalItem.variance_flag === 'over' ? 'text-red-600' : modalItem.variance_flag === 'under' ? 'text-v-gold' : 'text-green-600'}>
                 {modalItem.variance_percent > 0 ? '+' : ''}{modalItem.variance_percent.toFixed(1)}%
               </strong></p>
             </div>
@@ -795,7 +795,7 @@ export default function DataIntelligencePage() {
                 step="0.01"
                 value={newValue}
                 onChange={(e) => setNewValue(e.target.value)}
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500"
+                className="w-full border rounded-sm px-3 py-2 focus:ring-2 focus:ring-amber-500"
               />
               <p className="text-xs text-v-text-secondary mt-1">This will affect all users' default pricing for this aircraft.</p>
             </div>
@@ -807,21 +807,21 @@ export default function DataIntelligencePage() {
                 onChange={(e) => setReason(e.target.value)}
                 placeholder="e.g., Aligned with field average from 47 vector points"
                 rows={2}
-                className="w-full border rounded-lg px-3 py-2 focus:ring-2 focus:ring-amber-500 resize-none"
+                className="w-full border rounded-sm px-3 py-2 focus:ring-2 focus:ring-amber-500 resize-none"
               />
             </div>
 
             <div className="flex gap-3">
               <button
                 onClick={() => setShowModal(false)}
-                className="flex-1 px-4 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5"
+                className="flex-1 px-4 py-2 border border-v-border rounded-sm text-v-text-secondary hover:bg-white/5"
               >
                 Cancel
               </button>
               <button
                 onClick={handleUpdate}
                 disabled={updating || !newValue}
-                className="flex-1 px-4 py-2 bg-amber-900/200 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-amber-900/200 text-white rounded-sm font-medium hover:bg-amber-600 disabled:opacity-50"
               >
                 {updating ? 'Updating...' : 'Confirm Update'}
               </button>
@@ -833,13 +833,13 @@ export default function DataIntelligencePage() {
       {/* Bulk Update Modal */}
       {showBulkModal && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-v-surface rounded-xl max-w-lg w-full p-6 shadow-xl">
+          <div className="bg-v-surface rounded-sm max-w-lg w-full p-6">
             <h3 className="text-lg font-bold text-v-text-primary mb-2">Bulk Update Defaults</h3>
             <p className="text-sm text-v-text-secondary mb-4">
               Update {selectedCount} aircraft defaults to their field averages?
             </p>
 
-            <div className="max-h-64 overflow-y-auto mb-4 border rounded-lg divide-y">
+            <div className="max-h-64 overflow-y-auto mb-4 border rounded-sm divide-y">
               {filteredData.filter((_, i) => selectedRows[i]).map(item => (
                 <div key={`${item.aircraft_id}-${item.hours_field}`} className="flex justify-between items-center p-3 text-sm">
                   <div>
@@ -854,7 +854,7 @@ export default function DataIntelligencePage() {
               ))}
             </div>
 
-            <div className="bg-amber-900/20 border border-amber-200 rounded-lg p-3 mb-4">
+            <div className="bg-amber-900/20 border border-amber-200 rounded-sm p-3 mb-4">
               <p className="text-sm text-amber-800">
                 This will update all selected aircraft defaults. All changes are logged and can be reviewed in the History tab.
               </p>
@@ -863,14 +863,14 @@ export default function DataIntelligencePage() {
             <div className="flex gap-3">
               <button
                 onClick={() => setShowBulkModal(false)}
-                className="flex-1 px-4 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5"
+                className="flex-1 px-4 py-2 border border-v-border rounded-sm text-v-text-secondary hover:bg-white/5"
               >
                 Cancel
               </button>
               <button
                 onClick={handleBulkUpdate}
                 disabled={bulkUpdating}
-                className="flex-1 px-4 py-2 bg-amber-900/200 text-white rounded-lg font-medium hover:bg-amber-600 disabled:opacity-50"
+                className="flex-1 px-4 py-2 bg-amber-900/200 text-white rounded-sm font-medium hover:bg-amber-600 disabled:opacity-50"
               >
                 {bulkUpdating ? 'Updating...' : `Update ${selectedCount} Defaults`}
               </button>
