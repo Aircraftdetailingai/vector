@@ -132,6 +132,25 @@ export default function PortalPage() {
   const [agreedToTerms, setAgreedToTerms] = useState(false);
   const [invoiceRequesting, setInvoiceRequesting] = useState(false);
   const [invoiceAccepted, setInvoiceAccepted] = useState(false);
+  const [customerId, setCustomerId] = useState(null);
+
+  // Fleet state
+  const [fleet, setFleet] = useState([]);
+  const [fleetLoading, setFleetLoading] = useState(false);
+  const [fleetModal, setFleetModal] = useState(null); // null | { mode: 'add' } | { mode: 'edit', aircraft: {...} }
+  const [fleetForm, setFleetForm] = useState({ tail_number: '', make: '', model: '', home_airport: '', nickname: '' });
+  const [fleetSaving, setFleetSaving] = useState(false);
+  const [requestModal, setRequestModal] = useState(null); // null | fleet aircraft object
+  const [requestForm, setRequestForm] = useState({ services: [], preferred_date: '', notes: '' });
+  const [requestSaving, setRequestSaving] = useState(false);
+  const [requestResult, setRequestResult] = useState(null);
+
+  // Payment methods state
+  const [paymentMethods, setPaymentMethods] = useState([]);
+  const [pmLoading, setPmLoading] = useState(false);
+  const [setupClientSecret, setSetupClientSecret] = useState(null);
+  const [stripeCustomerId, setStripeCustomerId] = useState(null);
+  const [addingPM, setAddingPM] = useState(false);
 
   useEffect(() => {
     const saved = localStorage.getItem('vector_portal_lang');
@@ -153,6 +172,7 @@ export default function PortalPage() {
         setDetailer(data.detailer);
         setHistory(data.history || []);
         setStripeConnected(data.stripe_connected);
+        if (data.customer_id) setCustomerId(data.customer_id);
         if (data.customer_language && SUPPORTED_LANGUAGES.some(l => l.code === data.customer_language)) {
           setLang(data.customer_language);
           localStorage.setItem('vector_portal_lang', data.customer_language);
@@ -191,6 +211,19 @@ export default function PortalPage() {
       ['--brand-primary', '--brand-accent', '--brand-bg', '--brand-surface'].forEach(v => s.removeProperty(v));
     };
   }, [detailer]);
+
+  // Inject detailer custom fonts
+  useEffect(() => {
+    if (!detailer?.font_embed_url) return;
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = detailer.font_embed_url;
+    document.head.appendChild(link);
+    return () => link.remove();
+  }, [detailer?.font_embed_url]);
+
+  const brandFontHeading = detailer?.font_heading ? `"${detailer.font_heading}", "Playfair Display", serif` : undefined;
+  const brandFontBody = detailer?.font_body ? `"${detailer.font_body}", Inter, sans-serif` : undefined;
 
   const isPaid = quote && ['paid', 'approved', 'accepted', 'scheduled', 'in_progress', 'completed'].includes(quote.status);
   const isExpired = quote && !isPaid && new Date() > new Date(quote.valid_until);
@@ -260,6 +293,122 @@ export default function PortalPage() {
     }
   };
 
+  // Fleet functions
+  const fetchFleet = useCallback(async () => {
+    if (!token) return;
+    setFleetLoading(true);
+    try {
+      const res = await fetch(`/api/portal/fleet?token=${token}`);
+      if (res.ok) {
+        const data = await res.json();
+        setFleet(data.fleet || []);
+      }
+    } catch (e) { /* ignore */ }
+    setFleetLoading(false);
+  }, [token]);
+
+  const saveFleetAircraft = async () => {
+    setFleetSaving(true);
+    try {
+      const isEdit = fleetModal?.mode === 'edit';
+      const res = await fetch('/api/portal/fleet', {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          ...(isEdit ? { id: fleetModal.aircraft.id } : {}),
+          ...fleetForm,
+        }),
+      });
+      if (res.ok) {
+        setFleetModal(null);
+        fetchFleet();
+      }
+    } catch (e) { /* ignore */ }
+    setFleetSaving(false);
+  };
+
+  const deleteFleetAircraft = async (id) => {
+    if (!confirm('Remove this aircraft from your fleet?')) return;
+    await fetch(`/api/portal/fleet?token=${token}&id=${id}`, { method: 'DELETE' });
+    fetchFleet();
+  };
+
+  const submitServiceRequest = async () => {
+    setRequestSaving(true);
+    setRequestResult(null);
+    try {
+      const res = await fetch('/api/portal/fleet/request-service', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          token,
+          fleet_aircraft_id: requestModal.id,
+          services: requestForm.services,
+          preferred_date: requestForm.preferred_date || null,
+          notes: requestForm.notes || null,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setRequestResult(data);
+      }
+    } catch (e) { /* ignore */ }
+    setRequestSaving(false);
+  };
+
+  // Payment methods functions
+  const fetchPaymentMethods = useCallback(async () => {
+    if (!token) return;
+    setPmLoading(true);
+    try {
+      const res = await fetch(`/api/portal/payment-methods?token=${token}`);
+      if (res.ok) {
+        const data = await res.json();
+        setPaymentMethods(data.payment_methods || []);
+      }
+    } catch (e) { /* ignore */ }
+    setPmLoading(false);
+  }, [token]);
+
+  const startAddPaymentMethod = async () => {
+    setAddingPM(true);
+    try {
+      const res = await fetch('/api/portal/payment-methods', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setSetupClientSecret(data.client_secret);
+        setStripeCustomerId(data.stripe_customer_id);
+      }
+    } catch (e) { /* ignore */ }
+    setAddingPM(false);
+  };
+
+  const setDefaultPM = async (id) => {
+    await fetch('/api/portal/payment-methods', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, payment_method_id: id }),
+    });
+    fetchPaymentMethods();
+  };
+
+  const removePM = async (id) => {
+    if (!confirm('Remove this payment method?')) return;
+    await fetch(`/api/portal/payment-methods?token=${token}&id=${id}`, { method: 'DELETE' });
+    fetchPaymentMethods();
+  };
+
+  // Load fleet/payments when switching to those tabs
+  useEffect(() => {
+    if (tab === 'fleet' && fleet.length === 0 && !fleetLoading) fetchFleet();
+    if (tab === 'payments' && paymentMethods.length === 0 && !pmLoading) fetchPaymentMethods();
+  }, [tab, fleet.length, fleetLoading, fetchFleet, paymentMethods.length, pmLoading, fetchPaymentMethods]);
+
   const currentLangLabel = SUPPORTED_LANGUAGES.find(l => l.code === lang)?.label || 'English';
 
   if (loading) {
@@ -279,7 +428,7 @@ export default function PortalPage() {
         <div className="bg-[var(--brand-surface,#111827)] rounded-[4px] p-10 max-w-[640px] w-full text-center">
           <div className="w-12 h-[1px] bg-[var(--brand-primary,#C9A84C)] mx-auto mb-6" />
           <p className="text-[#8A9BB0] text-xs tracking-[0.2em] uppercase mb-3">Error</p>
-          <h2 className="font-heading text-xl font-light text-[#F5F5F5] mb-2">{T('quoteNotFound')}</h2>
+          <h2 className="font-heading text-xl font-light text-[#F5F5F5] mb-2" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>{T('quoteNotFound')}</h2>
           <p className="text-[#8A9BB0] text-sm">{T('linkExpiredOrInvalid')}</p>
         </div>
       </div>
@@ -304,7 +453,7 @@ export default function PortalPage() {
   const totalSpent = history.filter(h => ['paid', 'approved', 'completed'].includes(h.status)).reduce((sum, h) => sum + (h.total_price || 0), 0) + (isPaid ? (quote.total_price || 0) : 0);
 
   return (
-    <div className="min-h-screen bg-[var(--brand-bg,#0A0E17)]">
+    <div className="min-h-screen bg-[var(--brand-bg,#0A0E17)]" style={brandFontBody ? { fontFamily: brandFontBody } : undefined}>
       {/* Header */}
       <div className="bg-[var(--brand-surface,#111827)] border-b border-[#1A2236]">
         <div className="max-w-[640px] mx-auto px-6 py-6">
@@ -314,7 +463,7 @@ export default function PortalPage() {
               {detailer?.theme_logo_url ? (
                 <img src={detailer.theme_logo_url} alt={companyName} className="h-8 object-contain" />
               ) : (
-                <h1 className="font-heading text-xl font-light text-[#F5F5F5]">{companyName}</h1>
+                <h1 className="font-heading text-xl font-light text-[#F5F5F5]" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>{companyName}</h1>
               )}
             </div>
             <div className="flex items-center gap-3">
@@ -357,6 +506,8 @@ export default function PortalPage() {
         <div className="max-w-[640px] mx-auto px-6 flex">
           {[
             { key: 'quote', label: T('currentQuote') },
+            { key: 'fleet', label: 'My Fleet' },
+            { key: 'payments', label: 'Payment' },
             { key: 'history', label: `${T('history')} (${history.length})` },
             { key: 'receipts', label: T('receipts') },
           ].map(tabItem => (
@@ -628,6 +779,360 @@ export default function PortalPage() {
                 )}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* === FLEET TAB === */}
+        {tab === 'fleet' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase">Your Fleet</p>
+              <button
+                onClick={() => {
+                  setFleetForm({ tail_number: '', make: '', model: '', home_airport: '', nickname: '' });
+                  setFleetModal({ mode: 'add' });
+                }}
+                className="px-4 py-2 bg-[var(--brand-primary,#C9A84C)] text-[var(--brand-bg,#0A0E17)] text-xs tracking-[0.2em] uppercase font-medium hover:brightness-110 transition-colors"
+              >
+                Add Aircraft
+              </button>
+            </div>
+
+            {fleetLoading ? (
+              <div className="text-center py-10">
+                <div className="w-6 h-6 border-2 border-[var(--brand-primary,#C9A84C)] border-t-transparent rounded-full animate-spin mx-auto" />
+              </div>
+            ) : fleet.length === 0 ? (
+              <div className="bg-[var(--brand-surface,#111827)] border border-[#1A2236] p-10 text-center">
+                <p className="text-[#8A9BB0] text-sm mb-1">No aircraft in your fleet yet</p>
+                <p className="text-[#8A9BB0]/50 text-xs">Add aircraft to quickly request service</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {fleet.map(ac => (
+                  <div key={ac.id} className="bg-[var(--brand-surface,#111827)] border border-[#1A2236] p-5">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="text-[#F5F5F5] text-lg font-mono">{ac.tail_number}</p>
+                        <p className="text-[#8A9BB0] text-sm">{ac.make} {ac.model}{ac.nickname ? ` — ${ac.nickname}` : ''}</p>
+                        {ac.home_airport && (
+                          <p className="text-[#8A9BB0]/50 text-xs mt-1 font-mono">{ac.home_airport}</p>
+                        )}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            setFleetForm({
+                              tail_number: ac.tail_number,
+                              make: ac.make || '',
+                              model: ac.model || '',
+                              home_airport: ac.home_airport || '',
+                              nickname: ac.nickname || '',
+                            });
+                            setFleetModal({ mode: 'edit', aircraft: ac });
+                          }}
+                          className="text-[#8A9BB0] hover:text-[var(--brand-primary,#C9A84C)] text-xs tracking-[0.15em] uppercase transition-colors"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => deleteFleetAircraft(ac.id)}
+                          className="text-[#8A9BB0] hover:text-red-400 text-xs tracking-[0.15em] uppercase transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => {
+                        setRequestForm({ services: [], preferred_date: '', notes: '' });
+                        setRequestResult(null);
+                        setRequestModal(ac);
+                      }}
+                      className="w-full py-3 border border-[#2A3A50] text-[#8A9BB0] text-xs tracking-[0.2em] uppercase hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors"
+                    >
+                      Request Service
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Fleet Add/Edit Modal */}
+            {fleetModal && (
+              <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setFleetModal(null)}>
+                <div className="bg-[var(--brand-surface,#111827)] border border-[#2A3A50] w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                  <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-6">
+                    {fleetModal.mode === 'edit' ? 'Edit Aircraft' : 'Add Aircraft'}
+                  </p>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-[#8A9BB0] text-[10px] tracking-[0.2em] uppercase block mb-1">Tail Number *</label>
+                      <input
+                        value={fleetForm.tail_number}
+                        onChange={e => setFleetForm(f => ({ ...f, tail_number: e.target.value }))}
+                        className="w-full bg-[var(--brand-bg,#0A0E17)] border border-[#2A3A50] px-3 py-2 text-[#F5F5F5] text-sm font-mono focus:border-[var(--brand-primary,#C9A84C)] outline-none"
+                        placeholder="N12345"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[#8A9BB0] text-[10px] tracking-[0.2em] uppercase block mb-1">Make</label>
+                        <input
+                          value={fleetForm.make}
+                          onChange={e => setFleetForm(f => ({ ...f, make: e.target.value }))}
+                          className="w-full bg-[var(--brand-bg,#0A0E17)] border border-[#2A3A50] px-3 py-2 text-[#F5F5F5] text-sm focus:border-[var(--brand-primary,#C9A84C)] outline-none"
+                          placeholder="Gulfstream"
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[#8A9BB0] text-[10px] tracking-[0.2em] uppercase block mb-1">Model</label>
+                        <input
+                          value={fleetForm.model}
+                          onChange={e => setFleetForm(f => ({ ...f, model: e.target.value }))}
+                          className="w-full bg-[var(--brand-bg,#0A0E17)] border border-[#2A3A50] px-3 py-2 text-[#F5F5F5] text-sm focus:border-[var(--brand-primary,#C9A84C)] outline-none"
+                          placeholder="G650"
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[#8A9BB0] text-[10px] tracking-[0.2em] uppercase block mb-1">Home Airport (ICAO)</label>
+                        <input
+                          value={fleetForm.home_airport}
+                          onChange={e => setFleetForm(f => ({ ...f, home_airport: e.target.value }))}
+                          className="w-full bg-[var(--brand-bg,#0A0E17)] border border-[#2A3A50] px-3 py-2 text-[#F5F5F5] text-sm font-mono focus:border-[var(--brand-primary,#C9A84C)] outline-none"
+                          placeholder="KTEB"
+                          maxLength={4}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-[#8A9BB0] text-[10px] tracking-[0.2em] uppercase block mb-1">Nickname</label>
+                        <input
+                          value={fleetForm.nickname}
+                          onChange={e => setFleetForm(f => ({ ...f, nickname: e.target.value }))}
+                          className="w-full bg-[var(--brand-bg,#0A0E17)] border border-[#2A3A50] px-3 py-2 text-[#F5F5F5] text-sm focus:border-[var(--brand-primary,#C9A84C)] outline-none"
+                          placeholder="The Boss"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={saveFleetAircraft}
+                      disabled={!fleetForm.tail_number || fleetSaving}
+                      className="flex-1 py-3 bg-[var(--brand-primary,#C9A84C)] text-[var(--brand-bg,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-colors"
+                    >
+                      {fleetSaving ? 'Saving...' : fleetModal.mode === 'edit' ? 'Update' : 'Add Aircraft'}
+                    </button>
+                    <button
+                      onClick={() => setFleetModal(null)}
+                      className="px-6 py-3 border border-[#2A3A50] text-[#8A9BB0] text-sm tracking-[0.15em] uppercase hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Request Service Modal */}
+            {requestModal && (
+              <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4" onClick={() => setRequestModal(null)}>
+                <div className="bg-[var(--brand-surface,#111827)] border border-[#2A3A50] w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+                  <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase mb-2">Request Service</p>
+                  <p className="text-[#F5F5F5] text-sm mb-6">
+                    {requestModal.make} {requestModal.model} — <span className="font-mono">{requestModal.tail_number}</span>
+                  </p>
+
+                  {requestResult ? (
+                    <div className="text-center py-4">
+                      <p className="text-[var(--brand-primary,#C9A84C)] text-sm tracking-[0.15em] uppercase mb-2">Request Submitted</p>
+                      <p className="text-[#8A9BB0] text-sm">
+                        {requestResult.routed_to === 'detailer'
+                          ? `Your request has been sent to ${requestResult.detailer_name}. They'll contact you with a quote.`
+                          : 'Your request has been received. Our team will find a detailer near you.'}
+                      </p>
+                      <button
+                        onClick={() => setRequestModal(null)}
+                        className="mt-6 px-6 py-3 border border-[#2A3A50] text-[#8A9BB0] text-sm tracking-[0.15em] uppercase hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors"
+                      >
+                        Done
+                      </button>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="space-y-4">
+                        <div>
+                          <label className="text-[#8A9BB0] text-[10px] tracking-[0.2em] uppercase block mb-2">Services</label>
+                          <div className="space-y-2">
+                            {FLEET_SERVICES.map(svc => (
+                              <label key={svc} className="flex items-center gap-3 cursor-pointer">
+                                <div className="relative flex-shrink-0">
+                                  <input
+                                    type="checkbox"
+                                    checked={requestForm.services.includes(svc)}
+                                    onChange={() => {
+                                      setRequestForm(f => ({
+                                        ...f,
+                                        services: f.services.includes(svc)
+                                          ? f.services.filter(s => s !== svc)
+                                          : [...f.services, svc],
+                                      }));
+                                    }}
+                                    className="sr-only peer"
+                                  />
+                                  <div className="w-4 h-4 border border-[#2A3A50] peer-checked:border-[var(--brand-primary,#C9A84C)] peer-checked:bg-[var(--brand-primary,#C9A84C)] transition-colors flex items-center justify-center">
+                                    {requestForm.services.includes(svc) && <span className="text-[var(--brand-bg,#0A0E17)] text-[10px] font-bold">&#10003;</span>}
+                                  </div>
+                                </div>
+                                <span className="text-[#F5F5F5] text-sm">{svc}</span>
+                              </label>
+                            ))}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-[#8A9BB0] text-[10px] tracking-[0.2em] uppercase block mb-1">Preferred Date</label>
+                          <input
+                            type="date"
+                            value={requestForm.preferred_date}
+                            onChange={e => setRequestForm(f => ({ ...f, preferred_date: e.target.value }))}
+                            className="w-full bg-[var(--brand-bg,#0A0E17)] border border-[#2A3A50] px-3 py-2 text-[#F5F5F5] text-sm focus:border-[var(--brand-primary,#C9A84C)] outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[#8A9BB0] text-[10px] tracking-[0.2em] uppercase block mb-1">Notes</label>
+                          <textarea
+                            value={requestForm.notes}
+                            onChange={e => setRequestForm(f => ({ ...f, notes: e.target.value }))}
+                            rows={3}
+                            className="w-full bg-[var(--brand-bg,#0A0E17)] border border-[#2A3A50] px-3 py-2 text-[#F5F5F5] text-sm focus:border-[var(--brand-primary,#C9A84C)] outline-none resize-none"
+                            placeholder="Any special instructions..."
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-3 mt-6">
+                        <button
+                          onClick={submitServiceRequest}
+                          disabled={requestForm.services.length === 0 || requestSaving}
+                          className="flex-1 py-3 bg-[var(--brand-primary,#C9A84C)] text-[var(--brand-bg,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-colors"
+                        >
+                          {requestSaving ? 'Submitting...' : 'Submit Request'}
+                        </button>
+                        <button
+                          onClick={() => setRequestModal(null)}
+                          className="px-6 py-3 border border-[#2A3A50] text-[#8A9BB0] text-sm tracking-[0.15em] uppercase hover:border-[var(--brand-primary,#C9A84C)] hover:text-[var(--brand-primary,#C9A84C)] transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* === PAYMENT METHODS TAB === */}
+        {tab === 'payments' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <p className="text-[#8A9BB0] text-[10px] tracking-[0.3em] uppercase">Payment Methods</p>
+              {!setupClientSecret && (
+                <button
+                  onClick={startAddPaymentMethod}
+                  disabled={addingPM}
+                  className="px-4 py-2 bg-[var(--brand-primary,#C9A84C)] text-[var(--brand-bg,#0A0E17)] text-xs tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-40 transition-colors"
+                >
+                  {addingPM ? 'Loading...' : 'Add Card'}
+                </button>
+              )}
+            </div>
+
+            {/* Stripe Elements form */}
+            {setupClientSecret && (
+              <div className="bg-[var(--brand-surface,#111827)] border border-[#2A3A50] p-6">
+                <Elements
+                  stripe={stripePromise}
+                  options={{
+                    clientSecret: setupClientSecret,
+                    appearance: {
+                      theme: 'night',
+                      variables: {
+                        colorPrimary: '#C9A84C',
+                        colorBackground: '#0A0E17',
+                        colorText: '#F5F5F5',
+                        colorDanger: '#ef4444',
+                        borderRadius: '0px',
+                      },
+                    },
+                  }}
+                >
+                  <SetupForm
+                    token={token}
+                    stripeCustomerId={stripeCustomerId}
+                    onSuccess={() => {
+                      setSetupClientSecret(null);
+                      fetchPaymentMethods();
+                    }}
+                    onCancel={() => setSetupClientSecret(null)}
+                  />
+                </Elements>
+              </div>
+            )}
+
+            {pmLoading ? (
+              <div className="text-center py-10">
+                <div className="w-6 h-6 border-2 border-[var(--brand-primary,#C9A84C)] border-t-transparent rounded-full animate-spin mx-auto" />
+              </div>
+            ) : paymentMethods.length === 0 && !setupClientSecret ? (
+              <div className="bg-[var(--brand-surface,#111827)] border border-[#1A2236] p-10 text-center">
+                <p className="text-[#8A9BB0] text-sm mb-1">No payment methods saved</p>
+                <p className="text-[#8A9BB0]/50 text-xs">Save a card for faster checkout</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {paymentMethods.map(pm => (
+                  <div key={pm.id} className="bg-[var(--brand-surface,#111827)] border border-[#1A2236] p-5">
+                    <div className="flex justify-between items-center">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-7 bg-[var(--brand-bg,#0A0E17)] border border-[#2A3A50] flex items-center justify-center">
+                          <span className="text-[#8A9BB0] text-[10px] uppercase">{pm.brand || pm.type}</span>
+                        </div>
+                        <div>
+                          <p className="text-[#F5F5F5] text-sm font-mono">
+                            •••• {pm.last4}
+                            {pm.is_default && (
+                              <span className="ml-2 text-[var(--brand-primary,#C9A84C)] text-[10px] tracking-[0.1em] uppercase font-medium">Default</span>
+                            )}
+                          </p>
+                          {pm.exp_month && pm.exp_year && (
+                            <p className="text-[#8A9BB0]/50 text-xs">Exp {String(pm.exp_month).padStart(2, '0')}/{pm.exp_year}</p>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        {!pm.is_default && (
+                          <button
+                            onClick={() => setDefaultPM(pm.id)}
+                            className="text-[#8A9BB0] hover:text-[var(--brand-primary,#C9A84C)] text-xs tracking-[0.15em] uppercase transition-colors"
+                          >
+                            Set Default
+                          </button>
+                        )}
+                        <button
+                          onClick={() => removePM(pm.id)}
+                          className="text-[#8A9BB0] hover:text-red-400 text-xs tracking-[0.15em] uppercase transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 
