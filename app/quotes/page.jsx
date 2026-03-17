@@ -7,15 +7,15 @@ import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice
 import ExportGate from '@/components/ExportGate';
 
 const statusColors = {
-  draft: 'bg-gray-700/30 text-gray-300',
-  sent: 'bg-blue-900/30 text-blue-400',
-  viewed: 'bg-amber-900/30 text-amber-400',
-  paid: 'bg-green-900/30 text-green-400',
-  approved: 'bg-green-900/30 text-green-400',
-  completed: 'bg-purple-900/30 text-purple-400',
-  expired: 'bg-red-900/30 text-red-400',
-  scheduled: 'bg-indigo-900/30 text-indigo-400',
-  in_progress: 'bg-cyan-900/30 text-cyan-400',
+  draft: 'border border-gray-500/40 text-gray-400',
+  sent: 'border border-white/30 text-white',
+  viewed: 'border border-[#C9A84C]/50 text-[#C9A84C]',
+  paid: 'border border-green-500/40 text-green-400',
+  approved: 'border border-green-500/40 text-green-400',
+  completed: 'border border-purple-400/40 text-purple-300',
+  expired: 'border border-red-500/30 text-red-400/70',
+  scheduled: 'border border-indigo-400/40 text-indigo-300',
+  in_progress: 'border border-cyan-400/40 text-cyan-300',
 };
 
 export default function QuotesPage() {
@@ -664,7 +664,7 @@ export default function QuotesPage() {
         const quote = row.original;
         const status = getStatus(quote);
         return (
-          <div className="flex gap-2">
+          <div className="flex gap-3">
             {quote.share_link && (
               <>
                 <a
@@ -672,7 +672,7 @@ export default function QuotesPage() {
                   target="_blank"
                   rel="noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="text-blue-600 hover:underline text-xs"
+                  className="text-gray-400 hover:text-white hover:underline text-xs transition-colors"
                 >
                   View
                 </a>
@@ -681,7 +681,7 @@ export default function QuotesPage() {
                     e.stopPropagation();
                     try { navigator.clipboard?.writeText(`${window.location.origin}/q/${quote.share_link}`); } catch {}
                   }}
-                  className="text-gray-600 hover:text-gray-900 text-xs"
+                  className="text-gray-400 hover:text-white hover:underline text-xs transition-colors"
                 >
                   Copy
                 </button>
@@ -692,7 +692,7 @@ export default function QuotesPage() {
               target="_blank"
               rel="noreferrer"
               onClick={(e) => e.stopPropagation()}
-              className="text-amber-600 hover:text-amber-800 text-xs font-semibold"
+              className="text-gray-400 hover:text-[#C9A84C] hover:underline text-xs transition-colors"
             >
               PDF
             </a>
@@ -701,7 +701,7 @@ export default function QuotesPage() {
                 e.stopPropagation();
                 openDuplicateModal(quote);
               }}
-              className="text-green-600 hover:text-green-800 text-xs font-medium"
+              className="text-gray-400 hover:text-white hover:underline text-xs transition-colors"
             >
               Duplicate
             </button>
@@ -712,7 +712,7 @@ export default function QuotesPage() {
                     e.stopPropagation();
                     openChangeOrderModal(quote);
                   }}
-                  className="text-amber-600 hover:text-amber-800 text-xs font-medium"
+                  className="text-gray-400 hover:text-[#C9A84C] hover:underline text-xs transition-colors"
                 >
                   +Change
                 </button>
@@ -721,7 +721,7 @@ export default function QuotesPage() {
                     e.stopPropagation();
                     openCompleteModal(quote);
                   }}
-                  className="text-purple-600 hover:text-purple-800 text-xs font-medium"
+                  className="text-gray-400 hover:text-white hover:underline text-xs transition-colors"
                 >
                   Complete
                 </button>
@@ -749,10 +749,10 @@ export default function QuotesPage() {
   return (
     <div className="page-transition min-h-screen bg-v-charcoal p-4">
       {/* Header */}
-      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 text-white">
+      <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-8 text-white">
         <div className="flex items-center space-x-4">
-          <a href="/dashboard" className="text-2xl hover:text-amber-400">&#8592;</a>
-          <h1 className="text-xl sm:text-2xl font-bold">Quotes</h1>
+          <a href="/dashboard" className="text-lg hover:text-[#C9A84C] transition-colors">&#8592;</a>
+          <h1 className="text-2xl sm:text-3xl font-normal tracking-[0.25em] uppercase" style={{ fontFamily: "var(--font-playfair), 'Playfair Display', serif" }}>Quotes</h1>
         </div>
         <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
           <ExportGate plan={userPlan}>
@@ -773,7 +773,7 @@ export default function QuotesPage() {
                   a.click(); URL.revokeObjectURL(a.href);
                 }}
                 disabled={quotes.length === 0}
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded px-3 py-1 disabled:opacity-50 text-sm"
+                className="text-gray-400 hover:text-white hover:underline text-sm transition-colors"
               >
                 Export CSV
               </button>
@@ -788,7 +788,7 @@ export default function QuotesPage() {
                     a.click(); URL.revokeObjectURL(a.href);
                   }
                 }}
-                className="bg-white/10 hover:bg-white/20 text-white border border-white/20 rounded px-3 py-1 text-sm"
+                className="text-gray-400 hover:text-white hover:underline text-sm transition-colors"
               >
                 Export Customers
               </button>
@@ -796,7 +796,7 @@ export default function QuotesPage() {
           </ExportGate>
           <a
             href="/dashboard"
-            className="px-4 py-2 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-medium hover:opacity-90"
+            className="px-5 py-2 bg-[#C9A84C] text-[#0D1B2A] text-sm font-medium uppercase tracking-widest hover:bg-[#b8993f] transition-colors"
           >
             New Quote
           </a>
@@ -804,46 +804,33 @@ export default function QuotesPage() {
       </header>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3 sm:gap-4 mb-6">
-        <div className="bg-v-surface border border-v-border rounded-sm p-4">
-          <p className="text-gray-500 text-sm">Total</p>
-          <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-        </div>
-        <div className="bg-v-surface border border-v-border rounded-sm p-4">
-          <p className="text-gray-500 text-sm">Active</p>
-          <p className="text-2xl font-bold text-amber-600">{stats.active}</p>
-        </div>
-        <div className="bg-v-surface border border-v-border rounded-sm p-4">
-          <p className="text-gray-500 text-sm">Paid</p>
-          <p className="text-2xl font-bold text-green-600">{stats.paid}</p>
-        </div>
-        <div className="bg-v-surface border border-v-border rounded-sm p-4">
-          <p className="text-gray-500 text-sm">Completed</p>
-          <p className="text-2xl font-bold text-purple-600">{stats.completed}</p>
-        </div>
-        <div className="bg-v-surface border border-v-border rounded-sm p-4">
-          <p className="text-gray-500 text-sm">Revenue</p>
-          <p className="text-2xl font-bold text-blue-600">{currencySymbol()}{formatPriceWhole(stats.revenue)}</p>
-        </div>
-        <div className="bg-v-surface border border-v-border rounded-sm p-4">
-          <p className="text-gray-500 text-sm">Gross Profit</p>
-          <p className="text-2xl font-bold text-green-600">{currencySymbol()}{formatPriceWhole(stats.revenue - stats.productCost)}</p>
-          {stats.revenue > 0 && (
-            <p className="text-xs text-gray-400">{((1 - stats.productCost / stats.revenue) * 100).toFixed(0)}% margin</p>
-          )}
-        </div>
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-px bg-v-border/30 mb-8">
+        {[
+          { label: 'Total', value: stats.total, color: 'text-white' },
+          { label: 'Active', value: stats.active, color: 'text-[#C9A84C]' },
+          { label: 'Paid', value: stats.paid, color: 'text-green-400' },
+          { label: 'Completed', value: stats.completed, color: 'text-purple-300' },
+          { label: 'Revenue', value: `${currencySymbol()}${formatPriceWhole(stats.revenue)}`, color: 'text-white' },
+          { label: 'Gross Profit', value: `${currencySymbol()}${formatPriceWhole(stats.revenue - stats.productCost)}`, color: 'text-green-400', sub: stats.revenue > 0 ? `${((1 - stats.productCost / stats.revenue) * 100).toFixed(0)}%` : null },
+        ].map((s, i) => (
+          <div key={i} className="bg-v-charcoal p-4">
+            <p className="text-gray-500 text-xs uppercase tracking-wider">{s.label}</p>
+            <p className={`text-xl font-light mt-1 ${s.color}`}>{s.value}</p>
+            {s.sub && <p className="text-xs text-gray-500 mt-0.5">{s.sub} margin</p>}
+          </div>
+        ))}
       </div>
 
       {/* Filter Tabs */}
-      <div className="flex space-x-2 mb-4 overflow-x-auto">
+      <div className="flex space-x-6 mb-6 border-b border-v-border/30 overflow-x-auto">
         {['all', 'active', 'paid', 'completed', 'expired'].map((f) => (
           <button
             key={f}
             onClick={() => setFilter(f)}
-            className={`px-4 py-2 rounded-lg font-medium text-sm ${
+            className={`pb-2 text-sm tracking-wide transition-colors ${
               filter === f
-                ? 'bg-amber-500 text-white'
-                : 'bg-v-surface text-v-text-secondary hover:bg-white/5'
+                ? 'text-[#C9A84C] border-b-2 border-[#C9A84C]'
+                : 'text-gray-500 hover:text-gray-300 border-b-2 border-transparent'
             }`}
           >
             {f === 'all' ? 'All' :
@@ -1236,7 +1223,7 @@ export default function QuotesPage() {
                 <span className="text-sm font-medium text-gray-900">
                   {duplicateModal.aircraft_model || duplicateModal.aircraft_type || 'Aircraft'}
                 </span>
-                <span className="font-bold text-[#1e3a5f]">{currencySymbol()}{formatPrice(duplicateModal.total_price)}</span>
+                <span className="font-bold text-[#C9A84C]">{currencySymbol()}{formatPrice(duplicateModal.total_price)}</span>
               </div>
               {duplicateModal.line_items && duplicateModal.line_items.length > 0 && (
                 <div className="mt-1">

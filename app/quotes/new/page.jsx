@@ -535,48 +535,66 @@ function NewQuoteContent() {
   return (
     <div className="min-h-screen bg-v-charcoal p-4 pb-40 text-v-text-primary">
       {/* Header */}
-      <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-4 bg-gradient-to-b from-v-charcoal via-v-charcoal to-transparent flex justify-between items-center text-white">
-        <div className="flex items-center gap-3">
-          <a href="/dashboard" className="flex items-center gap-1.5 text-sm text-gray-300 hover:text-white transition-colors">
-            <span>&#8592;</span> Dashboard
-          </a>
-          <span className="text-gray-500">|</span>
-          <h1 className="text-xl font-bold">New Quote</h1>
+      <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-6 bg-gradient-to-b from-v-charcoal via-v-charcoal to-transparent flex justify-between items-center text-white">
+        <div className="flex items-center gap-4">
+          <a href="/dashboard" className="text-lg text-gray-400 hover:text-[#C9A84C] transition-colors">&#8592;</a>
+          <h1 className="text-2xl font-normal tracking-[0.2em] uppercase" style={{ fontFamily: "var(--font-playfair), 'Playfair Display', serif" }}>New Quote</h1>
         </div>
-        <div className="flex items-center gap-3 text-sm">
-          <a href="/quotes" className="text-gray-300 hover:text-white">Quotes</a>
-          <a href="/customers" className="text-gray-300 hover:text-white">Customers</a>
-          <a href="/settings" className="text-gray-300 hover:text-white">Settings</a>
+        <div className="flex items-center gap-4 text-sm">
+          <a href="/quotes" className="text-gray-400 hover:text-white transition-colors">Quotes</a>
+          <a href="/customers" className="text-gray-400 hover:text-white transition-colors">Customers</a>
+          <a href="/settings" className="text-gray-400 hover:text-white transition-colors">Settings</a>
         </div>
       </header>
 
+      {/* Step Indicator */}
+      <div className="max-w-3xl mx-auto mb-6">
+        <div className="relative flex items-center justify-between">
+          <div className="absolute left-0 right-0 top-1/2 h-px bg-[#C9A84C]/30" />
+          {[
+            { n: 1, label: 'Aircraft', active: true },
+            { n: 2, label: 'Services', active: !!selectedAircraft },
+            { n: 3, label: 'Details', active: !!selectedAircraft && selectedServicesList.length > 0 },
+            { n: 4, label: 'Review', active: !!selectedAircraft && selectedServicesList.length > 0 },
+          ].map((step) => (
+            <div key={step.n} className="relative flex flex-col items-center z-10">
+              <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-medium border ${
+                step.active ? 'bg-[#C9A84C] border-[#C9A84C] text-[#0D1B2A]' : 'bg-v-charcoal border-gray-600 text-gray-500'
+              }`}>
+                {step.n}
+              </div>
+              <span className={`text-[10px] uppercase tracking-wider mt-1 ${step.active ? 'text-[#C9A84C]' : 'text-gray-600'}`}>
+                {step.label}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Services Configuration Prompt */}
       {user && availableServices.length === 0 && (
-        <div className="bg-blue-900/20 border border-blue-600/30 rounded-lg p-4 mb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center">
-            <span className="text-blue-400 text-xl mr-3">&#9432;</span>
-            <div>
-              <p className="text-blue-300 font-medium">Set up your service menu</p>
-              <p className="text-blue-400 text-sm">Add services you offer to start building quotes.</p>
-            </div>
+        <div className="max-w-3xl mx-auto bg-v-surface border border-v-border/40 p-5 mb-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+          <div>
+            <p className="text-gray-300 text-sm">Set up your service menu</p>
+            <p className="text-gray-500 text-xs mt-0.5">Add services you offer to start building quotes.</p>
           </div>
           <a
             href="/settings/services"
-            className="px-4 py-3 rounded bg-blue-500 text-white font-medium hover:bg-blue-600 min-h-[44px] whitespace-nowrap"
+            className="px-5 py-2.5 bg-[#C9A84C] text-[#0D1B2A] text-xs uppercase tracking-wider font-medium hover:bg-[#b8993f] min-h-[44px] flex items-center whitespace-nowrap transition-colors"
           >
-            Add services to get started
+            Add Services
           </a>
         </div>
       )}
 
       <div className="max-w-3xl mx-auto">
           {/* 1. Select Aircraft */}
-          <div className="bg-v-surface border border-v-border rounded-sm p-4 mb-4">
-            <h3 className="font-semibold mb-3 text-lg">Select Aircraft</h3>
+          <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
+            <h3 className="text-lg font-light tracking-wider uppercase text-[#C9A84C] mb-4">Select Aircraft</h3>
 
             {/* Manufacturer Dropdown */}
-            <div className="mb-3">
-              <label className="block text-sm font-medium text-v-text-secondary mb-1">Manufacturer</label>
+            <div className="mb-4">
+              <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Manufacturer</label>
               <select
                 value={selectedManufacturer}
                 onChange={(e) => setSelectedManufacturer(e.target.value)}
@@ -605,18 +623,18 @@ function NewQuoteContent() {
 
             {/* Category filter chips */}
             {selectedManufacturer && (
-              <div className="flex flex-wrap gap-1.5 mb-3">
+              <div className="flex flex-wrap gap-2 mb-4">
                 <button
                   onClick={() => setSelectedCategory('')}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[32px] ${!selectedCategory ? 'bg-amber-500 text-white' : 'bg-v-charcoal text-v-text-secondary hover:bg-white/5'}`}
+                  className={`px-3 py-1.5 text-xs tracking-wider uppercase transition-colors min-h-[32px] border ${!selectedCategory ? 'border-[#C9A84C] text-[#C9A84C]' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
                 >
-                  All Categories
+                  All
                 </button>
                 {categoryOrder.filter(c => models.some(m => m.category === c)).map(cat => (
                   <button
                     key={cat}
                     onClick={() => setSelectedCategory(cat === selectedCategory ? '' : cat)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors min-h-[32px] ${selectedCategory === cat ? 'bg-amber-500 text-white' : 'bg-v-charcoal text-v-text-secondary hover:bg-white/5'}`}
+                    className={`px-3 py-1.5 text-xs tracking-wider uppercase transition-colors min-h-[32px] border ${selectedCategory === cat ? 'border-[#C9A84C] text-[#C9A84C]' : 'border-transparent text-gray-500 hover:text-gray-300'}`}
                   >
                     {categoryLabels[cat] || cat}
                   </button>
@@ -635,15 +653,15 @@ function NewQuoteContent() {
                         <button
                           key={aircraft.id}
                           onClick={() => handleSelectAircraft(aircraft)}
-                          className={`p-2.5 rounded-lg border text-left transition-all text-sm min-h-[44px] ${
+                          className={`p-3 border text-left transition-all min-h-[56px] ${
                             selectedAircraft?.id === aircraft.id
-                              ? 'border-amber-500 bg-amber-900/20 ring-2 ring-amber-500'
-                              : 'border-v-border hover:border-amber-300 hover:bg-amber-900/10'
+                              ? 'border-[#C9A84C] bg-[#C9A84C]/10'
+                              : 'border-v-border/40 hover:border-[#C9A84C]/50'
                           }`}
                         >
-                          <p className="font-medium text-v-text-primary truncate">{aircraft.model}</p>
+                          <p className="font-medium text-v-text-primary text-base truncate">{aircraft.model}</p>
                           {aircraft.surface_area_sqft && (
-                            <p className="text-xs text-gray-400">{aircraft.surface_area_sqft} sq ft</p>
+                            <p className="text-xs text-gray-500 mt-0.5">{aircraft.surface_area_sqft} sq ft</p>
                           )}
                         </button>
                       ))}
@@ -661,8 +679,8 @@ function NewQuoteContent() {
 
           {/* Tail Number */}
           {selectedAircraft && (
-            <div className="bg-v-surface border border-v-border rounded-sm p-4 mb-4">
-              <label className="block text-sm font-medium text-v-text-secondary mb-1">Tail Number (N-number)</label>
+            <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
+              <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Tail Number (N-number)</label>
               <input
                 type="text"
                 value={tailNumber}
@@ -675,11 +693,11 @@ function NewQuoteContent() {
 
           {/* 2. Select Services */}
           {selectedAircraft && (
-            <div id="services-section" className="bg-v-surface border border-v-border rounded-sm p-4 mb-4">
-              <h3 className="font-semibold mb-3 text-lg">Select Services</h3>
+            <div id="services-section" className="bg-v-surface border border-v-border/40 p-5 mb-5">
+              <h3 className="text-lg font-light tracking-wider uppercase text-[#C9A84C] mb-4">Select Services</h3>
 
               {/* Individual Services */}
-              <div className="space-y-2 mb-4">
+              <div className="divide-y divide-v-border/30 mb-4">
                 {availableServices.map(svc => {
                   const hours = getHoursForService(svc);
                   const price = getServicePrice(svc);
@@ -688,19 +706,17 @@ function NewQuoteContent() {
                   return (
                     <div key={svc.id}>
                       <div
-                        className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-all min-h-[44px] ${
-                          isSelected
-                            ? 'border-amber-500 bg-amber-900/20'
-                            : 'border-v-border hover:border-amber-300'
+                        className={`w-full flex items-center justify-between py-3 text-left transition-all min-h-[48px] ${
+                          isSelected ? 'opacity-100' : 'opacity-70 hover:opacity-100'
                         }`}
                       >
                         <div className="flex items-center gap-2 flex-1 min-w-0" onClick={() => toggleService(svc.id)} role="button" tabIndex={0}>
-                          <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors flex-shrink-0 ${
-                            isSelected ? 'bg-amber-500 border-amber-500 text-white' : 'border-v-border'
+                          <div className={`w-4 h-4 border flex items-center justify-center transition-colors flex-shrink-0 ${
+                            isSelected ? 'bg-[#C9A84C] border-[#C9A84C] text-[#0D1B2A]' : 'border-gray-500'
                           }`}>
-                            {isSelected && <span className="text-xs">&#10003;</span>}
+                            {isSelected && <span className="text-[10px]">&#10003;</span>}
                           </div>
-                          <p className="font-medium text-v-text-primary text-sm truncate">{svc.name}</p>
+                          <p className="text-v-text-primary text-sm truncate">{svc.name}</p>
                         </div>
                         <div className="flex items-center gap-1.5 flex-shrink-0 text-sm">
                           {isSelected ? (
@@ -783,26 +799,24 @@ function NewQuoteContent() {
 
               {/* Packages */}
               {availablePackages.length > 0 && (
-                <div>
-                  <h4 className="font-medium text-sm text-v-text-secondary mb-2">Packages</h4>
-                  <div className="space-y-2">
+                <div className="pt-4 border-t border-v-border/30">
+                  <h4 className="text-xs uppercase tracking-wider text-gray-500 mb-3">Packages</h4>
+                  <div className="divide-y divide-v-border/30">
                     {availablePackages.map(pkg => {
                       const isSelected = selectedPackage?.id === pkg.id;
                       return (
                         <button
                           key={pkg.id}
                           onClick={() => selectPackage(pkg)}
-                          className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-all min-h-[44px] ${
-                            isSelected
-                              ? 'border-green-500 bg-green-900/20'
-                              : 'border-v-border hover:border-green-500/50'
+                          className={`w-full flex items-center justify-between py-3 text-left transition-all min-h-[44px] ${
+                            isSelected ? 'opacity-100' : 'opacity-70 hover:opacity-100'
                           }`}
                         >
                           <div>
-                            <p className="font-medium text-v-text-primary text-sm">{pkg.name}</p>
-                            <p className="text-xs text-gray-400">{Array.isArray(pkg.service_ids) ? pkg.service_ids.length : 0} services{pkg.discount_percent > 0 ? ` \u00B7 ${pkg.discount_percent}% off` : ''}</p>
+                            <p className="text-v-text-primary text-sm">{pkg.name}</p>
+                            <p className="text-xs text-gray-500">{Array.isArray(pkg.service_ids) ? pkg.service_ids.length : 0} services{pkg.discount_percent > 0 ? ` \u00B7 ${pkg.discount_percent}% off` : ''}</p>
                           </div>
-                          {isSelected && <span className="text-green-400 font-bold text-sm">Selected</span>}
+                          {isSelected && <span className="text-[#C9A84C] text-xs uppercase tracking-wider">Selected</span>}
                         </button>
                       );
                     })}
@@ -814,9 +828,9 @@ function NewQuoteContent() {
 
           {/* 3. Access Difficulty */}
           {selectedAircraft && selectedServicesList.length > 0 && (
-            <div className="bg-v-surface border border-v-border rounded-sm p-4 mb-4">
-              <h3 className="font-semibold mb-3 text-sm">Access Difficulty</h3>
-              <div className="grid grid-cols-4 gap-2">
+            <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
+              <h3 className="text-sm font-light tracking-wider uppercase text-gray-400 mb-3">Access Difficulty</h3>
+              <div className="grid grid-cols-4 gap-px bg-v-border/30">
                 {[
                   { label: 'Standard', value: 1.0 },
                   { label: 'Moderate', value: 1.15 },
@@ -826,15 +840,14 @@ function NewQuoteContent() {
                   <button
                     key={opt.value}
                     onClick={() => setAccessDifficulty(opt.value)}
-                    className={`px-3 py-2 rounded-lg border text-xs font-medium transition-all min-h-[44px] ${
+                    className={`px-3 py-3 text-xs transition-all min-h-[44px] ${
                       accessDifficulty === opt.value
-                        ? 'border-amber-500 bg-amber-900/20 text-amber-700'
-                        : 'border-v-border text-v-text-secondary hover:border-amber-300'
+                        ? 'bg-[#C9A84C]/10 text-[#C9A84C]'
+                        : 'bg-v-surface text-gray-400 hover:text-white'
                     }`}
                   >
                     {opt.label}
-                    <br />
-                    <span className="text-gray-400">{opt.value === 1.0 ? '' : `+${Math.round((opt.value - 1) * 100)}%`}</span>
+                    {opt.value !== 1.0 && <span className="block text-gray-500 mt-0.5">+{Math.round((opt.value - 1) * 100)}%</span>}
                   </button>
                 ))}
               </div>
@@ -843,29 +856,29 @@ function NewQuoteContent() {
 
           {/* 4. Add-on Fees */}
           {selectedAircraft && selectedServicesList.length > 0 && availableAddons.length > 0 && (
-            <div className="bg-v-surface border border-v-border rounded-sm p-4 mb-4">
-              <h3 className="font-semibold mb-3 text-sm">Add-on Fees</h3>
-              <div className="space-y-2">
+            <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
+              <h3 className="text-sm font-light tracking-wider uppercase text-gray-400 mb-3">Add-on Fees</h3>
+              <div className="divide-y divide-v-border/30">
                 {availableAddons.map(addon => {
                   const isSelected = !!selectedAddons[addon.id];
                   return (
                     <button
                       key={addon.id}
                       onClick={() => toggleAddon(addon.id)}
-                      className={`w-full flex items-center justify-between p-3 rounded-lg border text-left transition-all min-h-[44px] ${
-                        isSelected ? 'border-amber-500 bg-amber-900/20' : 'border-v-border hover:border-amber-300'
+                      className={`w-full flex items-center justify-between py-3 text-left transition-all min-h-[44px] ${
+                        isSelected ? 'opacity-100' : 'opacity-70 hover:opacity-100'
                       }`}
                     >
                       <div className="flex items-center gap-2">
-                        <div className={`w-5 h-5 rounded border-2 flex items-center justify-center ${
-                          isSelected ? 'bg-amber-500 border-amber-500 text-white' : 'border-v-border'
+                        <div className={`w-4 h-4 border flex items-center justify-center ${
+                          isSelected ? 'bg-[#C9A84C] border-[#C9A84C] text-[#0D1B2A]' : 'border-gray-500'
                         }`}>
-                          {isSelected && <span className="text-xs">&#10003;</span>}
+                          {isSelected && <span className="text-[10px]">&#10003;</span>}
                         </div>
-                        <span className="text-sm font-medium text-v-text-primary">{addon.name}</span>
+                        <span className="text-sm text-v-text-primary">{addon.name}</span>
                       </div>
-                      <span className="text-sm font-medium text-v-text-secondary">
-                        {addon.fee_type === 'percent' ? `${addon.amount}%` : `${currencySymbol()}${parseFloat(addon.amount).toFixed(2)}`}
+                      <span className="text-sm text-gray-400">
+                        {addon.fee_type === 'percent' ? `${addon.amount}%` : `${currencySymbol()}${formatPrice(addon.amount)}`}
                       </span>
                     </button>
                   );
@@ -876,8 +889,8 @@ function NewQuoteContent() {
 
           {/* 5. Airport / Job Location */}
           {selectedAircraft && selectedServicesList.length > 0 && (
-            <div className="bg-v-surface border border-v-border rounded-sm p-4 mb-4">
-              <label className="block text-sm font-medium text-v-text-secondary mb-1">Airport Code</label>
+            <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
+              <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Airport Code</label>
               <input
                 type="text"
                 value={airport}
@@ -890,8 +903,8 @@ function NewQuoteContent() {
 
           {/* 6. Notes */}
           {selectedAircraft && selectedServicesList.length > 0 && (
-            <div className="bg-v-surface border border-v-border rounded-sm p-4 mb-4">
-              <label className="block text-sm font-medium text-v-text-secondary mb-1">Notes</label>
+            <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
+              <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Notes</label>
               <textarea
                 value={quoteNotes}
                 onChange={(e) => setQuoteNotes(e.target.value)}
@@ -904,7 +917,7 @@ function NewQuoteContent() {
 
           {/* 7. Aircraft Details Accordion */}
           {selectedAircraft && (
-            <details className="bg-v-surface border border-v-border rounded-sm p-4 mb-4">
+            <details className="bg-v-surface border border-v-border/40 p-5 mb-5">
               <summary className="font-semibold text-sm cursor-pointer text-v-text-secondary">Aircraft Details</summary>
               <div className="mt-3 grid grid-cols-2 gap-2 text-sm text-v-text-secondary">
                 <div><span className="text-gray-400">Type:</span> {selectedAircraft.category}</div>
@@ -921,8 +934,8 @@ function NewQuoteContent() {
 
           {/* 8. Quote Summary */}
           {selectedAircraft && selectedServicesList.length > 0 && (
-            <div className="bg-[#1e293b] rounded-lg p-4 mb-4 shadow text-white">
-              <h3 className="font-bold text-lg mb-3">Quote Summary</h3>
+            <div className="bg-[#0D1B2A] border border-v-border/20 p-5 mb-5 text-white">
+              <h3 className="text-sm font-light tracking-wider uppercase text-gray-400 mb-4">Quote Summary</h3>
 
               {/* Line items */}
               <div className="space-y-1 mb-3">
@@ -942,12 +955,12 @@ function NewQuoteContent() {
                 </div>
               )}
 
-              <div className="border-t border-white/20 my-2" />
+              <div className="border-t border-white/10 my-3" />
 
               {/* Subtotal */}
               <div className="flex justify-between text-sm mb-1">
-                <span className="text-gray-400">Subtotal</span>
-                <span>{currencySymbol()}{formatPrice(afterDiscount)}</span>
+                <span className="text-gray-500">Subtotal</span>
+                <span className="text-gray-300">{currencySymbol()}{formatPrice(afterDiscount)}</span>
               </div>
 
               {/* Difficulty */}
@@ -974,12 +987,12 @@ function NewQuoteContent() {
                 </div>
               )}
 
-              <div className="border-t border-white/20 my-2" />
+              <div className="border-t border-white/10 my-3" />
 
               {/* Total */}
-              <div className="flex justify-between text-xl font-bold">
-                <span>Total</span>
-                <span className="text-amber-400">{currencySymbol()}{formatPrice(totalPrice)}</span>
+              <div className="flex justify-between items-baseline">
+                <span className="text-sm text-gray-400 uppercase tracking-wider">Total</span>
+                <span className="text-[2.5rem] font-extralight text-[#C9A84C]">{currencySymbol()}{formatPrice(totalPrice)}</span>
               </div>
 
               {/* Profit preview */}
@@ -1039,7 +1052,7 @@ function NewQuoteContent() {
                 type="button"
                 onClick={openSendModal}
                 disabled={totalPrice === 0 || !airport || airport.length < 3}
-                className="w-full mt-4 px-6 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-base min-h-[48px]"
+                className="w-full mt-6 px-6 py-4 bg-[#C9A84C] text-[#0D1B2A] font-medium uppercase tracking-[0.2em] hover:bg-[#b8993f] disabled:opacity-40 disabled:cursor-not-allowed text-sm min-h-[52px] transition-colors"
               >
                 {!airport || airport.length < 3 ? 'Enter Airport to Send' : 'Send to Client'}
               </button>
@@ -1048,7 +1061,7 @@ function NewQuoteContent() {
               <button
                 type="button"
                 onClick={resetQuoteForm}
-                className="w-full mt-2 px-4 py-3 rounded-lg border border-v-border text-v-text-secondary hover:bg-white/5 text-sm min-h-[44px]"
+                className="w-full mt-2 px-4 py-3 border border-v-border/30 text-gray-500 hover:text-white hover:border-v-border text-xs uppercase tracking-wider min-h-[44px] transition-colors"
               >
                 Start New Quote
               </button>
@@ -1058,21 +1071,21 @@ function NewQuoteContent() {
 
       {/* Sticky footer bar */}
       {selectedAircraft && selectedServicesList.length > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 bg-[#0f172a]/95 backdrop-blur-sm border-t border-white/10 px-4 py-3 z-50 shadow-2xl">
+        <div className="fixed bottom-0 left-0 right-0 bg-[#0D1B2A]/95 backdrop-blur-sm border-t border-[#C9A84C]/20 px-4 py-3 z-50">
           <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="text-white font-medium text-sm truncate">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
-              <p className="text-gray-400 text-xs">{selectedServicesList.length} service{selectedServicesList.length !== 1 ? 's' : ''} &middot; {totalHours.toFixed(1)}h</p>
+              <p className="text-white text-sm truncate">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
+              <p className="text-gray-500 text-xs">{selectedServicesList.length} service{selectedServicesList.length !== 1 ? 's' : ''} &middot; {totalHours.toFixed(1)}h</p>
             </div>
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <span className="text-white text-xl sm:text-2xl font-bold">{currencySymbol()}{formatPrice(totalPrice)}</span>
+            <div className="flex items-center gap-4 flex-shrink-0">
+              <span className="text-[#C9A84C] text-2xl font-extralight">{currencySymbol()}{formatPrice(totalPrice)}</span>
               <button
                 type="button"
                 onClick={openSendModal}
                 disabled={totalPrice === 0 || !airport || airport.length < 3}
-                className="px-4 sm:px-6 py-3 rounded-lg bg-gradient-to-r from-amber-500 to-amber-600 text-white font-semibold hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base min-h-[44px] whitespace-nowrap"
+                className="px-5 sm:px-8 py-3 bg-[#C9A84C] text-[#0D1B2A] font-medium uppercase tracking-[0.15em] hover:bg-[#b8993f] disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm min-h-[44px] whitespace-nowrap transition-colors"
               >
-                {!airport || airport.length < 3 ? 'Enter Airport to Send' : 'Send to Client'}
+                {!airport || airport.length < 3 ? 'Enter Airport' : 'Send to Client'}
               </button>
             </div>
           </div>
