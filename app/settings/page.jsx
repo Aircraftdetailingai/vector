@@ -58,6 +58,9 @@ function SettingsContent() {
   const [newLocation, setNewLocation] = useState('');
   const [homeAirport, setHomeAirport] = useState('');
 
+  // Quote viewed notification opt-in
+  const [notifyQuoteViewed, setNotifyQuoteViewed] = useState(false);
+
   // Smart follow-up settings
   const [autoDiscountEnabled, setAutoDiscountEnabled] = useState(false);
   const [followupDiscountPercent, setFollowupDiscountPercent] = useState(10);
@@ -151,6 +154,7 @@ function SettingsContent() {
     setEfficiencyFactor(u.efficiency_factor || 1.0);
     setLaborRate(u.default_labor_rate || 25);
     setHomeAirport(u.home_airport || '');
+      setNotifyQuoteViewed(u.notify_quote_viewed || false);
       setAutoDiscountEnabled(u.notification_settings?.autoDiscountEnabled || false);
       setFollowupDiscountPercent(u.followup_discount_percent || 10);
       setEmailNotifs({
@@ -888,7 +892,7 @@ function SettingsContent() {
       if (pendingChanges.has('ccFee')) promises.push(saveCcFee(ccFeeMode));
       if (pendingChanges.has('quoteDisplay')) promises.push(saveQuoteDisplayPref(quoteDisplayPref));
       if (pendingChanges.has('notifications')) {
-        const allNotifs = { ...emailNotifs, ...smsAlerts, ...smsClient, priceReviewMonths: priceReminder, autoDiscountEnabled };
+        const allNotifs = { ...emailNotifs, ...smsAlerts, ...smsClient, priceReviewMonths: priceReminder, autoDiscountEnabled, notifyQuoteViewed };
         promises.push(saveNotifications(allNotifs));
       }
       if (pendingChanges.has('followupDiscount')) {
@@ -1481,6 +1485,23 @@ function SettingsContent() {
               </p>
             </div>
           </div>
+        </div>
+
+        {/* Notifications */}
+        <div className="bg-v-surface border border-v-border p-4 rounded-sm">
+          <h3 className="font-semibold font-heading text-v-text-primary mb-2">Notifications</h3>
+          <label className="flex items-center justify-between cursor-pointer py-2">
+            <div>
+              <p className="text-sm font-medium text-v-text-primary">Quote viewed notifications</p>
+              <p className="text-xs text-v-text-secondary">Get notified when a customer opens your quote</p>
+            </div>
+            <div
+              onClick={() => { setNotifyQuoteViewed(!notifyQuoteViewed); markDirty('notifications'); }}
+              className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer ${notifyQuoteViewed ? 'bg-amber-500' : 'bg-gray-600'}`}
+            >
+              <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${notifyQuoteViewed ? 'translate-x-5' : ''}`} />
+            </div>
+          </label>
         </div>
 
         {/* Services & Tools */}

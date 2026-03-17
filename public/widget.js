@@ -9,7 +9,7 @@
   const position = widgetConfig.position || script?.getAttribute('data-position') || 'right';
   const primaryColor = widgetConfig.color || script?.getAttribute('data-color') || '#f59e0b';
   const buttonTitle = widgetConfig.title || script?.getAttribute('data-title') || 'Get a Quote';
-  const apiBase = widgetConfig.apiBase || script?.getAttribute('data-api') || 'https://app.aircraftdetailing.ai';
+  const apiBase = widgetConfig.apiBase || script?.getAttribute('data-api') || 'https://app.vectorav.ai';
 
   if (!detailerId) {
     console.error('Vector Widget: Missing detailerId. Set window.VectorWidget.detailerId or data-detailer-id attribute');
@@ -336,7 +336,7 @@
       </div>
 
       <div id="vector-widget-powered">
-        Powered by <a href="https://aircraftdetailing.ai" target="_blank">Vector</a>
+        Powered by <a href="https://vectorav.ai" target="_blank">Vector</a>
       </div>
     </div>
   `;

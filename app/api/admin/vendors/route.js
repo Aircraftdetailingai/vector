@@ -12,9 +12,9 @@ function getSupabase() {
 
 // Admin emails (hardcoded for now)
 const ADMIN_EMAILS = [
-  'brett@aircraftdetailing.ai',
-  'admin@aircraftdetailing.ai',
-  'brett@shinyjets.com',
+  'brett@vectorav.ai',
+  'admin@vectorav.ai',
+  '',
 ];
 
 async function isAdmin(request) {

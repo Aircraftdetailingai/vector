@@ -174,7 +174,7 @@ export default function CustomerSelector({
                 onChange={(e) => handleSearchChange(e.target.value)}
                 onFocus={() => setDropdownOpen(true)}
                 placeholder="Search by name, email, or company..."
-                className="w-full border rounded px-3 py-2 pr-8"
+                className="w-full border rounded px-3 py-2 pr-8 text-gray-900 bg-white"
               />
               {searching && (
                 <span className="absolute right-3 top-2.5 text-gray-400 text-sm">...</span>
@@ -264,7 +264,7 @@ export default function CustomerSelector({
               value={newCustomerFields.companyName || ""}
               onChange={(e) => onFieldChange({ companyName: e.target.value })}
               placeholder="ABC Aviation"
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
             />
           </div>
           <div>
@@ -276,7 +276,7 @@ export default function CustomerSelector({
               value={newCustomerFields.name || ""}
               onChange={(e) => onFieldChange({ name: e.target.value })}
               placeholder="John Smith"
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
             />
           </div>
           <div>
@@ -288,7 +288,7 @@ export default function CustomerSelector({
               value={newCustomerFields.email || ""}
               onChange={(e) => onFieldChange({ email: e.target.value })}
               placeholder="john@example.com"
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
             />
           </div>
           <div>
@@ -300,7 +300,7 @@ export default function CustomerSelector({
               value={newCustomerFields.phone || ""}
               onChange={(e) => onFieldChange({ phone: e.target.value })}
               placeholder="(555) 123-4567"
-              className="w-full border rounded px-3 py-2"
+              className="w-full border rounded px-3 py-2 text-gray-900 bg-white"
             />
           </div>
         </div>

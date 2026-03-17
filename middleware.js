@@ -2,9 +2,9 @@ import { NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 
 const ADMIN_EMAILS = [
-  'brett@aircraftdetailing.ai',
-  'admin@aircraftdetailing.ai',
-  'brett@shinyjets.com',
+  'brett@vectorav.ai',
+  'admin@vectorav.ai',
+  '',
   'brett@vectorav.ai',
 ];
 

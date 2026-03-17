@@ -9,7 +9,7 @@ import { calculatePoints, POINTS_ACTIONS, TIER_MULTIPLIERS } from '@/lib/points'
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_EMAILS = ['brett@aircraftdetailing.ai', 'admin@aircraftdetailing.ai', 'brett@shinyjets.com'];
+const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai'];
 
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
@@ -188,7 +188,7 @@ export async function POST(request, { params }) {
         || detErr.message?.match(/Could not find the '([^']+)' column/);
       if (colMatch) {
         console.log(`Detailer fetch: stripping unknown column "${colMatch[1]}", retrying...`);
-        detailerCols = detailerCols.replace(new RegExp(',?\\s*' + colMatch[1]), '').replace(/^,\\s*/, '');
+        detailerCols = detailerCols.replace(new RegExp(',?\\s*' + colMatch[1])).replace(/^,\\s*/);
         continue;
       }
       console.error('Detailer fetch error:', detErr.message || detErr);
@@ -214,7 +214,7 @@ export async function POST(request, { params }) {
   }
 
   // Use request origin for the quote link (works in both dev and prod)
-  const origin = request.headers.get('origin') || request.headers.get('referer')?.replace(/\/[^/]*$/, '') || 'https://app.vectorav.ai';
+  const origin = request.headers.get('origin') || request.headers.get('referer')?.replace(/\/[^/]*$/) || 'https://app.vectorav.ai';
   const quoteLink = `${origin}/q/${quote.share_link}`;
   let emailSent = false;
   let emailError = null;

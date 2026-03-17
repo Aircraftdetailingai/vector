@@ -156,14 +156,14 @@ export async function GET(request) {
   </div>
 
   <div style="text-align: center; margin-top: 30px;">
-    <a href="https://app.aircraftdetailing.ai/roi" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
+    <a href="https://app.vectorav.ai/roi" style="display: inline-block; background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600;">
       View Full ROI Dashboard
     </a>
   </div>
 
   <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #9ca3af; font-size: 12px;">
     <p>You're receiving this because you have monthly ROI emails enabled.</p>
-    <p><a href="https://app.aircraftdetailing.ai/settings" style="color: #6b7280;">Manage email preferences</a></p>
+    <p><a href="https://app.vectorav.ai/settings" style="color: #6b7280;">Manage email preferences</a></p>
   </div>
 </body>
 </html>

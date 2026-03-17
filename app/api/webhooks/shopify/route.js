@@ -86,7 +86,7 @@ export async function POST(request) {
       if (existingDetailer.status === 'suspended') {
         await supabase.from('detailers').update({ status: 'active', plan }).eq('id', existingDetailer.id);
         if (phone) {
-          await sendSMS(phone, `Your Vector account has been reactivated. Login at app.aircraftdetailing.ai`);
+          await sendSMS(phone, `Your Vector account has been reactivated. Login at app.vectorav.ai`);
         }
       } else {
         await supabase.from('detailers').update({ plan }).eq('id', existingDetailer.id);
@@ -110,13 +110,13 @@ export async function POST(request) {
         .maybeSingle();
       if (inserted) {
         if (phone) {
-          await sendSMS(phone, `Welcome to Vector, ${name}! Your account is ready at app.aircraftdetailing.ai. Temp password: ${tempPassword}`);
+          await sendSMS(phone, `Welcome to Vector, ${name}! Your account is ready at app.vectorav.ai. Temp password: ${tempPassword}`);
         }
         if (email) {
           await sendEmail(
             email,
             'Welcome to Vector',
-            `<p>Hello ${name},</p><p>Your Vector account is ready. Your temporary password is <strong>${tempPassword}</strong>. Please log in at <a href="https://app.aircraftdetailing.ai">app.aircraftdetailing.ai</a> and complete onboarding.</p>`
+            `<p>Hello ${name},</p><p>Your Vector account is ready. Your temporary password is <strong>${tempPassword}</strong>. Please log in at <a href="https://app.vectorav.ai">app.vectorav.ai</a> and complete onboarding.</p>`
           );
         }
         const now = new Date();
@@ -147,7 +147,7 @@ export async function POST(request) {
     if (detailer) {
       await supabase.from('detailers').update({ status: 'suspended' }).eq('id', detailer.id);
       if (detailer.phone) {
-        await sendSMS(detailer.phone, 'Your Vector payment failed. Account paused. Update at app.aircraftdetailing.ai/billing');
+        await sendSMS(detailer.phone, 'Your Vector payment failed. Account paused. Update at app.vectorav.ai/billing');
       }
     }
     const adminPhone = process.env.ADMIN_PHONE;

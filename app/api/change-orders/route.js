@@ -130,7 +130,7 @@ export async function POST(request) {
 
     // Send email to customer
     if (process.env.RESEND_API_KEY && quote.client_email) {
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.aircraftdetailing.ai';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai';
 
       const servicesList = services.map(s =>
         `<li>${s.name || s.description}: $${(s.amount || s.price || 0).toFixed(2)}</li>`

@@ -92,7 +92,7 @@ export async function POST(request) {
     }
 
     // Hardcode URL to avoid env var issues
-    const appUrl = 'https://app.aircraftdetailing.ai';
+    const appUrl = 'https://app.vectorav.ai';
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({

@@ -4,9 +4,9 @@ import { createClient } from '@supabase/supabase-js';
 export const dynamic = 'force-dynamic';
 
 const ADMIN_EMAILS = [
-  'brett@aircraftdetailing.ai',
-  'admin@aircraftdetailing.ai',
-  'brett@shinyjets.com',
+  'brett@vectorav.ai',
+  'admin@vectorav.ai',
+  '',
 ];
 
 const VALID_HOURS_FIELDS = [

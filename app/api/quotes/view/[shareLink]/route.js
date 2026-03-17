@@ -27,7 +27,7 @@ export async function GET(request, { params }) {
   // Fetch detailer info
   const { data: detailer } = await supabase
     .from('detailers')
-    .select('id, name, email, phone, company, stripe_account_id, fcm_token, quote_display_preference, plan, pass_fee_to_customer, cc_fee_mode, preferred_currency, terms_pdf_url, terms_text')
+    .select('id, name, email, phone, company, stripe_account_id, fcm_token, quote_display_preference, plan, pass_fee_to_customer, cc_fee_mode, preferred_currency, terms_pdf_url, terms_text, notify_quote_viewed')
     .eq('id', quote.detailer_id)
     .single();
 
@@ -58,8 +58,8 @@ export async function GET(request, { params }) {
       .update(updateData)
       .eq('id', quote.id);
 
-    // Send notifications on first view only
-    if (isFirstView) {
+    // Send notifications on first view only, if detailer opted in
+    if (isFirstView && detailer?.notify_quote_viewed) {
       // Send push notification
       if (detailer?.fcm_token) {
         notifyQuoteViewed({ fcmToken: detailer.fcm_token, quote }).catch(console.error);
@@ -95,7 +95,7 @@ export async function GET(request, { params }) {
   }
 
   // Remove sensitive data from response
-  const { fcm_token, stripe_account_id, ...detailerPublic } = detailer || {};
+  const { fcm_token, stripe_account_id, notify_quote_viewed, ...detailerPublic } = detailer || {};
 
   return new Response(JSON.stringify({
     quote: {

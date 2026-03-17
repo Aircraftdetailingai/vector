@@ -5,9 +5,9 @@ import { sendBetaInviteEmail } from '@/lib/email';
 export const dynamic = 'force-dynamic';
 
 const ADMIN_EMAILS = [
-  'brett@aircraftdetailing.ai',
-  'admin@aircraftdetailing.ai',
-  'brett@shinyjets.com',
+  'brett@vectorav.ai',
+  'admin@vectorav.ai',
+  '',
   'brett@vectorav.ai',
 ];
 

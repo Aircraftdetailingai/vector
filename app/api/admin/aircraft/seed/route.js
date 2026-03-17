@@ -5,9 +5,9 @@ import { AIRCRAFT_DATA } from '@/lib/aircraft-data';
 export const dynamic = 'force-dynamic';
 
 const ADMIN_EMAILS = [
-  'brett@aircraftdetailing.ai',
-  'admin@aircraftdetailing.ai',
-  'brett@shinyjets.com',
+  'brett@vectorav.ai',
+  'admin@vectorav.ai',
+  '',
 ];
 
 function getSupabase() {

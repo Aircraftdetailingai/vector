@@ -470,7 +470,7 @@ export default function QuoteViewPage() {
                   )}
                   <div className="flex justify-between pt-3 border-t">
                     <span className="text-gray-800 font-semibold">Total:</span>
-                    <span className="font-bold text-2xl text-[#1e3a5f]">{sym}{formatPrice(displayTotal)}</span>
+                    <span className="font-bold text-2xl text-[#0D1B2A]">{sym}{formatPrice(displayTotal)}</span>
                   </div>
                   {ccFeeMode === 'customer_choice' && (
                     <p className="text-xs text-gray-400 text-right mt-1">

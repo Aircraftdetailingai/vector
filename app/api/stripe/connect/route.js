@@ -149,7 +149,7 @@ export async function POST(request) {
     }
 
     // Create account link - hardcode URL to avoid env var issues
-    const appUrl = 'https://app.aircraftdetailing.ai';
+    const appUrl = 'https://app.vectorav.ai';
 
     console.log('Creating account link for:', accountId);
 

@@ -3,9 +3,9 @@ import { comparePassword, hashPassword, createToken } from '../../../../lib/auth
 import { cookies } from 'next/headers';
 
 const ADMIN_EMAILS = [
-  'brett@aircraftdetailing.ai',
-  'admin@aircraftdetailing.ai',
-  'brett@shinyjets.com',
+  'brett@vectorav.ai',
+  'admin@vectorav.ai',
+  '',
 ];
 
 function getSupabase() {

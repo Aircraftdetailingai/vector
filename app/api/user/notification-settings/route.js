@@ -13,11 +13,19 @@ export async function POST(request) {
 
   const settings = await request.json();
 
+  // Extract notify_quote_viewed as a separate column
+  const { notifyQuoteViewed, ...notifSettings } = settings;
+
   const supabase = getSupabase();
+
+  const updateData = { notification_settings: notifSettings };
+  if (notifyQuoteViewed !== undefined) {
+    updateData.notify_quote_viewed = !!notifyQuoteViewed;
+  }
 
   const { error } = await supabase
     .from('detailers')
-    .update({ notification_settings: settings })
+    .update(updateData)
     .eq('id', user.id);
 
   if (error) {

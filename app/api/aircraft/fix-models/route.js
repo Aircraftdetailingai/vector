@@ -3,7 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_EMAILS = ['brett@aircraftdetailing.ai', 'admin@aircraftdetailing.ai', 'brett@shinyjets.com'];
+const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai'];
 
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
@@ -34,7 +34,7 @@ export async function POST(request) {
   const results = [];
 
   for (const aircraft of toFix) {
-    const newModel = aircraft.model.replace(/\.0$/, '');
+    const newModel = aircraft.model.replace(/\.0$/);
     const { error: updateErr } = await supabase
       .from('aircraft')
       .update({ model: newModel })

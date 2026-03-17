@@ -23,7 +23,7 @@ export default function EmbedSettingsPage() {
   }, [router]);
 
   const detailerId = user?.id || 'YOUR_DETAILER_ID';
-  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.aircraftdetailing.ai';
+  const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://app.vectorav.ai';
 
   // Widget embed code
   const widgetCode = `<!-- Vector Quote Widget -->

@@ -63,7 +63,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
   // Close when not open
   if (!isOpen) return null;
 
-  const ADMIN_EMAILS = ['brett@aircraftdetailing.ai', 'admin@aircraftdetailing.ai', 'brett@shinyjets.com'];
+  const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai'];
   const isBusiness = user?.plan === "business" || user?.plan === "enterprise" || user?.is_admin || ADMIN_EMAILS.includes(user?.email?.toLowerCase());
   // SMS disabled pending 10DLC approval
   const requiresSms = false;
@@ -538,7 +538,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
 
   return (
     <div className="modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50">
-      <div className="modal-content bg-white rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
+      <div className="modal-content bg-white text-gray-900 rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
         <div>
             <h2 className="text-xl font-semibold mb-2">{'Send to Client'}</h2>
             <p className="mb-4 text-gray-600">

@@ -107,7 +107,7 @@ export async function GET(request) {
       };
     }
 
-    results.quoteLink = `https://app.aircraftdetailing.ai/q/${quote.share_link}`;
+    results.quoteLink = `https://app.vectorav.ai/q/${quote.share_link}`;
 
     // Step 3: Test creating checkout session
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY?.trim());
@@ -145,8 +145,8 @@ export async function GET(request) {
             destination: detailer.stripe_account_id,
           },
         },
-        success_url: `https://app.aircraftdetailing.ai/q/${quote.share_link}?payment=success`,
-        cancel_url: `https://app.aircraftdetailing.ai/q/${quote.share_link}?payment=cancelled`,
+        success_url: `https://app.vectorav.ai/q/${quote.share_link}?payment=success`,
+        cancel_url: `https://app.vectorav.ai/q/${quote.share_link}?payment=cancelled`,
         metadata: {
           quote_id: quote.id,
           detailer_id: quote.detailer_id,
