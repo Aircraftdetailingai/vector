@@ -47,30 +47,22 @@ export async function GET(request) {
     break;
   }
 
-  // Fetch customers (with fallback if columns don't exist)
-  let customersSelect = 'id, name, email, total_revenue, quote_count, last_service_date';
-  let customersRes;
-  for (let attempt = 0; attempt < 5; attempt++) {
-    customersRes = await supabase
-      .from('customers')
-      .select(customersSelect)
-      .eq('detailer_id', user.id)
-      .order('total_revenue', { ascending: false });
-    if (!customersRes.error) break;
-    const colMatch = customersRes.error.message?.match(/column ['"]([\w]+)['"] .* does not exist/i)
-      || customersRes.error.message?.match(/Could not find the '([\w]+)' column/i);
-    if (colMatch) {
-      console.log(`[analytics] customers: stripping unknown column "${colMatch[1]}", retrying...`);
-      customersSelect = customersSelect.split(', ').filter(c => c.trim() !== colMatch[1]).join(', ');
-      continue;
-    }
-    // If customers table doesn't exist at all, just skip
-    console.error('[analytics] customers query error:', customersRes.error.message);
-    break;
-  }
+  // Fetch customers (basic info only — LTV/churn computed from quotes)
+  const customersRes = await supabase
+    .from('customers')
+    .select('id, name, email')
+    .eq('detailer_id', user.id);
+
+  // Fetch ALL paid quotes for this detailer (no date filter) for LTV and churn calculations
+  const allPaidRes = await supabase
+    .from('quotes')
+    .select('id, status, total_price, client_email, client_name, paid_at, accepted_at, created_at')
+    .eq('detailer_id', user.id)
+    .in('status', ['accepted', 'approved', 'paid', 'scheduled', 'in_progress', 'completed']);
 
   const allQuotes = quotesRes?.data || [];
   const allCustomers = customersRes?.data || [];
+  const allTimePaidQuotes = allPaidRes?.data || [];
 
   console.log('[analytics] quotes found:', allQuotes.length, '| statuses:', allQuotes.map(q => q.status));
 
@@ -256,19 +248,29 @@ export async function GET(request) {
   }
   const dailyJobHeatmap = Object.values(heatmapData);
 
-  // --- Customer LTV (top 10) ---
-  const customerLTV = allCustomers
-    .filter(c => (c.total_revenue || 0) > 0)
-    .slice(0, 10)
-    .map(c => ({ name: c.name || c.email || 'Unknown', email: c.email, total_revenue: c.total_revenue || 0, quote_count: c.quote_count || 0, last_service_date: c.last_service_date }));
+  // --- Customer LTV (top 10) — computed from paid quotes ---
+  const ltvByCustomer = {};
+  for (const q of allTimePaidQuotes) {
+    const key = q.client_email || q.client_name || 'unknown';
+    if (!ltvByCustomer[key]) ltvByCustomer[key] = { name: q.client_name || q.client_email || 'Unknown', email: q.client_email, total_revenue: 0, quote_count: 0, last_service_date: null };
+    ltvByCustomer[key].total_revenue += parseFloat(q.total_price) || 0;
+    ltvByCustomer[key].quote_count++;
+    const qDate = q.paid_at || q.accepted_at || q.created_at;
+    if (!ltvByCustomer[key].last_service_date || qDate > ltvByCustomer[key].last_service_date) {
+      ltvByCustomer[key].last_service_date = qDate;
+    }
+  }
+  const customerLTV = Object.values(ltvByCustomer)
+    .sort((a, b) => b.total_revenue - a.total_revenue)
+    .slice(0, 10);
 
-  // --- Churn risk ---
-  const churnRisk = allCustomers
+  // --- Churn risk — computed from paid quotes ---
+  const churnRisk = Object.values(ltvByCustomer)
     .filter(c => c.last_service_date)
     .map(c => {
       const daysSince = Math.floor((now.getTime() - new Date(c.last_service_date).getTime()) / 86400000);
       const riskLevel = daysSince >= 120 ? 'critical' : daysSince >= 90 ? 'danger' : daysSince >= 60 ? 'warning' : null;
-      return riskLevel ? { name: c.name || c.email || 'Unknown', email: c.email, lastServiceDate: c.last_service_date, daysSinceService: daysSince, riskLevel } : null;
+      return riskLevel ? { name: c.name, email: c.email, lastServiceDate: c.last_service_date, daysSinceService: daysSince, riskLevel } : null;
     })
     .filter(Boolean)
     .sort((a, b) => b.daysSinceService - a.daysSinceService)

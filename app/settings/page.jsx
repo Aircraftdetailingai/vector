@@ -58,6 +58,8 @@ function SettingsContent() {
   const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
   const [newLocation, setNewLocation] = useState('');
   const [homeAirport, setHomeAirport] = useState('');
+  const [airportsServed, setAirportsServed] = useState([]);
+  const [newAirport, setNewAirport] = useState('');
   const [listedInDirectory, setListedInDirectory] = useState(false);
 
   // Quote viewed notification opt-in
@@ -167,6 +169,7 @@ function SettingsContent() {
     setEfficiencyFactor(u.efficiency_factor || 1.0);
     setLaborRate(u.default_labor_rate || 25);
     setHomeAirport(u.home_airport || '');
+    setAirportsServed(u.airports_served || []);
     setCountry(u.country || '');
     setListedInDirectory(u.listed_in_directory || false);
       setNotifyQuoteViewed(u.notify_quote_viewed || false);
@@ -845,6 +848,20 @@ function SettingsContent() {
     setUser(newUser);
   };
 
+  const saveAirportsServed = async (codes) => {
+    await fetch('/api/user/airports-served', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${localStorage.getItem('vector_token')}`,
+      },
+      body: JSON.stringify({ airports_served: codes }),
+    });
+    const newUser = { ...user, airports_served: codes };
+    localStorage.setItem('vector_user', JSON.stringify(newUser));
+    setUser(newUser);
+  };
+
   const saveDirectoryListing = async (val) => {
     await fetch('/api/user/directory-listing', {
       method: 'POST',
@@ -1031,12 +1048,13 @@ function SettingsContent() {
       if (pendingChanges.has('profile')) promises.push(saveProfile());
       if (pendingChanges.has('laborRate')) promises.push(saveLaborRate(parseFloat(laborRate) || 0));
       if (pendingChanges.has('efficiencyFactor')) promises.push(saveEfficiencyFactor(efficiencyFactor));
-      if (pendingChanges.has('minimumFee')) promises.push(saveMinimumFee(parseFloat(minimumFee) || 0, []));
+      if (pendingChanges.has('minimumFee')) promises.push(saveMinimumFee(parseFloat(minimumFee) || 0, minimumFeeLocations));
       if (pendingChanges.has('currency')) promises.push(saveCurrency(currency));
       if (pendingChanges.has('country')) promises.push(saveCountry(country));
       if (pendingChanges.has('directoryListing')) promises.push(saveDirectoryListing(listedInDirectory));
       if (pendingChanges.has('language')) promises.push(saveLanguage(language));
-      // homeAirport removed
+      if (pendingChanges.has('homeAirport')) promises.push(saveHomeAirport(homeAirport));
+      if (pendingChanges.has('airportsServed')) promises.push(saveAirportsServed(airportsServed));
       if (pendingChanges.has('passFee')) promises.push(savePassFee(passFeeToCustomer));
       if (pendingChanges.has('ccFee')) promises.push(saveCcFee(ccFeeMode));
       if (pendingChanges.has('quoteDisplay')) promises.push(saveQuoteDisplayPref(quoteDisplayPref));
@@ -1172,6 +1190,79 @@ function SettingsContent() {
             >
               <span className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white transition-transform ${listedInDirectory ? 'translate-x-5' : ''}`} />
             </button>
+          </div>
+        </div>
+
+        {/* Airports */}
+        <div className="pb-6 mb-2">
+          <h2 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Airports</h2>
+          <div className="mb-4">
+            <label className="block text-sm font-medium text-v-text-secondary mb-1">Home Airport (ICAO)</label>
+            <input
+              type="text"
+              value={homeAirport}
+              onChange={(e) => { setHomeAirport(e.target.value.toUpperCase()); markDirty('homeAirport'); }}
+              placeholder="e.g. KJFK"
+              maxLength={4}
+              className="w-32 bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors uppercase"
+            />
+            <p className="text-xs text-v-text-secondary mt-1">Your base airport for travel fee calculations</p>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-v-text-secondary mb-1">Airports Served</label>
+            <p className="text-xs text-v-text-secondary mb-2">ICAO codes of airports you regularly service</p>
+            <div className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={newAirport}
+                onChange={(e) => setNewAirport(e.target.value.toUpperCase())}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const code = newAirport.trim();
+                    if (code && code.length >= 3 && code.length <= 4 && !airportsServed.includes(code)) {
+                      setAirportsServed([...airportsServed, code]);
+                      markDirty('airportsServed');
+                      setNewAirport('');
+                    }
+                  }
+                }}
+                placeholder="e.g. KTEB"
+                maxLength={4}
+                className="w-28 bg-v-surface border border-v-border text-v-text-primary placeholder:text-v-text-secondary px-3 py-1.5 text-sm focus:border-v-gold focus:outline-none uppercase"
+              />
+              <button
+                onClick={() => {
+                  const code = newAirport.trim();
+                  if (code && code.length >= 3 && code.length <= 4 && !airportsServed.includes(code)) {
+                    setAirportsServed([...airportsServed, code]);
+                    markDirty('airportsServed');
+                    setNewAirport('');
+                  }
+                }}
+                className="px-3 py-1.5 text-sm border border-v-border text-v-text-secondary hover:border-v-gold hover:text-v-gold transition-colors"
+              >
+                Add
+              </button>
+            </div>
+            {airportsServed.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {airportsServed.map((code) => (
+                  <span key={code} className="inline-flex items-center gap-1 px-2 py-1 bg-v-surface border border-v-border text-v-text-primary text-sm">
+                    {code}
+                    <button
+                      onClick={() => {
+                        setAirportsServed(airportsServed.filter(c => c !== code));
+                        markDirty('airportsServed');
+                      }}
+                      className="text-v-text-secondary hover:text-red-400 ml-1"
+                    >
+                      &times;
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
