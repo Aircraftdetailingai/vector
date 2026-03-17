@@ -174,10 +174,17 @@ export async function POST(request) {
             // Known service type -> insert into hours_contributions
             const defaultHrs = aircraftHoursDefaults ? (parseFloat(aircraftHoursDefaults[column]) || null) : null;
 
-            // Auto-accept if within 3x of default, pending for outliers
+            // Auto-accept if within 2x/0.5x of default, flag outliers
             let accepted = null;
+            let status = null;
             if (defaultHrs && defaultHrs > 0) {
-              accepted = (actualHrs <= defaultHrs * 3 && actualHrs >= defaultHrs / 3) ? true : null;
+              if (actualHrs <= defaultHrs * 2 && actualHrs >= defaultHrs * 0.5) {
+                accepted = true;
+                status = 'accepted';
+              } else {
+                accepted = null;
+                status = 'outlier';
+              }
             }
 
             await supabase.from('hours_contributions').insert({
@@ -189,6 +196,7 @@ export async function POST(request) {
               detailer_hash: detailerHash,
               quote_id: quote_id,
               accepted,
+              status,
             });
           } else if (column === undefined) {
             // Unknown service type -> insert into suggested_services

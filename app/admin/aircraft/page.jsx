@@ -53,6 +53,9 @@ export default function AdminAircraftPage() {
   const [suggestions, setSuggestions] = useState([]);
   const [loadingContributions, setLoadingContributions] = useState(false);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
+  const [communityData, setCommunityData] = useState([]);
+  const [communityStats, setCommunityStats] = useState({});
+  const [loadingCommunity, setLoadingCommunity] = useState(false);
 
   // New state for improvements
   const [search, setSearch] = useState('');
@@ -203,6 +206,25 @@ export default function AdminAircraftPage() {
     }
   };
 
+  const fetchCommunityData = async () => {
+    setLoadingCommunity(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/admin/community-data', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setCommunityData(data.rows || []);
+        setCommunityStats(data.stats || {});
+      }
+    } catch (err) {
+      console.error('Failed to fetch community data:', err);
+    } finally {
+      setLoadingCommunity(false);
+    }
+  };
+
   const handleContributionAction = async (id, accepted) => {
     try {
       const token = localStorage.getItem('vector_token');
@@ -233,7 +255,7 @@ export default function AdminAircraftPage() {
 
   // Load tab data when switching tabs
   useEffect(() => {
-    if (activeTab === 'contributions' && contributions.length === 0) fetchContributions();
+    if (activeTab === 'contributions' && communityData.length === 0) fetchCommunityData();
     if (activeTab === 'suggestions' && suggestions.length === 0) fetchSuggestions();
   }, [activeTab]);
 
@@ -722,24 +744,39 @@ export default function AdminAircraftPage() {
       {/* Community Data Tab */}
       {activeTab === 'contributions' && (
         <div className="max-w-[1600px] mx-auto">
-          {loadingContributions ? (
-            <div className="text-center py-20 text-v-text-secondary">Loading contributions...</div>
+          {loadingCommunity ? (
+            <div className="text-center py-20 text-v-text-secondary">Loading community data...</div>
           ) : (
             <>
-              <div className="grid grid-cols-3 gap-4 mb-4">
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <div className="bg-v-surface border border-v-border rounded-sm p-4">
-                  <p className="text-sm text-v-text-secondary">Total Contributions</p>
-                  <p className="text-2xl font-bold text-v-text-primary">{contributionStats.total || 0}</p>
+                  <p className="text-sm text-v-text-secondary">Total Contributions (12mo)</p>
+                  <p className="text-2xl font-bold text-v-text-primary">{communityStats.total_contributions || 0}</p>
                 </div>
                 <div className="bg-v-surface border border-v-border rounded-sm p-4">
-                  <p className="text-sm text-v-text-secondary">Accepted</p>
-                  <p className="text-2xl font-bold text-green-400">{contributionStats.acceptedCount || 0}</p>
+                  <p className="text-sm text-v-text-secondary">Unique Aircraft</p>
+                  <p className="text-2xl font-bold text-blue-400">{communityStats.unique_aircraft || 0}</p>
                 </div>
                 <div className="bg-v-surface border border-v-border rounded-sm p-4">
-                  <p className="text-sm text-v-text-secondary">Pending Review</p>
-                  <p className="text-2xl font-bold text-amber-400">{contributionStats.pendingCount || 0}</p>
+                  <p className="text-sm text-v-text-secondary">Active Groups (3+ detailers)</p>
+                  <p className="text-2xl font-bold text-green-400">{communityStats.active_groups || 0}</p>
+                </div>
+                <div className="bg-v-surface border border-v-border rounded-sm p-4">
+                  <p className="text-sm text-v-text-secondary">Outliers Rejected</p>
+                  <p className="text-2xl font-bold text-amber-400">{communityStats.total_outliers || 0}</p>
                 </div>
               </div>
+
+              <div className="bg-v-surface border border-v-border rounded-sm p-3 mb-4">
+                <div className="flex flex-wrap gap-2 text-xs text-v-text-secondary">
+                  <span className="px-2 py-1 bg-v-charcoal rounded">Rolling 12-month window</span>
+                  <span className="px-2 py-1 bg-v-charcoal rounded">Recency weighted: 30d=3x, 90d=2x, 365d=1x</span>
+                  <span className="px-2 py-1 bg-v-charcoal rounded">Min 3 unique detailers to activate</span>
+                  <span className="px-2 py-1 bg-v-charcoal rounded">Outlier: &gt;2x or &lt;0.5x default</span>
+                  <span className="px-2 py-1 bg-v-charcoal rounded">Update threshold: &gt;5% variance</span>
+                </div>
+              </div>
+
               <div className="bg-v-surface border border-v-border rounded-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full">
@@ -747,60 +784,75 @@ export default function AdminAircraftPage() {
                       <tr className="bg-v-charcoal border-b border-v-border">
                         <th className="px-4 py-3 text-left text-xs font-medium text-v-text-secondary uppercase">Aircraft</th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-v-text-secondary uppercase">Service</th>
-                        <th className="px-3 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Contributed</th>
-                        <th className="px-3 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Default</th>
+                        <th className="px-3 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Contributions</th>
+                        <th className="px-3 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Detailers</th>
+                        <th className="px-3 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Community Avg</th>
+                        <th className="px-3 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Platform Default</th>
                         <th className="px-3 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Variance</th>
+                        <th className="px-3 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Outliers</th>
                         <th className="px-3 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Status</th>
-                        <th className="px-4 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Date</th>
-                        <th className="px-4 py-3 text-right text-xs font-medium text-v-text-secondary uppercase">Actions</th>
+                        <th className="px-4 py-3 text-center text-xs font-medium text-v-text-secondary uppercase">Last Updated</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-v-border">
-                      {contributions.length === 0 ? (
-                        <tr><td colSpan={8} className="px-4 py-12 text-center text-v-text-secondary">No contributions yet</td></tr>
-                      ) : contributions.map(c => {
-                        const variance = c.aircraft_hours_default && c.aircraft_hours_default > 0
-                          ? Math.round(((c.contributed_hrs - c.aircraft_hours_default) / c.aircraft_hours_default) * 100)
-                          : null;
-                        return (
-                          <tr key={c.id} className="hover:bg-white/5">
-                            <td className="px-4 py-2.5">
-                              <div className="text-sm text-v-text-primary font-medium">{c.make}</div>
-                              <div className="text-xs text-v-text-secondary">{c.model}</div>
-                            </td>
-                            <td className="px-4 py-2.5 text-sm text-v-text-primary">{c.service_type}</td>
-                            <td className="px-3 py-2.5 text-center text-sm tabular-nums text-v-text-primary">{parseFloat(c.contributed_hrs).toFixed(1)}</td>
-                            <td className="px-3 py-2.5 text-center text-sm tabular-nums text-v-text-secondary">{c.aircraft_hours_default ? parseFloat(c.aircraft_hours_default).toFixed(1) : '-'}</td>
-                            <td className="px-3 py-2.5 text-center text-sm tabular-nums">
-                              {variance !== null ? (
-                                <span className={variance > 20 ? 'text-red-400' : variance < -20 ? 'text-blue-400' : 'text-green-400'}>
-                                  {variance > 0 ? '+' : ''}{variance}%
-                                </span>
-                              ) : '-'}
-                            </td>
-                            <td className="px-3 py-2.5 text-center">
-                              <span className={`px-2 py-0.5 rounded text-xs font-medium ${
-                                c.accepted === true ? 'bg-green-900/30 text-green-400 border border-green-600/30'
-                                : c.accepted === false ? 'bg-red-900/30 text-red-400 border border-red-600/30'
-                                : 'bg-amber-900/30 text-amber-400 border border-amber-600/30'
-                              }`}>
-                                {c.accepted === true ? 'Accepted' : c.accepted === false ? 'Rejected' : 'Pending'}
+                      {communityData.length === 0 ? (
+                        <tr><td colSpan={10} className="px-4 py-12 text-center text-v-text-secondary">No community data yet. Contributions appear after detailers complete jobs.</td></tr>
+                      ) : communityData.map((row, i) => (
+                        <tr key={i} className="hover:bg-white/5">
+                          <td className="px-4 py-2.5">
+                            <div className="text-sm text-v-text-primary font-medium">{row.make}</div>
+                            <div className="text-xs text-v-text-secondary">{row.model}</div>
+                          </td>
+                          <td className="px-4 py-2.5 text-sm text-v-text-primary">{row.label}</td>
+                          <td className="px-3 py-2.5 text-center text-sm tabular-nums text-v-text-primary">
+                            {row.accepted_count}
+                            {row.contribution_count !== row.accepted_count && (
+                              <span className="text-v-text-secondary text-xs"> /{row.contribution_count}</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5 text-center text-sm tabular-nums">
+                            <span className={row.unique_detailers >= 3 ? 'text-green-400' : 'text-amber-400'}>
+                              {row.unique_detailers}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2.5 text-center text-sm tabular-nums text-v-text-primary font-medium">
+                            {row.community_avg > 0 ? row.community_avg.toFixed(1) + 'h' : '-'}
+                          </td>
+                          <td className="px-3 py-2.5 text-center text-sm tabular-nums text-v-text-secondary">
+                            {row.platform_default > 0 ? row.platform_default.toFixed(1) + 'h' : '-'}
+                          </td>
+                          <td className="px-3 py-2.5 text-center text-sm tabular-nums">
+                            {row.variance_pct !== null ? (
+                              <span className={
+                                Math.abs(row.variance_pct) > 20 ? 'text-red-400'
+                                : Math.abs(row.variance_pct) > 10 ? 'text-amber-400'
+                                : 'text-green-400'
+                              }>
+                                {row.variance_pct > 0 ? '+' : ''}{row.variance_pct}%
                               </span>
-                            </td>
-                            <td className="px-4 py-2.5 text-center text-xs text-v-text-secondary">
-                              {new Date(c.created_at).toLocaleDateString()}
-                            </td>
-                            <td className="px-4 py-2.5 text-right">
-                              {c.accepted === null && (
-                                <>
-                                  <button onClick={() => handleContributionAction(c.id, true)} className="text-green-400 hover:underline text-xs mr-2">Accept</button>
-                                  <button onClick={() => handleContributionAction(c.id, false)} className="text-red-400 hover:underline text-xs">Reject</button>
-                                </>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
+                            ) : '-'}
+                          </td>
+                          <td className="px-3 py-2.5 text-center text-sm tabular-nums">
+                            {row.outlier_count > 0 ? (
+                              <span className="text-red-400">{row.outlier_count}</span>
+                            ) : (
+                              <span className="text-v-text-secondary">0</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2.5 text-center">
+                            <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                              row.active
+                                ? 'bg-green-900/30 text-green-400 border border-green-600/30'
+                                : 'bg-amber-900/30 text-amber-400 border border-amber-600/30'
+                            }`}>
+                              {row.active ? 'Active' : `Need ${3 - row.unique_detailers} more`}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2.5 text-center text-xs text-v-text-secondary">
+                            {row.last_updated ? new Date(row.last_updated).toLocaleDateString() : 'Never'}
+                          </td>
+                        </tr>
+                      ))}
                     </tbody>
                   </table>
                 </div>
