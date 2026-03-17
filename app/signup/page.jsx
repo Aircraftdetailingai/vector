@@ -10,6 +10,7 @@ function SignupForm() {
   const refCode = searchParams.get('ref');
 
   const [loading, setLoading] = useState(true);
+  const [inviteOnly, setInviteOnly] = useState(true); // assume invite-only until we know
   const [invite, setInvite] = useState(null);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', company: '', email: '', password: '', confirmPassword: '', country: 'US' });
@@ -17,24 +18,56 @@ function SignupForm() {
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
-    if (!inviteToken) {
-      setError('No invite token provided. You need a valid invitation to sign up.');
-      setLoading(false);
-      return;
-    }
-
-    fetch(`/api/invites/validate?token=${encodeURIComponent(inviteToken)}`)
-      .then(res => res.json())
-      .then(data => {
-        if (data.valid) {
-          setInvite(data);
-          setForm(f => ({ ...f, email: data.email }));
-        } else {
-          setError(data.error || 'Invalid invite token');
+    const init = async () => {
+      // Check signup mode
+      let isInviteOnly = true;
+      try {
+        const modeRes = await fetch('/api/auth/signup-mode');
+        if (modeRes.ok) {
+          const modeData = await modeRes.json();
+          isInviteOnly = modeData.invite_only;
         }
-      })
-      .catch(() => setError('Failed to validate invite'))
-      .finally(() => setLoading(false));
+      } catch {
+        // Default to invite-only on error
+      }
+      setInviteOnly(isInviteOnly);
+
+      if (isInviteOnly) {
+        // Require invite token
+        if (!inviteToken) {
+          setError('No invite token provided. You need a valid invitation to sign up.');
+          setLoading(false);
+          return;
+        }
+        try {
+          const res = await fetch(`/api/invites/validate?token=${encodeURIComponent(inviteToken)}`);
+          const data = await res.json();
+          if (data.valid) {
+            setInvite(data);
+            setForm(f => ({ ...f, email: data.email }));
+          } else {
+            setError(data.error || 'Invalid invite token');
+          }
+        } catch {
+          setError('Failed to validate invite');
+        }
+      }
+      // If not invite-only and there IS a token, still validate it for the plan perks
+      else if (inviteToken) {
+        try {
+          const res = await fetch(`/api/invites/validate?token=${encodeURIComponent(inviteToken)}`);
+          const data = await res.json();
+          if (data.valid) {
+            setInvite(data);
+            setForm(f => ({ ...f, email: data.email }));
+          }
+        } catch {
+          // Token invalid in open mode — just ignore, let them sign up freely
+        }
+      }
+      setLoading(false);
+    };
+    init();
   }, [inviteToken]);
 
   const handleSubmit = async (e) => {
@@ -42,6 +75,7 @@ function SignupForm() {
     setFormError('');
 
     if (!form.name.trim()) { setFormError('Name is required'); return; }
+    if (!form.email.trim()) { setFormError('Email is required'); return; }
     if (form.password.length < 8) { setFormError('Password must be at least 8 characters'); return; }
     if (form.password !== form.confirmPassword) { setFormError('Passwords do not match'); return; }
 
@@ -51,12 +85,12 @@ function SignupForm() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          email: form.email,
+          email: form.email.trim(),
           password: form.password,
           name: form.name.trim(),
           company: form.company.trim() || null,
           country: form.country || null,
-          invite_token: inviteToken,
+          invite_token: inviteToken || null,
           referral_code: refCode || localStorage.getItem('vector_referral_code') || null,
         }),
       });
@@ -90,7 +124,7 @@ function SignupForm() {
     return (
       <div className="min-h-screen bg-v-charcoal flex items-center justify-center p-4">
         <div className="bg-v-surface border border-v-border rounded-sm p-8 max-w-md w-full text-center">
-          <div className="text-4xl mb-4">✉️</div>
+          <div className="text-4xl mb-4">&#9993;&#65039;</div>
           <h1 className="text-xl font-heading text-v-text-primary mb-2">Invalid Invitation</h1>
           <p className="text-v-text-secondary text-sm mb-6">{error}</p>
           <a
@@ -110,26 +144,30 @@ function SignupForm() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-heading text-v-text-primary tracking-wide">Vector Aviation</h1>
-          <p className="text-v-text-secondary mt-2">You've been invited to join</p>
+          <p className="text-v-text-secondary mt-2">
+            {invite ? "You've been invited to join" : 'Create your account'}
+          </p>
         </div>
 
-        {/* Invite details card */}
-        <div className="bg-v-surface border border-v-border rounded-sm p-5 mb-6 border-l-2 border-l-v-gold">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs text-v-text-secondary uppercase tracking-widest">Your Plan</p>
-              <p className="text-lg font-heading text-v-gold mt-1">{invite.plan === 'business' ? 'Business' : 'Pro'}</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-v-text-secondary uppercase tracking-widest">Duration</p>
-              <p className="text-lg font-mono text-v-text-primary mt-1">{invite.duration_days} days</p>
-            </div>
-            <div className="text-right">
-              <p className="text-xs text-v-text-secondary uppercase tracking-widest">Cost</p>
-              <p className="text-lg font-mono text-green-400 mt-1">$0</p>
+        {/* Invite details card — only show when invite is present */}
+        {invite && (
+          <div className="bg-v-surface border border-v-border rounded-sm p-5 mb-6 border-l-2 border-l-v-gold">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs text-v-text-secondary uppercase tracking-widest">Your Plan</p>
+                <p className="text-lg font-heading text-v-gold mt-1">{invite.plan === 'business' ? 'Business' : 'Pro'}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-v-text-secondary uppercase tracking-widest">Duration</p>
+                <p className="text-lg font-mono text-v-text-primary mt-1">{invite.duration_days} days</p>
+              </div>
+              <div className="text-right">
+                <p className="text-xs text-v-text-secondary uppercase tracking-widest">Cost</p>
+                <p className="text-lg font-mono text-green-400 mt-1">$0</p>
+              </div>
             </div>
           </div>
-        </div>
+        )}
 
         {/* Signup form */}
         <form onSubmit={handleSubmit} className="bg-v-surface border border-v-border rounded-sm p-6 modal-glow">
@@ -180,12 +218,18 @@ function SignupForm() {
             </div>
 
             <div>
-              <label className="block text-sm text-v-text-secondary mb-1">Email</label>
+              <label className="block text-sm text-v-text-secondary mb-1">Email {invite ? '' : <span className="text-red-500">*</span>}</label>
               <input
                 type="email"
                 value={form.email}
-                readOnly
-                className="w-full bg-v-charcoal border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-secondary cursor-not-allowed"
+                onChange={(e) => !invite && setForm(f => ({ ...f, email: e.target.value }))}
+                readOnly={!!invite}
+                placeholder="you@company.com"
+                className={`w-full border border-v-border rounded-sm px-4 py-3 text-sm outline-none focus:border-v-gold/50 ${
+                  invite
+                    ? 'bg-v-charcoal text-v-text-secondary cursor-not-allowed'
+                    : 'bg-v-surface-light text-v-text-primary placeholder-v-text-secondary/50'
+                }`}
               />
             </div>
 

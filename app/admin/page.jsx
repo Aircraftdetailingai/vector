@@ -11,6 +11,8 @@ const ADMIN_NAV = [
   { label: 'Aircraft', href: '/admin/aircraft' },
   { label: 'Vendors', href: '/admin/vendors' },
   { label: 'Beta Invites', href: '/admin/beta-invites' },
+  { label: 'Referrals', href: '/admin/referrals' },
+  { label: 'Settings', href: '/admin/settings' },
 ];
 
 const STATUS_COLORS = {
