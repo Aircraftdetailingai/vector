@@ -4,6 +4,7 @@ import Sidebar from './Sidebar.jsx';
 import GlobalSearch from './GlobalSearch.jsx';
 import PointsBadge from './PointsBadge.jsx';
 import NotificationBell from './NotificationBell.jsx';
+import PushNotifications from './PushNotifications.jsx';
 
 export default function AppShell({ children, title }) {
   return (
@@ -30,6 +31,9 @@ export default function AppShell({ children, title }) {
 
         {/* Mobile spacer for fixed top bar */}
         <div className="md:hidden h-14" />
+
+        {/* Push notification prompt */}
+        <PushNotifications />
 
         {/* Page content */}
         <div className="page-transition">

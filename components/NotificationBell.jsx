@@ -1,41 +1,27 @@
 "use client";
 import { useState, useEffect, useRef, useCallback } from 'react';
+import NotificationRow from './NotificationRow';
 
-const TYPE_ICONS = {
-  quote_viewed: '👁',
-  payment_received: '💰',
-  quote_expired: '⏰',
-  job_reminder: '📅',
-  job_scheduled: '📅',
-  staffing_alert: '🟡',
-};
+function groupByTime(notifications) {
+  const now = new Date();
+  const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const weekStart = new Date(todayStart);
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
 
-const TYPE_COLORS = {
-  quote_viewed: 'text-v-gold',
-  payment_received: 'text-green-400',
-  quote_expired: 'text-amber-400',
-  job_reminder: 'text-purple-400',
-  job_scheduled: 'text-blue-400',
-  staffing_alert: 'text-yellow-400',
-};
-
-function timeAgo(dateStr, t) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `$${mins}m ago`;
-  const hrs = Math.floor(mins / 60);
-  if (hrs < 24) return `$${hrs}h ago`;
-  const days = Math.floor(hrs / 24);
-  if (days < 7) return `$${days}d ago`;
-  return new Date(dateStr).toLocaleDateString();
+  const groups = { today: [], thisWeek: [], earlier: [] };
+  for (const n of notifications) {
+    const d = new Date(n.created_at);
+    if (d >= todayStart) groups.today.push(n);
+    else if (d >= weekStart) groups.thisWeek.push(n);
+    else groups.earlier.push(n);
+  }
+  return groups;
 }
 
 export default function NotificationBell() {
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
-  const [loading, setLoading] = useState(false);
   const ref = useRef(null);
 
   const fetchNotifications = useCallback(async () => {
@@ -103,12 +89,33 @@ export default function NotificationBell() {
     setOpen(false);
   };
 
+  const groups = groupByTime(notifications);
+
+  const renderGroup = (label, items) => {
+    if (items.length === 0) return null;
+    return (
+      <div key={label}>
+        <div className="px-4 py-1.5 text-[10px] uppercase tracking-widest text-v-text-secondary/70 bg-v-charcoal/50 sticky top-0 z-10 font-medium">
+          {label}
+        </div>
+        {items.map((n) => (
+          <NotificationRow
+            key={n.id}
+            notification={n}
+            compact
+            onClick={() => handleClick(n)}
+          />
+        ))}
+      </div>
+    );
+  };
+
   return (
     <div ref={ref} className="relative">
       <button
         onClick={() => { setOpen(prev => !prev); if (!open) fetchNotifications(); }}
         className="relative p-2 rounded-lg hover:bg-white/10 transition-colors"
-        aria-label={'Notifications'}
+        aria-label="Notifications"
       >
         <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
@@ -122,54 +129,43 @@ export default function NotificationBell() {
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-v-surface rounded border border-v-border shadow-2xl z-50 max-h-[80vh] flex flex-col">
+        <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-v-surface rounded border border-v-border shadow-2xl z-50 flex flex-col">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-v-border">
-            <h3 className="text-sm font-medium text-v-text-primary">{'Notifications'}</h3>
+            <h3 className="text-sm font-medium text-v-text-primary">Notifications</h3>
             {unreadCount > 0 && (
               <button
                 onClick={markAllRead}
                 className="text-xs text-v-gold hover:text-v-gold-dim"
               >
-                {'Mark all as read'}
+                Mark all as read
               </button>
             )}
           </div>
 
-          {/* List */}
-          <div className="overflow-y-auto flex-1">
+          {/* Grouped list */}
+          <div className="overflow-y-auto flex-1 max-h-[480px]">
             {notifications.length === 0 ? (
               <div className="py-12 text-center text-v-text-secondary text-sm">
-                {'No notifications yet'}
+                No notifications yet
               </div>
             ) : (
-              notifications.map((n) => (
-                <button
-                  key={n.id}
-                  onClick={() => handleClick(n)}
-                  className={`w-full text-left px-4 py-3 flex items-start gap-3 hover:bg-v-surface-light transition-colors border-b border-v-border/50 ${
-                    !n.read ? 'bg-v-surface-light/50' : ''
-                  }`}
-                >
-                  <span className={`text-lg flex-shrink-0 mt-0.5 ${TYPE_COLORS[n.type] || ''}`}>
-                    {TYPE_ICONS[n.type] || '🔔'}
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <p className={`text-sm font-medium truncate ${!n.read ? 'text-v-text-primary' : 'text-v-text-secondary'}`}>
-                        {n.title}
-                      </p>
-                      {!n.read && (
-                        <span className="w-2 h-2 bg-v-gold rounded-full flex-shrink-0" />
-                      )}
-                    </div>
-                    <p className="text-xs text-v-text-secondary mt-0.5 line-clamp-2">{n.message}</p>
-                    <p className="text-xs text-v-text-secondary/60 mt-1">{timeAgo(n.created_at, t)}</p>
-                  </div>
-                </button>
-              ))
+              <>
+                {renderGroup('Today', groups.today)}
+                {renderGroup('This Week', groups.thisWeek)}
+                {renderGroup('Earlier', groups.earlier)}
+              </>
             )}
           </div>
+
+          {/* Footer */}
+          <a
+            href="/notifications"
+            className="block text-center py-3 text-xs text-v-gold hover:text-v-gold-dim border-t border-v-border"
+            onClick={() => setOpen(false)}
+          >
+            View all notifications
+          </a>
         </div>
       )}
     </div>

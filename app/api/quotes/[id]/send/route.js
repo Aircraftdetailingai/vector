@@ -306,6 +306,19 @@ export async function POST(request, { params }) {
     console.log('Points award skipped:', e.message);
   }
 
+  // In-app notification: quote sent
+  try {
+    const { createNotification } = await import('@/lib/notifications');
+    await createNotification({
+      detailerId: user.id,
+      type: 'quote_sent',
+      title: 'Quote Sent',
+      message: `Quote sent to ${clientName || clientEmail} for ${updated?.aircraft_model || updated?.aircraft_type || 'detail'}`,
+      link: '/quotes',
+      metadata: { quote_id: id },
+    });
+  } catch {}
+
   return new Response(JSON.stringify({
     success: true,
     quoteLink,

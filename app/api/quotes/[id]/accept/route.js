@@ -80,11 +80,30 @@ ${quote.client_email ? `<p>Customer email: <a href="mailto:${quote.client_email}
     try {
       await supabase.from('notifications').insert({
         detailer_id: quote.detailer_id,
-        type: 'invoice_requested',
-        title: 'Invoice Requested',
-        message: `${quote.client_name || 'Customer'} accepted quote for ${quote.aircraft_model || quote.aircraft_type || 'detail'} — send invoice`,
+        type: 'quote_accepted',
+        title: 'Quote Accepted',
+        message: `${quote.client_name || 'Customer'} accepted quote for ${quote.aircraft_model || quote.aircraft_type || 'detail'}`,
+        link: '/quotes',
         metadata: { quote_id: id },
       });
+    } catch {}
+
+    // Push notification for quote accepted
+    try {
+      const { data: detailerPush } = await supabase
+        .from('detailers')
+        .select('fcm_token')
+        .eq('id', quote.detailer_id)
+        .single();
+      if (detailerPush?.fcm_token) {
+        const { sendPushNotification } = await import('@/lib/push');
+        await sendPushNotification({
+          fcmToken: detailerPush.fcm_token,
+          title: 'Quote Accepted!',
+          body: `${quote.client_name || 'Customer'} accepted your quote for ${quote.aircraft_model || quote.aircraft_type || 'detail'}`,
+          data: { type: 'quote_accepted', quoteId: quote.id, url: '/quotes' },
+        });
+      }
     } catch {}
 
     return Response.json({ success: true, status: 'accepted' });
