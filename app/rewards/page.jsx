@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import AppShell from '@/components/AppShell';
 
 const CATEGORY_LABELS = {
   visibility: 'Visibility',
@@ -111,21 +112,8 @@ export default function RewardsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-v-charcoal p-4">
-      {/* Header */}
-      <header className="flex justify-between items-center mb-6 text-white max-w-4xl mx-auto">
-        <div className="flex items-center space-x-2 text-2xl font-bold">
-          <span>&#9992;</span>
-          <span>Vector</span>
-          <span className="text-lg font-medium text-v-text-secondary">- Rewards</span>
-        </div>
-        <div className="space-x-4 text-sm">
-          <a href="/dashboard" className="text-v-text-secondary hover:text-v-gold transition-colors">Dashboard</a>
-          <a href="/settings" className="text-v-text-secondary hover:text-v-gold transition-colors">Settings</a>
-        </div>
-      </header>
-
-      <div className="max-w-4xl mx-auto space-y-6">
+    <AppShell title="Rewards">
+      <div className="p-4 sm:p-8 max-w-4xl space-y-6">
         {/* Points Balance Card */}
         <div className="border border-v-gold/30 p-6 text-v-text-primary">
           <div className="flex justify-between items-center">
@@ -310,6 +298,6 @@ export default function RewardsPage() {
           </div>
         </div>
       )}
-    </div>
+    </AppShell>
   );
 }
