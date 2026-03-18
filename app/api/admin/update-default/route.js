@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 const ADMIN_EMAILS = [
   'brett@vectorav.ai',
   'admin@vectorav.ai',
-  '',
+  'brett@shinyjets.com',
 ];
 
 const VALID_HOURS_FIELDS = [

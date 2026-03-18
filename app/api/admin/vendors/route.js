@@ -14,7 +14,7 @@ function getSupabase() {
 const ADMIN_EMAILS = [
   'brett@vectorav.ai',
   'admin@vectorav.ai',
-  '',
+  'brett@shinyjets.com',
 ];
 
 async function isAdmin(request) {

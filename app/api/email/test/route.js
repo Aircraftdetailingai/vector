@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 const ADMIN_EMAILS = [
   'brett@vectorav.ai',
   'admin@vectorav.ai',
-  '',
+  'brett@shinyjets.com',
 ];
 
 export async function GET(request) {

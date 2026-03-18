@@ -3,7 +3,7 @@ import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai'];
+const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai', 'brett@shinyjets.com'];
 
 const SERVICE_TO_COLUMN = {
   ext_wash_hours: 'maintenance_wash_hrs',

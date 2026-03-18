@@ -4,8 +4,7 @@ import { jwtVerify } from 'jose';
 const ADMIN_EMAILS = [
   'brett@vectorav.ai',
   'admin@vectorav.ai',
-  '',
-  'brett@vectorav.ai',
+  'brett@shinyjets.com',
 ];
 
 // Owner-only routes that crew cannot access

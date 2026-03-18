@@ -9,7 +9,7 @@ import { calculatePoints, POINTS_ACTIONS, TIER_MULTIPLIERS } from '@/lib/points'
 
 export const dynamic = 'force-dynamic';
 
-const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai'];
+const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai', 'brett@shinyjets.com'];
 
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);

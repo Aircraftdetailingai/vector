@@ -63,7 +63,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
   // Close when not open
   if (!isOpen) return null;
 
-  const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai'];
+  const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai', 'brett@shinyjets.com'];
   const isBusiness = user?.plan === "business" || user?.plan === "enterprise" || user?.is_admin || ADMIN_EMAILS.includes(user?.email?.toLowerCase());
   // SMS disabled pending 10DLC approval
   const requiresSms = false;
