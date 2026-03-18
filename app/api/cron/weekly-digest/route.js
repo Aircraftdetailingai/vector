@@ -9,8 +9,19 @@ function verifySecret(request) {
   return token === process.env.CRON_SECRET;
 }
 
-// POST - Send weekly digest emails (called Monday mornings by cron)
+export const maxDuration = 60;
+
+// GET - Vercel cron handler (Monday mornings)
+export async function GET(request) {
+  return handleDigest(request);
+}
+
+// POST - Manual trigger
 export async function POST(request) {
+  return handleDigest(request);
+}
+
+async function handleDigest(request) {
   if (!verifySecret(request)) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }

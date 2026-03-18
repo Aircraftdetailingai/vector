@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { Resend } from 'resend';
 
 export const dynamic = 'force-dynamic';
 
@@ -47,30 +48,25 @@ export async function POST(request, { params }) {
       .eq('id', quote.detailer_id)
       .single();
 
-    // Send notification email to detailer
+    // Send notification email to detailer via Resend
     if (detailer?.email) {
       try {
-        const sgKey = process.env.SENDGRID_API_KEY;
-        if (sgKey) {
-          await fetch('https://api.sendgrid.com/v3/mail/send', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${sgKey}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              personalizations: [{ to: [{ email: detailer.email }] }],
-              from: { email: 'notifications@vectorav.ai', name: 'Vector Aviation' },
-              subject: `Invoice Requested — ${quote.aircraft_model || quote.aircraft_type || 'Quote'}`,
-              content: [{
-                type: 'text/html',
-                value: `<p>Hi ${detailer.name || detailer.company || ''},</p>
-<p><strong>${quote.client_name || 'A customer'}</strong> accepted your quote for <strong>${quote.aircraft_model || quote.aircraft_type || 'aircraft detail'}</strong> and requested an invoice.</p>
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const fromEmail = process.env.RESEND_FROM_EMAIL || 'Vector <noreply@vectorav.ai>';
+        const aircraftDisplay = quote.aircraft_model || quote.aircraft_type || 'aircraft detail';
+        const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(quote.total_price || 0);
+
+        await resend.emails.send({
+          from: fromEmail,
+          to: detailer.email,
+          subject: `Invoice Requested — ${aircraftDisplay}`,
+          html: `<p>Hi ${detailer.name || detailer.company || ''},</p>
+<p><strong>${quote.client_name || 'A customer'}</strong> accepted your quote for <strong>${aircraftDisplay}</strong> and requested an invoice.</p>
 <p>They chose to pay by check/ACH instead of credit card. Please send them an invoice directly.</p>
-<p>Quote total: <strong>$${(quote.total_price || 0).toLocaleString()}</strong></p>
+<p>Quote total: <strong>${amount}</strong></p>
 ${quote.client_email ? `<p>Customer email: <a href="mailto:${quote.client_email}">${quote.client_email}</a></p>` : ''}
 <p style="color:#999;font-size:12px;">— Vector Aviation</p>`,
-              }],
-            }),
-          });
-        }
+        });
       } catch (emailErr) {
         console.error('Failed to send invoice request notification:', emailErr);
       }
