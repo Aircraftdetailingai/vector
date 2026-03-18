@@ -17,11 +17,16 @@ function IntegrationsContent() {
   const [importResult, setImportResult] = useState(null);
 
   // Google Calendar state
-  const [gcalStatus, setGcalStatus] = useState({ connected: false });
+  const [gcalStatus, setGcalStatus] = useState({ connected: false, configured: false });
   const [gcalConnecting, setGcalConnecting] = useState(false);
   const [gcalError, setGcalError] = useState(null);
   const [gcalSyncing, setGcalSyncing] = useState(false);
   const [gcalSyncResult, setGcalSyncResult] = useState(null);
+
+  // ICS import state
+  const [icsUrl, setIcsUrl] = useState('');
+  const [icsImporting, setIcsImporting] = useState(false);
+  const [icsResult, setIcsResult] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -151,10 +156,27 @@ function IntegrationsContent() {
       if (res.ok) {
         const data = await res.json();
         setGcalStatus(data);
+        // Load saved ICS URL from detailer availability
+        if (!data.connected) {
+          loadIcsUrl();
+        }
       }
     } catch (err) {
       console.log('Failed to check GCal status:', err);
     }
+  };
+
+  const loadIcsUrl = async () => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/user/availability', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.icsUrl) setIcsUrl(data.icsUrl);
+      }
+    } catch {}
   };
 
   const handleConnectGCal = async () => {
@@ -169,6 +191,8 @@ function IntegrationsContent() {
       const data = await res.json();
       if (data.url) {
         window.location.href = data.url;
+      } else if (data.configured === false) {
+        setGcalError('Google Calendar OAuth is not configured yet. Use the iCal import below instead.');
       } else if (data.error) {
         setGcalError(data.error);
       }
@@ -188,7 +212,7 @@ function IntegrationsContent() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
-        setGcalStatus({ connected: false });
+        setGcalStatus(prev => ({ ...prev, connected: false }));
         setGcalSyncResult(null);
         toastSuccess('Google Calendar disconnected');
       }
@@ -218,6 +242,31 @@ function IntegrationsContent() {
       toastError(`Sync failed: ${err.message}`);
     } finally {
       setGcalSyncing(false);
+    }
+  };
+
+  const handleIcsImport = async () => {
+    if (!icsUrl.trim()) return;
+    setIcsImporting(true);
+    setIcsResult(null);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/google-calendar/ics-import', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ icsUrl: icsUrl.trim() }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIcsResult(data);
+        toastSuccess(`Imported ${data.relevantEvents} events, blocked ${data.blockedDatesAdded} new dates`);
+      } else {
+        toastError(data.error || 'Import failed');
+      }
+    } catch (err) {
+      toastError(`Import failed: ${err.message}`);
+    } finally {
+      setIcsImporting(false);
     }
   };
 
@@ -383,16 +432,72 @@ function IntegrationsContent() {
               <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
               <span className="text-gray-500 font-medium text-sm">Not Connected</span>
             </div>
-            <p className="text-sm text-gray-600 mb-4">
-              Connect your Google Calendar to sync Vector jobs and see your busy times on the scheduling calendar.
-            </p>
-            <button
-              onClick={handleConnectGCal}
-              disabled={gcalConnecting}
-              className="px-5 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 font-semibold text-sm"
-            >
-              {gcalConnecting ? 'Connecting...' : 'Connect Google Calendar'}
-            </button>
+
+            {gcalStatus.configured ? (
+              <>
+                <p className="text-sm text-gray-600 mb-4">
+                  Connect your Google Calendar to sync Vector jobs and see your busy times on the scheduling calendar.
+                </p>
+                <button
+                  onClick={handleConnectGCal}
+                  disabled={gcalConnecting}
+                  className="px-5 py-2.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 font-semibold text-sm"
+                >
+                  {gcalConnecting ? 'Connecting...' : 'Connect Google Calendar'}
+                </button>
+              </>
+            ) : (
+              <>
+                <p className="text-sm text-gray-600 mb-3">
+                  Google Calendar OAuth connection is coming soon. In the meantime, use the iCal import below to sync your calendar events.
+                </p>
+                <button
+                  disabled
+                  className="px-5 py-2.5 rounded-lg bg-gray-300 text-gray-500 font-semibold text-sm cursor-not-allowed"
+                  title="Google Calendar OAuth setup is in progress"
+                >
+                  Connect Google Calendar (Coming Soon)
+                </button>
+              </>
+            )}
+
+            {/* ICS/iCal Import Fallback */}
+            <div className="mt-5 pt-4 border-t border-gray-200">
+              <h4 className="text-sm font-semibold text-gray-900 mb-1">iCal Import (Alternative)</h4>
+              <p className="text-xs text-gray-500 mb-3">
+                Paste your Google Calendar&apos;s public iCal URL to import events as blocked dates.
+                Go to Google Calendar &rarr; Settings &rarr; your calendar &rarr; &quot;Secret address in iCal format&quot; and copy the URL.
+              </p>
+
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={icsUrl}
+                  onChange={e => setIcsUrl(e.target.value)}
+                  placeholder="https://calendar.google.com/calendar/ical/..."
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"
+                />
+                <button
+                  onClick={handleIcsImport}
+                  disabled={icsImporting || !icsUrl.trim()}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 font-semibold text-sm whitespace-nowrap"
+                >
+                  {icsImporting ? 'Importing...' : 'Import'}
+                </button>
+              </div>
+
+              {icsResult && (
+                <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-sm">
+                  <p className="font-semibold text-blue-800 mb-1">Import Complete</p>
+                  <ul className="text-blue-700 space-y-0.5 text-xs">
+                    <li>Total events found: {icsResult.totalEvents}</li>
+                    <li>Events in range (next 90 days): {icsResult.relevantEvents}</li>
+                    <li>New blocked dates added: {icsResult.blockedDatesAdded}</li>
+                    <li>Total blocked dates: {icsResult.totalBlockedDates}</li>
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

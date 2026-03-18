@@ -8,9 +8,13 @@ export async function POST(request) {
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
-    return Response.json({ error: 'Google Calendar integration is not configured' }, { status: 500 });
+    return Response.json({ configured: false, error: 'Google Calendar OAuth is not configured yet' });
+  }
+
+  if (!process.env.GOOGLE_CALENDAR_REDIRECT_URI) {
+    return Response.json({ configured: false, error: 'Google Calendar redirect URI is not configured' });
   }
 
   const url = getAuthorizationUrl(user.id);
-  return Response.json({ url });
+  return Response.json({ configured: true, url });
 }
