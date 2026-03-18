@@ -63,18 +63,25 @@ export async function GET(request) {
     .order('category', { ascending: true })
     .order('name', { ascending: true });
 
+  // Map DB column names to frontend field names
+  const mapped = (products || []).map(p => ({
+    ...p,
+    current_quantity: p.quantity ?? 0,
+    reorder_threshold: p.reorder_level ?? 0,
+  }));
+
   // Calculate inventory alerts
-  const lowStock = (products || []).filter(p =>
+  const lowStock = mapped.filter(p =>
     p.reorder_threshold > 0 && p.current_quantity <= p.reorder_threshold
   );
 
   // Calculate inventory value
-  const totalValue = (products || []).reduce((sum, p) =>
+  const totalValue = mapped.reduce((sum, p) =>
     sum + ((p.current_quantity || 0) * (p.cost_per_unit || 0)), 0
   );
 
   return Response.json({
-    products: products || [],
+    products: mapped,
     categories: PRODUCT_CATEGORIES,
     units: UNITS,
     lowStock,
@@ -122,8 +129,8 @@ export async function POST(request) {
     unit: unit || 'oz',
     size: size || '',
     cost_per_unit: parseFloat(costPerUnit) || 0,
-    current_quantity: parseFloat(currentQuantity) || 0,
-    reorder_threshold: parseFloat(reorderThreshold) || 0,
+    quantity: parseFloat(currentQuantity) || 0,
+    reorder_level: parseFloat(reorderThreshold) || 0,
     supplier: supplier || '',
     notes: notes || '',
     product_url: productUrl || '',
@@ -139,7 +146,7 @@ export async function POST(request) {
       .single();
 
     if (!error) {
-      return Response.json({ product });
+      return Response.json({ product: { ...product, current_quantity: product.quantity ?? 0, reorder_threshold: product.reorder_level ?? 0 } });
     }
 
     const colMatch = error.message?.match(/column "([^"]+)".*does not exist/);
@@ -197,8 +204,8 @@ export async function PUT(request) {
   if (unit !== undefined) updates.unit = unit;
   if (size !== undefined) updates.size = size;
   if (costPerUnit !== undefined) updates.cost_per_unit = parseFloat(costPerUnit) || 0;
-  if (currentQuantity !== undefined) updates.current_quantity = parseFloat(currentQuantity) || 0;
-  if (reorderThreshold !== undefined) updates.reorder_threshold = parseFloat(reorderThreshold) || 0;
+  if (currentQuantity !== undefined) updates.quantity = parseFloat(currentQuantity) || 0;
+  if (reorderThreshold !== undefined) updates.reorder_level = parseFloat(reorderThreshold) || 0;
   if (supplier !== undefined) updates.supplier = supplier;
   if (notes !== undefined) updates.notes = notes;
   if (productUrl !== undefined) updates.product_url = productUrl;
@@ -215,7 +222,7 @@ export async function PUT(request) {
       .single();
 
     if (!error) {
-      return Response.json({ product });
+      return Response.json({ product: { ...product, current_quantity: product.quantity ?? 0, reorder_threshold: product.reorder_level ?? 0 } });
     }
 
     const colMatch = error.message?.match(/column "([^"]+)".*does not exist/);
@@ -261,13 +268,13 @@ export async function PATCH(request) {
     return Response.json({ error: 'Product not found' }, { status: 404 });
   }
 
-  const oldQuantity = product.current_quantity || 0;
+  const oldQuantity = product.quantity || 0;
   const newQuantity = Math.max(0, oldQuantity + parseFloat(adjustment));
 
   const { data: updated, error } = await supabase
     .from('products')
     .update({
-      current_quantity: newQuantity,
+      quantity: newQuantity,
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
@@ -280,7 +287,7 @@ export async function PATCH(request) {
   }
 
   // Send low stock email alert if product just crossed below reorder threshold
-  const threshold = product.reorder_threshold || 0;
+  const threshold = product.reorder_level || 0;
   if (threshold > 0 && newQuantity <= threshold && oldQuantity > threshold) {
     try {
       const { data: detailer } = await supabase
@@ -300,7 +307,7 @@ export async function PATCH(request) {
     }
   }
 
-  return Response.json({ product: updated });
+  return Response.json({ product: { ...updated, current_quantity: updated.quantity ?? 0, reorder_threshold: updated.reorder_level ?? 0 } });
 }
 
 // DELETE - Remove a product

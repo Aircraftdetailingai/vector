@@ -32,6 +32,8 @@ export default function ProductsPage() {
     imageUrl: '',
   });
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [activeTab, setActiveTab] = useState('inventory');
   const [pasteUrl, setPasteUrl] = useState('');
   const [scraping, setScraping] = useState(false);
@@ -100,6 +102,7 @@ export default function ProductsPage() {
   const handleOpenModal = (product = null) => {
     setPasteUrl('');
     setScrapeError('');
+    setSaveError('');
     if (product) {
       setEditingProduct(product);
       setFormData({
@@ -189,6 +192,7 @@ export default function ProductsPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setSaveError('');
 
     const token = localStorage.getItem('vector_token');
     const payload = {
@@ -207,36 +211,42 @@ export default function ProductsPage() {
     };
 
     try {
-      if (editingProduct) {
-        payload.id = editingProduct.id;
-        const res = await fetch('/api/products', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) {
-          fetchProducts();
-          handleCloseModal();
-        }
-      } else {
-        const res = await fetch('/api/products', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) {
-          fetchProducts();
-          handleCloseModal();
+      if (editingProduct) payload.id = editingProduct.id;
+      const method = editingProduct ? 'PUT' : 'POST';
+
+      const res = await fetch('/api/products', {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok || data.error) {
+        setSaveError(data.error || `Server error (${res.status})`);
+        return;
+      }
+
+      // Success: add product to list immediately, close modal, show toast
+      if (data.product) {
+        if (editingProduct) {
+          setProducts(prev => prev.map(p => p.id === editingProduct.id ? data.product : p));
+        } else {
+          setProducts(prev => [...prev, data.product]);
         }
       }
+      handleCloseModal();
+      setSuccessMsg(editingProduct ? 'Product updated!' : 'Product added!');
+      setTimeout(() => setSuccessMsg(''), 3000);
+
+      // Background refresh for accurate data
+      fetchProducts().catch(() => {});
     } catch (err) {
       console.error('Failed to save product:', err);
+      setSaveError(err.message || 'Network error — please try again.');
     } finally {
       setSaving(false);
     }
@@ -311,6 +321,12 @@ export default function ProductsPage() {
           <a href="/settings" className="underline">{'Settings'}</a>
         </div>
       </header>
+
+      {successMsg && (
+        <div className="max-w-5xl mx-auto mb-4">
+          <div className="p-3 bg-green-900/30 border border-green-600/30 rounded-sm text-green-400 text-sm">{successMsg}</div>
+        </div>
+      )}
 
       <div className="max-w-5xl mx-auto">
         {/* Stats Cards */}
@@ -691,6 +707,10 @@ export default function ProductsPage() {
                   className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none resize-none"
                 />
               </div>
+
+              {saveError && (
+                <div className="p-3 bg-red-900/30 border border-red-600/30 rounded-sm text-red-400 text-sm">{saveError}</div>
+              )}
 
               <div className="flex justify-end space-x-3 pt-4">
                 <button
