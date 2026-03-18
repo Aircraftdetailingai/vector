@@ -300,7 +300,7 @@ export default function ProductsPage() {
   return (
     <div className="page-transition min-h-screen bg-v-charcoal p-4 text-v-text-primary">
       {/* Header */}
-      <header className="flex justify-between items-center mb-6 text-white">
+      <header className="flex justify-between items-center mb-6 text-v-text-primary">
         <div className="flex items-center space-x-4">
           <a href="/dashboard" className="text-2xl hover:text-v-gold">&#8592;</a>
           <h1 className="text-2xl font-bold">{'Inventory'}</h1>
@@ -315,23 +315,23 @@ export default function ProductsPage() {
       <div className="max-w-5xl mx-auto">
         {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-v-surface rounded-lg p-4 shadow">
+          <div className="bg-v-surface rounded-sm p-4 border border-v-border">
             <p className="text-v-text-secondary text-xs">{'Inventory Value'}</p>
             <p className="text-2xl font-bold text-v-text-primary">{currencySymbol()}{formatPriceWhole(totalValue)}</p>
           </div>
-          <div className="bg-v-surface rounded-lg p-4 shadow">
+          <div className="bg-v-surface rounded-sm p-4 border border-v-border">
             <p className="text-v-text-secondary text-xs">{'Products Tracked'}</p>
             <p className="text-2xl font-bold text-v-text-primary">{products.length}</p>
           </div>
           {insights && (
             <>
-              <div className="bg-v-surface rounded-lg p-4 shadow">
+              <div className="bg-v-surface rounded-sm p-4 border border-v-border">
                 <p className="text-v-text-secondary text-xs">{'Material Cost (Month)'}</p>
-                <p className="text-2xl font-bold text-blue-600">{currencySymbol()}{formatPriceWhole(insights.summary.totalMaterialCost)}</p>
+                <p className="text-2xl font-bold text-blue-400">{currencySymbol()}{formatPriceWhole(insights.summary.totalMaterialCost)}</p>
               </div>
-              <div className="bg-v-surface rounded-lg p-4 shadow">
+              <div className="bg-v-surface rounded-sm p-4 border border-v-border">
                 <p className="text-v-text-secondary text-xs">{'Avg Cost/Job'}</p>
-                <p className="text-2xl font-bold text-purple-600">{currencySymbol()}{formatPriceWhole(insights.summary.avgMaterialCostPerJob)}</p>
+                <p className="text-2xl font-bold text-purple-400">{currencySymbol()}{formatPriceWhole(insights.summary.avgMaterialCostPerJob)}</p>
               </div>
             </>
           )}
@@ -339,7 +339,7 @@ export default function ProductsPage() {
 
         {/* Low Stock Alert */}
         {lowStock.length > 0 && (
-          <div className="bg-red-900/20 border border-red-500/30 rounded-lg p-4 mb-6">
+          <div className="bg-red-900/20 border border-red-500/30 rounded-sm p-4 mb-6">
             <div className="flex items-start gap-3">
               <span className="text-xl">&#9888;</span>
               <div className="flex-1">
@@ -377,7 +377,7 @@ export default function ProductsPage() {
           </div>
           <button
             onClick={() => handleOpenModal()}
-            className="px-4 py-2 bg-v-gold hover:bg-v-gold-dim text-white font-medium rounded-lg"
+            className="px-4 py-2 bg-v-gold hover:bg-v-gold-dim text-white font-medium rounded-sm"
           >
             {'+ Add Product'}
           </button>
@@ -385,13 +385,13 @@ export default function ProductsPage() {
 
         {/* Products List */}
         {products.length === 0 ? (
-          <div className="bg-v-surface rounded-lg p-8 text-center">
+          <div className="bg-v-surface rounded-sm p-8 text-center border border-v-border">
             <span className="text-4xl">&#128230;</span>
             <h3 className="text-xl font-semibold mt-4">{'No products yet'}</h3>
             <p className="text-v-text-secondary mt-2">{'Add your detailing products to track inventory and costs'}</p>
             <button
               onClick={() => handleOpenModal()}
-              className="mt-4 px-4 py-2 bg-v-gold hover:bg-v-gold-dim text-white font-medium rounded-lg"
+              className="mt-4 px-4 py-2 bg-v-gold hover:bg-v-gold-dim text-white font-medium rounded-sm"
             >
               {'Add Your First Product'}
             </button>
@@ -399,12 +399,12 @@ export default function ProductsPage() {
         ) : (
           <div className="space-y-4">
             {Object.entries(productsByCategory).map(([category, categoryProducts]) => (
-              <div key={category} className="bg-v-surface rounded-lg shadow overflow-hidden">
-                <div className="bg-v-charcoal px-4 py-2 border-b flex justify-between items-center">
+              <div key={category} className="bg-v-surface rounded-sm border border-v-border overflow-hidden">
+                <div className="bg-v-charcoal px-4 py-2 border-b border-v-border flex justify-between items-center">
                   <h3 className="font-semibold text-v-text-secondary">{CATEGORY_LABELS[category] || category}</h3>
                   <span className="text-xs text-v-text-secondary">{categoryProducts.length} {'items'}</span>
                 </div>
-                <div className="divide-y">
+                <div className="divide-y divide-v-border">
                   {categoryProducts.map((product) => (
                     <div key={product.id} className="p-4 hover:bg-white/5">
                       <div className="flex items-center justify-between">
@@ -439,7 +439,7 @@ export default function ProductsPage() {
                                 <span className="text-v-text-secondary">{product.supplier}</span>
                               )}
                               {product.product_url && (
-                                <a href={product.product_url} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:text-blue-600 text-xs">{'Reorder'}</a>
+                                <a href={product.product_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 text-xs">{'Reorder'}</a>
                               )}
                             </div>
                           </div>
@@ -456,13 +456,13 @@ export default function ProductsPage() {
                           </button>
                           <button
                             onClick={() => handleOpenModal(product)}
-                            className="px-3 py-1 text-sm text-blue-600 hover:bg-blue-900/20 rounded"
+                            className="px-3 py-1 text-sm text-blue-400 hover:bg-blue-900/20 rounded"
                           >
                             {'Edit'}
                           </button>
                           <button
                             onClick={() => handleDelete(product.id)}
-                            className="px-3 py-1 text-sm text-red-600 hover:bg-red-900/20 rounded"
+                            className="px-3 py-1 text-sm text-red-400 hover:bg-red-900/20 rounded"
                           >
                             {'Delete'}
                           </button>
@@ -478,7 +478,7 @@ export default function ProductsPage() {
 
         {/* Business Insights Card */}
         {insights && insights.costBreakdown && (
-          <div className="mt-6 bg-v-surface rounded-lg p-6 shadow">
+          <div className="mt-6 bg-v-surface rounded-sm p-6 border border-v-border">
             <h3 className="font-semibold text-v-text-primary mb-4">{'Cost Breakdown'}</h3>
             <div className="flex items-center gap-4">
               <div className="flex-1 h-4 bg-v-charcoal rounded-full overflow-hidden flex">
@@ -517,9 +517,9 @@ export default function ProductsPage() {
       {/* Add/Edit Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg w-full sm:max-w-md overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b sticky top-0 bg-v-surface">
-              <h2 className="text-lg font-semibold">
+          <div className="bg-v-surface rounded-t-xl sm:rounded-sm w-full sm:max-w-md overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-v-border sticky top-0 bg-v-surface">
+              <h2 className="text-lg font-semibold text-v-text-primary">
                 {editingProduct ? 'Edit Product' : 'Add Product'}
               </h2>
             </div>
@@ -527,7 +527,7 @@ export default function ProductsPage() {
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
               {/* Paste Product Link */}
               {!editingProduct && (
-                <div className="bg-v-gold/10 border border-v-gold/30 rounded-lg p-3">
+                <div className="bg-v-gold/10 border border-v-gold/30 rounded-sm p-3">
                   <label className="block text-sm font-medium text-v-gold mb-1">{'Paste Product Link'}</label>
                   <div className="flex gap-2">
                     <input
@@ -535,13 +535,13 @@ export default function ProductsPage() {
                       value={pasteUrl}
                       onChange={handlePasteUrlChange}
                       placeholder={'https://www.chemicalguys.com/product...'}
-                      className="flex-1 border border-v-gold/30 rounded-lg px-3 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none bg-v-surface"
+                      className="flex-1 border border-v-gold/30 rounded-sm px-3 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none bg-v-surface"
                     />
                     {pasteUrl && !scraping && (
                       <button
                         type="button"
                         onClick={() => handleScrapeUrl(pasteUrl)}
-                        className="px-3 py-2 bg-v-gold hover:bg-v-gold-dim text-white text-sm rounded-lg"
+                        className="px-3 py-2 bg-v-gold hover:bg-v-gold-dim text-white text-sm rounded-sm"
                       >
                         {'Fetch'}
                       </button>
@@ -554,7 +554,7 @@ export default function ProductsPage() {
                     </p>
                   )}
                   {scrapeError && (
-                    <p className="text-xs text-red-600 mt-1">{scrapeError}</p>
+                    <p className="text-xs text-red-400 mt-1">{scrapeError}</p>
                   )}
                   <p className="text-[10px] text-v-gold/70 mt-1">{'Supports: Detail King, Autogeek, Amazon, Chemical Guys, P&S, and more'}</p>
                 </div>
@@ -563,7 +563,7 @@ export default function ProductsPage() {
               {/* Image preview */}
               {formData.imageUrl && (
                 <div className="flex items-center gap-3">
-                  <img src={formData.imageUrl} alt="" className="w-16 h-16 rounded-lg object-cover bg-v-charcoal border" onError={(e) => { e.target.style.display = 'none'; }} />
+                  <img src={formData.imageUrl} alt="" className="w-16 h-16 rounded-sm object-cover bg-v-charcoal border border-v-border" onError={(e) => { e.target.style.display = 'none'; }} />
                   <button type="button" onClick={() => setFormData({ ...formData, imageUrl: '' })} className="text-xs text-v-text-secondary hover:text-red-500">{'Remove image'}</button>
                 </div>
               )}
@@ -577,7 +577,7 @@ export default function ProductsPage() {
                     onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                     required
                     placeholder={'e.g., M105 Ultra-Cut Compound'}
-                    className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                    className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
                   />
                 </div>
                 <div>
@@ -587,7 +587,7 @@ export default function ProductsPage() {
                     value={formData.brand}
                     onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
                     placeholder={'e.g., Meguiar\'s'}
-                    className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                    className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
                   />
                 </div>
                 <div>
@@ -597,7 +597,7 @@ export default function ProductsPage() {
                     value={formData.size}
                     onChange={(e) => setFormData({ ...formData, size: e.target.value })}
                     placeholder={'e.g., 32 oz'}
-                    className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                    className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
                   />
                 </div>
               </div>
@@ -608,10 +608,11 @@ export default function ProductsPage() {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                    className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                    style={{ colorScheme: 'dark' }}
                   >
                     {categories.map((cat) => (
-                      <option key={cat} value={cat}>{CATEGORY_LABELS[cat] || cat}</option>
+                      <option key={cat} value={cat} style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{CATEGORY_LABELS[cat] || cat}</option>
                     ))}
                   </select>
                 </div>
@@ -620,10 +621,11 @@ export default function ProductsPage() {
                   <select
                     value={formData.unit}
                     onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                    className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                    style={{ colorScheme: 'dark' }}
                   >
                     {units.map((u) => (
-                      <option key={u} value={u}>{u}</option>
+                      <option key={u} value={u} style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{u}</option>
                     ))}
                   </select>
                 </div>
@@ -638,7 +640,7 @@ export default function ProductsPage() {
                     value={formData.costPerUnit}
                     onChange={(e) => setFormData({ ...formData, costPerUnit: e.target.value })}
                     placeholder="0.00"
-                    className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                    className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
                   />
                 </div>
                 <div>
@@ -650,7 +652,7 @@ export default function ProductsPage() {
                     value={formData.currentQuantity}
                     onChange={(e) => setFormData({ ...formData, currentQuantity: e.target.value })}
                     placeholder="1"
-                    className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                    className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
                   />
                 </div>
               </div>
@@ -664,7 +666,7 @@ export default function ProductsPage() {
                   value={formData.reorderThreshold}
                   onChange={(e) => setFormData({ ...formData, reorderThreshold: e.target.value })}
                   placeholder={'Alert when quantity falls below this'}
-                  className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                  className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
                 />
               </div>
 
@@ -675,7 +677,7 @@ export default function ProductsPage() {
                   value={formData.supplier}
                   onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
                   placeholder={'e.g., Detail King, Amazon'}
-                  className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                  className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
                 />
               </div>
 
@@ -686,7 +688,7 @@ export default function ProductsPage() {
                   onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                   rows={2}
                   placeholder={'Optional notes'}
-                  className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none resize-none"
+                  className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none resize-none"
                 />
               </div>
 
@@ -694,14 +696,14 @@ export default function ProductsPage() {
                 <button
                   type="button"
                   onClick={handleCloseModal}
-                  className="px-4 py-2 text-v-text-secondary hover:bg-white/5 rounded-lg"
+                  className="px-4 py-2 text-v-text-secondary hover:bg-white/5 rounded-sm"
                 >
                   {'Cancel'}
                 </button>
                 <button
                   type="submit"
                   disabled={saving || !formData.name}
-                  className="px-4 py-2 bg-v-gold hover:bg-v-gold-dim text-white font-medium rounded-lg disabled:opacity-50"
+                  className="px-4 py-2 bg-v-gold hover:bg-v-gold-dim text-white font-medium rounded-sm disabled:opacity-50"
                 >
                   {saving ? 'Saving...' : editingProduct ? 'Update' : '+ Add Product'}
                 </button>
@@ -714,9 +716,9 @@ export default function ProductsPage() {
       {/* Adjust Quantity Modal */}
       {showAdjustModal && (
         <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg w-full sm:max-w-sm overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b">
-              <h2 className="text-lg font-semibold">{'Adjust Inventory'}</h2>
+          <div className="bg-v-surface rounded-t-xl sm:rounded-sm w-full sm:max-w-sm overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+            <div className="px-6 py-4 border-b border-v-border">
+              <h2 className="text-lg font-semibold text-v-text-primary">{'Adjust Inventory'}</h2>
               <p className="text-sm text-v-text-secondary">{showAdjustModal.name}</p>
               <p className="text-xs text-v-text-secondary">{'Current'}: {showAdjustModal.current_quantity} {showAdjustModal.unit}</p>
             </div>
@@ -729,21 +731,21 @@ export default function ProductsPage() {
                 value={adjustAmount}
                 onChange={(e) => setAdjustAmount(e.target.value)}
                 placeholder={'Amount'}
-                className="w-full bg-v-surface border border-v-border rounded-lg px-3 py-2 mb-4 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
+                className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 mb-4 text-v-text-primary placeholder:text-v-text-secondary/50 focus:border-v-gold focus:ring-0 outline-none"
               />
 
               <div className="grid grid-cols-2 gap-3">
                 <button
                   onClick={() => handleAdjustInventory(false)}
                   disabled={!adjustAmount}
-                  className="px-4 py-2 bg-red-900/30 text-red-400 font-medium rounded-lg hover:bg-red-200 disabled:opacity-50"
+                  className="px-4 py-2 bg-red-900/30 text-red-400 font-medium rounded-sm hover:bg-red-900/50 disabled:opacity-50"
                 >
                   - {'Remove'}
                 </button>
                 <button
                   onClick={() => handleAdjustInventory(true)}
                   disabled={!adjustAmount}
-                  className="px-4 py-2 bg-green-900/30 text-green-400 font-medium rounded-lg hover:bg-green-200 disabled:opacity-50"
+                  className="px-4 py-2 bg-green-900/30 text-green-400 font-medium rounded-sm hover:bg-green-900/50 disabled:opacity-50"
                 >
                   + {'Add'}
                 </button>
@@ -754,7 +756,7 @@ export default function ProductsPage() {
                   setShowAdjustModal(null);
                   setAdjustAmount('');
                 }}
-                className="w-full mt-3 px-4 py-2 text-v-text-secondary hover:bg-white/5 rounded-lg"
+                className="w-full mt-3 px-4 py-2 text-v-text-secondary hover:bg-white/5 rounded-sm"
               >
                 {'Cancel'}
               </button>

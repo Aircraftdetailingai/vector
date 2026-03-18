@@ -348,9 +348,10 @@ export default function InventoryPage() {
                   value={form.category}
                   onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
                   className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                  style={{ colorScheme: 'dark' }}
                 >
                   {CATEGORIES.map(c => (
-                    <option key={c} value={c.toLowerCase()}>{c}</option>
+                    <option key={c} value={c.toLowerCase()} style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{c}</option>
                   ))}
                 </select>
               </div>
@@ -360,9 +361,10 @@ export default function InventoryPage() {
                   value={form.min_tier}
                   onChange={e => setForm(f => ({ ...f, min_tier: e.target.value }))}
                   className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                  style={{ colorScheme: 'dark' }}
                 >
                   {TIERS.map(t => (
-                    <option key={t} value={t} className="capitalize">{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                    <option key={t} value={t} style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
                   ))}
                 </select>
               </div>
@@ -372,9 +374,10 @@ export default function InventoryPage() {
                   value={form.reward_type}
                   onChange={e => setForm(f => ({ ...f, reward_type: e.target.value }))}
                   className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                  style={{ colorScheme: 'dark' }}
                 >
                   {REWARD_TYPES.map(t => (
-                    <option key={t} value={t.toLowerCase()}>{t}</option>
+                    <option key={t} value={t.toLowerCase()} style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{t}</option>
                   ))}
                 </select>
               </div>
@@ -410,10 +413,11 @@ export default function InventoryPage() {
                       value={form.credit_plan}
                       onChange={e => setForm(f => ({ ...f, credit_plan: e.target.value }))}
                       className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                      style={{ colorScheme: 'dark' }}
                     >
-                      <option value="pro">Pro</option>
-                      <option value="business">Business</option>
-                      <option value="enterprise">Enterprise</option>
+                      <option value="pro" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Pro</option>
+                      <option value="business" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Business</option>
+                      <option value="enterprise" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Enterprise</option>
                     </select>
                   </div>
                 </>
@@ -426,7 +430,7 @@ export default function InventoryPage() {
                     type="checkbox"
                     checked={form.active}
                     onChange={e => setForm(f => ({ ...f, active: e.target.checked }))}
-                    className="w-4 h-4 rounded text-amber-500"
+                    className="w-4 h-4 rounded text-v-gold accent-[var(--brand-primary)]"
                   />
                   <span className="text-sm text-v-text-primary">Active</span>
                 </label>
@@ -435,7 +439,7 @@ export default function InventoryPage() {
                     type="checkbox"
                     checked={form.featured}
                     onChange={e => setForm(f => ({ ...f, featured: e.target.checked }))}
-                    className="w-4 h-4 rounded text-amber-500"
+                    className="w-4 h-4 rounded text-v-gold accent-[var(--brand-primary)]"
                   />
                   <span className="text-sm text-v-text-primary">Featured</span>
                 </label>
@@ -470,21 +474,23 @@ export default function InventoryPage() {
             value={filterCategory}
             onChange={e => setFilterCategory(e.target.value)}
             className="bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 text-sm focus:border-v-gold outline-none"
+            style={{ colorScheme: 'dark' }}
           >
-            <option value="all">All Categories</option>
+            <option value="all" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>All Categories</option>
             {CATEGORIES.map(c => (
-              <option key={c} value={c.toLowerCase()}>{c}</option>
+              <option key={c} value={c.toLowerCase()} style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{c}</option>
             ))}
           </select>
           <select
             value={sortBy}
             onChange={e => setSortBy(e.target.value)}
             className="bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 text-sm focus:border-v-gold outline-none"
+            style={{ colorScheme: 'dark' }}
           >
-            <option value="created">Newest First</option>
-            <option value="stock">Stock (low to high)</option>
-            <option value="points">Points (high to low)</option>
-            <option value="name">Name (A-Z)</option>
+            <option value="created" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Newest First</option>
+            <option value="stock" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Stock (low to high)</option>
+            <option value="points" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Points (high to low)</option>
+            <option value="name" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Name (A-Z)</option>
           </select>
           <span className="text-sm text-v-text-secondary">{filtered.length} items</span>
         </div>
