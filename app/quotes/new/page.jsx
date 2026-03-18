@@ -6,6 +6,7 @@ import LoadingSpinner from '../../../components/LoadingSpinner.jsx';
 import { useToast } from '../../../components/Toast.jsx';
 import { formatPrice, currencySymbol } from '../../../lib/formatPrice';
 import { calculateProductEstimates } from '../../../lib/product-calculator';
+import { calculateCcFee } from '../../../lib/cc-fee';
 
 const categoryOrder = ['piston', 'turboprop', 'light_jet', 'midsize_jet', 'super_midsize_jet', 'large_jet', 'helicopter'];
 
@@ -66,6 +67,7 @@ function NewQuoteContent() {
   const [savingDefault, setSavingDefault] = useState({});
   const [aircraftHoursRef, setAircraftHoursRef] = useState(null);
   const [communityHours, setCommunityHours] = useState({});
+  const [ccFeeMode, setCcFeeMode] = useState('absorb');
 
   // Fetch manufacturers on mount
   useEffect(() => {
@@ -118,7 +120,7 @@ function NewQuoteContent() {
     const headers = { Authorization: `Bearer ${token}` };
 
     const fetchData = async () => {
-      const [servicesRes, packagesRes, minFeeRes, addonsRes, productRatiosRes, svcProdRes, svcEquipRes] = await Promise.allSettled([
+      const [servicesRes, packagesRes, minFeeRes, addonsRes, productRatiosRes, svcProdRes, svcEquipRes, ccFeeRes] = await Promise.allSettled([
         fetch('/api/services', { headers }),
         fetch('/api/packages', { headers }),
         fetch('/api/user/minimum-fee', { headers }),
@@ -126,6 +128,7 @@ function NewQuoteContent() {
         fetch('/api/user/product-ratios', { headers }),
         fetch('/api/services/products', { headers }),
         fetch('/api/services/equipment', { headers }),
+        fetch('/api/user/cc-fee', { headers }),
       ]);
 
       if (servicesRes.status === 'fulfilled' && servicesRes.value.ok) {
@@ -156,6 +159,10 @@ function NewQuoteContent() {
       if (svcEquipRes.status === 'fulfilled' && svcEquipRes.value.ok) {
         const data = await svcEquipRes.value.json();
         setServiceEquipmentLinks(data.links || []);
+      }
+      if (ccFeeRes.status === 'fulfilled' && ccFeeRes.value.ok) {
+        const data = await ccFeeRes.value.json();
+        setCcFeeMode(data.cc_fee_mode || 'absorb');
       }
     };
 
@@ -395,6 +402,8 @@ function NewQuoteContent() {
 
   const isMinimumApplied = minimumFeeApplies();
   const totalPrice = isMinimumApplied ? minimumFee : calculatedPrice;
+  const ccFeeAmount = ccFeeMode === 'pass' ? calculateCcFee(totalPrice) : 0;
+  const grandTotal = totalPrice + ccFeeAmount;
 
   const lineItems = selectedServicesList.map(svc => ({
     service_id: svc.id,
@@ -540,7 +549,7 @@ function NewQuoteContent() {
           <a href="/dashboard" className="text-lg text-gray-400 hover:text-[#C9A84C] transition-colors">&#8592;</a>
           <h1 className="text-2xl font-normal tracking-[0.2em] uppercase" style={{ fontFamily: "var(--font-playfair), 'Playfair Display', serif" }}>New Quote</h1>
         </div>
-        <div className="flex items-center gap-4 text-sm">
+        <div className="hidden sm:flex items-center gap-4 text-sm">
           <a href="/quotes" className="text-gray-400 hover:text-white transition-colors">Quotes</a>
           <a href="/customers" className="text-gray-400 hover:text-white transition-colors">Customers</a>
           <a href="/settings" className="text-gray-400 hover:text-white transition-colors">Settings</a>
@@ -745,9 +754,9 @@ function NewQuoteContent() {
                                   );
                                 })()}
                               </span>
-                              <span className="text-gray-300 mx-0.5">@</span>
-                              <span className="text-gray-500 text-xs">{currencySymbol()}{parseFloat(svc.hourly_rate || 0).toFixed(0)}/hr</span>
-                              <span className="text-gray-300 mx-0.5">=</span>
+                              <span className="text-gray-300 mx-0.5 hidden sm:inline">@</span>
+                              <span className="text-gray-500 text-xs hidden sm:inline">{currencySymbol()}{parseFloat(svc.hourly_rate || 0).toFixed(0)}/hr</span>
+                              <span className="text-gray-300 mx-0.5 hidden sm:inline">=</span>
                               <span className="font-bold text-v-text-primary min-w-[60px] text-right">{currencySymbol()}{formatPrice(price)}</span>
                             </>
                           ) : (
@@ -766,7 +775,7 @@ function NewQuoteContent() {
                                     </>
                                   );
                                 })()}
-                                {' '}@ {currencySymbol()}{parseFloat(svc.hourly_rate || 0).toFixed(0)}/hr
+                                <span className="hidden sm:inline">{' '}@ {currencySymbol()}{parseFloat(svc.hourly_rate || 0).toFixed(0)}/hr</span>
                               </span>
                               <span className="font-bold text-v-text-primary ml-2">{currencySymbol()}{formatPrice(price)}</span>
                             </>
@@ -780,13 +789,13 @@ function NewQuoteContent() {
                           <button
                             onClick={() => saveAsDefault(svc.id)}
                             disabled={savingDefault[svc.id]}
-                            className="text-amber-600 hover:text-amber-700 font-medium disabled:opacity-50"
+                            className="text-[#C9A84C] hover:text-[#b8993f] font-medium disabled:opacity-50"
                           >
                             {savingDefault[svc.id] ? 'Saving...' : 'Save Default'}
                           </button>
                           <button
                             onClick={() => dismissSavePrompt(svc.id)}
-                            className="text-gray-400 hover:text-gray-600"
+                            className="text-gray-500 hover:text-gray-300"
                           >
                             Just this quote
                           </button>
@@ -804,6 +813,11 @@ function NewQuoteContent() {
                   <div className="divide-y divide-v-border/30">
                     {availablePackages.map(pkg => {
                       const isSelected = selectedPackage?.id === pkg.id;
+                      const pkgServices = availableServices.filter(s => (pkg.service_ids || []).includes(s.id));
+                      const pkgHours = pkgServices.reduce((sum, svc) => sum + getHoursForService(svc), 0);
+                      const pkgSubtotal = pkgServices.reduce((sum, svc) => sum + getServicePrice(svc), 0);
+                      const pkgDiscount = pkgSubtotal * ((parseFloat(pkg.discount_percent) || 0) / 100);
+                      const pkgPrice = pkgSubtotal - pkgDiscount;
                       return (
                         <button
                           key={pkg.id}
@@ -814,9 +828,15 @@ function NewQuoteContent() {
                         >
                           <div>
                             <p className="text-v-text-primary text-sm">{pkg.name}</p>
-                            <p className="text-xs text-gray-500">{Array.isArray(pkg.service_ids) ? pkg.service_ids.length : 0} services{pkg.discount_percent > 0 ? ` \u00B7 ${pkg.discount_percent}% off` : ''}</p>
+                            <p className="text-xs text-gray-500">{pkgServices.length} services{pkg.discount_percent > 0 ? ` \u00B7 ${pkg.discount_percent}% off` : ''} &middot; {pkgHours.toFixed(1)}h</p>
                           </div>
-                          {isSelected && <span className="text-[#C9A84C] text-xs uppercase tracking-wider">Selected</span>}
+                          <div className="text-right flex-shrink-0">
+                            {isSelected ? (
+                              <span className="text-[#C9A84C] text-xs uppercase tracking-wider">Selected</span>
+                            ) : (
+                              <span className="text-gray-300 text-sm font-bold">{currencySymbol()}{formatPrice(pkgPrice)}</span>
+                            )}
+                          </div>
                         </button>
                       );
                     })}
@@ -830,7 +850,7 @@ function NewQuoteContent() {
           {selectedAircraft && selectedServicesList.length > 0 && (
             <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
               <h3 className="text-sm font-light tracking-wider uppercase text-gray-400 mb-3">Access Difficulty</h3>
-              <div className="grid grid-cols-4 gap-px bg-v-border/30">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-px bg-v-border/30">
                 {[
                   { label: 'Standard', value: 1.0 },
                   { label: 'Moderate', value: 1.15 },
@@ -994,6 +1014,20 @@ function NewQuoteContent() {
                 <span className="text-sm text-gray-400 uppercase tracking-wider">Total</span>
                 <span className="text-[2.5rem] font-extralight text-[#C9A84C]">{currencySymbol()}{formatPrice(totalPrice)}</span>
               </div>
+
+              {/* CC Processing Fee */}
+              {ccFeeMode === 'pass' && ccFeeAmount > 0 && (
+                <div className="mt-2 pt-2 border-t border-white/10">
+                  <div className="flex justify-between text-xs text-gray-500 mb-1">
+                    <span>CC Processing Fee (2.9% + $0.30)</span>
+                    <span>+{currencySymbol()}{ccFeeAmount.toFixed(2)}</span>
+                  </div>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-gray-400">Customer Pays</span>
+                    <span className="text-v-text-primary font-medium">{currencySymbol()}{grandTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                  </div>
+                </div>
+              )}
 
               {/* Profit preview */}
               {estimatedProductCost > 0 && (

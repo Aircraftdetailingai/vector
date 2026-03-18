@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 import { sendJobScheduledEmail } from '@/lib/email';
+import { pushJobToGoogleCalendar } from '@/lib/google-calendar';
 
 export const dynamic = 'force-dynamic';
 
@@ -73,6 +74,11 @@ export async function POST(request) {
   } catch (e) {
     console.log('[schedule] Email send error:', e.message);
   }
+
+  // Push to Google Calendar (non-blocking)
+  pushJobToGoogleCalendar(user.id, updated || { ...quote, scheduled_date }).catch(e =>
+    console.error('[schedule] Google Calendar push failed:', e)
+  );
 
   return Response.json({ success: true, quote: updated, emailSent });
 }

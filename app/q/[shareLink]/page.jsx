@@ -41,6 +41,8 @@ export default function QuoteViewPage() {
   const [schedulingError, setSchedulingError] = useState('');
   const [justScheduled, setJustScheduled] = useState(false);
   const [skipScheduling, setSkipScheduling] = useState(false);
+  const [calendlyUrl, setCalendlyUrl] = useState(null);
+  const [useCalendlyScheduling, setUseCalendlyScheduling] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
@@ -101,7 +103,8 @@ export default function QuoteViewPage() {
   const isPaid = quote && (quote.status === 'paid' || quote.status === 'approved' || quote.status === 'accepted' || quote.status === 'scheduled');
   const isScheduled = quote && (quote.status === 'scheduled' || quote.scheduled_date);
   const hasAvailability = detailer?.availability != null;
-  const needsScheduling = isPaid && !isScheduled && hasAvailability && !skipScheduling;
+  const hasCalendly = !!(detailer?.calendly_url && detailer?.use_calendly_scheduling);
+  const needsScheduling = isPaid && !isScheduled && (hasAvailability || hasCalendly) && !skipScheduling;
 
   // Fetch availability when scheduling is needed
   useEffect(() => {
@@ -118,6 +121,8 @@ export default function QuoteViewPage() {
             setCalendarMonth(new Date(first.getFullYear(), first.getMonth(), 1));
           }
         }
+        if (data?.calendly_url) setCalendlyUrl(data.calendly_url);
+        if (data?.use_calendly_scheduling) setUseCalendlyScheduling(true);
       })
       .catch(console.error)
       .finally(() => setAvailabilityLoading(false));
@@ -341,6 +346,51 @@ export default function QuoteViewPage() {
 
   // --- SCHEDULING STEP (after payment/acceptance) ---
   if (needsScheduling && !justScheduled) {
+    // Calendly as primary scheduler
+    const showCalendlyPrimary = hasCalendly && (useCalendlyScheduling || calendlyUrl) && detailer?.use_calendly_scheduling;
+    const calendlyEmbedUrl = detailer?.calendly_url || calendlyUrl;
+    const brandPrimary = (detailer?.theme_primary || '#C9A84C').replace('#', '');
+
+    if (showCalendlyPrimary && calendlyEmbedUrl) {
+      return (
+        <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--brand-bg,#0A0E17)] p-4" style={brandFontBody ? { fontFamily: brandFontBody } : undefined}>
+          <div className="bg-[var(--brand-surface,#111827)] w-full max-w-[640px] rounded-[4px] px-8 py-10 sm:px-10">
+            <div className="text-center mb-8">
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Next Step</p>
+              <div className="w-12 h-[1px] bg-[var(--brand-primary,#C9A84C)] mx-auto mb-4" />
+              <h2 className="text-[var(--brand-text,#F5F5F5)] text-xl font-light tracking-wide" style={brandFontHeading ? { fontFamily: brandFontHeading } : undefined}>Schedule Your Service</h2>
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm mt-2">Pick a time that works for you</p>
+            </div>
+
+            <div className="flex items-center justify-between mb-8 pb-4 border-b border-[var(--brand-border,#1A2236)]">
+              <div>
+                <p className="text-[var(--brand-text,#F5F5F5)] text-sm font-medium">{quote.aircraft_model || quote.aircraft_type}</p>
+                {quote.tail_number && <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-xs font-mono">{quote.tail_number}</p>}
+              </div>
+              <p className="text-[var(--brand-primary,#C9A84C)] text-lg font-light">{sym}{formatPrice(quote.total_price)}</p>
+            </div>
+
+            <iframe
+              src={`${calendlyEmbedUrl}?hide_gdpr_banner=1&background_color=111827&text_color=F5F5F5&primary_color=${brandPrimary}`}
+              width="100%"
+              height="630"
+              frameBorder="0"
+              title="Schedule Appointment"
+              className="rounded-sm"
+            />
+
+            <button
+              onClick={() => setSkipScheduling(true)}
+              className="w-full py-3 text-[var(--brand-text-secondary,#8A9BB0)]/60 text-xs tracking-[0.15em] uppercase hover:text-[var(--brand-text-secondary,#8A9BB0)] transition-colors mt-4"
+            >
+              Skip for now
+            </button>
+          </div>
+          <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Vector Aviation</p>
+        </div>
+      );
+    }
+
     const availableDateSet = new Set(availableDates.map(d => d.date));
     const cm = calendarMonth;
     const daysInMonth = new Date(cm.getFullYear(), cm.getMonth() + 1, 0).getDate();
@@ -501,6 +551,21 @@ export default function QuoteViewPage() {
           >
             Skip for now
           </button>
+
+          {/* Calendly secondary option */}
+          {calendlyEmbedUrl && !showCalendlyPrimary && (
+            <div className="mt-6 pt-6 border-t border-[var(--brand-border,#1A2236)]">
+              <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-4 text-center">Or Schedule Via Calendly</p>
+              <iframe
+                src={`${calendlyEmbedUrl}?hide_gdpr_banner=1&background_color=111827&text_color=F5F5F5&primary_color=${brandPrimary}`}
+                width="100%"
+                height="630"
+                frameBorder="0"
+                title="Schedule Appointment"
+                className="rounded-sm"
+              />
+            </div>
+          )}
 
           {/* Contact */}
           {detailer && (detailer.phone || detailer.email) && (

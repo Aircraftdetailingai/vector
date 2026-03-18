@@ -660,13 +660,14 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                       value={pocRole}
                       onChange={(e) => setPocRole(e.target.value)}
                       className="mt-2 w-full border border-v-border bg-v-surface-light/30 text-white rounded-lg px-3 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none"
+                      style={{ colorScheme: 'dark' }}
                     >
-                      <option value="">Select role...</option>
-                      <option value="Owner">Owner</option>
-                      <option value="Pilot">Pilot</option>
-                      <option value="Manager">Manager</option>
-                      <option value="Assistant">Assistant</option>
-                      <option value="FBO">FBO</option>
+                      <option value="" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Select role...</option>
+                      <option value="Owner" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Owner</option>
+                      <option value="Pilot" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Pilot</option>
+                      <option value="Manager" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Manager</option>
+                      <option value="Assistant" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>Assistant</option>
+                      <option value="FBO" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>FBO</option>
                     </select>
                   </div>
 
@@ -730,6 +731,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                     onChange={(e) => setScheduledDate(e.target.value)}
                     min={new Date(Date.now() + 60000).toISOString().slice(0, 16)}
                     className="w-full border border-v-border bg-v-surface-light/30 text-white rounded-lg px-3 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none"
+                    style={{ colorScheme: 'dark' }}
                   />
                   <p className="text-xs text-v-text-secondary mt-1">Quote will be sent automatically at this time.</p>
                 </div>
@@ -755,11 +757,12 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                     value={recurringInterval}
                     onChange={(e) => setRecurringInterval(e.target.value)}
                     className="w-full border border-v-border bg-v-surface-light/30 text-white rounded px-3 py-2 mb-2"
+                    style={{ colorScheme: 'dark' }}
                   >
-                    <option value="4_weeks">{'Every 4 weeks'} (Recommended)</option>
-                    <option value="monthly">{'Monthly'}</option>
-                    <option value="6_weeks">{'Every 6 weeks'}</option>
-                    <option value="quarterly">{'Quarterly'}</option>
+                    <option value="4_weeks" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{'Every 4 weeks'} (Recommended)</option>
+                    <option value="monthly" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{'Monthly'}</option>
+                    <option value="6_weeks" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{'Every 6 weeks'}</option>
+                    <option value="quarterly" style={{ backgroundColor: '#1A2236', color: '#F5F5F5' }}>{'Quarterly'}</option>
                   </select>
 
                   {recurringInterval === "4_weeks" && (

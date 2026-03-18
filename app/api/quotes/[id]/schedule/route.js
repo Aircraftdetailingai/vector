@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { sendJobScheduledEmail, sendBookingReceivedEmail, sendStaffingAlertEmail } from '@/lib/email';
 import { sendPushNotification } from '@/lib/push';
+import { pushJobToGoogleCalendar } from '@/lib/google-calendar';
 
 export const dynamic = 'force-dynamic';
 
@@ -175,6 +176,12 @@ export async function POST(request, { params }) {
     } catch (e) {
       console.error('[schedule] staffing alert creation failed:', e);
     }
+
+    // Push to Google Calendar (non-blocking)
+    pushJobToGoogleCalendar(quote.detailer_id, {
+      ...quote,
+      scheduled_date: scheduledDateTime,
+    }).catch(e => console.error('[schedule] Google Calendar push failed:', e));
 
     return Response.json({ success: true, scheduled_date: scheduledDateTime });
   } catch (err) {

@@ -52,15 +52,15 @@ export default function AdminDashboard() {
     );
   }
 
-  if (error) {
+  if (error || !data) {
     return (
       <div className="min-h-screen bg-v-charcoal flex items-center justify-center">
-        <div className="text-red-400">{error}</div>
+        <div className="text-red-400">{error || 'Failed to load data'}</div>
       </div>
     );
   }
 
-  const { metrics, planCounts, points, recentSignups, recentQuotes, recentRedemptions, signupsByDay, revenueByDay } = data;
+  const { metrics = {}, planCounts = {}, points = {}, recentSignups = [], recentQuotes = [], recentRedemptions = [], signupsByDay = {}, revenueByDay = {} } = data;
 
   // Simple bar chart renderer
   const renderBarChart = (dataObj, color, prefix = '') => {

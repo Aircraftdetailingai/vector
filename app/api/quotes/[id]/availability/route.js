@@ -34,10 +34,10 @@ export async function GET(request, { params }) {
     return Response.json({ available: false, reason: 'not_schedulable' });
   }
 
-  // Fetch detailer's availability
+  // Fetch detailer's availability and Calendly settings
   const { data: detailer } = await supabase
     .from('detailers')
-    .select('availability')
+    .select('availability, calendly_url, use_calendly_scheduling')
     .eq('id', quote.detailer_id)
     .single();
 
@@ -94,5 +94,10 @@ export async function GET(request, { params }) {
     cursor.setDate(cursor.getDate() + 1);
   }
 
-  return Response.json({ available: true, dates });
+  return Response.json({
+    available: true,
+    dates,
+    calendly_url: detailer.calendly_url || null,
+    use_calendly_scheduling: detailer.use_calendly_scheduling || false,
+  });
 }

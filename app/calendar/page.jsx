@@ -4,54 +4,85 @@ import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/formatPrice';
 
 const statusColors = {
-  scheduled: 'bg-blue-900/200',
-  in_progress: 'bg-amber-900/200',
-  paid: 'bg-green-900/200',
+  scheduled: 'bg-blue-500',
+  in_progress: 'bg-amber-500',
+  paid: 'bg-green-500',
   completed: 'bg-purple-500',
+};
+
+const EVENT_TYPES = {
+  job: { label: 'Jobs', color: 'bg-blue-500' },
+  google: { label: 'Google Calendar', color: 'bg-indigo-400' },
+  blocked: { label: 'Blocked', color: 'bg-red-500/40' },
+  team: { label: 'Team', color: 'bg-teal-500' },
 };
 
 export default function CalendarPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
-  const [jobs, setJobs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState('month'); // 'month', 'week', 'day'
+  const [view, setView] = useState('month');
   const [selectedJob, setSelectedJob] = useState(null);
   const [scheduleModal, setScheduleModal] = useState(null);
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduleTime, setScheduleTime] = useState('09:00');
 
+  // Unified data
+  const [jobs, setJobs] = useState([]);
+  const [googleEvents, setGoogleEvents] = useState([]);
+  const [blockedDates, setBlockedDates] = useState([]);
+  const [teamSchedules, setTeamSchedules] = useState([]);
+
+  // Filters
+  const [filters, setFilters] = useState({ job: true, google: true, blocked: true, team: true });
+
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     const stored = localStorage.getItem('vector_user');
-    if (!token || !stored) {
-      router.push('/login');
-      return;
-    }
-    try { setUser(JSON.parse(stored)); } catch { localStorage.removeItem('vector_user'); router.push('/login'); return; }
-    fetchJobs(token);
+    if (!token || !stored) { router.push('/login'); return; }
+    try { setUser(JSON.parse(stored)); } catch { router.push('/login'); return; }
+    fetchData(token);
   }, [router]);
 
-  const fetchJobs = async (token) => {
+  // Refetch when month changes
+  useEffect(() => {
+    const token = localStorage.getItem('vector_token');
+    if (token && user) fetchCalendarEvents(token);
+  }, [currentDate]);
+
+  const fetchData = async (token) => {
     try {
+      // Fetch base jobs
       const res = await fetch('/api/quotes?include_scheduled=true', {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
         const data = await res.json();
         const allQuotes = data.quotes || data || [];
-        // Filter to paid/scheduled/in_progress jobs
-        const scheduledJobs = allQuotes.filter(q =>
-          ['paid', 'scheduled', 'in_progress', 'completed'].includes(q.status)
-        );
-        setJobs(scheduledJobs);
+        setJobs(allQuotes.filter(q => ['paid', 'scheduled', 'in_progress', 'completed'].includes(q.status)));
       }
-    } catch (err) {
-      console.error('Failed to fetch jobs:', err);
-    } finally {
-      setLoading(false);
-    }
+    } catch {}
+
+    await fetchCalendarEvents(token);
+    setLoading(false);
+  };
+
+  const fetchCalendarEvents = async (token) => {
+    try {
+      const start = new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1).toISOString();
+      const end = new Date(currentDate.getFullYear(), currentDate.getMonth() + 2, 0).toISOString();
+
+      const res = await fetch(`/api/calendar/events?start=${start}&end=${end}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setGoogleEvents(data.googleEvents || []);
+        setBlockedDates(data.blockedDates || []);
+        setTeamSchedules(data.teamSchedules || []);
+      }
+    } catch {}
   };
 
   const getDaysInMonth = (date) => {
@@ -61,100 +92,100 @@ export default function CalendarPage() {
     const lastDay = new Date(year, month + 1, 0);
     const daysInMonth = lastDay.getDate();
     const startingDay = firstDay.getDay();
-
     const days = [];
 
-    // Previous month days
     const prevMonth = new Date(year, month, 0);
     for (let i = startingDay - 1; i >= 0; i--) {
-      days.push({
-        date: new Date(year, month - 1, prevMonth.getDate() - i),
-        isCurrentMonth: false,
-      });
+      days.push({ date: new Date(year, month - 1, prevMonth.getDate() - i), isCurrentMonth: false });
     }
-
-    // Current month days
     for (let i = 1; i <= daysInMonth; i++) {
-      days.push({
-        date: new Date(year, month, i),
-        isCurrentMonth: true,
-      });
+      days.push({ date: new Date(year, month, i), isCurrentMonth: true });
     }
-
-    // Next month days
     const remaining = 42 - days.length;
     for (let i = 1; i <= remaining; i++) {
-      days.push({
-        date: new Date(year, month + 1, i),
-        isCurrentMonth: false,
-      });
+      days.push({ date: new Date(year, month + 1, i), isCurrentMonth: false });
     }
-
     return days;
+  };
+
+  const getWeekDays = () => {
+    const startOfWeek = new Date(currentDate);
+    startOfWeek.setDate(currentDate.getDate() - currentDate.getDay());
+    const days = [];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(startOfWeek);
+      d.setDate(startOfWeek.getDate() + i);
+      days.push(d);
+    }
+    return days;
+  };
+
+  const dateStr = (date) => {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   };
 
   const getJobsForDate = (date) => {
     return jobs.filter(job => {
-      const jobDate = job.scheduled_date ? new Date(job.scheduled_date) : null;
-      if (!jobDate) return false;
-      return (
-        jobDate.getFullYear() === date.getFullYear() &&
-        jobDate.getMonth() === date.getMonth() &&
-        jobDate.getDate() === date.getDate()
-      );
+      if (!job.scheduled_date) return false;
+      const jd = new Date(job.scheduled_date);
+      return jd.getFullYear() === date.getFullYear() && jd.getMonth() === date.getMonth() && jd.getDate() === date.getDate();
     });
   };
 
-  const getUnscheduledJobs = () => {
-    return jobs.filter(job => !job.scheduled_date && job.status === 'paid');
+  const getGoogleEventsForDate = (date) => {
+    const ds = dateStr(date);
+    return googleEvents.filter(e => {
+      const start = e.start_time.split('T')[0];
+      return start === ds;
+    });
   };
 
-  const navigateMonth = (direction) => {
+  const isBlockedDate = (date) => blockedDates.includes(dateStr(date));
+
+  const getTeamForDate = (date) => {
+    const ds = dateStr(date);
+    return teamSchedules.filter(s => {
+      const avail = s.availability?.weeklySchedule?.[String(date.getDay())];
+      const hasEntry = s.entries?.some(e => e.date === ds);
+      return avail || hasEntry;
+    });
+  };
+
+  const getUnscheduledJobs = () => jobs.filter(job => !job.scheduled_date && job.status === 'paid');
+
+  const navigateMonth = (dir) => {
     const newDate = new Date(currentDate);
-    newDate.setMonth(newDate.getMonth() + direction);
+    newDate.setMonth(newDate.getMonth() + dir);
+    setCurrentDate(newDate);
+  };
+
+  const navigateWeek = (dir) => {
+    const newDate = new Date(currentDate);
+    newDate.setDate(newDate.getDate() + (dir * 7));
     setCurrentDate(newDate);
   };
 
   const handleScheduleJob = async () => {
     if (!scheduleModal || !scheduleDate) return;
-
     try {
       const token = localStorage.getItem('vector_token');
       const scheduledDateTime = new Date(`${scheduleDate}T${scheduleTime}`);
-
       const res = await fetch(`/api/quotes/${scheduleModal.id}`, {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          scheduled_date: scheduledDateTime.toISOString(),
-          status: 'scheduled',
-        }),
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ scheduled_date: scheduledDateTime.toISOString(), status: 'scheduled' }),
       });
-
       if (res.ok) {
-        // Update local state
-        setJobs(jobs.map(j =>
-          j.id === scheduleModal.id
-            ? { ...j, scheduled_date: scheduledDateTime.toISOString(), status: 'scheduled' }
-            : j
-        ));
+        setJobs(jobs.map(j => j.id === scheduleModal.id ? { ...j, scheduled_date: scheduledDateTime.toISOString(), status: 'scheduled' } : j));
         setScheduleModal(null);
         setScheduleDate('');
       }
-    } catch (err) {
-      console.error('Failed to schedule job:', err);
-    }
+    } catch {}
   };
 
   const formatTime = (dateStr) => {
     if (!dateStr) return '';
-    return new Date(dateStr).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-    });
+    return new Date(dateStr).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
   };
 
   const days = getDaysInMonth(currentDate);
@@ -166,22 +197,47 @@ export default function CalendarPage() {
   if (loading) {
     return (
       <div className="page-transition min-h-screen bg-v-charcoal flex items-center justify-center">
-        <div className="text-white text-xl">{'Loading calendar...'}</div>
+        <div className="text-white text-xl">Loading calendar...</div>
       </div>
     );
   }
 
+  // Get events for a date cell
+  const getCellEvents = (date) => {
+    const events = [];
+    if (filters.job) {
+      getJobsForDate(date).forEach(j => events.push({ type: 'job', data: j, label: `${formatTime(j.scheduled_date)} ${j.client_name || j.aircraft_model}`, color: statusColors[j.status] || 'bg-blue-500' }));
+    }
+    if (filters.google) {
+      getGoogleEventsForDate(date).forEach(e => events.push({ type: 'google', data: e, label: e.summary || '(Busy)', color: 'bg-indigo-400' }));
+    }
+    if (filters.team) {
+      getTeamForDate(date).forEach(s => events.push({ type: 'team', data: s, label: s.member_name, color: `bg-[${s.color}]` || 'bg-teal-500' }));
+    }
+    return events;
+  };
+
   return (
     <div className="min-h-screen bg-v-charcoal p-4">
       {/* Header */}
-      <header className="flex justify-between items-center mb-6 text-white">
+      <header className="flex justify-between items-center mb-4 text-white">
         <div className="flex items-center space-x-4">
           <a href="/dashboard" className="text-2xl hover:text-amber-400">&larr;</a>
-          <h1 className="text-2xl font-bold">{'Calendar'}</h1>
+          <h1 className="text-2xl font-bold">Calendar</h1>
         </div>
-        <div className="flex items-center space-x-4">
-          <a href="/quotes" className="text-amber-400 hover:underline">{'Quotes'}</a>
-          <a href="/dashboard" className="hover:underline">{'Dashboard'}</a>
+        <div className="flex items-center gap-2">
+          {/* View Toggle */}
+          <div className="flex bg-v-surface rounded overflow-hidden border border-v-border">
+            {['month', 'week'].map(v => (
+              <button
+                key={v}
+                onClick={() => setView(v)}
+                className={`px-3 py-1.5 text-xs font-medium capitalize ${view === v ? 'bg-amber-500 text-white' : 'text-v-text-secondary hover:bg-white/5'}`}
+              >
+                {v}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
@@ -189,125 +245,187 @@ export default function CalendarPage() {
         {/* Main Calendar */}
         <div className="flex-1 bg-v-surface rounded-lg shadow overflow-hidden">
           {/* Calendar Header */}
-          <div className="flex items-center justify-between p-4 border-b">
+          <div className="flex items-center justify-between p-4 border-b border-v-border">
             <div className="flex items-center space-x-4">
-              <button
-                onClick={() => navigateMonth(-1)}
-                className="p-2 hover:bg-white/5 rounded"
-              >
-                &larr;
-              </button>
-              <h2 className="text-xl font-semibold">{monthName}</h2>
-              <button
-                onClick={() => navigateMonth(1)}
-                className="p-2 hover:bg-white/5 rounded"
-              >
-                &rarr;
-              </button>
+              <button onClick={() => view === 'month' ? navigateMonth(-1) : navigateWeek(-1)} className="p-2 hover:bg-white/5 rounded text-v-text-secondary">&larr;</button>
+              <h2 className="text-xl font-semibold text-v-text-primary">{monthName}</h2>
+              <button onClick={() => view === 'month' ? navigateMonth(1) : navigateWeek(1)} className="p-2 hover:bg-white/5 rounded text-v-text-secondary">&rarr;</button>
             </div>
-            <div className="flex space-x-2">
-              <button
-                onClick={() => setCurrentDate(new Date())}
-                className="px-3 py-1 text-sm border rounded hover:bg-white/5"
-              >
-                {'Today'}
-              </button>
-            </div>
+            <button onClick={() => setCurrentDate(new Date())} className="px-3 py-1 text-sm border border-v-border rounded hover:bg-white/5 text-v-text-secondary">
+              Today
+            </button>
           </div>
 
-          {/* Week Days Header */}
-          <div className="grid grid-cols-7 border-b">
-            {weekDays.map((day) => (
-              <div key={day} className="p-2 text-center text-sm font-medium text-v-text-secondary border-r last:border-r-0">
-                {day}
+          {view === 'month' ? (
+            <>
+              {/* Week Days Header */}
+              <div className="grid grid-cols-7 border-b border-v-border">
+                {weekDays.map((day) => (
+                  <div key={day} className="p-2 text-center text-sm font-medium text-v-text-secondary border-r border-v-border last:border-r-0">
+                    {day}
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
 
-          {/* Calendar Grid */}
-          <div className="grid grid-cols-7">
-            {days.map((day, idx) => {
-              const dayJobs = getJobsForDate(day.date);
-              const isToday =
-                day.date.getDate() === today.getDate() &&
-                day.date.getMonth() === today.getMonth() &&
-                day.date.getFullYear() === today.getFullYear();
+              {/* Month Grid */}
+              <div className="grid grid-cols-7">
+                {days.map((day, idx) => {
+                  const cellEvents = getCellEvents(day.date);
+                  const blocked = filters.blocked && isBlockedDate(day.date);
+                  const isToday = day.date.getDate() === today.getDate() && day.date.getMonth() === today.getMonth() && day.date.getFullYear() === today.getFullYear();
 
-              return (
-                <div
-                  key={idx}
-                  className={`min-h-[100px] p-1 border-r border-b last:border-r-0 ${
-                    day.isCurrentMonth ? 'bg-v-surface' : 'bg-v-charcoal'
-                  }`}
-                >
-                  <div className={`text-sm font-medium mb-1 ${
-                    isToday
-                      ? 'bg-amber-900/200 text-white w-6 h-6 rounded-full flex items-center justify-center'
-                      : day.isCurrentMonth ? 'text-v-text-primary' : 'text-v-text-secondary'
-                  }`}>
-                    {day.date.getDate()}
-                  </div>
-                  <div className="space-y-1">
-                    {dayJobs.slice(0, 3).map((job) => (
-                      <div
-                        key={job.id}
-                        onClick={() => setSelectedJob(job)}
-                        className={`text-xs p-1 rounded text-white cursor-pointer truncate ${statusColors[job.status] || 'bg-v-charcoal0'}`}
-                        title={`${job.aircraft_model || job.aircraft_type} - ${job.client_name || 'No name'}`}
-                      >
-                        {formatTime(job.scheduled_date)} {job.client_name || job.aircraft_model}
+                  return (
+                    <div
+                      key={idx}
+                      className={`min-h-[100px] p-1 border-r border-b border-v-border last:border-r-0 ${
+                        blocked ? 'bg-red-900/10' : day.isCurrentMonth ? 'bg-v-surface' : 'bg-v-charcoal'
+                      }`}
+                    >
+                      <div className={`text-sm font-medium mb-1 ${
+                        isToday ? 'bg-amber-500 text-white w-6 h-6 rounded-full flex items-center justify-center'
+                          : day.isCurrentMonth ? 'text-v-text-primary' : 'text-v-text-secondary/40'
+                      }`}>
+                        {day.date.getDate()}
                       </div>
-                    ))}
-                    {dayJobs.length > 3 && (
-                      <div className="text-xs text-v-text-secondary">{`+${dayJobs.length - 3} more`}</div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      {blocked && <div className="text-[10px] text-red-400 mb-0.5">Blocked</div>}
+                      <div className="space-y-0.5">
+                        {cellEvents.slice(0, 3).map((evt, i) => (
+                          <div
+                            key={i}
+                            onClick={() => evt.type === 'job' ? setSelectedJob(evt.data) : null}
+                            className={`text-[10px] px-1 py-0.5 rounded text-white truncate ${evt.color} ${evt.type === 'job' ? 'cursor-pointer' : ''}`}
+                            title={evt.label}
+                          >
+                            {evt.label}
+                          </div>
+                        ))}
+                        {cellEvents.length > 3 && (
+                          <div className="text-[10px] text-v-text-secondary">+{cellEvents.length - 3} more</div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            /* Week View */
+            <>
+              <div className="grid grid-cols-7 border-b border-v-border">
+                {getWeekDays().map((d, i) => {
+                  const isToday = d.getDate() === today.getDate() && d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear();
+                  return (
+                    <div key={i} className="p-2 text-center border-r border-v-border last:border-r-0">
+                      <div className="text-xs text-v-text-secondary">{weekDays[i]}</div>
+                      <div className={`text-lg font-medium ${isToday ? 'text-amber-500' : 'text-v-text-primary'}`}>{d.getDate()}</div>
+                    </div>
+                  );
+                })}
+              </div>
+              <div className="grid grid-cols-7 min-h-[500px]">
+                {getWeekDays().map((d, i) => {
+                  const cellEvents = getCellEvents(d);
+                  const blocked = filters.blocked && isBlockedDate(d);
+                  return (
+                    <div key={i} className={`p-2 border-r border-v-border last:border-r-0 ${blocked ? 'bg-red-900/10' : ''}`}>
+                      {blocked && <div className="text-[10px] text-red-400 mb-1">Blocked</div>}
+                      <div className="space-y-1">
+                        {cellEvents.map((evt, j) => (
+                          <div
+                            key={j}
+                            onClick={() => evt.type === 'job' ? setSelectedJob(evt.data) : null}
+                            className={`text-xs p-1.5 rounded text-white ${evt.color} ${evt.type === 'job' ? 'cursor-pointer' : ''}`}
+                          >
+                            <div className="font-medium truncate">{evt.label}</div>
+                            {evt.type === 'job' && <div className="text-[10px] opacity-80">{evt.data.aircraft_model || evt.data.aircraft_type}</div>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </>
+          )}
         </div>
 
-        {/* Sidebar - Unscheduled Jobs */}
-        <div className="w-80 bg-v-surface rounded-lg shadow p-4">
-          <h3 className="font-semibold mb-3">{'Unscheduled Jobs'} ({unscheduledJobs.length})</h3>
-          <p className="text-sm text-v-text-secondary mb-4">{'Drag to calendar or click to schedule'}</p>
-
-          {unscheduledJobs.length === 0 ? (
-            <p className="text-v-text-secondary text-sm">{'No unscheduled jobs'}</p>
-          ) : (
-            <div className="space-y-2 max-h-[500px] overflow-y-auto">
-              {unscheduledJobs.map((job) => (
-                <div
-                  key={job.id}
-                  onClick={() => {
-                    setScheduleModal(job);
-                    setScheduleDate('');
-                  }}
-                  className="p-3 border rounded-lg cursor-pointer hover:bg-white/5"
-                >
-                  <div className="font-medium text-sm">{job.client_name || 'No name'}</div>
-                  <div className="text-xs text-v-text-secondary">
-                    {job.aircraft_model || job.aircraft_type}
-                  </div>
-                  <div className="text-xs text-green-600 font-medium mt-1">
-                    ${formatPrice(job.total_price)}
-                  </div>
-                </div>
+        {/* Sidebar */}
+        <div className="w-72 space-y-4">
+          {/* Filters */}
+          <div className="bg-v-surface rounded-lg shadow p-4">
+            <h3 className="font-semibold text-v-text-primary mb-3 text-sm">Filters</h3>
+            <div className="space-y-2">
+              {Object.entries(EVENT_TYPES).map(([key, { label, color }]) => (
+                <label key={key} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filters[key]}
+                    onChange={() => setFilters(f => ({ ...f, [key]: !f[key] }))}
+                    className="rounded border-v-border"
+                  />
+                  <div className={`w-3 h-3 rounded ${color}`} />
+                  <span className="text-sm text-v-text-secondary">{label}</span>
+                </label>
               ))}
+            </div>
+          </div>
+
+          {/* Unscheduled Jobs */}
+          <div className="bg-v-surface rounded-lg shadow p-4">
+            <h3 className="font-semibold text-v-text-primary mb-2 text-sm">Unscheduled Jobs ({unscheduledJobs.length})</h3>
+            {unscheduledJobs.length === 0 ? (
+              <p className="text-v-text-secondary text-xs">No unscheduled jobs</p>
+            ) : (
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {unscheduledJobs.map((job) => (
+                  <div key={job.id} onClick={() => { setScheduleModal(job); setScheduleDate(''); }} className="p-2 border border-v-border rounded cursor-pointer hover:bg-white/5">
+                    <div className="font-medium text-xs text-v-text-primary">{job.client_name || 'No name'}</div>
+                    <div className="text-[10px] text-v-text-secondary">{job.aircraft_model || job.aircraft_type}</div>
+                    <div className="text-[10px] text-green-400 font-medium">${formatPrice(job.total_price)}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Team On Duty (if any team schedules) */}
+          {teamSchedules.length > 0 && (
+            <div className="bg-v-surface rounded-lg shadow p-4">
+              <h3 className="font-semibold text-v-text-primary mb-2 text-sm">Team</h3>
+              <div className="space-y-1">
+                {teamSchedules.map(s => (
+                  <div key={s.member_id} className="flex items-center gap-2">
+                    <div className="w-2 h-2 rounded-full" style={{ backgroundColor: s.color }} />
+                    <span className="text-xs text-v-text-secondary">{s.member_name}</span>
+                    <span className="text-[10px] text-v-text-secondary/60 capitalize">{s.role}</span>
+                  </div>
+                ))}
+              </div>
             </div>
           )}
 
           {/* Legend */}
-          <div className="mt-6 pt-4 border-t">
-            <h4 className="text-sm font-medium mb-2">{'Status Legend'}</h4>
+          <div className="bg-v-surface rounded-lg shadow p-4">
+            <h3 className="font-semibold text-v-text-primary mb-2 text-sm">Legend</h3>
             <div className="space-y-1">
               {Object.entries(statusColors).map(([status, color]) => (
-                <div key={status} className="flex items-center text-xs">
-                  <div className={`w-3 h-3 rounded mr-2 ${color}`}></div>
-                  <span className="capitalize">{t('status.' + status.replace(/_([a-z])/g, (_, c) => c.toUpperCase()))}</span>
+                <div key={status} className="flex items-center text-xs gap-2">
+                  <div className={`w-3 h-3 rounded ${color}`} />
+                  <span className="capitalize text-v-text-secondary">{status.replace('_', ' ')}</span>
                 </div>
               ))}
+              <div className="flex items-center text-xs gap-2">
+                <div className="w-3 h-3 rounded bg-indigo-400" />
+                <span className="text-v-text-secondary">Google Calendar</span>
+              </div>
+              <div className="flex items-center text-xs gap-2">
+                <div className="w-3 h-3 rounded bg-red-500/40" />
+                <span className="text-v-text-secondary">Blocked</span>
+              </div>
+              <div className="flex items-center text-xs gap-2">
+                <div className="w-3 h-3 rounded bg-teal-500" />
+                <span className="text-v-text-secondary">Team Member</span>
+              </div>
             </div>
           </div>
         </div>
@@ -315,82 +433,23 @@ export default function CalendarPage() {
 
       {/* Job Detail Modal */}
       {selectedJob && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4" onClick={() => setSelectedJob(null)}>
+          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
-              <h3 className="text-lg font-semibold">{'Job Details'}</h3>
-              <button onClick={() => setSelectedJob(null)} className="text-v-text-secondary hover:text-v-text-secondary">
-                &times;
-              </button>
+              <h3 className="text-lg font-semibold text-v-text-primary">Job Details</h3>
+              <button onClick={() => setSelectedJob(null)} className="text-v-text-secondary hover:text-v-text-primary text-xl">&times;</button>
             </div>
-
             <div className="space-y-3">
-              <div>
-                <label className="text-sm text-v-text-secondary">{'Customer'}</label>
-                <p className="font-medium">{selectedJob.client_name || 'No name'}</p>
-              </div>
-
-              <div>
-                <label className="text-sm text-v-text-secondary">{'Aircraft'}</label>
-                <p className="font-medium">{selectedJob.aircraft_model || selectedJob.aircraft_type}</p>
-              </div>
-
-              {selectedJob.tail_number && (
-                <div>
-                  <label className="text-sm text-v-text-secondary">{'Tail Number'}</label>
-                  <p className="font-medium">{selectedJob.tail_number}</p>
-                </div>
-              )}
-
-              <div>
-                <label className="text-sm text-v-text-secondary">{'Scheduled'}</label>
-                <p className="font-medium">
-                  {selectedJob.scheduled_date
-                    ? new Date(selectedJob.scheduled_date).toLocaleString()
-                    : 'Not scheduled'}
-                </p>
-              </div>
-
-              <div>
-                <label className="text-sm text-v-text-secondary">{'Status'}</label>
-                <p className={`inline-block px-2 py-1 rounded text-sm text-white ${statusColors[selectedJob.status] || 'bg-v-charcoal0'}`}>
-                  {selectedJob.status}
-                </p>
-              </div>
-
-              <div>
-                <label className="text-sm text-v-text-secondary">{'Total'}</label>
-                <p className="font-semibold text-lg text-green-600">
-                  ${formatPrice(selectedJob.total_price)}
-                </p>
-              </div>
+              <div><p className="text-xs text-v-text-secondary">Customer</p><p className="font-medium text-v-text-primary">{selectedJob.client_name || 'No name'}</p></div>
+              <div><p className="text-xs text-v-text-secondary">Aircraft</p><p className="font-medium text-v-text-primary">{selectedJob.aircraft_model || selectedJob.aircraft_type}</p></div>
+              {selectedJob.tail_number && <div><p className="text-xs text-v-text-secondary">Tail Number</p><p className="font-medium text-v-text-primary">{selectedJob.tail_number}</p></div>}
+              <div><p className="text-xs text-v-text-secondary">Scheduled</p><p className="font-medium text-v-text-primary">{selectedJob.scheduled_date ? new Date(selectedJob.scheduled_date).toLocaleString() : 'Not scheduled'}</p></div>
+              <div><p className="text-xs text-v-text-secondary">Status</p><span className={`inline-block px-2 py-1 rounded text-xs text-white ${statusColors[selectedJob.status] || 'bg-gray-500'}`}>{selectedJob.status}</span></div>
+              <div><p className="text-xs text-v-text-secondary">Total</p><p className="font-semibold text-lg text-green-400">${formatPrice(selectedJob.total_price)}</p></div>
             </div>
-
-            <div className="flex flex-col gap-2 mt-6">
-              <a
-                href={`/jobs/${selectedJob.id}/photos`}
-                className="w-full py-2 bg-blue-900/200 text-white rounded text-center hover:bg-blue-600 flex items-center justify-center gap-2"
-              >
-                <span>&#128247;</span> {'Document Job'}
-              </a>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => {
-                    setScheduleModal(selectedJob);
-                    setSelectedJob(null);
-                  }}
-                  className="flex-1 py-2 border border-amber-500 text-amber-500 rounded hover:bg-amber-900/20"
-                >
-                  {'Reschedule'}
-                </button>
-                <a
-                  href={`/q/${selectedJob.share_link}`}
-                  target="_blank"
-                  className="flex-1 py-2 bg-amber-900/200 text-white rounded text-center hover:bg-amber-600"
-                >
-                  {'View Quote'}
-                </a>
-              </div>
+            <div className="flex gap-2 mt-6">
+              <button onClick={() => { setScheduleModal(selectedJob); setSelectedJob(null); }} className="flex-1 py-2 border border-amber-500 text-amber-500 rounded hover:bg-amber-900/20 text-sm">Reschedule</button>
+              <a href={`/q/${selectedJob.share_link}`} target="_blank" className="flex-1 py-2 bg-amber-500 text-white rounded text-center hover:bg-amber-600 text-sm">View Quote</a>
             </div>
           </div>
         </div>
@@ -398,51 +457,26 @@ export default function CalendarPage() {
 
       {/* Schedule Modal */}
       {scheduleModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <h3 className="text-lg font-semibold mb-4">{'Schedule Job'}</h3>
-
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4" onClick={() => setScheduleModal(null)}>
+          <div className="bg-v-surface rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-v-text-primary mb-4">Schedule Job</h3>
             <div className="mb-4">
-              <p className="font-medium">{scheduleModal.client_name || 'No name'}</p>
+              <p className="font-medium text-v-text-primary">{scheduleModal.client_name || 'No name'}</p>
               <p className="text-sm text-v-text-secondary">{scheduleModal.aircraft_model || scheduleModal.aircraft_type}</p>
             </div>
-
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium mb-1">{'Date'}</label>
-                <input
-                  type="date"
-                  value={scheduleDate}
-                  onChange={(e) => setScheduleDate(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
-                />
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Date</label>
+                <input type="date" value={scheduleDate} onChange={(e) => setScheduleDate(e.target.value)} className="w-full border border-v-border bg-v-charcoal text-v-text-primary rounded px-3 py-2" />
               </div>
-
               <div>
-                <label className="block text-sm font-medium mb-1">{'Time'}</label>
-                <input
-                  type="time"
-                  value={scheduleTime}
-                  onChange={(e) => setScheduleTime(e.target.value)}
-                  className="w-full border rounded px-3 py-2"
-                />
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Time</label>
+                <input type="time" value={scheduleTime} onChange={(e) => setScheduleTime(e.target.value)} className="w-full border border-v-border bg-v-charcoal text-v-text-primary rounded px-3 py-2" />
               </div>
             </div>
-
             <div className="flex gap-2 mt-6">
-              <button
-                onClick={() => setScheduleModal(null)}
-                className="flex-1 py-2 border rounded hover:bg-white/5"
-              >
-                {'Cancel'}
-              </button>
-              <button
-                onClick={handleScheduleJob}
-                disabled={!scheduleDate}
-                className="flex-1 py-2 bg-amber-900/200 text-white rounded hover:bg-amber-600 disabled:opacity-50"
-              >
-                {'Schedule'}
-              </button>
+              <button onClick={() => setScheduleModal(null)} className="flex-1 py-2 border border-v-border rounded hover:bg-white/5 text-v-text-secondary text-sm">Cancel</button>
+              <button onClick={handleScheduleJob} disabled={!scheduleDate} className="flex-1 py-2 bg-amber-500 text-white rounded hover:bg-amber-600 disabled:opacity-50 text-sm">Schedule</button>
             </div>
           </div>
         </div>

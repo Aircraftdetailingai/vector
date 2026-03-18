@@ -22,6 +22,10 @@ export default function TeamMemberPage() {
     notes: '',
   });
 
+  // Availability state
+  const [memberAvail, setMemberAvail] = useState(null);
+  const [availSaving, setAvailSaving] = useState(false);
+
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     if (!token) {
@@ -42,6 +46,16 @@ export default function TeamMemberPage() {
       setEntries(data.time_entries || []);
       setStats(data.stats || { total_hours: 0, total_pay: 0 });
       setEditForm(data.member);
+      // Fetch availability
+      try {
+        const availRes = await fetch(`/api/team/${params.id}/availability`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (availRes.ok) {
+          const availData = await availRes.json();
+          setMemberAvail(availData.availability);
+        }
+      } catch {}
     } catch (err) {
       setError(err.message);
     } finally {
@@ -115,9 +129,54 @@ export default function TeamMemberPage() {
     }
   };
 
-  const handleApprove = async (entryId, approved) => {
-    // We don't have a dedicated endpoint for this, but we can use the time entries
-    // For now, this is a placeholder - approval would need a PATCH endpoint on time-entries
+  const handleApprove = async (entryId, action) => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/time-entries/approve', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ entry_ids: [entryId], action }),
+      });
+      if (res.ok) {
+        fetchMember(token);
+      }
+    } catch {}
+  };
+
+  const saveAvailability = async (avail) => {
+    setAvailSaving(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      await fetch(`/api/team/${params.id}/availability`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ availability: avail }),
+      });
+      setMemberAvail(avail);
+    } catch {}
+    setAvailSaving(false);
+  };
+
+  const toggleAvailDay = (dayKey) => {
+    const avail = memberAvail || { weeklySchedule: {} };
+    const ws = { ...(avail.weeklySchedule || {}) };
+    if (ws[dayKey]) {
+      delete ws[dayKey];
+    } else {
+      ws[dayKey] = { start: '08:00', end: '17:00' };
+    }
+    const updated = { ...avail, weeklySchedule: ws };
+    setMemberAvail(updated);
+    saveAvailability(updated);
+  };
+
+  const updateAvailTime = (dayKey, field, value) => {
+    const avail = memberAvail || { weeklySchedule: {} };
+    const ws = { ...(avail.weeklySchedule || {}) };
+    ws[dayKey] = { ...(ws[dayKey] || {}), [field]: value };
+    const updated = { ...avail, weeklySchedule: ws };
+    setMemberAvail(updated);
+    saveAvailability(updated);
   };
 
   // Calculate weekly/monthly stats
@@ -326,6 +385,42 @@ export default function TeamMemberPage() {
         )}
       </div>
 
+      {/* Availability */}
+      <div className="bg-v-surface rounded-lg p-5">
+        <h2 className="text-lg font-semibold text-v-text-primary mb-4">Availability</h2>
+        <p className="text-sm text-v-text-secondary mb-4">Set this team member&apos;s working schedule</p>
+        <div className="space-y-2">
+          {['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map((dayName, idx) => {
+            const dayKey = String(idx);
+            const dayConfig = memberAvail?.weeklySchedule?.[dayKey];
+            const isEnabled = dayConfig !== null && dayConfig !== undefined;
+            return (
+              <div key={idx} className="flex items-center gap-3">
+                <div
+                  onClick={() => toggleAvailDay(dayKey)}
+                  className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer flex-shrink-0 ${isEnabled ? 'bg-amber-500' : 'bg-gray-600'}`}
+                >
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${isEnabled ? 'translate-x-5' : ''}`} />
+                </div>
+                <span className="w-20 text-sm text-v-text-primary">{dayName}</span>
+                {isEnabled && (
+                  <div className="flex items-center gap-2">
+                    <input type="time" value={dayConfig?.start || '08:00'}
+                      onChange={(e) => updateAvailTime(dayKey, 'start', e.target.value)}
+                      className="bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-1 text-xs" />
+                    <span className="text-v-text-secondary text-xs">to</span>
+                    <input type="time" value={dayConfig?.end || '17:00'}
+                      onChange={(e) => updateAvailTime(dayKey, 'end', e.target.value)}
+                      className="bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-1 text-xs" />
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+        {availSaving && <p className="text-xs text-v-text-secondary mt-2">Saving...</p>}
+      </div>
+
       {/* Time Entries */}
       <div className="bg-v-surface rounded-lg p-5">
         <div className="flex items-center justify-between mb-4">
@@ -423,13 +518,14 @@ export default function TeamMemberPage() {
                       ${(parseFloat(entry.hours_worked) * parseFloat(member.hourly_pay || 0)).toFixed(2)}
                     </td>
                     <td className="py-2.5">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-xs ${
-                        entry.approved
-                          ? 'bg-green-900/30 text-green-400'
-                          : 'bg-yellow-900/30 text-yellow-400'
-                      }`}>
-                        {entry.approved ? 'Yes' : 'Pending'}
-                      </span>
+                      {entry.approved ? (
+                        <span className="inline-block px-2 py-0.5 rounded-full text-xs bg-green-900/30 text-green-400">Approved</span>
+                      ) : (
+                        <div className="flex items-center gap-1">
+                          <button onClick={() => handleApprove(entry.id, 'approve')} className="px-2 py-0.5 rounded text-xs bg-green-900/30 text-green-400 hover:bg-green-900/50">Approve</button>
+                          <button onClick={() => handleApprove(entry.id, 'reject')} className="px-2 py-0.5 rounded text-xs bg-red-900/30 text-red-400 hover:bg-red-900/50">Reject</button>
+                        </div>
+                      )}
                     </td>
                   </tr>
                 ))}
