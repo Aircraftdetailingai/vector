@@ -87,13 +87,17 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    console.log('[inventory POST] body received:', JSON.stringify(body));
 
+    if (!body.name || !String(body.name).trim()) {
+      return Response.json({ error: 'Product name is required' }, { status: 400 });
+    }
+
+    const parsedPoints = parseInt(body.points_cost);
     const row = {
-      name: body.name,
+      name: String(body.name).trim(),
       description: body.description || '',
       image_url: body.image_url || null,
-      points_cost: parseInt(body.points_cost) || 0,
+      points_cost: isNaN(parsedPoints) ? 0 : parsedPoints,
       quantity_available: parseInt(body.quantity_available) || 0,
       category: body.category || 'supplies',
       min_tier: body.min_tier || 'pro',
@@ -103,30 +107,34 @@ export async function POST(request) {
       featured: body.featured || false,
     };
 
-    console.log('[inventory POST] inserting row:', JSON.stringify(row));
+    console.log('[inventory POST] inserting:', row.name, row.points_cost, 'pts');
 
     // Column-stripping retry
     let data, error;
     ({ data, error } = await supabase.from('reward_inventory').insert(row).select().single());
 
     if (error && error.code === '42P01') {
-      console.error('[inventory POST] table not found');
       return Response.json({ error: 'reward_inventory table not found. Run migration first.' }, { status: 500 });
     }
 
     if (error && error.message?.includes('column')) {
-      console.warn('[inventory POST] column error, retrying without optional columns:', error.message);
+      console.warn('[inventory POST] column error, retrying:', error.message);
       delete row.featured;
       delete row.image_url;
       ({ data, error } = await supabase.from('reward_inventory').insert(row).select().single());
     }
 
     if (error) {
-      console.error('[inventory POST] insert error:', error.message, error.code);
+      console.error('[inventory POST] error:', error.message, error.code, error.details);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    console.log('[inventory POST] success, id:', data?.id);
+    if (!data) {
+      console.error('[inventory POST] insert returned null data');
+      return Response.json({ error: 'Insert succeeded but returned no data' }, { status: 500 });
+    }
+
+    console.log('[inventory POST] created:', data.id);
     return Response.json({ item: data });
   } catch (err) {
     console.error('[inventory POST] exception:', err.message, err.stack);
@@ -150,11 +158,15 @@ export async function PUT(request) {
 
     if (!id) return Response.json({ error: 'ID required' }, { status: 400 });
 
-    if (updates.points_cost !== undefined) updates.points_cost = parseInt(updates.points_cost) || 0;
+    if (updates.points_cost !== undefined) {
+      const p = parseInt(updates.points_cost);
+      updates.points_cost = isNaN(p) ? 0 : p;
+    }
     if (updates.quantity_available !== undefined) updates.quantity_available = parseInt(updates.quantity_available) || 0;
     if (updates.reward_value !== undefined) updates.reward_value = parseRewardValue(updates.reward_value);
+    if (updates.name !== undefined) updates.name = String(updates.name).trim();
 
-    console.log('[inventory PUT] updating id:', id, 'updates:', JSON.stringify(updates));
+    console.log('[inventory PUT] id:', id);
 
     let data, error;
     ({ data, error } = await supabase.from('reward_inventory').update(updates).eq('id', id).select().single());
@@ -167,11 +179,15 @@ export async function PUT(request) {
     }
 
     if (error) {
-      console.error('[inventory PUT] error:', error.message);
+      console.error('[inventory PUT] error:', error.message, error.code);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    console.log('[inventory PUT] success, id:', data?.id);
+    if (!data) {
+      return Response.json({ error: 'Update returned no data — item may not exist' }, { status: 404 });
+    }
+
+    console.log('[inventory PUT] updated:', data.id);
     return Response.json({ item: data });
   } catch (err) {
     console.error('[inventory PUT] exception:', err.message);

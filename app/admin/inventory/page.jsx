@@ -12,7 +12,7 @@ const ADMIN_NAV = [
   { label: 'Vendors', href: '/admin/vendors' },
 ];
 
-const CATEGORIES = ['Supplies', 'Swag', 'Training', 'Credits', 'Exclusive', 'VIP'];
+const CATEGORIES = ['Supplies', 'Swag', 'Training', 'Credits', 'Exclusive', 'VIP', 'Coaching'];
 const TIERS = ['pro', 'business', 'enterprise'];
 const REWARD_TYPES = ['Physical', 'Digital', 'Discount', 'Subscription Credit'];
 
@@ -56,12 +56,16 @@ export default function InventoryPage() {
     fetchItems(t);
   }, []);
 
-  const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+  const getHeaders = () => {
+    const t = token || localStorage.getItem('vector_token') || '';
+    return { 'Content-Type': 'application/json', Authorization: `Bearer ${t}` };
+  };
 
   const fetchItems = async (t) => {
     try {
+      const authToken = t || token || localStorage.getItem('vector_token') || '';
       const res = await fetch('/api/admin/inventory', {
-        headers: { Authorization: `Bearer ${t || token}` },
+        headers: { Authorization: `Bearer ${authToken}` },
       });
       const data = await res.json();
       if (data.error) { setError(data.error); return; }
@@ -114,23 +118,32 @@ export default function InventoryPage() {
   };
 
   const handleSave = async () => {
+    if (saving) return;
     if (!form.name.trim()) { setFormError('Name is required'); return; }
-    if (!form.points_cost) { setFormError('Points cost is required'); return; }
+    if (!form.points_cost && form.points_cost !== '0') { setFormError('Points cost is required'); return; }
 
     setSaving(true);
     setFormError('');
     setError('');
-    console.log('[Admin Inventory] Form submission fired', { editingId, name: form.name });
+
     try {
+      // Always get fresh token from localStorage to avoid stale state
+      const freshToken = localStorage.getItem('vector_token');
+      if (!freshToken) {
+        setFormError('Session expired. Please log in again.');
+        window.location.href = '/login';
+        return;
+      }
+
       const payload = {
-        name: form.name,
-        description: form.description,
+        name: form.name.trim(),
+        description: form.description || '',
         image_url: form.image_url || null,
-        points_cost: parseInt(form.points_cost),
+        points_cost: parseInt(form.points_cost) || 0,
         quantity_available: parseInt(form.quantity_available) || 0,
         category: form.category.toLowerCase(),
         min_tier: form.min_tier,
-        reward_type: form.reward_type.toLowerCase().replace(' ', '_'),
+        reward_type: form.reward_type.toLowerCase().replaceAll(' ', '_'),
         reward_value: buildRewardValue(),
         active: form.active,
         featured: form.featured,
@@ -139,47 +152,48 @@ export default function InventoryPage() {
       const method = editingId ? 'PUT' : 'POST';
       if (editingId) payload.id = editingId;
 
-      console.log('[Admin Inventory] API called', { method, payload });
-      const res = await fetch('/api/admin/inventory', { method, headers, body: JSON.stringify(payload) });
-      console.log('[Admin Inventory] Response received', { status: res.status, ok: res.ok });
+      console.log('[Admin Inventory] Saving:', method, payload.name);
+      const res = await fetch('/api/admin/inventory', {
+        method,
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${freshToken}` },
+        body: JSON.stringify(payload),
+      });
 
-      if (!res.ok) {
-        const errData = await res.json().catch(() => null);
-        const msg = errData?.error || `Server error (${res.status})`;
-        console.error('[Admin Inventory] API error:', msg);
+      const data = await res.json().catch(() => ({}));
+
+      if (!res.ok || data.error) {
+        const msg = data.error || `Server error (${res.status})`;
+        console.error('[Admin Inventory] Save failed:', msg);
         setFormError(msg);
         return;
       }
 
-      const data = await res.json();
-
-      if (data.error) {
-        console.error('[Admin Inventory] Data error:', data.error);
-        setFormError(data.error);
+      if (!data.item) {
+        console.error('[Admin Inventory] Save returned no item');
+        setFormError('Save appeared to succeed but returned no data. Please refresh.');
         return;
       }
 
-      console.log('[Admin Inventory] Save success', data.item?.id);
+      console.log('[Admin Inventory] Saved:', data.item.id);
 
-      // Optimistic update: add/update item in local state immediately
-      if (editingId && data.item) {
-        setItems(prev => prev.map(i => i.id === editingId ? { ...i, ...data.item } : i));
-      } else if (data.item) {
+      // Update local state
+      if (editingId) {
+        setItems(prev => prev.map(i => i.id === editingId ? { ...i, ...data.item, redeemed_count: i.redeemed_count || 0 } : i));
+      } else {
         setItems(prev => [{ ...data.item, redeemed_count: 0 }, ...prev]);
       }
 
-      const msg = editingId ? 'Item updated!' : 'Product added!';
-      setSuccess(msg);
+      setSuccess(editingId ? 'Item updated!' : 'Product added!');
       setShowForm(false);
       setEditingId(null);
       setForm({ ...EMPTY_FORM });
       setFormError('');
 
-      // Background refresh for accurate data
-      fetchItems().catch(() => {});
+      // Delayed background refresh to sync with DB
+      setTimeout(() => fetchItems().catch(() => {}), 1000);
       setTimeout(() => setSuccess(''), 3000);
     } catch (err) {
-      console.error('[Admin Inventory] Save exception:', err);
+      console.error('[Admin Inventory] Exception:', err);
       setFormError(err.message || 'Failed to save. Please try again.');
     } finally {
       setSaving(false);
@@ -192,16 +206,16 @@ export default function InventoryPage() {
       name: item.name || '',
       description: item.description || '',
       image_url: item.image_url || '',
-      points_cost: String(item.points_cost || ''),
-      quantity_available: String(item.quantity_available || ''),
-      category: item.category || 'supplies',
+      points_cost: String(item.points_cost ?? ''),
+      quantity_available: String(item.quantity_available ?? 0),
+      category: (item.category || 'supplies').toLowerCase(),
       min_tier: item.min_tier || 'pro',
-      reward_type: (item.reward_type || 'physical').replace('_', ' '),
+      reward_type: (item.reward_type || 'physical').replaceAll('_', ' '),
       reward_value: JSON.stringify(rewardVal),
       active: item.active !== false,
       featured: item.featured || false,
-      discount_percent: String(rewardVal.percent || ''),
-      credit_months: String(rewardVal.months || ''),
+      discount_percent: String(rewardVal.percent ?? ''),
+      credit_months: String(rewardVal.months ?? ''),
       credit_plan: rewardVal.plan || 'pro',
     });
     setEditingId(item.id);
@@ -230,7 +244,7 @@ export default function InventoryPage() {
     try {
       const res = await fetch('/api/admin/inventory', {
         method: 'PUT',
-        headers,
+        headers: getHeaders(),
         body: JSON.stringify({ id: item.id, active: !item.active }),
       });
       const data = await res.json();
