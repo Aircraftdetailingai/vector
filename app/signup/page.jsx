@@ -3,6 +3,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { STRIPE_COUNTRIES } from '@/lib/currency';
+import SocialLoginButtons from '@/components/SocialLoginButtons';
 
 function SignupForm() {
   const searchParams = useSearchParams();
@@ -171,7 +172,19 @@ function SignupForm() {
 
         {/* Signup form */}
         <form onSubmit={handleSubmit} className="bg-v-surface border border-v-border rounded-sm p-6 modal-glow">
-          <h2 className="text-lg font-heading text-v-text-primary mb-5">Create Your Account</h2>
+          {/* Social login — only show when not on invite flow */}
+          {!invite && (
+            <>
+              <SocialLoginButtons />
+              <div className="flex items-center my-6">
+                <div className="flex-grow border-t border-v-border"></div>
+                <span className="mx-4 text-v-text-secondary text-xs uppercase tracking-widest">or continue with email</span>
+                <div className="flex-grow border-t border-v-border"></div>
+              </div>
+            </>
+          )}
+
+          <h2 className="text-lg font-heading text-v-text-primary mb-5">{invite ? 'Create Your Account' : 'Email Signup'}</h2>
 
           {formError && (
             <div className="bg-red-500/10 border border-red-500/30 rounded-sm px-4 py-3 mb-4">

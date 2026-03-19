@@ -1,12 +1,14 @@
 "use client";
-import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect, Suspense } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { setUserCurrency } from '@/lib/currency';
 import TermsConsentModal from '@/components/TermsConsentModal';
+import SocialLoginButtons from '@/components/SocialLoginButtons';
 import { TERMS_VERSION } from '@/lib/terms';
 
-export default function Page() {
+function LoginContent() {
   const router = useRouter();
+  const params = useSearchParams();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -14,62 +16,49 @@ export default function Page() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState(null);
 
-  // Redirect to dashboard if already logged in
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     const user = localStorage.getItem('vector_user');
-    if (token && user) {
-      router.push('/dashboard');
-    }
-  }, [router]);
+    if (token && user) { router.push('/dashboard'); return; }
+
+    const errParam = params.get('error');
+    if (errParam === 'auth_failed') setError('Authentication failed. Please try again.');
+    else if (errParam === 'no_email') setError('Could not retrieve email from your account.');
+    else if (errParam === 'account_creation_failed') setError('Failed to create account. Please try email signup.');
+    else if (errParam === 'server_error') setError('Server error. Please try again.');
+  }, [router, params]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    console.log('=== LOGIN ATTEMPT ===');
-    console.log('Email:', email);
-    console.log('Password length:', password.length);
     setLoading(true);
     setError('');
     try {
-      console.log('Sending request to /api/auth/login...');
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-      console.log('Response status:', res.status);
       const data = await res.json();
-      console.log('Response data:', data);
-      if (!res.ok) {
-        console.log('Login failed - res.ok is false');
-        throw new Error(data.error || 'Login failed');
-      }
-      if (data.token) {
-        console.log('Token received, saving to localStorage...');
-        if (typeof window !== 'undefined') {
-          localStorage.setItem('vector_token', data.token);
-          localStorage.setItem('vector_user', JSON.stringify(data.user));
-          setUserCurrency(data.user?.currency || 'USD');
-          console.log('Saved to localStorage');
+      if (!res.ok) throw new Error(data.error || 'Login failed');
 
-          // Claim referral if stored
-          const refCode = localStorage.getItem('vector_referral_code');
-          if (refCode) {
-            try {
-              await fetch('/api/referrals/claim', {
-                method: 'POST',
-                headers: {
-                  'Content-Type': 'application/json',
-                  Authorization: `Bearer ${data.token}`,
-                },
-                body: JSON.stringify({ referral_code: refCode }),
-              });
-              localStorage.removeItem('vector_referral_code');
-            } catch (err) {
-              // Non-critical, continue with login
-            }
-          }
+      if (data.token) {
+        localStorage.setItem('vector_token', data.token);
+        localStorage.setItem('vector_user', JSON.stringify(data.user));
+        setUserCurrency(data.user?.currency || 'USD');
+
+        // Claim referral if stored
+        const refCode = localStorage.getItem('vector_referral_code');
+        if (refCode) {
+          try {
+            await fetch('/api/referrals/claim', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${data.token}` },
+              body: JSON.stringify({ referral_code: refCode }),
+            });
+            localStorage.removeItem('vector_referral_code');
+          } catch {}
         }
+
         const redirectTo = (data.must_change_password || data.onboarding_complete === false) ? '/onboarding' : '/dashboard';
         if (data.user.terms_accepted_version !== TERMS_VERSION) {
           setPendingRedirect(redirectTo);
@@ -77,82 +66,97 @@ export default function Page() {
         } else {
           router.push(redirectTo);
         }
-      } else {
-        console.log('No token in response!');
       }
     } catch (err) {
-      console.log('Login error:', err.message);
       setError(err.message);
     } finally {
       setLoading(false);
-      console.log('=== LOGIN COMPLETE ===');
     }
   };
 
   return (
-    <div className="page-transition min-h-screen flex items-center justify-center bg-gradient-to-br from-[#0f172a] to-[#1e3a5f] p-4">
-      <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
-        <div className="flex flex-col items-center mb-6">
-          <h1 className="text-2xl font-bold text-[#1e3a5f] flex items-center">
-            <span className="mr-2">✈️</span> {'Vector'}
-          </h1>
-          <p className="text-gray-500 mt-1 text-center">
-            Professional Aircraft Detailing Quotes
+    <div className="page-transition min-h-screen flex items-center justify-center bg-v-charcoal p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl font-heading text-v-text-primary tracking-wide">Vector</h1>
+          <p className="text-v-text-secondary mt-2 text-sm">Professional Aircraft Detailing</p>
+        </div>
+
+        <div className="bg-v-surface border border-v-border rounded-sm p-6">
+          {/* Social Login */}
+          <SocialLoginButtons />
+
+          {/* Divider */}
+          <div className="flex items-center my-6">
+            <div className="flex-grow border-t border-v-border"></div>
+            <span className="mx-4 text-v-text-secondary text-xs uppercase tracking-widest">or continue with email</span>
+            <div className="flex-grow border-t border-v-border"></div>
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div className="bg-red-500/10 border border-red-500/30 px-4 py-3 mb-4">
+              <p className="text-red-400 text-sm">{error}</p>
+            </div>
+          )}
+
+          {/* Email Form */}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-sm text-v-text-secondary mb-1">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full bg-v-surface-light border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+                placeholder="you@company.com"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm text-v-text-secondary mb-1">Password</label>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full bg-v-surface-light border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+                placeholder="Enter your password"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full py-3 bg-v-gold text-v-charcoal rounded-sm font-medium hover:bg-v-gold-dim disabled:opacity-50 transition-colors"
+            >
+              {loading ? 'Signing in...' : 'Sign In'}
+            </button>
+          </form>
+
+          <div className="mt-3 text-right">
+            <a href="/forgot-password" className="text-xs text-v-gold hover:text-v-gold-dim transition-colors">
+              Forgot password?
+            </a>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="mt-6 text-center">
+          <p className="text-v-text-secondary text-sm">
+            New to Vector?{' '}
+            <a href="/" className="text-v-gold hover:text-v-gold-dim transition-colors">See Plans & Pricing</a>
           </p>
         </div>
-        {error && <div className="text-red-600 mb-4">{error}</div>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">{'Email'}</label>
-            <input
-              type="email"
-              className="w-full border border-gray-300 rounded-md p-2"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type="password"
-              className="w-full border border-gray-300 rounded-md p-2"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
-          </div>
-          <button
-            type="submit"
-            className="w-full py-2 rounded-md text-white font-medium bg-gradient-to-r from-v-gold to-v-gold-dim hover:opacity-90"
-            disabled={loading}
-          >
-            {loading ? 'Signing in...' : 'Sign In'}
-          </button>
-        </form>
-        <div className="mt-2 text-right">
-          <a href="/forgot-password" className="text-sm text-blue-600 hover:underline">
-            Forgot password?
+
+        <div className="mt-4 flex items-center justify-between px-1">
+          <a href="/crew/login" className="text-xs text-v-text-secondary hover:text-v-gold transition-colors">
+            Crew login &rarr;
           </a>
-        </div>
-        <div className="my-6 flex items-center">
-          <div className="flex-grow border-t border-gray-300"></div>
-          <span className="mx-2 text-gray-500 text-sm">New to {'Vector'}?</span>
-          <div className="flex-grow border-t border-gray-300"></div>
-        </div>
-        <a
-          href="/"
-          className="block w-full text-center bg-[#1e3a5f] text-white py-2 rounded-md font-medium hover:opacity-90"
-        >
-          See Plans & Pricing
-        </a>
-        <div className="mt-4 flex items-center justify-between">
-          <a href="/crew/login" className="text-sm text-gray-500 hover:text-[#1e3a5f] transition-colors">
-            Crew login →
-          </a>
-          <p className="text-xs text-gray-400">By Vector Aviation</p>
+          <p className="text-xs text-v-text-secondary/50">By Vector Aviation</p>
         </div>
       </div>
+
       <TermsConsentModal
         isOpen={showTermsModal}
         onAccept={() => {
@@ -161,5 +165,17 @@ export default function Page() {
         }}
       />
     </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-v-charcoal flex items-center justify-center">
+        <div className="w-8 h-8 border-2 border-v-gold border-t-transparent rounded-full animate-spin" />
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }
