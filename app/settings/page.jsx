@@ -2952,46 +2952,7 @@ function SettingsContent() {
           </div>
         </div>
 
-        {/* Calendly Integration */}
-        <div className="pb-6 mb-2">
-          <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Calendly Integration</h3>
-          <p className="text-sm text-v-text-secondary mb-6">
-            Connect your Calendly account to let customers schedule directly through your Calendly page after payment.
-          </p>
-
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium text-v-text-secondary mb-1">Calendly URL</label>
-              <input
-                type="url"
-                value={calendlyUrl}
-                onChange={(e) => { setCalendlyUrl(e.target.value); markDirty('calendly'); }}
-                placeholder="https://calendly.com/your-name/30min"
-                className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded px-3 py-2 text-sm placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
-              />
-              {calendlyUrl && !calendlyUrl.includes('calendly.com') && (
-                <p className="text-xs text-red-400 mt-1">URL should be a calendly.com link</p>
-              )}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm text-v-text-primary font-medium">Use Calendly for customer scheduling</p>
-                <p className="text-xs text-v-text-secondary mt-0.5">
-                  {useCalendlyScheduling
-                    ? 'Customers will see Calendly embed after payment instead of the built-in calendar.'
-                    : 'Customers use the built-in calendar picker. Calendly shown as secondary option if URL is set.'}
-                </p>
-              </div>
-              <div
-                onClick={() => { setUseCalendlyScheduling(!useCalendlyScheduling); markDirty('calendly'); }}
-                className={`relative w-11 h-6 rounded-full transition-colors cursor-pointer flex-shrink-0 ${useCalendlyScheduling ? 'bg-v-gold' : 'bg-gray-600'}`}
-              >
-                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full transition-transform ${useCalendlyScheduling ? 'translate-x-5' : ''}`} />
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Calendly moved to Integrations tab */}
 
       </div>
   );

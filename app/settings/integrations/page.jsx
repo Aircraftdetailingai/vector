@@ -10,11 +10,12 @@ function IntegrationsContent() {
   const { success: toastSuccess, error: toastError } = useToast();
 
   const [loading, setLoading] = useState(true);
-  const [qbStatus, setQbStatus] = useState({ connected: false, status: 'UNKNOWN' });
-  const [qbConnecting, setQbConnecting] = useState(false);
-  const [qbError, setQbError] = useState(null);
-  const [importing, setImporting] = useState(false);
-  const [importResult, setImportResult] = useState(null);
+
+  // Calendly state
+  const [calendlyUrl, setCalendlyUrl] = useState('');
+  const [useCalendlyScheduling, setUseCalendlyScheduling] = useState(false);
+  const [calendlySaving, setCalendlySaving] = useState(false);
+  const [calendlyDirty, setCalendlyDirty] = useState(false);
 
   // Google Calendar state
   const [gcalStatus, setGcalStatus] = useState({ connected: false, configured: false, method: null });
@@ -22,27 +23,33 @@ function IntegrationsContent() {
   const [gcalError, setGcalError] = useState(null);
   const [gcalSyncing, setGcalSyncing] = useState(false);
   const [gcalSyncResult, setGcalSyncResult] = useState(null);
-
-  // ICS import state
   const [icsUrl, setIcsUrl] = useState('');
   const [icsImporting, setIcsImporting] = useState(false);
   const [icsResult, setIcsResult] = useState(null);
 
+  // Stripe state
+  const [stripeStatus, setStripeStatus] = useState({ connected: false, status: 'UNKNOWN' });
+
+  // QuickBooks state
+  const [qbStatus, setQbStatus] = useState({ connected: false, status: 'UNKNOWN' });
+  const [qbConnecting, setQbConnecting] = useState(false);
+  const [qbError, setQbError] = useState(null);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState(null);
+
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
     if (!token) { router.push('/login'); return; }
-    checkQBStatus();
-    checkGCalStatus();
+    loadAll();
   }, [router]);
 
   useEffect(() => {
-    const qbParam = params.get('quickbooks');
-    if (qbParam === 'success') { toastSuccess('QuickBooks connected successfully!'); checkQBStatus(); }
-    else if (qbParam === 'error') setQbError(params.get('message') || 'Failed to connect QuickBooks');
-
     const gcalParam = params.get('gcal');
-    if (gcalParam === 'success') { toastSuccess('Google Calendar connected successfully!'); checkGCalStatus(); }
+    if (gcalParam === 'success') { toastSuccess('Google Calendar connected!'); checkGCalStatus(); }
     else if (gcalParam === 'error') setGcalError(params.get('message') || 'Failed to connect Google Calendar');
+    const qbParam = params.get('quickbooks');
+    if (qbParam === 'success') { toastSuccess('QuickBooks connected!'); checkQBStatus(); }
+    else if (qbParam === 'error') setQbError(params.get('message') || 'Failed to connect QuickBooks');
   }, [params]);
 
   const getHeaders = () => ({
@@ -50,47 +57,46 @@ function IntegrationsContent() {
     'Content-Type': 'application/json',
   });
 
-  const checkQBStatus = async () => {
-    try {
-      const res = await fetch('/api/quickbooks/status', { headers: getHeaders() });
-      if (res.ok) setQbStatus(await res.json());
-    } catch (err) {
-      console.log('Failed to check QB status:', err);
-    } finally {
-      setLoading(false);
-    }
+  const loadAll = async () => {
+    await Promise.all([loadCalendly(), checkGCalStatus(), checkStripeStatus(), checkQBStatus()]);
+    setLoading(false);
   };
 
-  const handleConnectQB = async () => {
-    setQbConnecting(true); setQbError(null);
+  // === CALENDLY ===
+  const loadCalendly = async () => {
     try {
-      const res = await fetch('/api/quickbooks/auth', { method: 'POST', headers: getHeaders() });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else if (data.error) setQbError(data.error);
-    } catch (err) { setQbError(`Network error: ${err.message}`); }
-    finally { setQbConnecting(false); }
+      const stored = localStorage.getItem('vector_user');
+      if (stored) {
+        const u = JSON.parse(stored);
+        setCalendlyUrl(u.calendly_url || '');
+        setUseCalendlyScheduling(u.use_calendly_scheduling || false);
+      }
+    } catch {}
   };
 
-  const handleDisconnectQB = async () => {
+  const saveCalendly = async () => {
+    setCalendlySaving(true);
     try {
-      const res = await fetch('/api/quickbooks/disconnect', { method: 'POST', headers: getHeaders() });
-      if (res.ok) { setQbStatus({ connected: false, status: 'NOT_CONNECTED' }); setImportResult(null); toastSuccess('QuickBooks disconnected'); }
-    } catch { toastError('Failed to disconnect'); }
+      const res = await fetch('/api/user/settings', {
+        method: 'POST', headers: getHeaders(),
+        body: JSON.stringify({ calendly_url: calendlyUrl || null, use_calendly_scheduling: useCalendlyScheduling }),
+      });
+      if (res.ok) {
+        toastSuccess('Calendly settings saved');
+        setCalendlyDirty(false);
+        // Update localStorage
+        try {
+          const u = JSON.parse(localStorage.getItem('vector_user') || '{}');
+          u.calendly_url = calendlyUrl || null;
+          u.use_calendly_scheduling = useCalendlyScheduling;
+          localStorage.setItem('vector_user', JSON.stringify(u));
+        } catch {}
+      } else toastError('Failed to save Calendly settings');
+    } catch { toastError('Failed to save'); }
+    finally { setCalendlySaving(false); }
   };
 
-  const handleImportCustomers = async () => {
-    setImporting(true); setImportResult(null);
-    try {
-      const res = await fetch('/api/quickbooks/import-customers', { method: 'POST', headers: getHeaders() });
-      const data = await res.json();
-      if (data.reconnect) { setQbError('QuickBooks session expired. Please reconnect.'); setQbStatus({ connected: false, status: 'TOKEN_EXPIRED' }); return; }
-      if (data.success) { setImportResult(data); toastSuccess(`Imported ${data.imported} customers from QuickBooks`); }
-      else toastError(data.error || 'Import failed');
-    } catch (err) { toastError(`Import failed: ${err.message}`); }
-    finally { setImporting(false); }
-  };
-
+  // === GOOGLE CALENDAR ===
   const checkGCalStatus = async () => {
     try {
       const res = await fetch('/api/google-calendar/status', { headers: getHeaders() });
@@ -99,9 +105,7 @@ function IntegrationsContent() {
         setGcalStatus(data);
         if (data.icsUrl) setIcsUrl(data.icsUrl);
       }
-    } catch (err) {
-      console.log('Failed to check GCal status:', err);
-    }
+    } catch {}
   };
 
   const handleConnectGCal = async () => {
@@ -110,7 +114,7 @@ function IntegrationsContent() {
       const res = await fetch('/api/google-calendar/auth', { method: 'POST', headers: getHeaders() });
       const data = await res.json();
       if (data.url) window.location.href = data.url;
-      else if (data.configured === false) setGcalError('Google Calendar OAuth is not configured. Use the Calendar URL sync below.');
+      else if (data.configured === false) setGcalError('Google OAuth not configured. Use the Calendar URL option.');
       else if (data.error) setGcalError(data.error);
     } catch (err) { setGcalError(`Network error: ${err.message}`); }
     finally { setGcalConnecting(false); }
@@ -146,298 +150,357 @@ function IntegrationsContent() {
       if (data.success) {
         setIcsResult(data);
         setGcalStatus(prev => ({ ...prev, connected: true, method: 'ics', icsUrl: icsUrl.trim(), icsLastSync: new Date().toISOString() }));
-        toastSuccess(`Imported ${data.relevantEvents} events, blocked ${data.blockedDatesAdded} new dates`);
-      } else {
-        toastError(data.error || 'Import failed');
-      }
+        toastSuccess(`Imported ${data.relevantEvents} events, blocked ${data.blockedDatesAdded} dates`);
+      } else toastError(data.error || 'Import failed');
     } catch (err) { toastError(`Import failed: ${err.message}`); }
     finally { setIcsImporting(false); }
   };
 
   const handleDisconnectIcs = async () => {
     try {
-      const token = localStorage.getItem('vector_token');
-      const res = await fetch('/api/google-calendar/ics-disconnect', {
-        method: 'POST', headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetch('/api/google-calendar/ics-disconnect', { method: 'POST', headers: { Authorization: `Bearer ${localStorage.getItem('vector_token')}` } });
       if (res.ok) {
         setGcalStatus(prev => ({ ...prev, connected: false, method: null, icsUrl: null, icsLastSync: null }));
-        setIcsUrl('');
-        setIcsResult(null);
+        setIcsUrl(''); setIcsResult(null);
         toastSuccess('Calendar URL disconnected');
       }
     } catch { toastError('Failed to disconnect'); }
+  };
+
+  // === STRIPE ===
+  const checkStripeStatus = async () => {
+    try {
+      const res = await fetch('/api/stripe/status', { headers: getHeaders() });
+      if (res.ok) setStripeStatus(await res.json());
+    } catch {}
+  };
+
+  // === QUICKBOOKS ===
+  const checkQBStatus = async () => {
+    try {
+      const res = await fetch('/api/quickbooks/status', { headers: getHeaders() });
+      if (res.ok) setQbStatus(await res.json());
+    } catch {}
+  };
+
+  const handleConnectQB = async () => {
+    setQbConnecting(true); setQbError(null);
+    try {
+      const res = await fetch('/api/quickbooks/auth', { method: 'POST', headers: getHeaders() });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+      else if (data.error) setQbError(data.error);
+    } catch (err) { setQbError(`Network error: ${err.message}`); }
+    finally { setQbConnecting(false); }
+  };
+
+  const handleDisconnectQB = async () => {
+    try {
+      const res = await fetch('/api/quickbooks/disconnect', { method: 'POST', headers: getHeaders() });
+      if (res.ok) { setQbStatus({ connected: false, status: 'NOT_CONNECTED' }); setImportResult(null); toastSuccess('QuickBooks disconnected'); }
+    } catch { toastError('Failed to disconnect'); }
+  };
+
+  const handleImportCustomers = async () => {
+    setImporting(true); setImportResult(null);
+    try {
+      const res = await fetch('/api/quickbooks/import-customers', { method: 'POST', headers: getHeaders() });
+      const data = await res.json();
+      if (data.reconnect) { setQbError('Session expired. Please reconnect.'); setQbStatus({ connected: false, status: 'TOKEN_EXPIRED' }); return; }
+      if (data.success) { setImportResult(data); toastSuccess(`Imported ${data.imported} customers`); }
+      else toastError(data.error || 'Import failed');
+    } catch (err) { toastError(`Import failed: ${err.message}`); }
+    finally { setImporting(false); }
   };
 
   if (loading) return <LoadingSpinner message="Loading integrations..." />;
 
   const icsConnected = gcalStatus.method === 'ics' && gcalStatus.icsUrl;
   const oauthConnected = gcalStatus.method === 'oauth' && gcalStatus.connected;
+  const gcalConnected = icsConnected || oauthConnected;
+  const calendlyConnected = !!calendlyUrl && calendlyUrl.includes('calendly.com');
+  const stripeConnected = stripeStatus.connected && stripeStatus.status === 'ACTIVE';
+  const qbConnected = qbStatus.connected && qbStatus.status === 'ACTIVE';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <h2 className="text-xs font-medium uppercase tracking-widest text-v-gold pb-2 border-b border-v-gold/20">Integrations</h2>
 
-      {/* Google Calendar Card */}
-      <div className="border border-v-border p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 border border-v-gold/30 flex items-center justify-center text-v-gold">
-            <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5z"/></svg>
-          </div>
-          <div>
-            <h3 className="font-semibold text-v-text-primary">Google Calendar</h3>
-            <p className="text-sm text-v-text-secondary">Sync your calendar events as blocked dates in Vector</p>
-          </div>
-        </div>
+      {/* ━━━ SCHEDULING ━━━ */}
+      <div>
+        <h3 className="text-xs font-medium uppercase tracking-widest text-v-text-secondary mb-4">Scheduling</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
-        {gcalError && (
-          <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 text-red-400 text-sm flex items-center justify-between">
-            <span>{gcalError}</span>
-            <button onClick={() => setGcalError(null)} className="ml-2 text-red-400 hover:text-red-300 font-bold">&times;</button>
-          </div>
-        )}
-
-        {/* OAuth Connected State */}
-        {oauthConnected && (
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-green-400">&#10003;</span>
-              <span className="text-green-400 font-medium text-sm">Connected via Google OAuth</span>
-            </div>
-            {gcalStatus.connected_at && (
-              <p className="text-xs text-v-text-secondary mb-1">Connected {new Date(gcalStatus.connected_at).toLocaleDateString()}</p>
-            )}
-            {gcalStatus.last_sync_at && (
-              <p className="text-xs text-v-text-secondary mb-4">Last synced {new Date(gcalStatus.last_sync_at).toLocaleString()}</p>
-            )}
-
-            <button onClick={handleSyncGCal} disabled={gcalSyncing}
-              className="w-full px-4 py-2.5 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors mb-2">
-              {gcalSyncing ? 'Syncing...' : 'Sync Now'}
-            </button>
-
-            {gcalSyncResult && (
-              <div className="mt-3 p-3 bg-green-900/20 border border-green-500/30 text-sm">
-                <p className="font-semibold text-green-400 mb-1">Sync Complete</p>
-                <ul className="text-green-400/80 space-y-0.5 text-xs">
-                  <li>Events synced: {gcalSyncResult.synced}</li>
-                  <li>Events removed: {gcalSyncResult.deleted}</li>
-                </ul>
-              </div>
-            )}
-
-            <p className="text-xs text-v-text-secondary mt-3 mb-2">
-              Scheduled jobs in Vector will automatically appear in your Google Calendar.
-              Google Calendar events will show as busy blocks on your Vector calendar.
-            </p>
-
-            <button onClick={handleDisconnectGCal} className="mt-1 text-xs text-red-400 hover:text-red-300 underline">
-              Disconnect Google Calendar
-            </button>
-          </div>
-        )}
-
-        {/* ICS Connected State */}
-        {icsConnected && !oauthConnected && (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-green-400">&#10003;</span>
-              <span className="text-green-400 font-medium text-sm">Synced via Calendar URL</span>
-            </div>
-            {gcalStatus.icsLastSync && (
-              <p className="text-xs text-v-text-secondary mb-4">
-                Last synced {new Date(gcalStatus.icsLastSync).toLocaleString()}
-              </p>
-            )}
-
-            <div className="p-3 bg-v-surface border border-v-border mb-4">
-              <p className="text-xs text-v-text-secondary mb-2 truncate" title={gcalStatus.icsUrl}>
-                {gcalStatus.icsUrl}
-              </p>
-            </div>
-
-            <div className="flex gap-2">
-              <button onClick={handleIcsImport} disabled={icsImporting}
-                className="flex-1 px-4 py-2.5 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors">
-                {icsImporting ? 'Syncing...' : 'Re-sync Now'}
-              </button>
-            </div>
-
-            {icsResult && (
-              <div className="mt-3 p-3 bg-green-900/20 border border-green-500/30 text-sm">
-                <p className="font-semibold text-green-400 mb-1">Sync Complete</p>
-                <ul className="text-green-400/80 space-y-0.5 text-xs">
-                  <li>Events in range (next 90 days): {icsResult.relevantEvents}</li>
-                  <li>New blocked dates added: {icsResult.blockedDatesAdded}</li>
-                  <li>Total blocked dates: {icsResult.totalBlockedDates}</li>
-                </ul>
-              </div>
-            )}
-
-            <button onClick={handleDisconnectIcs} className="mt-3 text-xs text-red-400 hover:text-red-300 underline">
-              Disconnect Calendar URL
-            </button>
-          </div>
-        )}
-
-        {/* Not Connected State */}
-        {!oauthConnected && !icsConnected && (
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <span className="w-2 h-2 bg-v-text-secondary rounded-full"></span>
-              <span className="text-v-text-secondary font-medium text-sm">Not Connected</span>
-            </div>
-
-            {/* Option A: Sign in with Google */}
-            <div className="mb-4">
-              {gcalStatus.configured ? (
-                <button onClick={handleConnectGCal} disabled={gcalConnecting}
-                  className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white text-gray-800 rounded-sm text-sm font-medium hover:bg-gray-100 border border-gray-300 disabled:opacity-50 transition-colors">
-                  {gcalConnecting ? (
-                    <div className="w-5 h-5 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <svg className="w-5 h-5" viewBox="0 0 24 24">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                  )}
-                  <span>{gcalConnecting ? 'Connecting...' : 'Sign in with Google'}</span>
-                </button>
-              ) : (
-                <div className="relative group">
-                  <button disabled
-                    className="w-full flex items-center justify-center gap-3 px-4 py-3 bg-white/50 text-gray-500 rounded-sm text-sm font-medium border border-gray-300/50 cursor-not-allowed">
-                    <svg className="w-5 h-5 opacity-50" viewBox="0 0 24 24">
-                      <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
-                      <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-                      <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
-                      <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
-                    </svg>
-                    <span>Sign in with Google</span>
-                    <span className="text-xs text-v-text-secondary ml-1">(Coming Soon)</span>
-                  </button>
+          {/* CALENDLY CARD */}
+          <div className="border border-v-border p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 border border-v-border flex items-center justify-center text-v-text-primary rounded-sm">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg>
                 </div>
+                <div>
+                  <h4 className="font-semibold text-v-text-primary text-sm">Calendly</h4>
+                  <p className="text-xs text-v-text-secondary">Customer scheduling via Calendly</p>
+                </div>
+              </div>
+              {calendlyConnected ? (
+                <span className="text-xs text-green-400 border border-green-400/30 px-2 py-0.5 uppercase tracking-wider">Connected</span>
+              ) : (
+                <span className="text-xs text-v-text-secondary border border-v-border px-2 py-0.5 uppercase tracking-wider">Not Connected</span>
               )}
             </div>
 
-            {/* Divider */}
-            <div className="flex items-center my-4">
-              <div className="flex-grow border-t border-v-border"></div>
-              <span className="mx-4 text-v-text-secondary text-xs uppercase tracking-widest">or</span>
-              <div className="flex-grow border-t border-v-border"></div>
-            </div>
-
-            {/* Option B: Paste Calendar URL */}
-            <div className="p-4 border border-v-border">
-              <h4 className="text-sm font-semibold text-v-text-primary mb-1">Paste your Google Calendar URL</h4>
-              <p className="text-xs text-v-text-secondary mb-3">
-                In Google Calendar, click the <strong className="text-v-text-primary">&#8942;</strong> next to your calendar &rarr; <strong className="text-v-text-primary">Settings and sharing</strong> &rarr; scroll to <strong className="text-v-text-primary">&ldquo;Secret address in iCal format&rdquo;</strong> &rarr; copy and paste the URL below.
-              </p>
-
-              <div className="flex gap-2">
+            <div className="space-y-3 flex-1">
+              <div>
+                <label className="block text-xs text-v-text-secondary mb-1">Calendly URL</label>
                 <input
                   type="url"
-                  value={icsUrl}
-                  onChange={e => setIcsUrl(e.target.value)}
-                  placeholder="https://calendar.google.com/calendar/ical/..."
-                  className="flex-1 px-3 py-2.5 bg-v-surface border border-v-border text-v-text-primary text-sm focus:border-v-gold outline-none placeholder:text-v-text-secondary/50"
+                  value={calendlyUrl}
+                  onChange={(e) => { setCalendlyUrl(e.target.value); setCalendlyDirty(true); }}
+                  placeholder="https://calendly.com/your-name/30min"
+                  className="w-full bg-v-surface border border-v-border text-v-text-primary rounded-sm px-3 py-2 text-sm placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
                 />
-                <button
-                  onClick={handleIcsImport}
-                  disabled={icsImporting || !icsUrl.trim()}
-                  className="px-5 py-2.5 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors whitespace-nowrap"
-                >
-                  {icsImporting ? 'Importing...' : 'Connect'}
-                </button>
-              </div>
-
-              {icsResult && (
-                <div className="mt-3 p-3 bg-green-900/20 border border-green-500/30 text-sm">
-                  <p className="font-semibold text-green-400 mb-1">Import Complete</p>
-                  <ul className="text-green-400/80 space-y-0.5 text-xs">
-                    <li>Total events found: {icsResult.totalEvents}</li>
-                    <li>Events in range (next 90 days): {icsResult.relevantEvents}</li>
-                    <li>New blocked dates added: {icsResult.blockedDatesAdded}</li>
-                    <li>Total blocked dates: {icsResult.totalBlockedDates}</li>
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* QuickBooks Card */}
-      <div className="border border-v-border p-5">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 border border-green-500/30 flex items-center justify-center text-green-400 font-bold text-sm">QB</div>
-          <div>
-            <h3 className="font-semibold text-v-text-primary">QuickBooks</h3>
-            <p className="text-sm text-v-text-secondary">Import customers from your QuickBooks account</p>
-          </div>
-        </div>
-
-        {qbError && (
-          <div className="mb-4 p-3 bg-red-900/20 border border-red-500/30 text-red-400 text-sm flex items-center justify-between">
-            <span>{qbError}</span>
-            <button onClick={() => setQbError(null)} className="ml-2 text-red-400 hover:text-red-300 font-bold">&times;</button>
-          </div>
-        )}
-
-        {qbStatus.connected && qbStatus.status === 'ACTIVE' ? (
-          <div>
-            <div className="flex items-center gap-2 mb-1">
-              <span className="text-green-400">&#10003;</span>
-              <span className="text-green-400 font-medium text-sm">Connected</span>
-            </div>
-            {qbStatus.connected_at && (
-              <p className="text-xs text-v-text-secondary mb-4">Connected {new Date(qbStatus.connected_at).toLocaleDateString()}</p>
-            )}
-
-            <button onClick={handleImportCustomers} disabled={importing}
-              className="w-full px-4 py-2.5 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors mb-2">
-              {importing ? 'Importing customers...' : 'Import Customers from QuickBooks'}
-            </button>
-
-            {importResult && (
-              <div className="mt-3 p-3 bg-green-900/20 border border-green-500/30 text-sm">
-                <p className="font-semibold text-green-400 mb-1">Import Complete</p>
-                <ul className="text-green-400/80 space-y-0.5 text-xs">
-                  <li>Total in QuickBooks: {importResult.total}</li>
-                  <li>New customers imported: {importResult.imported}</li>
-                  <li>Existing updated: {importResult.updated}</li>
-                  <li>Skipped (no email/duplicate): {importResult.skipped}</li>
-                </ul>
-                {importResult.errors?.length > 0 && (
-                  <div className="mt-2 text-red-400">
-                    <p className="font-medium text-xs">Errors:</p>
-                    {importResult.errors.map((e, i) => <p key={i} className="text-xs">{e}</p>)}
-                  </div>
+                {calendlyUrl && !calendlyUrl.includes('calendly.com') && (
+                  <p className="text-xs text-red-400 mt-1">URL should be a calendly.com link</p>
                 )}
               </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-v-text-primary font-medium">Use for scheduling</p>
+                  <p className="text-[10px] text-v-text-secondary mt-0.5">
+                    {useCalendlyScheduling ? 'Calendly shown after payment' : 'Built-in calendar used'}
+                  </p>
+                </div>
+                <div
+                  onClick={() => { setUseCalendlyScheduling(!useCalendlyScheduling); setCalendlyDirty(true); }}
+                  className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer flex-shrink-0 ${useCalendlyScheduling ? 'bg-v-gold' : 'bg-gray-600'}`}
+                >
+                  <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${useCalendlyScheduling ? 'translate-x-5' : ''}`} />
+                </div>
+              </div>
+            </div>
+
+            {calendlyDirty && (
+              <button onClick={saveCalendly} disabled={calendlySaving}
+                className="mt-4 w-full py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors">
+                {calendlySaving ? 'Saving...' : 'Save'}
+              </button>
+            )}
+          </div>
+
+          {/* GOOGLE CALENDAR CARD */}
+          <div className="border border-v-border p-5 flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 border border-v-border flex items-center justify-center text-v-text-primary rounded-sm">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM5 8V6h14v2H5z"/></svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-v-text-primary text-sm">Google Calendar</h4>
+                  <p className="text-xs text-v-text-secondary">Sync events as blocked dates</p>
+                </div>
+              </div>
+              {gcalConnected ? (
+                <span className="text-xs text-green-400 border border-green-400/30 px-2 py-0.5 uppercase tracking-wider">Connected</span>
+              ) : (
+                <span className="text-xs text-v-text-secondary border border-v-border px-2 py-0.5 uppercase tracking-wider">Not Connected</span>
+              )}
+            </div>
+
+            {gcalError && (
+              <div className="mb-3 p-2 bg-red-900/20 border border-red-500/30 text-red-400 text-xs flex items-center justify-between">
+                <span>{gcalError}</span>
+                <button onClick={() => setGcalError(null)} className="ml-2 font-bold">&times;</button>
+              </div>
             )}
 
-            <button onClick={handleDisconnectQB} className="mt-3 text-xs text-red-400 hover:text-red-300 underline">
-              Disconnect QuickBooks
-            </button>
+            {/* OAuth Connected */}
+            {oauthConnected && (
+              <div className="flex-1">
+                <p className="text-xs text-v-text-secondary mb-1">Connected {gcalStatus.connected_at && new Date(gcalStatus.connected_at).toLocaleDateString()}</p>
+                {gcalStatus.last_sync_at && <p className="text-xs text-v-text-secondary mb-3">Last synced {new Date(gcalStatus.last_sync_at).toLocaleString()}</p>}
+                <button onClick={handleSyncGCal} disabled={gcalSyncing}
+                  className="w-full py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors">
+                  {gcalSyncing ? 'Syncing...' : 'Sync Now'}
+                </button>
+                {gcalSyncResult && <p className="text-xs text-green-400 mt-2">Synced {gcalSyncResult.synced} events</p>}
+                <button onClick={handleDisconnectGCal} className="mt-3 text-xs text-red-400 hover:text-red-300 underline">Disconnect</button>
+              </div>
+            )}
+
+            {/* ICS Connected */}
+            {icsConnected && !oauthConnected && (
+              <div className="flex-1">
+                <p className="text-xs text-v-text-secondary mb-1 truncate" title={gcalStatus.icsUrl}>{gcalStatus.icsUrl}</p>
+                {gcalStatus.icsLastSync && <p className="text-xs text-v-text-secondary mb-3">Last synced {new Date(gcalStatus.icsLastSync).toLocaleString()}</p>}
+                <button onClick={handleIcsImport} disabled={icsImporting}
+                  className="w-full py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors">
+                  {icsImporting ? 'Syncing...' : 'Sync Now'}
+                </button>
+                {icsResult && <p className="text-xs text-green-400 mt-2">{icsResult.relevantEvents} events, {icsResult.blockedDatesAdded} new blocked dates</p>}
+                <button onClick={handleDisconnectIcs} className="mt-3 text-xs text-red-400 hover:text-red-300 underline">Disconnect</button>
+              </div>
+            )}
+
+            {/* Not Connected */}
+            {!gcalConnected && (
+              <div className="flex-1 space-y-3">
+                {/* Google OAuth button */}
+                {gcalStatus.configured ? (
+                  <button onClick={handleConnectGCal} disabled={gcalConnecting}
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-white text-gray-800 rounded-sm text-xs font-medium hover:bg-gray-100 border border-gray-300 disabled:opacity-50 transition-colors">
+                    <svg className="w-4 h-4" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                    {gcalConnecting ? 'Connecting...' : 'Sign in with Google'}
+                  </button>
+                ) : (
+                  <button disabled className="w-full flex items-center justify-center gap-2 px-3 py-2.5 bg-white/50 text-gray-500 rounded-sm text-xs font-medium border border-gray-300/50 cursor-not-allowed">
+                    <svg className="w-4 h-4 opacity-50" viewBox="0 0 24 24"><path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/><path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/><path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/><path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/></svg>
+                    Sign in with Google <span className="text-v-text-secondary ml-1">(Soon)</span>
+                  </button>
+                )}
+
+                <div className="flex items-center">
+                  <div className="flex-grow border-t border-v-border"></div>
+                  <span className="mx-3 text-v-text-secondary text-[10px] uppercase tracking-widest">or</span>
+                  <div className="flex-grow border-t border-v-border"></div>
+                </div>
+
+                <div>
+                  <p className="text-[10px] text-v-text-secondary mb-2">
+                    Google Calendar &rarr; &#8942; &rarr; Settings &rarr; &ldquo;Secret address in iCal format&rdquo;
+                  </p>
+                  <div className="flex gap-2">
+                    <input type="url" value={icsUrl} onChange={e => setIcsUrl(e.target.value)}
+                      placeholder="Paste iCal URL..."
+                      className="flex-1 px-2 py-2 bg-v-surface border border-v-border text-v-text-primary text-xs focus:border-v-gold outline-none placeholder:text-v-text-secondary/50" />
+                    <button onClick={handleIcsImport} disabled={icsImporting || !icsUrl.trim()}
+                      className="px-3 py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors">
+                      {icsImporting ? '...' : 'Connect'}
+                    </button>
+                  </div>
+                  {icsResult && <p className="text-xs text-green-400 mt-2">{icsResult.relevantEvents} events imported</p>}
+                </div>
+              </div>
+            )}
           </div>
-        ) : (
-          <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="w-2 h-2 bg-v-text-secondary rounded-full"></span>
-              <span className="text-v-text-secondary font-medium text-sm">Not Connected</span>
+        </div>
+      </div>
+
+      {/* ━━━ PAYMENTS ━━━ */}
+      <div>
+        <h3 className="text-xs font-medium uppercase tracking-widest text-v-text-secondary mb-4">Payments</h3>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+          {/* STRIPE CARD */}
+          <div className="border border-v-border p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 border border-v-border flex items-center justify-center rounded-sm">
+                  <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+                    <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.918 3.757 7.11c0 3.723 2.249 5.353 5.864 6.744 2.368.911 3.182 1.557 3.182 2.536 0 .954-.839 1.575-2.379 1.575-1.946 0-4.836-.963-6.778-2.186L2.758 21.3C4.458 22.421 7.764 23.4 10.784 23.4c2.607 0 4.765-.654 6.293-1.885 1.623-1.303 2.445-3.176 2.445-5.56.03-3.817-2.293-5.414-5.546-6.805z" fill="#635BFF"/>
+                  </svg>
+                </div>
+                <div>
+                  <h4 className="font-semibold text-v-text-primary text-sm">Stripe</h4>
+                  <p className="text-xs text-v-text-secondary">Accept customer payments</p>
+                </div>
+              </div>
+              {stripeConnected ? (
+                <span className="text-xs text-green-400 border border-green-400/30 px-2 py-0.5 uppercase tracking-wider">Active</span>
+              ) : stripeStatus.status === 'PENDING' ? (
+                <span className="text-xs text-v-gold border border-v-gold/30 px-2 py-0.5 uppercase tracking-wider">Pending</span>
+              ) : (
+                <span className="text-xs text-red-400 border border-red-400/30 px-2 py-0.5 uppercase tracking-wider">Not Connected</span>
+              )}
             </div>
-            <p className="text-sm text-v-text-secondary mb-4">
-              Connect your QuickBooks account to import your existing customer list into Vector.
-            </p>
-            <button onClick={handleConnectQB} disabled={qbConnecting}
-              className="px-5 py-2.5 border border-green-500/50 text-green-400 text-xs font-semibold uppercase tracking-widest hover:bg-green-500 hover:text-white disabled:opacity-50 transition-colors">
-              {qbConnecting ? 'Connecting...' : 'Connect QuickBooks'}
-            </button>
+
+            {stripeConnected ? (
+              <div>
+                <p className="text-xs text-v-text-secondary mb-2">Payments active. Manage in Settings &rarr; Payments.</p>
+                <a href="/settings#payments" className="text-xs text-v-gold hover:text-v-gold-dim transition-colors">Manage Stripe &rarr;</a>
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs text-v-text-secondary mb-3">Connect Stripe to accept payments from customers.</p>
+                <a href="/settings#payments" className="inline-block px-4 py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim transition-colors">
+                  Set Up Stripe
+                </a>
+              </div>
+            )}
           </div>
-        )}
+
+          {/* QUICKBOOKS CARD */}
+          <div className="border border-v-border p-5">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 border border-v-border flex items-center justify-center text-green-400 font-bold text-xs rounded-sm">QB</div>
+                <div>
+                  <h4 className="font-semibold text-v-text-primary text-sm">QuickBooks</h4>
+                  <p className="text-xs text-v-text-secondary">Import customers</p>
+                </div>
+              </div>
+              {qbConnected ? (
+                <span className="text-xs text-green-400 border border-green-400/30 px-2 py-0.5 uppercase tracking-wider">Connected</span>
+              ) : (
+                <span className="text-xs text-v-text-secondary border border-v-border px-2 py-0.5 uppercase tracking-wider">Not Connected</span>
+              )}
+            </div>
+
+            {qbError && (
+              <div className="mb-3 p-2 bg-red-900/20 border border-red-500/30 text-red-400 text-xs flex items-center justify-between">
+                <span>{qbError}</span>
+                <button onClick={() => setQbError(null)} className="ml-2 font-bold">&times;</button>
+              </div>
+            )}
+
+            {qbConnected ? (
+              <div>
+                {qbStatus.connected_at && <p className="text-xs text-v-text-secondary mb-3">Connected {new Date(qbStatus.connected_at).toLocaleDateString()}</p>}
+                <button onClick={handleImportCustomers} disabled={importing}
+                  className="w-full py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors">
+                  {importing ? 'Importing...' : 'Import Customers'}
+                </button>
+                {importResult && (
+                  <p className="text-xs text-green-400 mt-2">Imported {importResult.imported}, updated {importResult.updated}</p>
+                )}
+                <button onClick={handleDisconnectQB} className="mt-3 text-xs text-red-400 hover:text-red-300 underline">Disconnect</button>
+              </div>
+            ) : (
+              <div>
+                <p className="text-xs text-v-text-secondary mb-3">Import your existing customer list from QuickBooks.</p>
+                <button onClick={handleConnectQB} disabled={qbConnecting}
+                  className="px-4 py-2 border border-green-500/50 text-green-400 text-xs font-semibold uppercase tracking-widest hover:bg-green-500 hover:text-white disabled:opacity-50 transition-colors">
+                  {qbConnecting ? 'Connecting...' : 'Connect QuickBooks'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* ━━━ COMING SOON ━━━ */}
+      <div>
+        <h3 className="text-xs font-medium uppercase tracking-widest text-v-text-secondary mb-4">Coming Soon</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {[
+            { name: 'Xero', desc: 'Accounting sync', icon: 'X' },
+            { name: 'Zapier', desc: 'Workflow automation', icon: 'Z' },
+            { name: 'Mailchimp', desc: 'Email marketing', icon: 'M' },
+            { name: 'Slack', desc: 'Team notifications', icon: 'S' },
+          ].map((item) => (
+            <div key={item.name} className="border border-v-border/50 p-4 opacity-50">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-8 h-8 border border-v-border flex items-center justify-center text-v-text-secondary text-xs font-bold rounded-sm">{item.icon}</div>
+                <div>
+                  <h4 className="text-sm font-medium text-v-text-primary">{item.name}</h4>
+                  <p className="text-[10px] text-v-text-secondary">{item.desc}</p>
+                </div>
+              </div>
+              <span className="text-[10px] text-v-text-secondary border border-v-border px-2 py-0.5 uppercase tracking-wider">Coming Soon</span>
+            </div>
+          ))}
+        </div>
       </div>
     </div>
   );
