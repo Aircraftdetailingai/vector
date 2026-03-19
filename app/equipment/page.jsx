@@ -31,6 +31,8 @@ export default function EquipmentPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeUrl, setScrapeUrl] = useState('');
   const [scrapeError, setScrapeError] = useState('');
+  const [saveError, setSaveError] = useState('');
+  const [toast, setToast] = useState('');
 
   const CATEGORY_LABELS = {
     polisher: 'Polisher',
@@ -129,6 +131,7 @@ export default function EquipmentPage() {
     }
     setScrapeUrl('');
     setScrapeError('');
+    setSaveError('');
     setShowModal(true);
   };
 
@@ -183,6 +186,7 @@ export default function EquipmentPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
+    setSaveError('');
 
     const token = localStorage.getItem('vector_token');
     const payload = {
@@ -201,36 +205,30 @@ export default function EquipmentPage() {
     };
 
     try {
-      if (editingItem) {
-        payload.id = editingItem.id;
-        const res = await fetch('/api/equipment', {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) {
-          fetchEquipment();
-          handleCloseModal();
-        }
+      const isEdit = !!editingItem;
+      if (isEdit) payload.id = editingItem.id;
+
+      const res = await fetch('/api/equipment', {
+        method: isEdit ? 'PUT' : 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      if (res.ok) {
+        fetchEquipment();
+        handleCloseModal();
+        setToast(isEdit ? 'Equipment updated' : 'Equipment added');
+        setTimeout(() => setToast(''), 3000);
       } else {
-        const res = await fetch('/api/equipment', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(payload),
-        });
-        if (res.ok) {
-          fetchEquipment();
-          handleCloseModal();
-        }
+        const data = await res.json().catch(() => ({}));
+        setSaveError(data.error || `Failed to ${isEdit ? 'update' : 'add'} equipment`);
       }
     } catch (err) {
       console.error('Failed to save equipment:', err);
+      setSaveError('Network error. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -320,6 +318,14 @@ export default function EquipmentPage() {
 
   return (
     <div className="page-transition min-h-screen bg-v-charcoal p-4 text-v-text-primary">
+      {/* Success Toast */}
+      {toast && (
+        <div className="fixed top-4 right-4 z-[60] bg-green-900/90 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in">
+          <span className="text-green-400">&#10003;</span>
+          <span className="text-sm font-medium">{toast}</span>
+        </div>
+      )}
+
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 text-white">
         <div className="flex items-center space-x-4">
@@ -614,6 +620,13 @@ export default function EquipmentPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {/* Save Error */}
+              {saveError && (
+                <div className="bg-red-900/20 border border-red-500/30 rounded-lg px-4 py-3">
+                  <p className="text-red-400 text-sm">{saveError}</p>
+                </div>
+              )}
+
               {/* Product Link Auto-fill */}
               <div className="bg-v-gold/10 border border-v-gold/30 rounded-lg p-3">
                 <label className="block text-sm font-semibold text-v-gold mb-1.5">{'Paste Product Link'}</label>

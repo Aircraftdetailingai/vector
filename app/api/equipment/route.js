@@ -207,10 +207,11 @@ export async function POST(request) {
   const { data: item, error } = await retryStrippingColumns(supabase, 'equipment', 'insert', row);
 
   if (error) {
+    console.error('Equipment POST error:', error);
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  return Response.json({ equipment: item });
+  return Response.json({ equipment: item }, { status: 201 });
 }
 
 // PUT - Update equipment
