@@ -12,7 +12,7 @@ export async function GET(request, { params }) {
 
   const { data: detailer, error } = await supabase
     .from('detailers')
-    .select('id, name, company, country, home_airport, plan, theme_logo_url, logo_url')
+    .select('id, name, company, country, home_airport, plan, theme_logo_url, logo_url, google_business_url, google_reviews_last_synced')
     .eq('id', id)
     .eq('listed_in_directory', true)
     .eq('status', 'active')

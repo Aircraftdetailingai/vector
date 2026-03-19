@@ -48,29 +48,43 @@ export async function GET(request) {
     return Response.json({ error: 'Failed to fetch directory' }, { status: 500 });
   }
 
-  // Attach public review stats
+  // Attach public review stats (Vector + Google)
   const detailerIds = (data || []).map(d => d.id);
   let enriched = data || [];
 
   if (detailerIds.length > 0) {
-    const { data: allReviews } = await supabase
-      .from('feedback')
-      .select('detailer_id, rating')
-      .in('detailer_id', detailerIds)
-      .eq('is_public', true);
+    const [vectorResult, googleResult] = await Promise.all([
+      supabase.from('feedback').select('detailer_id, rating').in('detailer_id', detailerIds).eq('is_public', true),
+      supabase.from('google_reviews').select('detailer_id, rating').in('detailer_id', detailerIds),
+    ]);
 
     const statsMap = {};
-    for (const r of (allReviews || [])) {
-      if (!statsMap[r.detailer_id]) statsMap[r.detailer_id] = { total: 0, sum: 0 };
-      statsMap[r.detailer_id].total++;
-      statsMap[r.detailer_id].sum += r.rating;
+    for (const r of (vectorResult.data || [])) {
+      if (!statsMap[r.detailer_id]) statsMap[r.detailer_id] = { vectorTotal: 0, vectorSum: 0, googleTotal: 0, googleSum: 0 };
+      statsMap[r.detailer_id].vectorTotal++;
+      statsMap[r.detailer_id].vectorSum += r.rating;
+    }
+    for (const r of (googleResult.data || [])) {
+      if (!statsMap[r.detailer_id]) statsMap[r.detailer_id] = { vectorTotal: 0, vectorSum: 0, googleTotal: 0, googleSum: 0 };
+      statsMap[r.detailer_id].googleTotal++;
+      statsMap[r.detailer_id].googleSum += r.rating;
     }
 
-    enriched = (data || []).map(d => ({
-      ...d,
-      review_count: statsMap[d.id]?.total || 0,
-      avg_rating: statsMap[d.id] ? parseFloat((statsMap[d.id].sum / statsMap[d.id].total).toFixed(1)) : null,
-    }));
+    enriched = (data || []).map(d => {
+      const s = statsMap[d.id];
+      if (!s) return { ...d, review_count: 0, avg_rating: null, google_review_count: 0, google_avg_rating: null };
+      const totalCount = s.vectorTotal + s.googleTotal;
+      const combinedAvg = totalCount > 0 ? parseFloat(((s.vectorSum + s.googleSum) / totalCount).toFixed(1)) : null;
+      return {
+        ...d,
+        review_count: s.vectorTotal,
+        avg_rating: s.vectorTotal > 0 ? parseFloat((s.vectorSum / s.vectorTotal).toFixed(1)) : null,
+        google_review_count: s.googleTotal,
+        google_avg_rating: s.googleTotal > 0 ? parseFloat((s.googleSum / s.googleTotal).toFixed(1)) : null,
+        combined_review_count: totalCount,
+        combined_avg_rating: combinedAvg,
+      };
+    });
   }
 
   return Response.json({ detailers: enriched });

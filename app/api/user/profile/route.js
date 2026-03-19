@@ -19,6 +19,7 @@ export async function POST(request) {
   if (body.name !== undefined) updates.name = body.name;
   if (body.company !== undefined) updates.company = body.company;
   if (body.phone !== undefined) updates.phone = body.phone;
+  if (body.google_business_url !== undefined) updates.google_business_url = body.google_business_url;
 
   if (Object.keys(updates).length === 0) {
     return Response.json({ error: 'No fields to update' }, { status: 400 });
