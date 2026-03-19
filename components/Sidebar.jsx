@@ -8,33 +8,43 @@ import { applyFullTheme } from '@/lib/theme';
 
 const NAV_GROUPS = [
   {
+    label: 'Business',
     items: [
       { href: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
-      { href: '/quotes', label: 'Quotes', icon: QuotesIcon },
-      { href: '/calendar', label: 'Calendar', icon: CalendarIcon },
-    ],
-  },
-  {
-    items: [
-      { href: '/customers', label: 'Customers', icon: CustomersIcon },
-      { href: '/invoices', label: 'Invoices', icon: InvoicesIcon },
-      { href: '/jobs', label: 'Jobs', icon: JobsIcon },
-      { href: '/reviews', label: 'Reviews', icon: ReviewsIcon },
-      { href: '/referrals', label: 'Referrals', icon: ReferralsIcon },
-    ],
-  },
-  {
-    items: [
       { href: '/analytics', label: 'Analytics', icon: AnalyticsIcon },
       { href: '/reports', label: 'Reports', icon: ReportsIcon },
-      { href: '/products', label: 'Products', icon: ProductsIcon },
     ],
   },
   {
+    label: 'Work',
+    items: [
+      { href: '/quotes', label: 'Quotes', icon: QuotesIcon },
+      { href: '/jobs', label: 'Jobs', icon: JobsIcon },
+      { href: '/calendar', label: 'Schedule', icon: CalendarIcon },
+      { href: '/invoices', label: 'Invoices', icon: InvoicesIcon },
+    ],
+  },
+  {
+    label: 'Customers',
+    items: [
+      { href: '/customers', label: 'Customers', icon: CustomersIcon },
+      { href: '/reviews', label: 'Reviews', icon: ReviewsIcon },
+    ],
+  },
+  {
+    label: 'Resources',
     items: [
       { href: '/team', label: 'Team', icon: TeamIcon },
-      { href: '/team/dashboard', label: 'Manager', icon: ManagerIcon },
+      { href: '/equipment', label: 'Equipment', icon: EquipmentIcon },
+      { href: '/products', label: 'Products', icon: ProductsIcon },
+      { href: '/settings/locations', label: 'Locations', icon: LocationsIcon },
+    ],
+  },
+  {
+    label: 'Settings',
+    items: [
       { href: '/settings', label: 'Settings', icon: SettingsIcon },
+      { href: '/referrals', label: 'Referrals', icon: ReferralsIcon },
     ],
   },
 ];
@@ -77,6 +87,12 @@ function TeamIcon() {
 }
 function ManagerIcon() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>;
+}
+function EquipmentIcon() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path d="M11.42 15.17l-5.6 5.6a2.12 2.12 0 01-3-3l5.6-5.6m2.83 2.83l3.18-3.18a2.12 2.12 0 000-3L14.3 5.7a2.12 2.12 0 00-3 0L8.12 8.88m3.3 6.29l-3.3-3.3" /><path d="M19.07 4.93a2 2 0 010 2.83l-1.42 1.42" /></svg>;
+}
+function LocationsIcon() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
 }
 function SettingsIcon() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.066 2.573c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.573 1.066c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.066-2.573c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" /><circle cx="12" cy="12" r="3" /></svg>;
@@ -131,6 +147,9 @@ export default function Sidebar() {
 
   const isActive = (href) => {
     if (href === '/dashboard') return pathname === '/dashboard';
+    if (href === '/settings') return pathname === '/settings' || (pathname.startsWith('/settings/') && pathname !== '/settings/locations');
+    if (href === '/settings/locations') return pathname === '/settings/locations';
+    if (href === '/team') return pathname === '/team' || pathname === '/team/add' || pathname === '/team/permissions';
     return pathname.startsWith(href);
   };
 
@@ -151,7 +170,12 @@ export default function Sidebar() {
       <nav className="flex-1 overflow-y-auto px-0">
         {NAV_GROUPS.map((group, gi) => (
           <div key={gi}>
-            {gi > 0 && <div className="mx-5 my-2 border-t border-v-border-subtle" />}
+            {gi > 0 && <div className="mx-5 mt-3 mb-1 border-t border-v-border-subtle" />}
+            {group.label && (
+              <p className="px-7 pt-2 pb-1 text-[9px] uppercase text-v-text-secondary/50 font-medium" style={{ letterSpacing: '0.2em' }}>
+                {group.label}
+              </p>
+            )}
             {group.items.map((item) => {
               const active = isActive(item.href);
               const Icon = item.icon;
