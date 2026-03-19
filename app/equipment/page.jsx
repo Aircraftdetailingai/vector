@@ -36,6 +36,13 @@ export default function EquipmentPage() {
   const [saveError, setSaveError] = useState('');
   const [toast, setToast] = useState('');
 
+  // Location state
+  const [locations, setLocations] = useState([]);
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [showTransferModal, setShowTransferModal] = useState(null);
+  const [transferTo, setTransferTo] = useState('');
+  const [transferring, setTransferring] = useState(false);
+
   const CATEGORY_LABELS = {
     polisher: 'Polisher',
     extractor: 'Extractor',
@@ -76,12 +83,15 @@ export default function EquipmentPage() {
       return;
     }
     fetchEquipment();
+    fetchLocations();
   }, [router]);
 
-  const fetchEquipment = async () => {
+  const fetchEquipment = async (locFilter) => {
     const token = localStorage.getItem('vector_token');
+    const lf = locFilter !== undefined ? locFilter : locationFilter;
+    const params = lf && lf !== 'all' ? `?location_id=${lf}` : '';
     try {
-      const res = await fetch('/api/equipment', {
+      const res = await fetch(`/api/equipment${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -96,6 +106,50 @@ export default function EquipmentPage() {
       setLoading(false);
     }
   };
+
+  const fetchLocations = async () => {
+    const token = localStorage.getItem('vector_token');
+    try {
+      const res = await fetch('/api/locations', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        setLocations(data.locations || []);
+      }
+    } catch (e) {}
+  };
+
+  const handleLocationFilter = (val) => {
+    setLocationFilter(val);
+    setLoading(true);
+    fetchEquipment(val);
+  };
+
+  const handleTransfer = async () => {
+    if (!showTransferModal || !transferTo) return;
+    setTransferring(true);
+    const token = localStorage.getItem('vector_token');
+    try {
+      const res = await fetch('/api/locations/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          item_type: 'equipment',
+          item_id: showTransferModal.id,
+          to_location_id: transferTo,
+        }),
+      });
+      if (res.ok) {
+        setShowTransferModal(null);
+        setTransferTo('');
+        setToast('Transfer complete');
+        setTimeout(() => setToast(''), 3000);
+        fetchEquipment();
+      }
+    } catch (e) { console.error(e); }
+    finally { setTransferring(false); }
+  };
+
+  const getLocationName = (id) => locations.find(l => l.id === id)?.name || null;
 
   const handleOpenModal = (item = null) => {
     if (item) {
@@ -450,7 +504,23 @@ export default function EquipmentPage() {
           </div>
         )}
 
-        {/* Filter Tabs */}
+        {/* Location + Filter Tabs */}
+        <div className="flex items-center gap-3 mb-4 overflow-x-auto">
+          {locations.length > 0 && (
+            <select
+              value={locationFilter}
+              onChange={(e) => handleLocationFilter(e.target.value)}
+              className="bg-v-charcoal border border-v-border rounded-lg px-3 py-2 text-sm text-v-text-primary focus:outline-none focus:ring-1 focus:ring-v-gold flex-shrink-0"
+              style={{ colorScheme: 'dark' }}
+            >
+              <option value="all">All Locations</option>
+              <option value="unassigned">Unassigned</option>
+              {locations.map(l => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </select>
+          )}
+        </div>
         <div className="flex space-x-2 mb-4 overflow-x-auto">
           {[
             { key: 'all', label: 'All' },
@@ -545,6 +615,11 @@ export default function EquipmentPage() {
                                   Low Stock
                                 </span>
                               )}
+                              {getLocationName(item.location_id) && (
+                                <span className="text-xs px-2 py-0.5 rounded-full bg-indigo-900/30 text-indigo-400 font-medium">
+                                  {getLocationName(item.location_id)}
+                                </span>
+                              )}
                             </div>
 
                             {/* Brand / Model */}
@@ -597,7 +672,7 @@ export default function EquipmentPage() {
                           </div>
 
                           {/* Actions */}
-                          <div className="flex items-center gap-1 shrink-0">
+                          <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
                             <button
                               onClick={() => handleIncrementJobs(item.id)}
                               className="px-2.5 py-1 text-xs bg-green-900/30 text-green-400 hover:bg-green-200 rounded font-medium"
@@ -605,6 +680,14 @@ export default function EquipmentPage() {
                             >
                               {'+1 Job'}
                             </button>
+                            {locations.length > 0 && (
+                              <button
+                                onClick={() => { setShowTransferModal(item); setTransferTo(''); }}
+                                className="px-2.5 py-1 text-xs text-indigo-400 hover:bg-indigo-900/20 rounded"
+                              >
+                                Transfer
+                              </button>
+                            )}
                             <button
                               onClick={() => handleOpenModal(item)}
                               className="px-2.5 py-1 text-xs text-blue-600 hover:bg-blue-900/20 rounded"
@@ -863,6 +946,44 @@ export default function EquipmentPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Transfer Modal */}
+      {showTransferModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowTransferModal(null)}>
+          <div className="bg-v-surface border border-v-border rounded-xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-1">Transfer Equipment</h3>
+            <p className="text-sm text-v-text-secondary mb-4">{showTransferModal.name}</p>
+
+            <div>
+              <label className="block text-xs text-v-text-secondary mb-1">Destination Location</label>
+              <select
+                value={transferTo}
+                onChange={e => setTransferTo(e.target.value)}
+                className="w-full bg-v-charcoal border border-v-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-v-gold"
+                style={{ colorScheme: 'dark' }}
+              >
+                <option value="">Select location...</option>
+                {locations.filter(l => l.id !== showTransferModal.location_id).map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowTransferModal(null)} className="flex-1 px-4 py-2 border border-v-border text-v-text-secondary rounded-lg hover:bg-white/5 text-sm">
+                Cancel
+              </button>
+              <button
+                onClick={handleTransfer}
+                disabled={transferring || !transferTo}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 text-sm font-medium disabled:opacity-50"
+              >
+                {transferring ? 'Transferring...' : 'Transfer'}
+              </button>
+            </div>
           </div>
         </div>
       )}

@@ -94,12 +94,25 @@ export async function GET(request) {
     return Response.json({ error: 'Database not configured' }, { status: 500 });
   }
 
-  const { data: equipment } = await supabase
+  const url = new URL(request.url);
+  const locationFilter = url.searchParams.get('location_id');
+
+  let query = supabase
     .from('equipment')
     .select('*')
     .eq('detailer_id', user.id)
     .order('category', { ascending: true })
     .order('name', { ascending: true });
+
+  if (locationFilter && locationFilter !== 'all') {
+    if (locationFilter === 'unassigned') {
+      query = query.is('location_id', null);
+    } else {
+      query = query.eq('location_id', locationFilter);
+    }
+  }
+
+  const { data: equipment } = await query;
 
   const now = new Date();
 
@@ -214,6 +227,8 @@ export async function POST(request) {
     min_quantity: min_quantity != null ? (parseInt(min_quantity) || null) : null,
   };
 
+  if (body.locationId) row.location_id = body.locationId;
+
   const { data: item, error } = await retryStrippingColumns(supabase, 'equipment', 'insert', row);
 
   if (error) {
@@ -279,6 +294,7 @@ export async function PUT(request) {
   if (image_url !== undefined) updates.image_url = image_url || null;
   if (quantity !== undefined) updates.quantity = parseInt(quantity) || 1;
   if (min_quantity !== undefined) updates.min_quantity = min_quantity != null ? (parseInt(min_quantity) || null) : null;
+  if (body.locationId !== undefined) updates.location_id = body.locationId || null;
 
   const { data: item, error } = await retryStrippingColumns(
     supabase, 'equipment', 'update', updates, { id, detailer_id: user.id }

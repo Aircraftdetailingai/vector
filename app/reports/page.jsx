@@ -40,6 +40,16 @@ const REPORT_TYPES = [
     borderColor: 'border-v-gold/30',
     hasPdf: true,
   },
+  {
+    key: 'inventory_location',
+    label: 'Inventory by Location',
+    description: 'Products and equipment per location with values',
+    icon: '\u{1F4CD}',
+    color: 'text-indigo-400',
+    borderColor: 'border-indigo-500/30',
+    hasPdf: false,
+    standalone: true,
+  },
 ];
 
 const DATE_RANGES = [
@@ -111,6 +121,8 @@ export default function ReportsPage() {
   const [customStart, setCustomStart] = useState('');
   const [customEnd, setCustomEnd] = useState('');
   const [pdfLoading, setPdfLoading] = useState(null);
+  const [locationData, setLocationData] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -137,6 +149,44 @@ export default function ReportsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const fetchLocationReport = async () => {
+    setLocationLoading(true);
+    const token = localStorage.getItem('vector_token');
+    try {
+      const [locRes, prodRes, equipRes] = await Promise.all([
+        fetch('/api/locations', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/products', { headers: { Authorization: `Bearer ${token}` } }),
+        fetch('/api/equipment', { headers: { Authorization: `Bearer ${token}` } }),
+      ]);
+      const locs = locRes.ok ? (await locRes.json()).locations || [] : [];
+      const prods = prodRes.ok ? (await prodRes.json()).products || [] : [];
+      const equips = equipRes.ok ? (await equipRes.json()).equipment || [] : [];
+
+      // Group by location
+      const grouped = {};
+      // Add known locations
+      for (const loc of locs) {
+        grouped[loc.id] = { location: loc, products: [], equipment: [], totalValue: 0 };
+      }
+      // Add "Unassigned" bucket
+      grouped['unassigned'] = { location: { name: 'Unassigned', location_type: 'other' }, products: [], equipment: [], totalValue: 0 };
+
+      for (const p of prods) {
+        const key = p.location_id && grouped[p.location_id] ? p.location_id : 'unassigned';
+        grouped[key].products.push(p);
+        grouped[key].totalValue += (p.current_quantity || p.quantity || 0) * (p.cost_per_unit || 0);
+      }
+      for (const e of equips) {
+        const key = e.location_id && grouped[e.location_id] ? e.location_id : 'unassigned';
+        grouped[key].equipment.push(e);
+        grouped[key].totalValue += e.purchase_price || 0;
+      }
+
+      setLocationData(Object.values(grouped).filter(g => g.products.length > 0 || g.equipment.length > 0));
+    } catch (e) { console.error(e); }
+    finally { setLocationLoading(false); }
   };
 
   const exportCSV = (type) => {
@@ -309,7 +359,7 @@ export default function ReportsPage() {
                       </div>
                     </div>
                     <span className="text-xs text-v-text-secondary bg-v-charcoal px-2 py-0.5 rounded">
-                      {rowCount} {rowCount === 1 ? 'row' : 'rows'}
+                      {rt.standalone ? '' : `${rowCount} ${rowCount === 1 ? 'row' : 'rows'}`}
                     </span>
                   </div>
 
@@ -378,8 +428,11 @@ export default function ReportsPage() {
                   {/* Action buttons */}
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => setActiveReport(rt.key)}
-                      disabled={rowCount === 0}
+                      onClick={() => {
+                        setActiveReport(rt.key);
+                        if (rt.key === 'inventory_location') fetchLocationReport();
+                      }}
+                      disabled={!rt.standalone && rowCount === 0}
                       className="flex-1 px-3 py-1.5 text-xs font-medium text-v-text-primary bg-v-charcoal border border-v-border rounded hover:border-v-gold/50 transition-colors disabled:opacity-40"
                     >
                       View Report
@@ -408,7 +461,7 @@ export default function ReportsPage() {
         )}
 
         {/* Active Report Detail View */}
-        {!loading && data && activeReport && (
+        {!loading && activeReport && (activeReport === 'inventory_location' || data) && (
           <div>
             <div className="flex items-center gap-3 mb-4">
               <button
@@ -421,12 +474,14 @@ export default function ReportsPage() {
                 {REPORT_TYPES.find(r => r.key === activeReport)?.label}
               </h2>
               <div className="flex-1" />
-              <button
-                onClick={() => exportCSV(activeReport)}
-                className="px-3 py-1.5 text-xs font-medium text-green-400 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
-              >
-                Export CSV
-              </button>
+              {activeReport !== 'inventory_location' && (
+                <button
+                  onClick={() => exportCSV(activeReport)}
+                  className="px-3 py-1.5 text-xs font-medium text-green-400 border border-green-500/30 rounded hover:bg-green-500/10 transition-colors"
+                >
+                  Export CSV
+                </button>
+              )}
               {REPORT_TYPES.find(r => r.key === activeReport)?.hasPdf && (
                 <button
                   onClick={() => exportPDF(activeReport)}
@@ -438,10 +493,91 @@ export default function ReportsPage() {
               )}
             </div>
 
-            {activeReport === 'revenue' && <RevenueTable data={data.revenue} />}
-            {activeReport === 'customers' && <CustomerTable data={data.customers} />}
-            {activeReport === 'services' && <ServicesTable data={data.services} />}
-            {activeReport === 'tax' && <TaxTable data={data.tax} />}
+            {activeReport === 'revenue' && data && <RevenueTable data={data.revenue} />}
+            {activeReport === 'customers' && data && <CustomerTable data={data.customers} />}
+            {activeReport === 'services' && data && <ServicesTable data={data.services} />}
+            {activeReport === 'tax' && data && <TaxTable data={data.tax} />}
+            {activeReport === 'inventory_location' && (
+              locationLoading ? (
+                <div className="text-center py-12 text-v-text-secondary">Loading inventory data...</div>
+              ) : !locationData || locationData.length === 0 ? (
+                <div className="text-center py-12">
+                  <p className="text-v-text-secondary">No inventory data found.</p>
+                  <p className="text-xs text-gray-600 mt-1">Add products or equipment and assign them to locations.</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  {/* Grand total */}
+                  <div className="bg-v-surface border border-indigo-500/20 rounded-sm p-4">
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div>
+                        <p className="text-xs text-v-text-secondary">Locations</p>
+                        <p className="text-xl font-bold text-indigo-400">{locationData.length}</p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-v-text-secondary">Total Items</p>
+                        <p className="text-xl font-bold text-v-text-primary">
+                          {locationData.reduce((s, g) => s + g.products.length + g.equipment.length, 0)}
+                        </p>
+                      </div>
+                      <div>
+                        <p className="text-xs text-v-text-secondary">Total Value</p>
+                        <p className="text-xl font-bold text-v-gold">
+                          {formatCurrency(locationData.reduce((s, g) => s + g.totalValue, 0))}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {locationData.map((group, i) => (
+                    <div key={i} className="bg-v-surface border border-v-border/40 rounded-sm overflow-hidden">
+                      <div className="bg-v-charcoal px-4 py-3 flex justify-between items-center">
+                        <div>
+                          <h3 className="font-medium text-v-text-primary">{group.location.name}</h3>
+                          <p className="text-xs text-v-text-secondary">
+                            {group.products.length} products, {group.equipment.length} equipment
+                          </p>
+                        </div>
+                        <span className="text-sm font-bold text-v-gold">{formatCurrency(group.totalValue)}</span>
+                      </div>
+
+                      {group.products.length > 0 && (
+                        <div className="px-4 py-2 border-b border-v-border/20">
+                          <p className="text-[10px] text-v-text-secondary uppercase tracking-wider mb-2">Products</p>
+                          <div className="space-y-1">
+                            {group.products.map(p => (
+                              <div key={p.id} className="flex justify-between text-sm">
+                                <span className="text-gray-300">{p.name} {p.brand ? `(${p.brand})` : ''}</span>
+                                <span className="text-v-text-secondary">
+                                  {p.current_quantity || p.quantity || 0} units
+                                  {p.cost_per_unit > 0 ? ` = ${formatCurrency((p.current_quantity || p.quantity || 0) * p.cost_per_unit)}` : ''}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {group.equipment.length > 0 && (
+                        <div className="px-4 py-2">
+                          <p className="text-[10px] text-v-text-secondary uppercase tracking-wider mb-2">Equipment</p>
+                          <div className="space-y-1">
+                            {group.equipment.map(e => (
+                              <div key={e.id} className="flex justify-between text-sm">
+                                <span className="text-gray-300">{e.name} {e.brand ? `(${e.brand})` : ''}</span>
+                                <span className="text-v-text-secondary">
+                                  {e.purchase_price > 0 ? formatCurrency(e.purchase_price) : '-'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
           </div>
         )}
       </div>

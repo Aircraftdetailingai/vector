@@ -56,12 +56,25 @@ export async function GET(request) {
     return Response.json({ error: 'Database not configured' }, { status: 500 });
   }
 
-  const { data: products } = await supabase
+  const url = new URL(request.url);
+  const locationFilter = url.searchParams.get('location_id');
+
+  let query = supabase
     .from('products')
     .select('*')
     .eq('detailer_id', user.id)
     .order('category', { ascending: true })
     .order('name', { ascending: true });
+
+  if (locationFilter && locationFilter !== 'all') {
+    if (locationFilter === 'unassigned') {
+      query = query.is('location_id', null);
+    } else {
+      query = query.eq('location_id', locationFilter);
+    }
+  }
+
+  const { data: products } = await query;
 
   // Map DB column names to frontend field names
   const mapped = (products || []).map(p => ({
@@ -115,6 +128,7 @@ export async function POST(request) {
     notes,
     productUrl,
     imageUrl,
+    locationId,
   } = body;
 
   if (!name) {
@@ -136,6 +150,8 @@ export async function POST(request) {
     product_url: productUrl || '',
     image_url: imageUrl || '',
   };
+
+  if (locationId) row.location_id = locationId;
 
   // Column-stripping retry pattern for graceful handling of missing columns
   for (let attempt = 0; attempt < 5; attempt++) {
@@ -208,6 +224,7 @@ export async function PUT(request) {
   if (notes !== undefined) updates.notes = notes;
   if (productUrl !== undefined) updates.product_url = productUrl;
   if (imageUrl !== undefined) updates.image_url = imageUrl;
+  if (body.locationId !== undefined) updates.location_id = body.locationId || null;
 
   // Column-stripping retry for graceful handling of missing columns
   for (let attempt = 0; attempt < 5; attempt++) {

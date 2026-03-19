@@ -40,6 +40,14 @@ export default function ProductsPage() {
   const [scraping, setScraping] = useState(false);
   const [scrapeError, setScrapeError] = useState('');
 
+  // Location state
+  const [locations, setLocations] = useState([]);
+  const [locationFilter, setLocationFilter] = useState('all');
+  const [showTransferModal, setShowTransferModal] = useState(null);
+  const [transferTo, setTransferTo] = useState('');
+  const [transferQty, setTransferQty] = useState('');
+  const [transferring, setTransferring] = useState(false);
+
   const CATEGORY_LABELS = {
     compound: 'Compound',
     polish: 'Polish',
@@ -62,12 +70,15 @@ export default function ProductsPage() {
     }
     fetchProducts();
     fetchInsights();
+    fetchLocations();
   }, [router]);
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (locFilter) => {
     const token = localStorage.getItem('vector_token');
+    const filter = locFilter !== undefined ? locFilter : locationFilter;
     try {
-      const res = await fetch('/api/products', {
+      const params = filter && filter !== 'all' ? `?location_id=${filter}` : '';
+      const res = await fetch(`/api/products${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (res.ok) {
@@ -84,6 +95,52 @@ export default function ProductsPage() {
       setLoading(false);
     }
   };
+
+  const fetchLocations = async () => {
+    const token = localStorage.getItem('vector_token');
+    try {
+      const res = await fetch('/api/locations', { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const data = await res.json();
+        setLocations(data.locations || []);
+      }
+    } catch (e) {}
+  };
+
+  const handleLocationFilter = (val) => {
+    setLocationFilter(val);
+    setLoading(true);
+    fetchProducts(val);
+  };
+
+  const handleTransfer = async () => {
+    if (!showTransferModal || !transferTo) return;
+    setTransferring(true);
+    const token = localStorage.getItem('vector_token');
+    try {
+      const res = await fetch('/api/locations/transfer', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          item_type: 'product',
+          item_id: showTransferModal.id,
+          to_location_id: transferTo,
+          quantity: parseInt(transferQty) || showTransferModal.current_quantity,
+        }),
+      });
+      if (res.ok) {
+        setShowTransferModal(null);
+        setTransferTo('');
+        setTransferQty('');
+        setSuccessMsg('Transfer complete');
+        setTimeout(() => setSuccessMsg(''), 3000);
+        fetchProducts();
+      }
+    } catch (e) { console.error(e); }
+    finally { setTransferring(false); }
+  };
+
+  const getLocationName = (id) => locations.find(l => l.id === id)?.name || null;
 
   const fetchInsights = async () => {
     const token = localStorage.getItem('vector_token');
@@ -389,9 +446,23 @@ export default function ProductsPage() {
         )}
 
         {/* Page Header */}
-        <div className="flex justify-between items-center mb-4">
-          <div>
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+          <div className="flex items-center gap-3 flex-wrap">
             <p className="text-v-text-secondary text-sm">{'Track your products and materials'}</p>
+            {locations.length > 0 && (
+              <select
+                value={locationFilter}
+                onChange={(e) => handleLocationFilter(e.target.value)}
+                className="bg-v-charcoal border border-v-border rounded px-3 py-1.5 text-sm text-v-text-primary focus:outline-none focus:ring-1 focus:ring-v-gold"
+                style={{ colorScheme: 'dark' }}
+              >
+                <option value="all">All Locations</option>
+                <option value="unassigned">Unassigned</option>
+                {locations.map(l => (
+                  <option key={l.id} value={l.id}>{l.name}</option>
+                ))}
+              </select>
+            )}
           </div>
           <button
             onClick={() => handleOpenModal()}
@@ -466,10 +537,15 @@ export default function ProductsPage() {
                                 {product.product_url && (
                                   <a href={product.product_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">Reorder</a>
                                 )}
+                                {getLocationName(product.location_id) && (
+                                  <span className="px-2 py-0.5 bg-indigo-900/30 text-indigo-400 rounded text-[10px] font-medium">
+                                    {getLocationName(product.location_id)}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0">
+                          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
                             <button
                               onClick={() => {
                                 setShowAdjustModal(product);
@@ -479,6 +555,14 @@ export default function ProductsPage() {
                             >
                               Adjust
                             </button>
+                            {locations.length > 0 && (
+                              <button
+                                onClick={() => { setShowTransferModal(product); setTransferTo(''); setTransferQty(''); }}
+                                className="px-3 py-1 text-xs text-indigo-400 hover:bg-indigo-900/20 rounded"
+                              >
+                                Transfer
+                              </button>
+                            )}
                             <button
                               onClick={() => handleOpenModal(product)}
                               className="px-3 py-1 text-xs text-blue-400 hover:bg-blue-900/20 rounded"
@@ -790,6 +874,61 @@ export default function ProductsPage() {
                 className="w-full mt-3 px-4 py-2 text-v-text-secondary hover:bg-white/5 rounded-sm"
               >
                 {'Cancel'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Transfer Modal */}
+      {showTransferModal && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50 p-4" onClick={() => setShowTransferModal(null)}>
+          <div className="bg-v-surface border border-v-border rounded-xl w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-white mb-1">Transfer Product</h3>
+            <p className="text-sm text-v-text-secondary mb-4">{showTransferModal.name}</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs text-v-text-secondary mb-1">Destination Location</label>
+                <select
+                  value={transferTo}
+                  onChange={e => setTransferTo(e.target.value)}
+                  className="w-full bg-v-charcoal border border-v-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-v-gold"
+                  style={{ colorScheme: 'dark' }}
+                >
+                  <option value="">Select location...</option>
+                  {locations.filter(l => l.id !== showTransferModal.location_id).map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs text-v-text-secondary mb-1">
+                  Quantity to transfer (of {showTransferModal.current_quantity} total)
+                </label>
+                <input
+                  type="number"
+                  min="1"
+                  max={showTransferModal.current_quantity}
+                  value={transferQty}
+                  onChange={e => setTransferQty(e.target.value)}
+                  placeholder={String(showTransferModal.current_quantity)}
+                  className="w-full bg-v-charcoal border border-v-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:ring-2 focus:ring-v-gold"
+                />
+                <p className="text-[10px] text-gray-600 mt-1">Leave blank to transfer all</p>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button onClick={() => setShowTransferModal(null)} className="flex-1 px-4 py-2 border border-v-border text-v-text-secondary rounded-lg hover:bg-white/5 text-sm">
+                Cancel
+              </button>
+              <button
+                onClick={handleTransfer}
+                disabled={transferring || !transferTo}
+                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-500 text-sm font-medium disabled:opacity-50"
+              >
+                {transferring ? 'Transferring...' : 'Transfer'}
               </button>
             </div>
           </div>
