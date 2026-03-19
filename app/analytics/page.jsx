@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import DashboardGrid from './DashboardGrid';
 import AddWidgetModal from './AddWidgetModal';
 import { WIDGET_REGISTRY, DEFAULT_ACTIVE_WIDGETS, DEFAULT_LAYOUTS } from './widgetRegistry';
+import AppShell from '@/components/AppShell';
 
 export default function AnalyticsPage() {
   const router = useRouter();
@@ -94,8 +95,8 @@ export default function AnalyticsPage() {
   };
 
   return (
-    <div className="page-transition min-h-screen bg-v-charcoal">
-      <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px] mx-auto">
+    <AppShell title="Analytics">
+      <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px]">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
           <div>
@@ -194,6 +195,6 @@ export default function AnalyticsPage() {
           />
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }

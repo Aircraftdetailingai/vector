@@ -2201,7 +2201,7 @@ function SettingsContent() {
           )}
 
           <div className="mt-3 flex items-center gap-2">
-            <span className={`w-2 h-2 rounded-full ${stripeMode === 'live' ? 'bg-v-gold' : 'bg-v-gold'}`}></span>
+            <span className={`w-2 h-2 rounded-full ${stripeMode === 'live' ? 'bg-green-500' : 'bg-yellow-500'}`}></span>
             <span className="text-xs text-v-text-secondary">
               {'Currently in {mode} mode'.replace('{mode}', stripeMode === 'live' ? 'Live' : 'Test')}
             </span>
@@ -2212,7 +2212,7 @@ function SettingsContent() {
         <div className="pb-6 mb-2">
           <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Platform fee'}</h3>
           <p className="text-sm text-v-text-secondary mb-3">
-            {'Vector charges a {rate} platform fee on each job. Choose who pays it.'.replace('{fee}', user?.plan === 'enterprise' ? '0' : hasAllFeatures ? '1' : user?.plan === 'pro' ? '2' : '5')}
+            {'Vector charges a {rate}% platform fee on each job. Choose who pays it.'.replace('{rate}', user?.plan === 'enterprise' ? '0' : hasAllFeatures ? '1' : user?.plan === 'pro' ? '2' : '5')}
           </p>
           <div className="space-y-3">
             <label

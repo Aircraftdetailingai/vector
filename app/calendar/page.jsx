@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPrice } from '@/lib/formatPrice';
+import AppShell from '@/components/AppShell';
 
 const statusColors = {
   scheduled: 'bg-blue-500',
@@ -215,9 +216,11 @@ export default function CalendarPage() {
 
   if (loading) {
     return (
-      <div className="page-transition min-h-screen bg-v-charcoal flex items-center justify-center">
-        <div className="text-white text-xl">Loading calendar...</div>
-      </div>
+      <AppShell title="Calendar">
+        <div className="flex items-center justify-center py-32">
+          <div className="text-white text-xl">Loading calendar...</div>
+        </div>
+      </AppShell>
     );
   }
 
@@ -231,19 +234,17 @@ export default function CalendarPage() {
       getGoogleEventsForDate(date).forEach(e => events.push({ type: 'google', data: e, label: e.summary || '(Busy)', color: 'bg-indigo-400' }));
     }
     if (filters.team) {
-      getTeamForDate(date).forEach(s => events.push({ type: 'team', data: s, label: s.member_name, color: `bg-[${s.color}]` || 'bg-teal-500' }));
+      getTeamForDate(date).forEach(s => events.push({ type: 'team', data: s, label: s.member_name, color: 'bg-teal-500', customColor: s.color }));
     }
     return events;
   };
 
   return (
-    <div className="min-h-screen bg-v-charcoal p-4">
+    <AppShell title="Calendar">
+    <div className="px-6 md:px-10 py-8 pb-40">
       {/* Header */}
       <header className="flex justify-between items-center mb-4 text-white">
-        <div className="flex items-center space-x-4">
-          <a href="/dashboard" className="text-2xl hover:text-v-gold">&larr;</a>
-          <h1 className="text-2xl font-bold">Calendar</h1>
-        </div>
+        <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>CALENDAR</h1>
         <div className="flex items-center gap-2">
           {/* View Toggle */}
           <div className="flex bg-v-surface rounded overflow-hidden border border-v-border">
@@ -312,7 +313,8 @@ export default function CalendarPage() {
                           <div
                             key={i}
                             onClick={() => evt.type === 'job' ? setSelectedJob(evt.data) : null}
-                            className={`text-[10px] px-1 py-0.5 rounded text-white truncate ${evt.color} ${evt.type === 'job' ? 'cursor-pointer' : ''}`}
+                            className={`text-[10px] px-1 py-0.5 rounded text-white truncate ${evt.customColor ? '' : evt.color} ${evt.type === 'job' ? 'cursor-pointer' : ''}`}
+                            style={evt.customColor ? { backgroundColor: evt.customColor } : undefined}
                             title={evt.label}
                           >
                             {evt.label}
@@ -353,7 +355,8 @@ export default function CalendarPage() {
                           <div
                             key={j}
                             onClick={() => evt.type === 'job' ? setSelectedJob(evt.data) : null}
-                            className={`text-xs p-1.5 rounded text-white ${evt.color} ${evt.type === 'job' ? 'cursor-pointer' : ''}`}
+                            className={`text-xs p-1.5 rounded text-white ${evt.customColor ? '' : evt.color} ${evt.type === 'job' ? 'cursor-pointer' : ''}`}
+                            style={evt.customColor ? { backgroundColor: evt.customColor } : undefined}
                           >
                             <div className="font-medium truncate">{evt.label}</div>
                             {evt.type === 'job' && <div className="text-[10px] opacity-80">{evt.data.aircraft_model || evt.data.aircraft_type}</div>}
@@ -573,5 +576,6 @@ export default function CalendarPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

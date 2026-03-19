@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { useToast } from '@/components/Toast';
 import AddCustomerModal from '@/components/AddCustomerModal';
+import AppShell from '@/components/AppShell';
 
 const TAG_COLORS = {
   'VIP': 'bg-transparent text-v-gold border-v-gold/50',
@@ -483,17 +484,15 @@ export default function CustomersPage() {
   }
 
   return (
-    <div className="page-transition min-h-screen bg-v-charcoal p-4">
+    <AppShell title="Customers">
+    <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px]">
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
-        <div className="flex items-center space-x-4">
-          <a href="/dashboard" className="text-2xl text-v-text-secondary hover:text-v-gold">&#8592;</a>
-          <div>
-            <h1 className="text-2xl font-heading text-v-text-primary section-heading">Customers</h1>
-            <p className="text-sm text-v-text-secondary">
-              {customers.length} {viewMode === 'archived' ? 'archived' : 'total'}
-            </p>
-          </div>
+        <div>
+          <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>CUSTOMERS</h1>
+          <p className="text-sm text-v-text-secondary">
+            {customers.length} {viewMode === 'archived' ? 'archived' : 'total'}
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {qbConnected && (
@@ -1111,5 +1110,6 @@ export default function CustomersPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

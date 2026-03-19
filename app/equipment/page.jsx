@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import AppShell from '@/components/AppShell';
 
 export default function EquipmentPage() {
   const router = useRouter();
@@ -375,11 +376,12 @@ export default function EquipmentPage() {
   );
 
   if (loading) {
-    return <LoadingSpinner message={'Loading equipment...'} />;
+    return <AppShell title="Equipment"><LoadingSpinner message={'Loading equipment...'} /></AppShell>;
   }
 
   return (
-    <div className="page-transition min-h-screen bg-v-charcoal p-4 text-v-text-primary">
+    <AppShell title="Equipment">
+    <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px] text-v-text-primary">
       {/* Success Toast */}
       {toast && (
         <div className="fixed top-4 right-4 z-[60] bg-green-900/90 border border-green-500/30 text-green-300 px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 animate-fade-in">
@@ -390,10 +392,7 @@ export default function EquipmentPage() {
 
       {/* Header */}
       <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6 text-white">
-        <div className="flex items-center space-x-4">
-          <a href="/dashboard" className="text-2xl hover:text-v-gold">&#8592;</a>
-          <h1 className="text-2xl font-bold">{'Equipment Tracker'}</h1>
-        </div>
+        <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>EQUIPMENT</h1>
         <div className="flex items-center gap-3">
           <a href="/products" className="text-sm text-white/70 hover:text-white underline">{'Inventory'}</a>
           <button
@@ -988,5 +987,6 @@ export default function EquipmentPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

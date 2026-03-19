@@ -33,14 +33,14 @@ const DEFAULT_ADDON_FEES = [
 ];
 
 const AIRCRAFT_HOURS_MAP = [
-  { column: 'maintenance_wash_hrs', label: 'Maintenance Wash', keywords: ['wash', 'maintenance', 'exterior wash', 'ramp wash'] },
-  { column: 'one_step_polish_hrs', label: 'One-Step Polish', keywords: ['polish', 'one step', 'machine polish', 'compound'] },
-  { column: 'wax_hrs', label: 'Wax', keywords: ['wax', 'sealant', 'polymer', 'paint sealant'] },
-  { column: 'spray_ceramic_hrs', label: 'Spray Ceramic', keywords: ['spray ceramic', 'ceramic spray', 'sio2'] },
-  { column: 'ceramic_coating_hrs', label: 'Ceramic Coating', keywords: ['ceramic', 'coating', 'nano'] },
-  { column: 'leather_hrs', label: 'Leather', keywords: ['leather', 'condition', 'interior leather'] },
-  { column: 'carpet_hrs', label: 'Carpet', keywords: ['carpet', 'extraction', 'steam'] },
-  { column: 'brightwork_hrs', label: 'Brightwork', keywords: ['brightwork', 'metal polish', 'chrome', 'aluminum'] },
+  { column: 'ext_wash_hours', label: 'Exterior Wash', keywords: ['wash', 'maintenance', 'exterior wash', 'ramp wash'] },
+  { column: 'int_detail_hours', label: 'Interior Detail', keywords: ['interior', 'detail', 'cabin', 'cockpit'] },
+  { column: 'polish_hours', label: 'Polish', keywords: ['polish', 'one step', 'machine polish', 'compound'] },
+  { column: 'wax_hours', label: 'Wax', keywords: ['wax', 'sealant', 'polymer', 'paint sealant'] },
+  { column: 'ceramic_hours', label: 'Ceramic', keywords: ['ceramic', 'spray ceramic', 'ceramic spray', 'sio2', 'coating', 'nano'] },
+  { column: 'leather_hours', label: 'Leather', keywords: ['leather', 'condition', 'interior leather'] },
+  { column: 'carpet_hours', label: 'Carpet', keywords: ['carpet', 'extraction', 'steam'] },
+  { column: 'brightwork_hours', label: 'Brightwork', keywords: ['brightwork', 'metal polish', 'chrome', 'aluminum'] },
 ];
 
 function matchServiceName(name) {
@@ -798,7 +798,7 @@ export default function ServicesPage() {
             <button
               onClick={() => { setNewPackage({ name: '', description: '', discount_percent: '', service_ids: [] }); setShowPackageBuilder(true); }}
               disabled={services.length === 0}
-              className="px-3 py-1.5 text-sm bg-green-900/200 text-white rounded hover:bg-green-600 disabled:opacity-50">
+              className="px-3 py-1.5 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50">
               + Create
             </button>
           </div>
@@ -844,7 +844,7 @@ export default function ServicesPage() {
                 <div className="flex justify-end gap-2">
                   <button onClick={() => setShowPackageBuilder(false)} className="px-4 py-2 border rounded">{'Cancel'}</button>
                   <button onClick={addPackage} disabled={saving || !newPackage.name || newPackage.service_ids.length === 0}
-                    className="px-4 py-2 bg-green-900/200 text-white rounded disabled:opacity-50">{'Save'}</button>
+                    className="px-4 py-2 bg-green-600 text-white rounded disabled:opacity-50">{'Save'}</button>
                 </div>
               </div>
             )}
@@ -1226,7 +1226,7 @@ export default function ServicesPage() {
           </div>
           <div className="flex justify-end gap-3 mt-6">
             <button onClick={() => setEditingPackage(null)} className="px-4 py-2 border border-v-border text-v-text-secondary rounded-lg hover:bg-white/5">{'Cancel'}</button>
-            <button onClick={updatePackage} disabled={saving} className="px-4 py-2 bg-green-900/200 text-white rounded-lg disabled:opacity-50">{'Save'}</button>
+            <button onClick={updatePackage} disabled={saving} className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50">{'Save'}</button>
           </div>
         </Modal>
       )}

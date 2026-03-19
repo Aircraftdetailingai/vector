@@ -41,7 +41,7 @@ export default function LeadIntakeSettingsPage() {
   const [draggedIndex, setDraggedIndex] = useState(null);
 
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem('vector_user');
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));

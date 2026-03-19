@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPrice, currencySymbol } from '@/lib/formatPrice';
+import AppShell from '@/components/AppShell';
 
 const statusColors = {
   paid: 'border border-green-500/40 text-green-400',
@@ -87,24 +88,21 @@ export default function JobsPage() {
   };
 
   return (
-    <div className="page-transition min-h-screen bg-v-charcoal">
-      <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px] mx-auto">
+    <AppShell title="Jobs">
+      <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px]">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-          <div className="flex items-center gap-4">
-            <a href="/dashboard" className="text-2xl text-v-text-secondary hover:text-v-gold">&#8592;</a>
-            <div>
-              <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>
-                JOBS
-              </h1>
-              <p className="text-v-text-secondary text-xs mt-1">Scheduled and completed work</p>
-            </div>
+          <div>
+            <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>
+              JOBS
+            </h1>
+            <p className="text-v-text-secondary text-xs mt-1">Scheduled and completed work</p>
           </div>
         </div>
 
         {/* Stats Bar */}
         {stats && (
-          <div className="grid grid-cols-5 gap-4 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 mb-6">
             {[
               { label: 'Total Jobs', value: stats.total || 0, color: 'text-v-gold' },
               { label: 'Scheduled', value: stats.scheduled || 0, color: 'text-indigo-300' },
@@ -113,7 +111,7 @@ export default function JobsPage() {
               { label: 'Revenue', value: `${currencySymbol()}${formatPrice(stats.totalRevenue || 0)}`, color: 'text-v-gold', isText: true },
             ].map(s => (
               <div key={s.label} className="bg-v-surface border border-v-border-subtle rounded-sm p-4 text-center">
-                <p className={`text-xl font-bold font-data ${s.color}`}>{s.isText ? s.value : s.value}</p>
+                <p className={`text-xl font-bold font-data ${s.color}`}>{s.value}</p>
                 <p className="text-[10px] text-v-text-secondary uppercase tracking-wider mt-1">{s.label}</p>
               </div>
             ))}
@@ -216,6 +214,6 @@ export default function JobsPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }

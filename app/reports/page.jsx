@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPrice, currencySymbol } from '@/lib/formatPrice';
+import AppShell from '@/components/AppShell';
 
 const REPORT_TYPES = [
   {
@@ -279,18 +280,15 @@ export default function ReportsPage() {
   };
 
   return (
-    <div className="page-transition min-h-screen bg-v-charcoal">
-      <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px] mx-auto">
+    <AppShell title="Reports">
+      <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px]">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-          <div className="flex items-center gap-4">
-            <a href="/dashboard" className="text-2xl text-v-text-secondary hover:text-v-gold">&#8592;</a>
-            <div>
-              <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>
-                REPORTS
-              </h1>
-              <p className="text-v-text-secondary text-xs mt-1">Downloadable business reports</p>
-            </div>
+          <div>
+            <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>
+              REPORTS
+            </h1>
+            <p className="text-v-text-secondary text-xs mt-1">Downloadable business reports</p>
           </div>
         </div>
 
@@ -581,7 +579,7 @@ export default function ReportsPage() {
           </div>
         )}
       </div>
-    </div>
+    </AppShell>
   );
 }
 

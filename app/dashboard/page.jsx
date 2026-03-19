@@ -400,7 +400,7 @@ function DashboardContent() {
                 {recentQuotes.slice(0, 5).map((q) => (
                   <a
                     key={q.id}
-                    href={`/quotes/${q.id}`}
+                    href={q.share_link ? `/q/${q.share_link}` : `/quotes`}
                     className="flex items-center justify-between h-14 border-b border-v-border-subtle hover:bg-white/[0.02] transition-colors -mx-2 px-2"
                   >
                     <div className="min-w-0 flex-1">

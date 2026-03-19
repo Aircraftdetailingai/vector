@@ -85,9 +85,6 @@ function ProductsIcon() {
 function TeamIcon() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m6 5.197V20" /></svg>;
 }
-function ManagerIcon() {
-  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path d="M9 17V7m0 10a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h2a2 2 0 012 2m0 10a2 2 0 002 2h2a2 2 0 002-2M9 7a2 2 0 012-2h2a2 2 0 012 2m0 10V7m0 10a2 2 0 002 2h2a2 2 0 002-2V7a2 2 0 00-2-2h-2a2 2 0 00-2 2" /></svg>;
-}
 function EquipmentIcon() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}><path d="M11.42 15.17l-5.6 5.6a2.12 2.12 0 01-3-3l5.6-5.6m2.83 2.83l3.18-3.18a2.12 2.12 0 000-3L14.3 5.7a2.12 2.12 0 00-3 0L8.12 8.88m3.3 6.29l-3.3-3.3" /><path d="M19.07 4.93a2 2 0 010 2.83l-1.42 1.42" /></svg>;
 }
@@ -149,7 +146,7 @@ export default function Sidebar() {
     if (href === '/dashboard') return pathname === '/dashboard';
     if (href === '/settings') return pathname === '/settings' || (pathname.startsWith('/settings/') && pathname !== '/settings/locations');
     if (href === '/settings/locations') return pathname === '/settings/locations';
-    if (href === '/team') return pathname === '/team' || pathname === '/team/add' || pathname === '/team/permissions';
+    if (href === '/team') return pathname === '/team' || pathname.startsWith('/team/');
     return pathname.startsWith(href);
   };
 

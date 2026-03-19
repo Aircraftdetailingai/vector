@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { formatPrice, currencySymbol } from '@/lib/formatPrice';
+import AppShell from '@/components/AppShell';
 
 export default function TeamPage() {
   const router = useRouter();
@@ -40,13 +41,11 @@ export default function TeamPage() {
   const totalPay = members.reduce((sum, m) => sum + (m.total_pay || 0), 0);
 
   return (
-    <div className="page-transition min-h-screen bg-v-charcoal p-4">
+    <AppShell title="Team">
+    <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px]">
       {/* Header */}
       <header className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-3">
-          <a href="/dashboard" className="text-white text-2xl">&#8592;</a>
-          <h1 className="text-2xl font-bold text-white">{'Team'}</h1>
-        </div>
+        <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>TEAM</h1>
         <div className="flex items-center gap-2">
           <a
             href="/team/permissions"
@@ -56,7 +55,7 @@ export default function TeamPage() {
           </a>
           <a
             href="/team/add"
-            className="px-4 py-2 bg-v-gold-muted/200 text-white rounded-lg hover:bg-v-gold-dim transition-colors font-medium"
+            className="px-4 py-2 bg-v-gold text-white rounded-lg hover:bg-v-gold-dim transition-colors font-medium"
           >
             {'+ Add Member'}
           </a>
@@ -91,13 +90,13 @@ export default function TeamPage() {
       {loading ? (
         <div className="text-white text-center py-12">{'Loading team...'}</div>
       ) : error ? (
-        <div className="bg-red-900/200/20 border border-red-500/50 rounded-lg p-4 text-red-200">{error}</div>
+        <div className="bg-red-900/20 border border-red-500/50 rounded-lg p-4 text-red-200">{error}</div>
       ) : members.length === 0 ? (
         <div className="bg-white/10 rounded-lg p-8 text-center">
           <p className="text-white/60 text-lg mb-4">{'No team members yet'}</p>
           <a
             href="/team/add"
-            className="px-6 py-3 bg-v-gold-muted/200 text-white rounded-lg hover:bg-v-gold-dim transition-colors font-medium inline-block"
+            className="px-6 py-3 bg-v-gold text-white rounded-lg hover:bg-v-gold-dim transition-colors font-medium inline-block"
           >
             {'Add Your First Team Member'}
           </a>
@@ -148,7 +147,7 @@ export default function TeamPage() {
                   </td>
                   <td className="px-4 py-3">
                     <span className={`inline-block w-2 h-2 rounded-full ${
-                      member.status === 'active' ? 'bg-green-900/200' : 'bg-gray-400'
+                      member.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
                     }`} />
                     <span className="ml-2 text-sm text-v-text-secondary hidden sm:inline">{member.status}</span>
                   </td>
@@ -159,5 +158,6 @@ export default function TeamPage() {
         </div>
       )}
     </div>
+    </AppShell>
   );
 }

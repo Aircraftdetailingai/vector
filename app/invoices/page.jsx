@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import AppShell from '@/components/AppShell';
 
 const statusColors = {
   paid: 'bg-green-900/30 text-green-400',
@@ -263,13 +264,11 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
   };
 
   return (
-    <div className="page-transition min-h-screen bg-v-charcoal p-4">
+    <AppShell title="Invoices">
+    <div className="px-6 md:px-10 py-8 pb-40 max-w-[1400px]">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 gap-3">
-        <div className="flex items-center gap-3">
-          <a href="/dashboard" className="text-white text-2xl hover:opacity-70">&larr;</a>
-          <h1 className="text-2xl font-bold text-white">{'Invoices'}</h1>
-        </div>
+        <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>INVOICES</h1>
         <div className="flex items-center gap-2 flex-wrap">
           {['all', 'unpaid', 'partially_paid', 'paid', 'overdue'].map(f => (
             <button
@@ -654,5 +653,6 @@ ${invoice.payment_method ? `<p style="margin-top:12px;color:#6b7280;font-size:14
         </div>
       )}
     </div>
+    </AppShell>
   );
 }
