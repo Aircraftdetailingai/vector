@@ -72,6 +72,10 @@ export default function ServicesPage() {
   const [editingAddon, setEditingAddon] = useState(null);
   const [newAddon, setNewAddon] = useState({ name: '', description: '', fee_type: 'flat', amount: '' });
 
+  // AI estimate state
+  const [aiEstimate, setAiEstimate] = useState(null); // { average_hours, aircraft_count, column }
+  const [aiLoading, setAiLoading] = useState(false);
+
   // Error state
   const [error, setError] = useState('');
 
@@ -138,6 +142,24 @@ export default function ServicesPage() {
     const pCount = allProductLinks.filter(l => l.service_id === svcId).length;
     const eCount = allEquipmentLinks.filter(l => l.service_id === svcId).length;
     return pCount + eCount;
+  };
+
+  // ---- AI Estimate ----
+  const fetchAiEstimate = async (column) => {
+    if (!column) return;
+    setAiLoading(true);
+    setAiEstimate(null);
+    try {
+      const res = await fetch(`/api/aircraft-hours/average?column=${column}`);
+      if (res.ok) {
+        const data = await res.json();
+        setAiEstimate(data);
+      }
+    } catch (err) {
+      console.error('AI estimate fetch failed:', err);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   // ---- Service Linking ----
@@ -812,8 +834,33 @@ export default function ServicesPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-v-text-secondary mb-1">Default Hours</label>
-              <input type="number" step="0.5" min="0" value={newService.default_hours || ''} onChange={(e) => setNewService({ ...newService, default_hours: e.target.value })}
-                placeholder="Auto from aircraft" className="w-full border border-v-border bg-v-charcoal text-v-text-primary rounded-lg px-3 py-2" />
+              <div className="flex gap-2">
+                <input type="number" step="0.5" min="0" value={newService.default_hours || ''} onChange={(e) => setNewService({ ...newService, default_hours: e.target.value })}
+                  placeholder="Auto from aircraft" className="flex-1 border border-v-border bg-v-charcoal text-v-text-primary rounded-lg px-3 py-2" />
+                <button
+                  type="button"
+                  onClick={() => { setAiEstimate(null); fetchAiEstimate(newService.hours_field); }}
+                  disabled={aiLoading || !newService.hours_field}
+                  className="px-3 py-2 text-xs font-medium bg-v-gold/10 border border-v-gold/30 text-v-gold rounded-lg hover:bg-v-gold/20 disabled:opacity-40 whitespace-nowrap"
+                  title={!newService.hours_field ? 'Select an aircraft hours type first' : 'Load average hours from Vector aircraft database'}
+                >
+                  {aiLoading ? '...' : 'Load AI Estimate \u2726'}
+                </button>
+              </div>
+              {aiEstimate && !aiLoading && (
+                <div className="mt-2 p-2 bg-v-gold/10 border border-v-gold/20 rounded-lg flex items-center justify-between">
+                  <span className="text-xs text-v-gold">
+                    \u2726 AI Estimate: <strong>{aiEstimate.average_hours} hrs</strong> <span className="text-v-gold/70">(avg across {aiEstimate.aircraft_count} aircraft)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setNewService({ ...newService, default_hours: String(aiEstimate.average_hours) })}
+                    className="text-[10px] px-2 py-0.5 bg-v-gold text-v-charcoal rounded font-medium hover:bg-v-gold-dim"
+                  >
+                    Apply
+                  </button>
+                </div>
+              )}
               <p className="text-xs text-v-text-secondary mt-1">Override aircraft hours with a fixed default. Leave blank to auto-calculate from aircraft data.</p>
             </div>
             <div className="border-t pt-4">
@@ -836,7 +883,7 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => setShowServiceModal(false)} className="px-4 py-2 border border-v-border text-v-text-secondary rounded-lg hover:bg-white/5">{'Cancel'}</button>
+            <button onClick={() => { setShowServiceModal(false); setAiEstimate(null); }} className="px-4 py-2 border border-v-border text-v-text-secondary rounded-lg hover:bg-white/5">{'Cancel'}</button>
             <button onClick={addService} disabled={saving || !newService.name || !newService.hourly_rate}
               className="px-4 py-2 bg-v-gold text-v-charcoal rounded-lg disabled:opacity-50 font-medium">{'Add'}</button>
           </div>
@@ -845,7 +892,7 @@ export default function ServicesPage() {
 
       {/* Edit Service Modal */}
       {editingService && (
-        <Modal onClose={() => { setEditingService(null); setLinkedProducts([]); setLinkedEquipment([]); setError(''); }}>
+        <Modal onClose={() => { setEditingService(null); setLinkedProducts([]); setLinkedEquipment([]); setAiEstimate(null); setError(''); }}>
           <h3 className="text-lg font-semibold mb-4 text-v-text-primary">Edit {editingService.name || 'Service'}</h3>
           {error && <div className="mb-4 p-3 bg-red-900/20 border border-red-900/40 rounded-lg text-red-400 text-sm">{error}</div>}
           <div className="space-y-4">
@@ -881,8 +928,33 @@ export default function ServicesPage() {
             </div>
             <div>
               <label className="block text-sm font-medium text-v-text-secondary mb-1">Default Hours</label>
-              <input type="number" step="0.5" min="0" value={editingService.default_hours || ''} onChange={(e) => setEditingService({ ...editingService, default_hours: e.target.value })}
-                placeholder="Auto from aircraft" className="w-full border border-v-border bg-v-charcoal text-v-text-primary rounded-lg px-3 py-2" />
+              <div className="flex gap-2">
+                <input type="number" step="0.5" min="0" value={editingService.default_hours || ''} onChange={(e) => setEditingService({ ...editingService, default_hours: e.target.value })}
+                  placeholder="Auto from aircraft" className="flex-1 border border-v-border bg-v-charcoal text-v-text-primary rounded-lg px-3 py-2" />
+                <button
+                  type="button"
+                  onClick={() => { setAiEstimate(null); fetchAiEstimate(editingService.hours_field); }}
+                  disabled={aiLoading || !editingService.hours_field}
+                  className="px-3 py-2 text-xs font-medium bg-v-gold/10 border border-v-gold/30 text-v-gold rounded-lg hover:bg-v-gold/20 disabled:opacity-40 whitespace-nowrap"
+                  title={!editingService.hours_field ? 'Select an aircraft hours type first' : 'Load average hours from Vector aircraft database'}
+                >
+                  {aiLoading ? '...' : 'Load AI Estimate \u2726'}
+                </button>
+              </div>
+              {aiEstimate && !aiLoading && (
+                <div className="mt-2 p-2 bg-v-gold/10 border border-v-gold/20 rounded-lg flex items-center justify-between">
+                  <span className="text-xs text-v-gold">
+                    \u2726 AI Estimate: <strong>{aiEstimate.average_hours} hrs</strong> <span className="text-v-gold/70">(avg across {aiEstimate.aircraft_count} aircraft)</span>
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setEditingService({ ...editingService, default_hours: String(aiEstimate.average_hours) })}
+                    className="text-[10px] px-2 py-0.5 bg-v-gold text-v-charcoal rounded font-medium hover:bg-v-gold-dim"
+                  >
+                    Apply
+                  </button>
+                </div>
+              )}
               <p className="text-xs text-v-text-secondary mt-1">Override aircraft hours with a fixed default. Leave blank to auto-calculate from aircraft data.</p>
             </div>
             <div className="border-t pt-4">
@@ -1008,7 +1080,7 @@ export default function ServicesPage() {
             </div>
           </div>
           <div className="flex justify-end gap-3 mt-6">
-            <button onClick={() => { setEditingService(null); setLinkedProducts([]); setLinkedEquipment([]); }} className="px-4 py-2 border border-v-border text-v-text-secondary rounded-lg hover:bg-white/5">Cancel</button>
+            <button onClick={() => { setEditingService(null); setLinkedProducts([]); setLinkedEquipment([]); setAiEstimate(null); }} className="px-4 py-2 border border-v-border text-v-text-secondary rounded-lg hover:bg-white/5">Cancel</button>
             <button onClick={updateService} disabled={saving} className="px-4 py-2 bg-v-gold text-v-charcoal rounded-lg disabled:opacity-50 font-medium">Save</button>
           </div>
         </Modal>
