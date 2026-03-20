@@ -9,36 +9,37 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-// GET — validate an invite token (public endpoint)
 export async function GET(request) {
-  const url = new URL(request.url);
-  const token = url.searchParams.get('token');
+  const { searchParams } = new URL(request.url);
+  const token = searchParams.get('token');
 
   if (!token) {
-    return Response.json({ valid: false, error: 'Token is required' }, { status: 400 });
+    return Response.json({ valid: false, error: 'No token provided' }, { status: 400 });
   }
 
   const supabase = getSupabase();
-  if (!supabase) return Response.json({ valid: false, error: 'Server error' }, { status: 500 });
+  if (!supabase) {
+    return Response.json({ valid: false, error: 'Server error' }, { status: 500 });
+  }
 
-  const { data, error } = await supabase
+  const { data: invite, error } = await supabase
     .from('beta_invites')
     .select('email, plan, duration_days, status')
     .eq('token', token)
     .single();
 
-  if (error || !data) {
+  if (error || !invite) {
     return Response.json({ valid: false, error: 'Invalid invite token' });
   }
 
-  if (data.status !== 'pending') {
-    return Response.json({ valid: false, error: data.status === 'used' ? 'This invite has already been used' : 'This invite has been revoked' });
+  if (invite.status !== 'pending') {
+    return Response.json({ valid: false, error: 'This invitation has already been used' });
   }
 
   return Response.json({
     valid: true,
-    email: data.email,
-    plan: data.plan,
-    duration_days: data.duration_days,
+    email: invite.email,
+    plan: invite.plan,
+    duration_days: invite.duration_days,
   });
 }
