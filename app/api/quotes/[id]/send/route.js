@@ -173,7 +173,7 @@ export async function POST(request, { params }) {
   // Use column-stripping retry in case sms_enabled or notification_settings don't exist yet
   let detailer = null;
   {
-    let detailerCols = 'id, name, email, phone, company, plan, is_admin, notification_settings, sms_enabled, preferred_currency';
+    let detailerCols = 'id, name, email, phone, company, plan, is_admin, notification_settings, sms_enabled, preferred_currency, theme_accent, theme_primary, theme_logo_url, font_heading, font_body';
     for (let attempt = 0; attempt < 5; attempt++) {
       const { data, error: detErr } = await supabase
         .from('detailers')

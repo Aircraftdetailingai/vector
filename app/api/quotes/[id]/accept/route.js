@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
+import { sendBookingConfirmedEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
 
@@ -44,7 +45,7 @@ export async function POST(request, { params }) {
     // Fetch detailer for notification + booking mode
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('email, company, name, booking_mode')
+      .select('email, company, name, phone, booking_mode, preferred_currency, theme_accent, theme_primary, theme_logo_url')
       .eq('id', quote.detailer_id)
       .single();
 
@@ -105,6 +106,15 @@ ${quote.client_email ? `<p>Customer email: <a href="mailto:${quote.client_email}
         });
       } catch (emailErr) {
         console.error('Failed to send invoice request notification:', emailErr);
+      }
+    }
+
+    // Send booking confirmation email to customer
+    if (quote.client_email) {
+      try {
+        await sendBookingConfirmedEmail({ quote: { ...quote, share_link: quote.share_link }, detailer });
+      } catch (e) {
+        console.error('Failed to send booking confirmation:', e);
       }
     }
 
