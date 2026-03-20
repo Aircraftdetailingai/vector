@@ -86,6 +86,7 @@ function InvitesTab() {
   const [form, setForm] = useState({ email: '', plan: 'pro', duration_days: 30, note: '' });
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState('');
+  const [resending, setResending] = useState(null);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('vector_token') : '';
 
@@ -139,6 +140,28 @@ function InvitesTab() {
       });
       fetchInvites();
     } catch {}
+  };
+
+  const handleResend = async (id) => {
+    setResending(id);
+    try {
+      const res = await fetch('/api/admin/beta-invites', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ id }),
+      });
+      const data = await res.json();
+      if (res.ok && data.emailSent) {
+        setMessage('Invite email resent successfully');
+      } else {
+        setMessage('Resend failed — email may not have delivered');
+      }
+    } catch {
+      setMessage('Failed to resend invite');
+    } finally {
+      setResending(null);
+      setTimeout(() => setMessage(''), 4000);
+    }
   };
 
   const stats = {
@@ -201,6 +224,8 @@ function InvitesTab() {
               <option value={30}>30 days</option>
               <option value={60}>60 days</option>
               <option value={90}>90 days</option>
+              <option value={180}>180 days</option>
+              <option value={365}>365 days</option>
             </select>
           </div>
           <div>
@@ -261,14 +286,23 @@ function InvitesTab() {
                 </td>
                 <td className="px-5 py-4 text-v-text-secondary text-xs">{formatDate(inv.created_at)}</td>
                 <td className="px-5 py-4 text-v-text-secondary text-xs">{formatDate(inv.used_at)}</td>
-                <td className="px-5 py-4 text-right">
+                <td className="px-5 py-4 text-right space-x-3">
                   {inv.status === 'pending' && (
-                    <button
-                      onClick={() => handleRevoke(inv.id)}
-                      className="text-xs text-red-400 hover:text-red-300 font-medium"
-                    >
-                      Revoke
-                    </button>
+                    <>
+                      <button
+                        onClick={() => handleResend(inv.id)}
+                        disabled={resending === inv.id}
+                        className="text-xs text-v-gold hover:text-v-gold-dim font-medium disabled:opacity-50"
+                      >
+                        {resending === inv.id ? 'Sending...' : 'Resend'}
+                      </button>
+                      <button
+                        onClick={() => handleRevoke(inv.id)}
+                        className="text-xs text-red-400 hover:text-red-300 font-medium"
+                      >
+                        Revoke
+                      </button>
+                    </>
                   )}
                 </td>
               </tr>

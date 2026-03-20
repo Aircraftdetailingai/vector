@@ -90,6 +90,39 @@ export async function POST(request) {
   return Response.json({ invite: data, emailSent: emailResult.success });
 }
 
+// PUT — resend invite email
+export async function PUT(request) {
+  if (!await isAdmin(request)) {
+    return Response.json({ error: 'Unauthorized' }, { status: 401 });
+  }
+  const supabase = getSupabase();
+  if (!supabase) return Response.json({ error: 'DB not configured' }, { status: 500 });
+
+  const { id } = await request.json();
+  if (!id) return Response.json({ error: 'Invite ID is required' }, { status: 400 });
+
+  const { data: invite, error } = await supabase
+    .from('beta_invites')
+    .select('*')
+    .eq('id', id)
+    .eq('status', 'pending')
+    .single();
+
+  if (error || !invite) {
+    return Response.json({ error: 'Invite not found or already used' }, { status: 404 });
+  }
+
+  const emailResult = await sendBetaInviteEmail({
+    email: invite.email,
+    plan: invite.plan,
+    durationDays: invite.duration_days,
+    note: invite.note,
+    token: invite.token,
+  });
+
+  return Response.json({ success: true, emailSent: emailResult.success });
+}
+
 // PATCH — revoke invite
 export async function PATCH(request) {
   if (!await isAdmin(request)) {
