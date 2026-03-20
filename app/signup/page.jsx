@@ -11,16 +11,16 @@ function SignupForm() {
   const refCode = searchParams.get('ref');
 
   const [loading, setLoading] = useState(true);
-  const [inviteOnly, setInviteOnly] = useState(true); // assume invite-only until we know
+  const [inviteOnly, setInviteOnly] = useState(true);
   const [invite, setInvite] = useState(null);
   const [error, setError] = useState('');
   const [form, setForm] = useState({ name: '', company: '', email: '', password: '', confirmPassword: '', country: 'US' });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
+  const [success, setSuccess] = useState(false);
 
   useEffect(() => {
     const init = async () => {
-      // Check signup mode
       let isInviteOnly = true;
       try {
         const modeRes = await fetch('/api/auth/signup-mode');
@@ -28,13 +28,10 @@ function SignupForm() {
           const modeData = await modeRes.json();
           isInviteOnly = modeData.invite_only;
         }
-      } catch {
-        // Default to invite-only on error
-      }
+      } catch {}
       setInviteOnly(isInviteOnly);
 
       if (isInviteOnly) {
-        // Require invite token
         if (!inviteToken) {
           setError('No invite token provided. You need a valid invitation to sign up.');
           setLoading(false);
@@ -47,14 +44,12 @@ function SignupForm() {
             setInvite(data);
             setForm(f => ({ ...f, email: data.email }));
           } else {
-            setError(data.error || 'Invalid invite token');
+            setError(data.error || 'This invitation link is invalid or has expired.');
           }
         } catch {
-          setError('Failed to validate invite');
+          setError('Failed to validate invite. Please check your link and try again.');
         }
-      }
-      // If not invite-only and there IS a token, still validate it for the plan perks
-      else if (inviteToken) {
+      } else if (inviteToken) {
         try {
           const res = await fetch(`/api/invites/validate?token=${encodeURIComponent(inviteToken)}`);
           const data = await res.json();
@@ -62,9 +57,7 @@ function SignupForm() {
             setInvite(data);
             setForm(f => ({ ...f, email: data.email }));
           }
-        } catch {
-          // Token invalid in open mode — just ignore, let them sign up freely
-        }
+        } catch {}
       }
       setLoading(false);
     };
@@ -98,21 +91,31 @@ function SignupForm() {
       const data = await res.json();
 
       if (!res.ok) {
-        setFormError(data.error || 'Failed to create account');
+        if (res.status === 409) {
+          setFormError('ACCOUNT_EXISTS');
+        } else {
+          setFormError(data.error || 'Failed to create account. Please try again.');
+        }
         return;
       }
 
       // Store auth
       localStorage.setItem('vector_token', data.token);
       localStorage.setItem('vector_user', JSON.stringify(data.user));
-      window.location.href = '/onboarding';
+
+      // Show success screen then redirect
+      setSuccess(true);
+      setTimeout(() => {
+        window.location.href = '/onboarding';
+      }, 1500);
     } catch {
-      setFormError('Something went wrong. Please try again.');
+      setFormError('Connection error. Please check your internet and try again.');
     } finally {
       setSaving(false);
     }
   };
 
+  // Loading state
   if (loading) {
     return (
       <div className="min-h-screen bg-v-charcoal flex items-center justify-center">
@@ -121,16 +124,42 @@ function SignupForm() {
     );
   }
 
+  // Success state
+  if (success) {
+    return (
+      <div className="min-h-screen bg-v-charcoal flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="w-16 h-16 mx-auto mb-5 rounded-full bg-green-500/20 flex items-center justify-center">
+            <svg className="w-8 h-8 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 className="text-2xl font-heading text-v-text-primary mb-2">Account Created!</h1>
+          <p className="text-v-text-secondary text-sm">Setting up your workspace...</p>
+          <div className="mt-6">
+            <div className="w-8 h-8 border-2 border-v-gold border-t-transparent rounded-full animate-spin mx-auto" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error state (invalid invite)
   if (error) {
     return (
       <div className="min-h-screen bg-v-charcoal flex items-center justify-center p-4">
-        <div className="bg-v-surface border border-v-border rounded-sm p-8 max-w-md w-full text-center">
-          <div className="text-4xl mb-4">&#9993;&#65039;</div>
+        <div className="bg-v-surface border border-v-border rounded-lg p-6 sm:p-8 max-w-md w-full text-center">
+          <div className="w-14 h-14 mx-auto mb-4 rounded-full bg-red-500/10 flex items-center justify-center">
+            <svg className="w-7 h-7 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
           <h1 className="text-xl font-heading text-v-text-primary mb-2">Invalid Invitation</h1>
-          <p className="text-v-text-secondary text-sm mb-6">{error}</p>
+          <p className="text-v-text-secondary text-sm mb-6 leading-relaxed">{error}</p>
           <a
             href="/login"
-            className="inline-block px-6 py-3 bg-v-gold text-v-charcoal rounded-sm font-medium hover:bg-v-gold-dim transition-colors"
+            className="inline-block w-full px-6 py-3 bg-v-gold text-v-charcoal rounded-lg font-medium hover:bg-v-gold-dim transition-colors text-center"
+            style={{ minHeight: '48px', lineHeight: '24px' }}
           >
             Go to Login
           </a>
@@ -140,67 +169,90 @@ function SignupForm() {
   }
 
   return (
-    <div className="min-h-screen bg-v-charcoal flex items-center justify-center p-4">
+    <div className="min-h-screen bg-v-charcoal flex flex-col items-center justify-start sm:justify-center px-4 py-8 sm:py-12">
       <div className="w-full max-w-md">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-heading text-v-text-primary tracking-wide">Vector Aviation</h1>
-          <p className="text-v-text-secondary mt-2">
-            {invite ? "You've been invited to join" : 'Create your account'}
-          </p>
+        <div className="text-center mb-6">
+          <h1 className="text-2xl sm:text-3xl font-heading text-v-text-primary tracking-wide">Vector Aviation</h1>
+          {!invite && (
+            <p className="text-v-text-secondary mt-2 text-sm">Create your account</p>
+          )}
         </div>
 
-        {/* Invite details card — only show when invite is present */}
+        {/* Invite accepted banner */}
         {invite && (
-          <div className="bg-v-surface border border-v-border rounded-sm p-5 mb-6 border-l-2 border-l-v-gold">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-v-text-secondary uppercase tracking-widest">Your Plan</p>
-                <p className="text-lg font-heading text-v-gold mt-1">{invite.plan === 'business' ? 'Business' : 'Pro'}</p>
+          <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-4 mb-5">
+            <div className="flex items-start gap-3">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-v-gold/20 flex items-center justify-center mt-0.5">
+                <svg className="w-4.5 h-4.5 text-v-gold" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                </svg>
               </div>
-              <div className="text-right">
-                <p className="text-xs text-v-text-secondary uppercase tracking-widest">Duration</p>
-                <p className="text-lg font-mono text-v-text-primary mt-1">{invite.duration_days} days</p>
-              </div>
-              <div className="text-right">
-                <p className="text-xs text-v-text-secondary uppercase tracking-widest">Cost</p>
-                <p className="text-lg font-mono text-green-400 mt-1">$0</p>
+              <div className="min-w-0">
+                <p className="text-green-300 font-medium text-sm">Invitation accepted</p>
+                <p className="text-green-400/70 text-xs mt-0.5">
+                  {invite.duration_days >= 365
+                    ? '1 year'
+                    : invite.duration_days >= 180
+                    ? '6 months'
+                    : invite.duration_days >= 90
+                    ? '3 months'
+                    : `${invite.duration_days} days`}{' '}
+                  of {invite.plan === 'business' ? 'Business' : 'Pro'} — completely free
+                </p>
               </div>
             </div>
           </div>
         )}
 
         {/* Signup form */}
-        <form onSubmit={handleSubmit} className="bg-v-surface border border-v-border rounded-sm p-6 modal-glow">
+        <form onSubmit={handleSubmit} className="bg-v-surface border border-v-border rounded-lg p-5 sm:p-6">
           {/* Social login — only show when not on invite flow */}
           {!invite && (
             <>
               <SocialLoginButtons />
-              <div className="flex items-center my-6">
+              <div className="flex items-center my-5">
                 <div className="flex-grow border-t border-v-border"></div>
-                <span className="mx-4 text-v-text-secondary text-xs uppercase tracking-widest">or continue with email</span>
+                <span className="mx-3 text-v-text-secondary text-[11px] uppercase tracking-widest whitespace-nowrap">or with email</span>
                 <div className="flex-grow border-t border-v-border"></div>
               </div>
             </>
           )}
 
-          <h2 className="text-lg font-heading text-v-text-primary mb-5">{invite ? 'Create Your Account' : 'Email Signup'}</h2>
+          {invite && (
+            <h2 className="text-base font-heading text-v-text-primary mb-4">Create Your Account</h2>
+          )}
 
-          {formError && (
-            <div className="bg-red-500/10 border border-red-500/30 rounded-sm px-4 py-3 mb-4">
-              <p className="text-red-400 text-sm">{formError}</p>
+          {/* Error message */}
+          {formError && formError !== 'ACCOUNT_EXISTS' && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg px-4 py-3 mb-4">
+              <p className="text-red-400 text-sm leading-relaxed">{formError}</p>
             </div>
           )}
 
-          <div className="space-y-4">
+          {/* Account already exists error */}
+          {formError === 'ACCOUNT_EXISTS' && (
+            <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg px-4 py-3 mb-4">
+              <p className="text-amber-300 text-sm font-medium mb-1">This email is already registered</p>
+              <p className="text-amber-400/70 text-xs">
+                <a href="/login" className="text-v-gold underline underline-offset-2 hover:text-v-gold-dim">
+                  Sign in to your existing account
+                </a>{' '}
+                or use a different email.
+              </p>
+            </div>
+          )}
+
+          <div className="space-y-3.5">
             <div>
-              <label className="block text-sm text-v-text-secondary mb-1">Full Name <span className="text-red-500">*</span></label>
+              <label className="block text-sm text-v-text-secondary mb-1">Full Name <span className="text-red-400">*</span></label>
               <input
                 type="text"
                 value={form.name}
                 onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))}
                 placeholder="John Smith"
-                className="w-full bg-v-surface-light border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+                autoComplete="name"
+                className="w-full bg-v-surface-light border border-v-border rounded-lg px-4 py-3 text-base text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50 focus:ring-1 focus:ring-v-gold/20"
               />
             </div>
 
@@ -211,7 +263,8 @@ function SignupForm() {
                 value={form.company}
                 onChange={(e) => setForm(f => ({ ...f, company: e.target.value }))}
                 placeholder="Your Aviation Company"
-                className="w-full bg-v-surface-light border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+                autoComplete="organization"
+                className="w-full bg-v-surface-light border border-v-border rounded-lg px-4 py-3 text-base text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50 focus:ring-1 focus:ring-v-gold/20"
               />
             </div>
 
@@ -220,7 +273,8 @@ function SignupForm() {
               <select
                 value={form.country}
                 onChange={(e) => setForm(f => ({ ...f, country: e.target.value }))}
-                className="w-full bg-v-surface-light border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-primary outline-none focus:border-v-gold/50"
+                className="w-full bg-v-surface-light border border-v-border rounded-lg px-4 py-3 text-base text-v-text-primary outline-none focus:border-v-gold/50 focus:ring-1 focus:ring-v-gold/20 appearance-none"
+                style={{ backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%239ca3af' d='M6 8L1 3h10z'/%3E%3C/svg%3E")`, backgroundRepeat: 'no-repeat', backgroundPosition: 'right 12px center' }}
               >
                 {STRIPE_COUNTRIES.map((c) => (
                   <option key={c.code} value={c.code}>
@@ -231,40 +285,45 @@ function SignupForm() {
             </div>
 
             <div>
-              <label className="block text-sm text-v-text-secondary mb-1">Email {invite ? '' : <span className="text-red-500">*</span>}</label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={(e) => !invite && setForm(f => ({ ...f, email: e.target.value }))}
-                readOnly={!!invite}
-                placeholder="you@company.com"
-                className={`w-full border border-v-border rounded-sm px-4 py-3 text-sm outline-none focus:border-v-gold/50 ${
-                  invite
-                    ? 'bg-v-charcoal text-v-text-secondary cursor-not-allowed'
-                    : 'bg-v-surface-light text-v-text-primary placeholder-v-text-secondary/50'
-                }`}
-              />
+              <label className="block text-sm text-v-text-secondary mb-1">Email <span className="text-red-400">*</span></label>
+              {invite ? (
+                <div className="w-full bg-v-charcoal border border-v-border rounded-lg px-4 py-3 text-base text-v-text-secondary">
+                  {form.email}
+                </div>
+              ) : (
+                <input
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm(f => ({ ...f, email: e.target.value }))}
+                  placeholder="you@company.com"
+                  autoComplete="email"
+                  inputMode="email"
+                  className="w-full bg-v-surface-light border border-v-border rounded-lg px-4 py-3 text-base text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50 focus:ring-1 focus:ring-v-gold/20"
+                />
+              )}
             </div>
 
             <div>
-              <label className="block text-sm text-v-text-secondary mb-1">Password <span className="text-red-500">*</span></label>
+              <label className="block text-sm text-v-text-secondary mb-1">Password <span className="text-red-400">*</span></label>
               <input
                 type="password"
                 value={form.password}
                 onChange={(e) => setForm(f => ({ ...f, password: e.target.value }))}
                 placeholder="Minimum 8 characters"
-                className="w-full bg-v-surface-light border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+                autoComplete="new-password"
+                className="w-full bg-v-surface-light border border-v-border rounded-lg px-4 py-3 text-base text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50 focus:ring-1 focus:ring-v-gold/20"
               />
             </div>
 
             <div>
-              <label className="block text-sm text-v-text-secondary mb-1">Confirm Password <span className="text-red-500">*</span></label>
+              <label className="block text-sm text-v-text-secondary mb-1">Confirm Password <span className="text-red-400">*</span></label>
               <input
                 type="password"
                 value={form.confirmPassword}
                 onChange={(e) => setForm(f => ({ ...f, confirmPassword: e.target.value }))}
                 placeholder="Re-enter password"
-                className="w-full bg-v-surface-light border border-v-border rounded-sm px-4 py-3 text-sm text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+                autoComplete="new-password"
+                className="w-full bg-v-surface-light border border-v-border rounded-lg px-4 py-3 text-base text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50 focus:ring-1 focus:ring-v-gold/20"
               />
             </div>
           </div>
@@ -272,15 +331,27 @@ function SignupForm() {
           <button
             type="submit"
             disabled={saving}
-            className="w-full mt-6 py-3 bg-v-gold text-v-charcoal rounded-sm font-medium hover:bg-v-gold-dim disabled:opacity-50 transition-colors"
+            className="w-full mt-5 bg-v-gold text-v-charcoal rounded-lg font-semibold hover:bg-v-gold-dim disabled:opacity-50 transition-colors text-base"
+            style={{ minHeight: '48px' }}
           >
-            {saving ? 'Creating Account...' : 'Create Account'}
+            {saving ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="w-4 h-4 border-2 border-v-charcoal/30 border-t-v-charcoal rounded-full animate-spin" />
+                Creating Account...
+              </span>
+            ) : (
+              'Create Account'
+            )}
           </button>
 
           <p className="text-center text-xs text-v-text-secondary/60 mt-4">
-            Already have an account? <a href="/login" className="text-v-gold hover:text-v-gold-dim">Log in</a>
+            Already have an account?{' '}
+            <a href="/login" className="text-v-gold hover:text-v-gold-dim underline underline-offset-2">Log in</a>
           </p>
         </form>
+
+        {/* Bottom spacing for mobile keyboard */}
+        <div className="h-8 sm:h-0" />
       </div>
     </div>
   );
