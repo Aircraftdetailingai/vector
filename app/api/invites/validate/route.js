@@ -6,7 +6,7 @@ function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) return null;
-  return createClient(url, key);
+  return createClient(url, key, { db: { schema: 'public' }, global: { headers: { 'x-request-id': crypto.randomUUID() } } });
 }
 
 export async function GET(request) {
