@@ -105,11 +105,10 @@ export async function PUT(request) {
     .from('beta_invites')
     .select('*')
     .eq('id', id)
-    .eq('status', 'pending')
     .single();
 
   if (error || !invite) {
-    return Response.json({ error: 'Invite not found or already used' }, { status: 404 });
+    return Response.json({ error: 'Invite not found' }, { status: 404 });
   }
 
   const emailResult = await sendBetaInviteEmail({

@@ -10,6 +10,8 @@ const ADMIN_NAV = [
   { label: 'Aircraft', href: '/admin/aircraft' },
   { label: 'Vendors', href: '/admin/vendors' },
   { label: 'Beta Invites', href: '/admin/beta-invites' },
+  { label: 'Referrals', href: '/admin/referrals' },
+  { label: 'Settings', href: '/admin/settings' },
 ];
 
 const STATUS_BADGE = {
@@ -287,22 +289,20 @@ function InvitesTab() {
                 <td className="px-5 py-4 text-v-text-secondary text-xs">{formatDate(inv.created_at)}</td>
                 <td className="px-5 py-4 text-v-text-secondary text-xs">{formatDate(inv.used_at)}</td>
                 <td className="px-5 py-4 text-right space-x-3">
+                  <button
+                    onClick={() => handleResend(inv.id)}
+                    disabled={resending === inv.id}
+                    className="text-xs text-v-gold hover:text-v-gold-dim font-medium disabled:opacity-50"
+                  >
+                    {resending === inv.id ? 'Sending...' : 'Resend'}
+                  </button>
                   {inv.status === 'pending' && (
-                    <>
-                      <button
-                        onClick={() => handleResend(inv.id)}
-                        disabled={resending === inv.id}
-                        className="text-xs text-v-gold hover:text-v-gold-dim font-medium disabled:opacity-50"
-                      >
-                        {resending === inv.id ? 'Sending...' : 'Resend'}
-                      </button>
-                      <button
-                        onClick={() => handleRevoke(inv.id)}
-                        className="text-xs text-red-400 hover:text-red-300 font-medium"
-                      >
-                        Revoke
-                      </button>
-                    </>
+                    <button
+                      onClick={() => handleRevoke(inv.id)}
+                      className="text-xs text-red-400 hover:text-red-300 font-medium"
+                    >
+                      Revoke
+                    </button>
                   )}
                 </td>
               </tr>
