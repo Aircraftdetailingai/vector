@@ -111,6 +111,11 @@ export async function POST(request) {
     const trialEndsAt = new Date();
     trialEndsAt.setDate(trialEndsAt.getDate() + trialDays);
 
+    // Generate referral code for new detailer
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let newReferralCode = '';
+    for (let i = 0; i < 8; i++) newReferralCode += chars.charAt(Math.floor(Math.random() * chars.length));
+
     // Create the detailer account
     const insertRow = {
       email: normalizedEmail,
@@ -121,6 +126,7 @@ export async function POST(request) {
       plan,
       status: 'active',
       trial_ends_at: trialEndsAt.toISOString(),
+      referral_code: newReferralCode,
     };
 
     let detailer = null;
