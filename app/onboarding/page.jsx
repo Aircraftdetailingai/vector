@@ -20,7 +20,18 @@ const ONBOARDING_SERVICES = [
   { name: 'Leather Clean', description: 'Leather cleaning and conditioning', hours_field: 'leather_hours', defaultRate: 90 },
 ];
 
-const STEP_LABELS = ['Business', 'Services', 'Branding', 'Customer'];
+const STEP_LABELS = ['Business', 'Services', 'Branding', 'Quote', 'Invite'];
+
+const COMMON_AIRCRAFT = [
+  'Cessna Citation CJ3', 'Cessna Citation CJ4', 'Cessna Citation Latitude', 'Cessna Citation Longitude',
+  'Gulfstream G280', 'Gulfstream G450', 'Gulfstream G550', 'Gulfstream G650',
+  'Bombardier Challenger 350', 'Bombardier Challenger 650', 'Bombardier Global 6000', 'Bombardier Global 7500',
+  'Embraer Phenom 300', 'Embraer Praetor 500', 'Embraer Praetor 600',
+  'Dassault Falcon 2000', 'Dassault Falcon 7X', 'Dassault Falcon 8X',
+  'Pilatus PC-12', 'King Air 350', 'HondaJet Elite', 'Cirrus Vision Jet',
+  'Boeing BBJ', 'Airbus ACJ320',
+  'Other',
+];
 
 function ProgressBar({ current }) {
   return (
@@ -94,10 +105,17 @@ export default function OnboardingPage() {
   const [selectedColor, setSelectedColor] = useState('#C9A84C');
   const [portalTheme, setPortalTheme] = useState('dark');
 
-  // Screen 4: Customer invite
-  const [customerEmail, setCustomerEmail] = useState('');
-  const [customerName, setCustomerName] = useState('');
-  const [inviteSent, setInviteSent] = useState(false);
+  // Screen 4: Send First Quote
+  const [quoteCustomerEmail, setQuoteCustomerEmail] = useState('');
+  const [quoteCustomerName, setQuoteCustomerName] = useState('');
+  const [quoteAircraft, setQuoteAircraft] = useState('');
+  const [quoteServices, setQuoteServices] = useState({});
+  const [quoteSent, setQuoteSent] = useState(false);
+  const [quoteSending, setQuoteSending] = useState(false);
+
+  // Screen 5: Invite a Colleague
+  const [colleagueEmail, setColleagueEmail] = useState('');
+  const [colleagueInviteSent, setColleagueInviteSent] = useState(false);
 
   // Resume support
   const [savedServiceCount, setSavedServiceCount] = useState(0);
@@ -117,7 +135,7 @@ export default function OnboardingPage() {
       .then(res => res.json())
       .then(data => {
         if (data.onboarding_complete) { router.push('/dashboard'); return; }
-        if (data.onboarding_step > 0 && data.onboarding_step <= 5) setScreen(data.onboarding_step);
+        if (data.onboarding_step > 0 && data.onboarding_step <= 6) setScreen(data.onboarding_step);
         if (data.company) setCompany(data.company);
         if (data.name) setName(data.name);
         if (data.phone) setPhone(data.phone);
@@ -271,24 +289,79 @@ export default function OnboardingPage() {
     finally { setSaving(false); }
   };
 
-  // Screen 4: Send customer invite
-  const sendCustomerInvite = async () => {
-    if (!customerEmail.trim()) { setError('Email is required'); return; }
+  // Screen 4: Send first quote
+  const sendFirstQuote = async () => {
+    if (!quoteCustomerEmail.trim()) { setError('Customer email is required'); return; }
+    if (!quoteAircraft) { setError('Please select an aircraft'); return; }
+    const chosenQuoteServices = Object.entries(quoteServices).filter(([, v]) => v).map(([name]) => name);
+    if (chosenQuoteServices.length === 0) { setError('Select at least one service'); return; }
+    setQuoteSending(true);
+    setError('');
+    try {
+      // Build service line items from selected services
+      const allSvcs = [...ONBOARDING_SERVICES.filter((_, i) => selectedServices[i]), ...customServices.map(cs => ({ name: cs.name, defaultRate: parseFloat(cs.rate) || 85 }))];
+      const lineItems = chosenQuoteServices.map(svcName => {
+        const svc = allSvcs.find(s => s.name === svcName);
+        const rate = svc ? (parseFloat(serviceRates[svc.name]) || svc.defaultRate) : 85;
+        return { service: svcName, hours: 1, rate };
+      });
+      const totalPrice = lineItems.reduce((sum, li) => sum + li.hours * li.rate, 0);
+
+      // Create quote
+      const qRes = await fetch('/api/quotes', {
+        method: 'POST', headers,
+        body: JSON.stringify({
+          client_name: quoteCustomerName || undefined,
+          client_email: quoteCustomerEmail,
+          aircraft_type: quoteAircraft,
+          aircraft_model: quoteAircraft,
+          services: chosenQuoteServices,
+          selected_services: chosenQuoteServices,
+          line_items: lineItems,
+          total_price: totalPrice,
+          total_hours: lineItems.length,
+          status: 'draft',
+        }),
+      });
+      if (!qRes.ok) { const d = await qRes.json(); setError(d.error || 'Failed to create quote'); return; }
+      const quoteData = await qRes.json();
+      const quoteId = quoteData.id || quoteData.quote?.id;
+
+      // Send quote
+      if (quoteId) {
+        const sendRes = await fetch(`/api/quotes/${quoteId}/send`, {
+          method: 'POST', headers,
+          body: JSON.stringify({ email: quoteCustomerEmail, name: quoteCustomerName }),
+        });
+        if (!sendRes.ok) { const d = await sendRes.json(); setError(d.error || 'Quote created but failed to send'); return; }
+      }
+
+      await fetch('/api/onboarding', { method: 'POST', headers, body: JSON.stringify({ action: 'save_step', step: 4 }) });
+      setQuoteSent(true);
+      setTimeout(() => goNext(), 1500);
+    } catch (err) { setError(err.message); }
+    finally { setQuoteSending(false); }
+  };
+
+  // Screen 5: Invite a colleague
+  const sendColleagueInvite = async () => {
+    if (!colleagueEmail.trim()) { setError('Email is required'); return; }
     setSaving(true);
     setError('');
     try {
-      const invRes = await fetch('/api/onboarding', {
+      const res = await fetch('/api/referrals/invite', {
         method: 'POST', headers,
-        body: JSON.stringify({ action: 'send_customer_invite', email: customerEmail, name: customerName }),
+        body: JSON.stringify({ email: colleagueEmail }),
       });
-      if (!invRes.ok) { const d = await invRes.json(); setError(d.error || 'Failed to send invite'); return; }
-      setInviteSent(true);
+      if (!res.ok) { const d = await res.json(); setError(d.error || 'Failed to send invite'); return; }
+      await fetch('/api/onboarding', { method: 'POST', headers, body: JSON.stringify({ action: 'save_step', step: 5 }) });
+      setColleagueInviteSent(true);
       setTimeout(() => goNext(), 1500);
     } catch (err) { setError(err.message); }
     finally { setSaving(false); }
   };
 
-  // Screen 5: Complete
+  // Screen 6: Complete
   const completeOnboarding = async () => {
     setSaving(true);
     try {
@@ -311,11 +384,11 @@ export default function OnboardingPage() {
             Welcome to Vector
           </h1>
           <p className="text-v-text-secondary text-lg mb-10">
-            Let&apos;s get your business set up in 4 steps
+            Let&apos;s get your business set up
           </p>
 
           <div className="space-y-3 text-left max-w-xs mx-auto mb-10">
-            {['Set up your business profile', 'Choose your services & rates', 'Customize your branding', 'Invite your first customer'].map((item, i) => (
+            {['Set up your business profile', 'Choose your services & rates', 'Customize your branding', 'Send your first quote'].map((item, i) => (
               <div key={i} className="flex items-center gap-3">
                 <div className="w-7 h-7 rounded-full border border-v-gold/40 text-v-gold flex items-center justify-center text-xs font-semibold">
                   {i + 1}
@@ -369,7 +442,7 @@ export default function OnboardingPage() {
     <div className="page-transition min-h-screen bg-v-charcoal flex items-center justify-center p-4">
       <div className="bg-v-surface border border-v-border rounded-sm shadow-2xl w-full max-w-lg overflow-hidden">
         <div className="p-6 sm:p-8">
-          {screen >= 1 && screen <= 4 && <ProgressBar current={screen} />}
+          {screen >= 1 && screen <= 5 && <ProgressBar current={screen} />}
 
           {error && (
             <div className="mb-4 p-3 bg-red-500/10 border border-red-500/30 text-red-400 text-sm rounded">
@@ -739,62 +812,162 @@ export default function OnboardingPage() {
             </div>
           )}
 
-          {/* ─── Screen 4: Invite Customer ─── */}
+          {/* ─── Screen 4: Send First Quote ─── */}
           {screen === 4 && (
             <div>
-              <h2 className="font-heading text-2xl text-v-gold uppercase tracking-wider mb-1">Invite Your First Customer</h2>
+              <h2 className="font-heading text-2xl text-v-gold uppercase tracking-wider mb-1">Send Your First Quote</h2>
               <p className="text-v-text-secondary text-sm mb-6">
-                Send them a welcome email so they know you&apos;re on Vector
+                Your first action should generate revenue — send a real quote now
               </p>
 
-              {inviteSent ? (
+              {quoteSent ? (
                 <div className="text-center py-8">
                   <div className="w-12 h-12 rounded-full bg-v-gold/10 border border-v-gold/30 flex items-center justify-center mx-auto mb-3">
                     <svg className="w-6 h-6 text-v-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
                       <path d="M5 13l4 4L19 7" />
                     </svg>
                   </div>
-                  <p className="text-v-gold font-medium">Invitation sent!</p>
-                  <p className="text-v-text-secondary text-sm mt-1">Moving to the next step...</p>
+                  <p className="text-v-gold font-medium">Quote sent!</p>
+                  <p className="text-v-text-secondary text-sm mt-1">Your first quote is on its way...</p>
                 </div>
               ) : (
                 <div className="space-y-4">
                   <div>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1.5">
+                      Who would you like to quote? <span className="text-red-400">*</span>
+                    </label>
+                    <input type="email" value={quoteCustomerEmail} onChange={(e) => setQuoteCustomerEmail(e.target.value)}
+                      placeholder="customer@example.com"
+                      className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40" />
+                  </div>
+                  <div>
                     <label className="block text-sm font-medium text-v-text-secondary mb-1.5">Customer Name</label>
-                    <input type="text" value={customerName} onChange={(e) => setCustomerName(e.target.value)}
+                    <input type="text" value={quoteCustomerName} onChange={(e) => setQuoteCustomerName(e.target.value)}
                       placeholder="e.g., John Smith"
                       className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40" />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-v-text-secondary mb-1.5">
-                      Email Address <span className="text-red-400">*</span>
+                      Aircraft <span className="text-red-400">*</span>
                     </label>
-                    <input type="email" value={customerEmail} onChange={(e) => setCustomerEmail(e.target.value)}
-                      placeholder="customer@example.com"
-                      className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40" />
+                    <select value={quoteAircraft} onChange={(e) => setQuoteAircraft(e.target.value)}
+                      className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-3 py-2.5 text-sm focus:border-v-gold focus:outline-none">
+                      <option value="">Select aircraft...</option>
+                      {COMMON_AIRCRAFT.map(a => (
+                        <option key={a} value={a}>{a}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-2">
+                      Services <span className="text-red-400">*</span>
+                    </label>
+                    <div className="space-y-1.5 max-h-[200px] overflow-y-auto pr-1">
+                      {(() => {
+                        const availableServices = [
+                          ...ONBOARDING_SERVICES.filter((_, i) => selectedServices[i]),
+                          ...customServices.map(cs => ({ name: cs.name })),
+                        ];
+                        return availableServices.length > 0 ? availableServices.map(svc => (
+                          <label key={svc.name}
+                            className={`flex items-center p-2.5 border rounded cursor-pointer transition-colors ${
+                              quoteServices[svc.name] ? 'bg-v-gold/5 border-v-gold/40' : 'border-v-border hover:border-v-border/80'
+                            }`}>
+                            <input type="checkbox" checked={quoteServices[svc.name] || false}
+                              onChange={() => setQuoteServices(prev => ({ ...prev, [svc.name]: !prev[svc.name] }))}
+                              className="w-4 h-4 rounded accent-v-gold mr-3" />
+                            <span className="text-sm text-v-text-primary">{svc.name}</span>
+                          </label>
+                        )) : (
+                          <p className="text-xs text-v-text-secondary/60 italic">No services configured yet — go back to add services first</p>
+                        );
+                      })()}
+                    </div>
                   </div>
 
-                  <button onClick={sendCustomerInvite} disabled={saving || !customerEmail.trim()}
+                  <button onClick={sendFirstQuote} disabled={quoteSending}
                     className="w-full py-3 bg-v-gold text-white font-semibold text-sm hover:bg-v-gold-dim transition-colors disabled:opacity-50">
-                    {saving ? 'Sending...' : 'Send Welcome Email'}
+                    {quoteSending ? 'Creating & Sending...' : 'Send Demo Quote'}
                   </button>
                 </div>
               )}
 
               <div className="mt-6 flex justify-between items-center">
                 <button onClick={goBack} className="text-v-text-secondary text-sm hover:text-v-text-primary transition-colors">Back</button>
-                {!inviteSent && (
+                {!quoteSent && (
                   <button onClick={() => { fetch('/api/onboarding', { method: 'POST', headers, body: JSON.stringify({ action: 'save_step', step: 4 }) }); goNext(); }}
                     className="text-v-text-secondary/60 text-sm hover:text-v-text-primary transition-colors">
-                    Skip — I&apos;ll add customers later
+                    Skip — I&apos;ll send quotes from the dashboard
                   </button>
                 )}
               </div>
             </div>
           )}
 
-          {/* ─── Screen 5: Completion ─── */}
+          {/* ─── Screen 5: Invite a Colleague ─── */}
           {screen === 5 && (
+            <div>
+              <h2 className="font-heading text-2xl text-v-gold uppercase tracking-wider mb-1">Invite a Colleague</h2>
+              <p className="text-v-text-secondary text-sm mb-6">
+                Know another aircraft detailer? Invite them and earn 500 bonus points
+              </p>
+
+              {colleagueInviteSent ? (
+                <div className="text-center py-8">
+                  <div className="w-12 h-12 rounded-full bg-v-gold/10 border border-v-gold/30 flex items-center justify-center mx-auto mb-3">
+                    <svg className="w-6 h-6 text-v-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}>
+                      <path d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <p className="text-v-gold font-medium">Invite sent!</p>
+                  <p className="text-v-text-secondary text-sm mt-1">You&apos;ll earn 500 points when they sign up</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="bg-v-gold/5 border border-v-gold/20 rounded p-4 mb-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-v-gold/10 flex items-center justify-center shrink-0">
+                        <svg className="w-5 h-5 text-v-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
+                          <path d="M12 4.5v15m7.5-7.5h-15" />
+                        </svg>
+                      </div>
+                      <div>
+                        <p className="text-v-text-primary text-sm font-medium">Earn 500 bonus points</p>
+                        <p className="text-v-text-secondary text-xs">For each colleague who joins Vector</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1.5">
+                      Their Email Address
+                    </label>
+                    <input type="email" value={colleagueEmail} onChange={(e) => setColleagueEmail(e.target.value)}
+                      placeholder="colleague@example.com"
+                      className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40" />
+                  </div>
+
+                  <button onClick={sendColleagueInvite} disabled={saving || !colleagueEmail.trim()}
+                    className="w-full py-3 bg-v-gold text-white font-semibold text-sm hover:bg-v-gold-dim transition-colors disabled:opacity-50">
+                    {saving ? 'Sending...' : 'Send Invite'}
+                  </button>
+                </div>
+              )}
+
+              <div className="mt-6 flex justify-between items-center">
+                <button onClick={goBack} className="text-v-text-secondary text-sm hover:text-v-text-primary transition-colors">Back</button>
+                {!colleagueInviteSent && (
+                  <button onClick={() => { fetch('/api/onboarding', { method: 'POST', headers, body: JSON.stringify({ action: 'save_step', step: 5 }) }); goNext(); }}
+                    className="text-v-text-secondary/60 text-sm hover:text-v-text-primary transition-colors">
+                    Skip
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ─── Screen 6: Completion ─── */}
+          {screen === 6 && (
             <div className="text-center py-4">
               <div className="w-16 h-16 rounded-full bg-v-gold/10 border border-v-gold/30 flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-v-gold" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5}>
@@ -809,7 +982,8 @@ export default function OnboardingPage() {
                   { label: 'Business profile', done: !!company },
                   { label: `${chosenCount} service${chosenCount !== 1 ? 's' : ''} configured`, done: chosenCount > 0 },
                   { label: 'Branding customized', done: selectedColor !== '#C9A84C' || !!logoUrl },
-                  { label: inviteSent ? 'First customer invited' : 'Customer invite skipped', done: inviteSent },
+                  { label: quoteSent ? 'First quote sent' : 'Quote skipped', done: quoteSent },
+                  { label: colleagueInviteSent ? 'Colleague invited' : 'Colleague invite skipped', done: colleagueInviteSent },
                 ].map((item, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className={`w-6 h-6 rounded-full flex items-center justify-center ${
