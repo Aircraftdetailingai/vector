@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import PhoneInput from '@/components/PhoneInput';
 
 export default function AddTeamMemberPage() {
   const router = useRouter();
@@ -130,13 +131,10 @@ export default function AddTeamMemberPage() {
 
           <div>
             <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Phone'}</label>
-            <input
-              type="tel"
-              name="phone"
+            <PhoneInput
               value={form.phone}
-              onChange={handleChange}
-              className="w-full px-3 py-2 bg-v-surface-light text-v-text-primary border border-v-border rounded-lg focus:ring-2 focus:ring-v-gold focus:border-v-gold outline-none placeholder:text-v-text-secondary/50"
-              placeholder="(555) 123-4567"
+              onChange={(val) => setForm({ ...form, phone: val })}
+              className="w-full px-3 py-2 bg-v-surface-light text-v-text-primary border border-v-border rounded-lg focus-within:ring-2 focus-within:ring-v-gold"
             />
           </div>
 

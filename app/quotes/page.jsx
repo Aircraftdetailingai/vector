@@ -3,6 +3,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import { formatPrice, formatPriceWhole, currencySymbol } from '@/lib/formatPrice';
+import PhoneInput from '@/components/PhoneInput';
 import ExportGate from '@/components/ExportGate';
 import AppShell from '@/components/AppShell';
 
@@ -698,7 +699,7 @@ export default function QuotesPage() {
               <div className="space-y-3">
                 <div><label className="block text-xs uppercase tracking-wider text-v-text-secondary mb-1">Client Name</label><input type="text" value={duplicateData.client_name} onChange={(e) => setDuplicateData({ ...duplicateData, client_name: e.target.value })} placeholder="Client Name" className="w-full bg-v-charcoal border border-v-border text-white px-3 py-2 focus:border-v-gold/40 focus:outline-none" /></div>
                 <div><label className="block text-xs uppercase tracking-wider text-v-text-secondary mb-1">Client Email</label><input type="email" value={duplicateData.client_email} onChange={(e) => setDuplicateData({ ...duplicateData, client_email: e.target.value })} placeholder="customer@email.com" className="w-full bg-v-charcoal border border-v-border text-white px-3 py-2 focus:border-v-gold/40 focus:outline-none" /></div>
-                <div><label className="block text-xs uppercase tracking-wider text-v-text-secondary mb-1">Phone (optional)</label><input type="tel" value={duplicateData.client_phone} onChange={(e) => setDuplicateData({ ...duplicateData, client_phone: e.target.value })} placeholder="(555) 123-4567" className="w-full bg-v-charcoal border border-v-border text-white px-3 py-2 focus:border-v-gold/40 focus:outline-none" /></div>
+                <div><label className="block text-xs uppercase tracking-wider text-v-text-secondary mb-1">Phone (optional)</label><PhoneInput value={duplicateData.client_phone} onChange={(val) => setDuplicateData({ ...duplicateData, client_phone: val })} className="w-full bg-v-charcoal border border-v-border px-3 py-2 focus-within:border-v-gold/40" /></div>
                 <div><label className="block text-xs uppercase tracking-wider text-v-text-secondary mb-1">Notes (optional)</label><textarea value={duplicateData.notes} onChange={(e) => setDuplicateData({ ...duplicateData, notes: e.target.value })} placeholder="Add notes for this quote..." className="w-full bg-v-charcoal border border-v-border text-white px-3 py-2 resize-none focus:border-v-gold/40 focus:outline-none" rows={2} /></div>
               </div>
               <div className="flex justify-end space-x-3 mt-5">

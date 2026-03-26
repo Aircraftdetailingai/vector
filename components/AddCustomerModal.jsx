@@ -1,5 +1,6 @@
 "use client";
 import { useState } from 'react';
+import PhoneInput from '@/components/PhoneInput';
 
 export default function AddCustomerModal({ isOpen, onClose, onSuccess, tags = [] }) {
   const [form, setForm] = useState({ name: '', email: '', phone: '', company_name: '', airport: '', notes: '', contactPref: 'email', tags: [] });
@@ -94,12 +95,10 @@ export default function AddCustomerModal({ isOpen, onClose, onSuccess, tags = []
           </div>
           <div>
             <label className="block text-sm font-medium text-v-text-secondary mb-1">Phone</label>
-            <input
-              type="tel"
+            <PhoneInput
               value={form.phone}
-              onChange={(e) => setForm(p => ({ ...p, phone: e.target.value }))}
-              placeholder="(555) 123-4567"
-              className="w-full bg-v-surface-light border border-v-border rounded px-3 py-2 text-sm text-v-text-primary placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+              onChange={(val) => setForm(p => ({ ...p, phone: val }))}
+              className="w-full bg-v-surface-light border border-v-border rounded px-3 py-2 text-sm focus-within:border-v-gold/50"
             />
           </div>
           <div>

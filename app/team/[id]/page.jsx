@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
+import PhoneInput from '@/components/PhoneInput';
 
 export default function TeamMemberPage() {
   const router = useRouter();
@@ -316,11 +317,10 @@ export default function TeamMemberPage() {
             </div>
             <div>
               <label className="block text-sm text-v-text-secondary mb-1">{'Phone'}</label>
-              <input
-                type="tel"
+              <PhoneInput
                 value={editForm.phone || ''}
-                onChange={e => setEditForm({ ...editForm, phone: e.target.value })}
-                className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-v-gold outline-none"
+                onChange={(val) => setEditForm({ ...editForm, phone: val })}
+                className="w-full px-3 py-2 bg-v-surface-light text-v-text-primary border border-v-border rounded-lg focus-within:ring-2 focus-within:ring-v-gold"
               />
             </div>
             <div>

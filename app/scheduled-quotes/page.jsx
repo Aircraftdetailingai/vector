@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import PhoneInput from '@/components/PhoneInput';
 
 function formatCurrency(val) {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(val || 0);
@@ -343,11 +344,10 @@ export default function ScheduledQuotesPage() {
               </div>
               <div>
                 <label className="block text-sm font-medium text-v-text-secondary mb-1">{'Phone (optional)'}</label>
-                <input
-                  type="tel"
+                <PhoneInput
                   value={editPhone}
-                  onChange={e => setEditPhone(e.target.value)}
-                  className="w-full border border-v-border rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-v-gold focus:border-v-gold outline-none"
+                  onChange={(val) => setEditPhone(val)}
+                  className="w-full bg-v-surface-light text-v-text-primary border border-v-border rounded-lg px-3 py-2 text-sm focus-within:ring-2 focus-within:ring-v-gold"
                 />
               </div>
             </div>

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { STRIPE_COUNTRIES } from '@/lib/currency';
+import PhoneInput from '@/components/PhoneInput';
 import { TERMS_VERSION } from '@/lib/terms';
 import { generateThemeFromPrimary, applyThemeToCss, applyFullTheme } from '@/lib/theme';
 import { generatePalettes } from '@/lib/color-utils';
@@ -435,10 +436,10 @@ export default function OnboardingPage() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-v-text-secondary mb-1.5">Phone Number</label>
-                  <input
-                    type="tel" value={phone} onChange={(e) => setPhone(e.target.value)}
-                    placeholder="(555) 123-4567"
-                    className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40"
+                  <PhoneInput
+                    value={phone}
+                    onChange={(val) => setPhone(val)}
+                    className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus-within:border-v-gold"
                   />
                 </div>
                 <div className="grid grid-cols-2 gap-3">

@@ -8,6 +8,7 @@ import { restartTour } from '@/components/DashboardTour';
 import { useTranslation, LANGUAGES } from '@/lib/i18n';
 import { generateThemeFromPrimary, applyFullTheme } from '@/lib/theme';
 import { paletteToTheme, checkContrast, suggestAccessibleColor, generatePalettes } from '@/lib/color-utils';
+import PhoneInput from '@/components/PhoneInput';
 
 const DEFAULT_ADDON_FEES = [
   { name: 'Hazmat Fee', description: 'Hazardous material handling surcharge', fee_type: 'flat', amount: 250 },
@@ -1463,12 +1464,10 @@ function SettingsContent() {
             </div>
             <div>
               <label className="block text-sm font-medium text-v-text-secondary mb-1">Phone</label>
-              <input
-                type="tel"
+              <PhoneInput
                 value={profilePhone}
-                onChange={(e) => { setProfilePhone(e.target.value); markDirty('profile'); }}
-                placeholder="(555) 123-4567"
-                className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                onChange={(val) => { setProfilePhone(val); markDirty('profile'); }}
+                className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary px-0 py-2 text-sm focus-within:border-v-gold transition-colors"
               />
             </div>
             <div>

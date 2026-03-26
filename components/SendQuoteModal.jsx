@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import CustomerSelector from "./CustomerSelector";
 import { formatPrice, currencySymbol } from "@/lib/formatPrice";
 import { useToast } from "./Toast";
+import PhoneInput from '@/components/PhoneInput';
 
 export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user, preselectedCustomer }) {
   const { success: toastSuccess, error: toastError } = useToast();
@@ -641,12 +642,11 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                         placeholder="Contact name"
                         className="col-span-2 border border-v-border bg-v-surface-light/30 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none"
                       />
-                      <input
-                        type="tel"
+                      <PhoneInput
                         value={pocPhone}
-                        onChange={(e) => setPocPhone(e.target.value)}
-                        placeholder={'Phone'}
-                        className="border border-v-border bg-v-surface-light/30 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none"
+                        onChange={(val) => setPocPhone(val)}
+                        placeholder="Phone"
+                        className="border border-v-border bg-v-surface-light/30 rounded-lg px-3 py-2 text-sm focus-within:border-v-gold"
                       />
                       <input
                         type="email"
@@ -682,12 +682,11 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
                         placeholder="Emergency contact name"
                         className="border border-v-border bg-v-surface-light/30 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none"
                       />
-                      <input
-                        type="tel"
+                      <PhoneInput
                         value={emergencyPhone}
-                        onChange={(e) => setEmergencyPhone(e.target.value)}
+                        onChange={(val) => setEmergencyPhone(val)}
                         placeholder="Emergency phone"
-                        className="border border-v-border bg-v-surface-light/30 text-white placeholder-gray-500 rounded-lg px-3 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none"
+                        className="border border-v-border bg-v-surface-light/30 rounded-lg px-3 py-2 text-sm focus-within:border-v-gold"
                       />
                     </div>
                   </div>

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
+import PhoneInput from '@/components/PhoneInput';
 
 export default function CustomerSelector({
   customerMode,
@@ -336,12 +337,10 @@ export default function CustomerSelector({
             <label className="block text-sm font-medium text-gray-300 mb-1">
               Phone <span className="text-gray-500 font-normal">(optional)</span>
             </label>
-            <input
-              type="tel"
+            <PhoneInput
               value={newCustomerFields.phone || ""}
-              onChange={(e) => onFieldChange({ phone: e.target.value })}
-              placeholder="(555) 123-4567"
-              className="w-full border border-white/10 rounded px-3 py-2 text-white bg-white/5 placeholder-gray-500"
+              onChange={(val) => onFieldChange({ phone: val })}
+              className="w-full border border-white/10 rounded px-3 py-2 bg-white/5"
             />
           </div>
           {saveError && <p className="text-red-400 text-sm">{saveError}</p>}
