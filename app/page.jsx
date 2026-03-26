@@ -58,7 +58,7 @@ const FEATURE_CATEGORIES = [
 
 const STEPS = [
   { num: '1', title: 'Add Your Services & Rates', desc: 'Set up your service menu and hourly rates. Exterior wash, ceramic coating, interior detail — whatever you offer.' },
-  { num: '2', title: 'Select Aircraft, Build Quote', desc: 'Choose from 208 pre-loaded aircraft or add your own hours. Vector calculates the price — you stay in control.' },
+  { num: '2', title: 'Select Aircraft, Build Quote', desc: 'Choose from 208 pre-loaded aircraft or add your own hours. Shiny Jets CRM calculates the price — you stay in control.' },
   { num: '3', title: 'Send to Client, Get Paid', desc: 'Email or text the quote. Your client views a professional branded page and pays online with one click.' },
 ];
 
@@ -94,13 +94,13 @@ const TIERS = [
 ];
 
 const FAQS = [
-  { q: 'How does pricing work?', a: 'Vector multiplies your hourly rate by the service hours for each aircraft. We pre-load default hours for 208 models, but you can upload your own or adjust hours on any quote. A G450 ceramic coating might default to 7.2 hours \u2014 at $190/hr that\'s $1,368 \u2014 but you can change it to whatever fits your crew.' },
+  { q: 'How does pricing work?', a: 'Shiny Jets CRM multiplies your hourly rate by the service hours for each aircraft. We pre-load default hours for 208 models, but you can upload your own or adjust hours on any quote. A G450 ceramic coating might default to 7.2 hours \u2014 at $190/hr that\'s $1,368 \u2014 but you can change it to whatever fits your crew.' },
   { q: 'Can I customize my services?', a: 'Absolutely. Add any service you offer \u2014 exterior wash, interior detail, ceramic coating, brightwork, decon, or create your own. Bundle them into packages with automatic discounts.' },
   { q: 'What payment methods do you accept?', a: 'Clients pay via Stripe \u2014 all major credit cards, Apple Pay, and Google Pay. Funds go directly to your connected Stripe account. We support 20+ currencies.' },
   { q: 'Is there a long-term contract?', a: 'No contracts. Start free, upgrade anytime, cancel anytime. The free plan is free forever with up to 3 quotes per month.' },
   { q: 'How does the team management work?', a: 'Business plan includes 5 team members with role-based permissions. Crew members get a simplified mobile dashboard with PIN login, time tracking, job assignments, and photo uploads. Enterprise plan includes unlimited team members.' },
   { q: 'What integrations are included?', a: 'Stripe Connect for payments, Resend for professional emails, plus a full PWA mobile app that works offline. Enterprise plan includes API access for custom integrations.' },
-  { q: 'How do smart follow-ups work?', a: 'Vector automatically tracks when customers open quotes. If they don\'t open it in 2 days, you get notified. If they view it but don\'t book in 3 days, you get a reminder. Five days before expiry, the customer gets a reminder. Two days before, you can auto-send a discount offer to close the deal.' },
+  { q: 'How do smart follow-ups work?', a: 'Shiny Jets CRM automatically tracks when customers open quotes. If they don\'t open it in 2 days, you get notified. If they view it but don\'t book in 3 days, you get a reminder. Five days before expiry, the customer gets a reminder. Two days before, you can auto-send a discount offer to close the deal.' },
 ];
 
 const INTEGRATIONS = [
@@ -155,8 +155,7 @@ export default function LandingPage() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0f1e]/90 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2 text-white text-xl font-bold">
-            <span className="text-2xl">{'\u2708\uFE0F'}</span>
-            <span>Vector</span>
+            <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-8 object-contain" />
             <span className="ml-2 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider border border-v-gold/50 text-v-gold rounded-full">Beta</span>
           </div>
           <div className="flex items-center space-x-4 sm:space-x-6">
@@ -213,7 +212,7 @@ export default function LandingPage() {
                   <div className="w-3 h-3 rounded-full bg-red-500/60"></div>
                   <div className="w-3 h-3 rounded-full bg-yellow-500/60"></div>
                   <div className="w-3 h-3 rounded-full bg-green-500/60"></div>
-                  <span className="text-gray-500 text-xs ml-2">Vector Dashboard</span>
+                  <span className="text-gray-500 text-xs ml-2">Shiny Jets CRM Dashboard</span>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
                   <div className="bg-white/5 rounded-lg p-4">
@@ -481,10 +480,10 @@ export default function LandingPage() {
           <div className="max-w-3xl mx-auto">
             <div className="p-8 rounded-xl bg-white/[0.03] border border-white/5">
               <p className="text-gray-300 leading-relaxed mb-6">
-                Vector was built by a professional aircraft detailer with 15+ years of experience in the industry. It exists because we were tired of quoting with spreadsheets and losing track of jobs on whiteboards. Every feature in Vector exists because it was needed in a real detailing business.
+                Shiny Jets CRM was built by a professional aircraft detailer with 15+ years of experience in the industry. It exists because we were tired of quoting with spreadsheets and losing track of jobs on whiteboards. Every feature exists because it was needed in a real detailing business.
               </p>
               <p className="text-gray-300 leading-relaxed mb-6">
-                Vector is currently in beta. We&apos;re looking for the first 50 detailers to join as founding members &mdash; you&apos;ll get locked-in Pro pricing forever, direct input on the roadmap, and a platform that&apos;s being built by someone who actually does this work.
+                Shiny Jets CRM is currently in beta. We&apos;re looking for the first 50 detailers to join as founding members &mdash; you&apos;ll get locked-in Pro pricing forever, direct input on the roadmap, and a platform that&apos;s being built by someone who actually does this work.
               </p>
               <div className="flex items-center gap-4">
                 <div>
@@ -548,8 +547,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center space-x-2 text-white font-bold">
-              <span className="text-xl">{'\u2708\uFE0F'}</span>
-              <span>Vector</span>
+              <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-6 object-contain" />
               <span className="text-gray-500 font-normal text-sm ml-2">{T.footer.by}</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-gray-400">

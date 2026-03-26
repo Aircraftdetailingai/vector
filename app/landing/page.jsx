@@ -7,7 +7,7 @@ const TIERS = [
     name: 'Free',
     monthlyPrice: 0,
     annualPrice: 0,
-    description: 'Get started with Vector',
+    description: 'Get started with Shiny Jets CRM',
     features: [
       'Up to 3 quotes/month',
       'Basic aircraft database',
@@ -29,7 +29,7 @@ const TIERS = [
       'Full aircraft database (208 models)',
       'Custom services & packages',
       'Email notifications',
-      'Remove Vector branding',
+      'Remove Shiny Jets branding',
       'Priority support',
       '2% platform fee',
     ],
@@ -448,7 +448,7 @@ export default function LandingPage() {
           </h2>
           <div className="w-12 h-[1px] bg-v-gold mx-auto mb-6" />
           <p className="text-[#8A9BB0] text-sm mb-10 max-w-md mx-auto leading-relaxed">
-            Join aircraft detailing professionals who save hours every week with Vector.
+            Join aircraft detailing professionals who save hours every week with Shiny Jets CRM.
             Start free — no credit card required.
           </p>
           <a
