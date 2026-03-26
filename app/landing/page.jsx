@@ -111,7 +111,7 @@ export default function LandingPage() {
   const [annualBilling, setAnnualBilling] = useState(false);
 
   return (
-    <div className="min-h-screen" style={{ fontFamily: 'Inter, system-ui, sans-serif' }}>
+    <div className="min-h-screen" style={{ fontFamily: 'Poppins, Inter, system-ui, sans-serif' }}>
 
       {/* ===== HERO ===== */}
       <section className="relative min-h-screen flex flex-col overflow-hidden" style={{ background: 'linear-gradient(135deg, #080C12 0%, #0D1B2A 60%, #111827 100%)' }}>
@@ -124,8 +124,8 @@ export default function LandingPage() {
               -45deg,
               transparent,
               transparent 80px,
-              #C9A84C 80px,
-              #C9A84C 81px
+              #007CB1 80px,
+              #007CB1 81px
             )`,
             backgroundSize: '113px 113px',
             animation: 'diagonalSlide 20s linear infinite',
@@ -141,7 +141,7 @@ export default function LandingPage() {
             transform: 'translateX(-50%)',
             width: '800px',
             height: '800px',
-            background: 'radial-gradient(ellipse, rgba(201,168,76,0.06) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse, rgba(0,124,177,0.06) 0%, transparent 70%)',
           }}
         />
 
@@ -160,8 +160,7 @@ export default function LandingPage() {
         {/* Navigation */}
         <nav className="relative z-10 max-w-7xl w-full mx-auto px-6 py-8 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-[1px] bg-v-gold" />
-            <span className="text-[#F5F5F5] text-xs tracking-[0.3em] uppercase font-light">Vector</span>
+            <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-10 max-w-[160px] object-contain" />
             <span className="ml-2 px-2 py-0.5 text-[9px] tracking-[0.15em] uppercase border border-v-gold/50 text-v-gold rounded-full">Beta</span>
           </div>
           <div className="flex items-center gap-8">
@@ -178,18 +177,7 @@ export default function LandingPage() {
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-20">
           <p className="text-[#8A9BB0] text-[10px] tracking-[0.4em] uppercase mb-8">Est. 2024</p>
 
-          <h1
-            className="text-white text-center mb-6"
-            style={{
-              fontFamily: '"Playfair Display", Georgia, serif',
-              fontWeight: 200,
-              letterSpacing: '0.4em',
-              fontSize: 'clamp(1.5rem, 5vw, 3.5rem)',
-              lineHeight: 1.2,
-            }}
-          >
-            SHINY JETS CRM
-          </h1>
+          <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-16 sm:h-20 md:h-24 object-contain mb-6" />
 
           {/* Gold rule */}
           <div className="w-20 h-[1px] bg-v-gold mx-auto mb-8" />
@@ -201,7 +189,7 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <a
               href="/signup"
-              className="px-10 py-4 bg-v-gold text-[#080C12] text-xs tracking-[0.25em] uppercase font-medium hover:bg-[#D4B85A] transition-colors text-center"
+              className="px-10 py-4 bg-v-gold text-white text-xs tracking-[0.25em] uppercase font-medium hover:bg-[#0091CC] transition-colors text-center"
             >
               Join as a Founding Member
             </a>
@@ -247,7 +235,7 @@ export default function LandingPage() {
                   className="block text-[5rem] leading-none font-light mb-4"
                   style={{
                     fontFamily: '"Playfair Display", Georgia, serif',
-                    color: 'rgba(201,168,76,0.08)',
+                    color: 'rgba(0,124,177,0.08)',
                     letterSpacing: '0.05em',
                   }}
                 >
@@ -289,7 +277,7 @@ export default function LandingPage() {
                   className="flex-shrink-0 text-[2.5rem] leading-none font-light"
                   style={{
                     fontFamily: '"Playfair Display", Georgia, serif',
-                    color: 'rgba(201,168,76,0.12)',
+                    color: 'rgba(0,124,177,0.12)',
                     letterSpacing: '0.05em',
                     minWidth: '3rem',
                   }}
@@ -335,7 +323,7 @@ export default function LandingPage() {
               <button
                 onClick={() => setAnnualBilling(false)}
                 className={`px-6 py-2.5 text-[10px] tracking-[0.2em] uppercase font-medium transition-all ${
-                  !annualBilling ? 'bg-v-gold text-[#080C12]' : 'text-[#8A9BB0] hover:text-[#F5F5F5]'
+                  !annualBilling ? 'bg-v-gold text-white' : 'text-[#8A9BB0] hover:text-[#F5F5F5]'
                 }`}
               >
                 Monthly
@@ -343,7 +331,7 @@ export default function LandingPage() {
               <button
                 onClick={() => setAnnualBilling(true)}
                 className={`px-6 py-2.5 text-[10px] tracking-[0.2em] uppercase font-medium transition-all ${
-                  annualBilling ? 'bg-v-gold text-[#080C12]' : 'text-[#8A9BB0] hover:text-[#F5F5F5]'
+                  annualBilling ? 'bg-v-gold text-white' : 'text-[#8A9BB0] hover:text-[#F5F5F5]'
                 }`}
               >
                 Annual
@@ -364,7 +352,7 @@ export default function LandingPage() {
                       ? 'border-2 border-v-gold relative'
                       : 'border border-[#2A3A50]'
                   }`}
-                  style={{ background: tier.highlight ? 'rgba(201,168,76,0.04)' : '#0D1B2A' }}
+                  style={{ background: tier.highlight ? 'rgba(0,124,177,0.04)' : '#0D1B2A' }}
                 >
                   {tier.highlight && (
                     <div className="absolute -top-px left-8 right-8 h-[2px] bg-v-gold" />
@@ -416,7 +404,7 @@ export default function LandingPage() {
                     href="/signup"
                     className={`w-full py-3.5 text-center text-[10px] tracking-[0.25em] uppercase font-medium transition-colors block ${
                       tier.highlight
-                        ? 'bg-v-gold text-[#080C12] hover:bg-[#D4B85A]'
+                        ? 'bg-v-gold text-white hover:bg-[#0091CC]'
                         : 'border border-[#2A3A50] text-[#F5F5F5] hover:border-v-gold hover:text-v-gold'
                     }`}
                   >
@@ -444,8 +432,8 @@ export default function LandingPage() {
               -45deg,
               transparent,
               transparent 60px,
-              #C9A84C 60px,
-              #C9A84C 61px
+              #007CB1 60px,
+              #007CB1 61px
             )`,
           }}
         />
@@ -465,7 +453,7 @@ export default function LandingPage() {
           </p>
           <a
             href="/signup"
-            className="inline-block px-12 py-4 bg-v-gold text-[#080C12] text-xs tracking-[0.25em] uppercase font-medium hover:bg-[#D4B85A] transition-colors"
+            className="inline-block px-12 py-4 bg-v-gold text-white text-xs tracking-[0.25em] uppercase font-medium hover:bg-[#0091CC] transition-colors"
           >
             Get Started Free
           </a>
@@ -522,7 +510,7 @@ export default function LandingPage() {
           bottom: -10px;
           width: 2px;
           height: 2px;
-          background: #C9A84C;
+          background: #007CB1;
           border-radius: 50%;
           opacity: 0;
           animation: floatUp linear infinite;

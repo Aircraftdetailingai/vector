@@ -53,17 +53,17 @@ export async function POST(request) {
       html: `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;background:#f0f0ee;">
-  <div style="background:linear-gradient(135deg,#C9A84C 0%,#0a1520 100%);padding:36px 30px;border-radius:12px 12px 0 0;text-align:center;">
-    <span style="color:#fff;font-size:30px;font-weight:800;letter-spacing:-0.5px;">Vector</span>
-    <h1 style="color:#C9A84C;margin:8px 0 0;font-size:16px;font-weight:400;">You've Been Invited</h1>
+  <div style="background:linear-gradient(135deg,#007CB1 0%,#0a1520 100%);padding:36px 30px;border-radius:12px 12px 0 0;text-align:center;">
+    <span style="color:#fff;font-size:30px;font-weight:800;letter-spacing:-0.5px;">Shiny Jets CRM</span>
+    <h1 style="color:#007CB1;margin:8px 0 0;font-size:16px;font-weight:400;">You've Been Invited</h1>
   </div>
   <div style="background:#fff;padding:32px 30px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
     <p style="font-size:16px;margin-bottom:20px;">
       <strong>${senderName}</strong> thinks you'd love <strong>Shiny Jets CRM</strong> — the quoting and client management platform built for aircraft detailing professionals.
     </p>
     <div style="text-align:center;margin:32px 0;">
-      <a href="${signupUrl}" style="display:inline-block;background:#C9A84C;color:#0F1117;text-decoration:none;padding:14px 36px;border-radius:4px;font-weight:600;font-size:15px;">
-        Get Started with Vector
+      <a href="${signupUrl}" style="display:inline-block;background:#007CB1;color:#ffffff;text-decoration:none;padding:14px 36px;border-radius:4px;font-weight:600;font-size:15px;">
+        Get Started with Shiny Jets CRM
       </a>
     </div>
     <p style="font-size:13px;color:#999;text-align:center;">Sign up and both of you earn bonus points.</p>

@@ -159,7 +159,7 @@ export default function Sidebar() {
         {user?.theme_logo_url ? (
           <img src={user.theme_logo_url} alt={user.company || 'Logo'} className="h-8 max-w-[160px] object-contain" />
         ) : (
-          <span className="text-v-gold text-base font-light" style={{ letterSpacing: '0.3em' }}>SHINY JETS CRM</span>
+          <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-10 max-w-[180px] object-contain" />
         )}
       </div>
 
@@ -234,7 +234,7 @@ export default function Sidebar() {
         {user?.theme_logo_url ? (
           <img src={user.theme_logo_url} alt={user.company || 'Logo'} className="h-6 max-w-[120px] object-contain" />
         ) : (
-          <span className="text-v-gold text-sm font-light" style={{ letterSpacing: '0.3em' }}>SHINY JETS CRM</span>
+          <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-8 max-w-[140px] object-contain" />
         )}
         <div className="flex items-center gap-2">
           <PointsBadge />

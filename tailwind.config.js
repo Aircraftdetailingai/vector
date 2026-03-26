@@ -13,9 +13,9 @@ module.exports = {
           sidebar: 'var(--v-sidebar, #080C12)',
           surface: 'var(--v-surface, #1A2236)',
           'surface-light': 'var(--v-surface-light, #1E2A40)',
-          gold: 'var(--v-gold, #C9A84C)',
-          'gold-dim': 'var(--v-gold-dim, #A68A3E)',
-          'gold-muted': 'var(--v-gold-muted, #8B7433)',
+          gold: 'var(--v-gold, #007CB1)',
+          'gold-dim': 'var(--v-gold-dim, #006691)',
+          'gold-muted': 'var(--v-gold-muted, #005070)',
           border: 'var(--v-border, #2A3A50)',
           'border-subtle': 'var(--v-border-subtle, #1A2236)',
           'text-primary': 'var(--v-text-primary, #F5F5F5)',
@@ -26,7 +26,7 @@ module.exports = {
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'Inter', 'system-ui', '-apple-system', 'sans-serif'],
-        heading: ['var(--font-playfair)', 'Playfair Display', 'Georgia', 'serif'],
+        heading: ['var(--font-poppins)', 'Poppins', 'var(--font-inter)', 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'ui-monospace', 'SFMono-Regular', 'monospace'],
       },
       gridTemplateColumns: {

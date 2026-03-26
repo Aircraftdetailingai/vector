@@ -1,5 +1,5 @@
 import './globals.css'
-import { Inter, Playfair_Display } from 'next/font/google'
+import { Inter, Poppins } from 'next/font/google'
 import InstallPrompt from '@/components/InstallPrompt'
 import ServiceWorkerRegistrar from '@/components/ServiceWorkerRegistrar'
 import Providers from '@/components/Providers'
@@ -11,11 +11,11 @@ const inter = Inter({
   variable: '--font-inter',
 })
 
-const playfair = Playfair_Display({
+const poppins = Poppins({
   subsets: ['latin'],
-  weight: ['400', '500', '600', '700'],
+  weight: ['300', '400', '500', '600', '700'],
   display: 'swap',
-  variable: '--font-playfair',
+  variable: '--font-poppins',
 })
 
 export const viewport = {
@@ -54,7 +54,7 @@ export default function RootLayout({ children }) {
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
       </head>
-      <body className={`${inter.variable} ${playfair.variable} ${inter.className} bg-v-charcoal text-v-text-primary antialiased`}>
+      <body className={`${inter.variable} ${poppins.variable} ${inter.className} bg-v-charcoal text-v-text-primary antialiased`}>
         <Providers>
           {children}
         </Providers>
