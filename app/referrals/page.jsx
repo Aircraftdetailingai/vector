@@ -205,7 +205,7 @@ export default function ReferralsPage() {
                   <div className="text-center">
                     <div className="w-10 h-10 mx-auto bg-v-gold/10 border border-v-gold/30 rounded-full flex items-center justify-center text-v-gold text-lg mb-3">2</div>
                     <p className="text-sm text-v-text-primary font-medium">They Sign Up</p>
-                    <p className="text-xs text-v-text-secondary mt-1">They create an account and start using Vector</p>
+                    <p className="text-xs text-v-text-secondary mt-1">They create an account and start using Shiny Jets CRM</p>
                   </div>
                   <div className="text-center">
                     <div className="w-10 h-10 mx-auto bg-v-gold/10 border border-v-gold/30 rounded-full flex items-center justify-center text-v-gold text-lg mb-3">3</div>

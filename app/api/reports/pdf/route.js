@@ -123,7 +123,7 @@ function ReportPDF({ type, data, detailer, startDate, endDate }) {
         {/* Footer */}
         <View style={s.footer} fixed>
           <Text style={s.footerText}>Generated {generatedDate}</Text>
-          <Text style={s.footerGold}>Powered by Vector Aviation</Text>
+          <Text style={s.footerGold}>Powered by Shiny Jets Aviation</Text>
         </View>
       </Page>
     </Document>

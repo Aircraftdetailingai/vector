@@ -54,7 +54,7 @@ export default function ReferralLandingPage() {
             href="/"
             className="inline-block px-6 py-3 bg-gradient-to-r from-v-gold to-v-gold-dim text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"
           >
-            Visit Vector
+            Visit Shiny Jets CRM
           </a>
         </div>
       </div>
@@ -70,7 +70,7 @@ export default function ReferralLandingPage() {
         </h1>
         {referrer && (
           <p className="text-gray-600 mb-2">
-            <strong>{referrer.company || referrer.name}</strong> thinks you&apos;d love Vector.
+            <strong>{referrer.company || referrer.name}</strong> thinks you&apos;d love Shiny Jets CRM.
           </p>
         )}
         <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-xl p-4 mb-6">
@@ -80,7 +80,7 @@ export default function ReferralLandingPage() {
         </div>
 
         <p className="text-gray-500 text-sm mb-6">
-          Vector is the all-in-one platform for aircraft detailing professionals. Build quotes, accept payments, track inventory, and grow your business.
+          Shiny Jets CRM is the all-in-one platform for aircraft detailing professionals. Build quotes, accept payments, track inventory, and grow your business.
         </p>
 
         <a

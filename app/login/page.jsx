@@ -79,8 +79,8 @@ function LoginContent() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-heading text-v-text-primary tracking-wide">Vector</h1>
-          <p className="text-v-text-secondary mt-2 text-sm">Professional Aircraft Detailing</p>
+          <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-12 mx-auto mb-2 object-contain" />
+          <p className="text-v-text-secondary mt-2 text-sm">Professional Aircraft Detailing Software</p>
         </div>
 
         <div className="bg-v-surface border border-v-border rounded-sm p-6">
@@ -144,7 +144,7 @@ function LoginContent() {
         {/* Footer */}
         <div className="mt-6 text-center">
           <p className="text-v-text-secondary text-sm">
-            New to Vector?{' '}
+            New to Shiny Jets CRM?{' '}
             <a href="/" className="text-v-gold hover:text-v-gold-dim transition-colors">See Plans & Pricing</a>
           </p>
         </div>

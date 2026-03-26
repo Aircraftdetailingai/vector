@@ -301,7 +301,7 @@ export default async function AirportPage({ params }) {
                 href="/signup"
                 className="px-8 py-3 bg-gradient-to-r from-v-gold to-v-gold-dim text-white font-semibold rounded-lg hover:opacity-90 transition-opacity"
               >
-                Join Vector Free
+                Join Shiny Jets CRM Free
               </Link>
               <Link
                 href="/find-a-detailer"
@@ -354,7 +354,7 @@ export default async function AirportPage({ params }) {
               recurring maintenance programs to keep your aircraft looking its best year-round.
             </p>
             <p>
-              All detailers listed on Vector are verified professionals with experience in aviation-grade products
+              All detailers listed on Shiny Jets CRM are verified professionals with experience in aviation-grade products
               and techniques. Request a quote directly through our platform to get competitive pricing for your aircraft type.
             </p>
           </div>

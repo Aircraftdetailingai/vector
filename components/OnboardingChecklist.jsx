@@ -110,7 +110,7 @@ export default function OnboardingChecklist({ user }) {
         {/* Header */}
         <div className="p-6 pb-4 text-center">
           <p className="text-v-gold text-2xl mb-2">&#9992;</p>
-          <h2 className="font-heading text-v-gold text-xl tracking-wide">Welcome to Vector</h2>
+          <h2 className="font-heading text-v-gold text-xl tracking-wide">Welcome to Shiny Jets CRM</h2>
           <p className="text-v-text-secondary text-sm mt-1">Complete these steps to get the most out of your account</p>
         </div>
 

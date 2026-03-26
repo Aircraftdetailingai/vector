@@ -91,14 +91,14 @@ export default function ROIPage() {
 
   const getMilestoneText = (milestone) => {
     const texts = {
-      first_10k: "You've booked $10K through Vector!",
-      first_25k: "You've booked $25K through Vector!",
-      first_50k: "You've hit $50K booked through Vector!",
-      first_100k: "Amazing! $100K booked through Vector!",
-      time_saved_100h: "You've saved 100+ hours with Vector!",
-      one_year: "Happy 1 year anniversary with Vector!",
+      first_10k: "You've booked $10K through Shiny Jets CRM!",
+      first_25k: "You've booked $25K through Shiny Jets CRM!",
+      first_50k: "You've hit $50K booked through Shiny Jets CRM!",
+      first_100k: "Amazing! $100K booked through Shiny Jets CRM!",
+      time_saved_100h: "You've saved 100+ hours with Shiny Jets CRM!",
+      one_year: "Happy 1 year anniversary with Shiny Jets CRM!",
     };
-    return texts[milestone] || "You're crushing it with Vector!";
+    return texts[milestone] || "You're crushing it with Shiny Jets CRM!";
   };
 
   if (loading) {
@@ -153,7 +153,7 @@ export default function ROIPage() {
             <textarea
               value={testimonialText}
               onChange={(e) => setTestimonialText(e.target.value)}
-              placeholder="Tell us what you love about Vector... (optional)"
+              placeholder="Tell us what you love about Shiny Jets CRM... (optional)"
               className="w-full border rounded-lg px-3 py-2 mb-4"
               rows={3}
             />

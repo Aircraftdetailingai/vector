@@ -26,9 +26,9 @@ export default function EmbedSettingsPage() {
   const appUrl = typeof window !== 'undefined' ? window.location.origin : 'https://crm.shinyjets.com';
 
   // Widget embed code
-  const widgetCode = `<!-- Vector Quote Widget -->
+  const widgetCode = `<!-- Shiny Jets CRM Quote Widget -->
 <script>
-  window.VectorWidget = {
+  window.ShinyJetsWidget = {
     detailerId: '${detailerId}',
     color: '${widgetColor}',
     position: '${widgetPosition}',
@@ -38,7 +38,7 @@ export default function EmbedSettingsPage() {
 <script src="${appUrl}/widget.js" async></script>`;
 
   // iFrame embed code
-  const iframeCode = `<!-- Vector Quote Form -->
+  const iframeCode = `<!-- Shiny Jets CRM Quote Form -->
 <iframe
   src="${appUrl}/embed/quote/${detailerId}"
   width="100%"

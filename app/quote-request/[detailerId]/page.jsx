@@ -397,7 +397,7 @@ export default function QuoteRequestPage() {
 
         {/* Footer */}
         <div className="text-center text-blue-200 text-sm mt-6">
-          Powered by Vector
+          Powered by Shiny Jets
         </div>
       </div>
     </div>

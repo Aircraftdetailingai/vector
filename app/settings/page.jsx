@@ -1782,7 +1782,7 @@ function SettingsContent() {
 
             {/* Palette Strips */}
             <div className="space-y-2">
-              {/* Vector Default palette */}
+              {/* Default palette */}
               {[{ name: 'Vector Default', primary: '#C9A84C', secondary: '#0D1B2A', neutral: '#0A0E17' }, ...palettes].map((pal, i) => {
                 const isActive = selectedPalette?.primary === pal.primary && selectedPalette?.secondary === pal.secondary && selectedPalette?.neutral === pal.neutral;
                 return (
@@ -2223,7 +2223,7 @@ function SettingsContent() {
         <div className="pb-6 mb-2">
           <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Platform fee'}</h3>
           <p className="text-sm text-v-text-secondary mb-3">
-            {'Vector charges a {rate}% platform fee on each job. Choose who pays it.'.replace('{rate}', user?.plan === 'enterprise' ? '0' : hasAllFeatures ? '1' : user?.plan === 'pro' ? '2' : '5')}
+            {'Shiny Jets CRM charges a {rate}% platform fee on each job. Choose who pays it.'.replace('{rate}', user?.plan === 'enterprise' ? '0' : hasAllFeatures ? '1' : user?.plan === 'pro' ? '2' : '5')}
           </p>
           <div className="space-y-3">
             <label

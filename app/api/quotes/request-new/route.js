@@ -77,7 +77,7 @@ export async function POST(request) {
             from: 'Vector <noreply@vectorav.ai>',
             to: detailer.email,
             subject: 'Customer Requested Updated Quote',
-            text: `A customer has requested an updated quote!\n\nCustomer: ${originalQuote.client_name || 'Unknown'}\nAircraft: ${originalQuote.aircraft_model || originalQuote.aircraft_type}\nOriginal Price: $${originalQuote.total_price}\n\nThe original quote expired on ${new Date(originalQuote.valid_until).toLocaleDateString()}.\n\nLog in to Vector to send them an updated quote.`
+            text: `A customer has requested an updated quote!\n\nCustomer: ${originalQuote.client_name || 'Unknown'}\nAircraft: ${originalQuote.aircraft_model || originalQuote.aircraft_type}\nOriginal Price: $${originalQuote.total_price}\n\nThe original quote expired on ${new Date(originalQuote.valid_until).toLocaleDateString()}.\n\nLog in to Shiny Jets CRM to send them an updated quote.`
           })
         });
       } catch (e) {

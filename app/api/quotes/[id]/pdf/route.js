@@ -345,7 +345,7 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees }) {
 
         {/* Footer */}
         <View style={s.footer} fixed>
-          <Text style={s.footerText}>Powered by Vector Aviation</Text>
+          <Text style={s.footerText}>Powered by Shiny Jets Aviation</Text>
         </View>
       </Page>
     </Document>

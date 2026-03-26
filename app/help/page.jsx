@@ -69,7 +69,7 @@ const SHORTCUTS = [
 ];
 
 const VIDEOS = [
-  { title: 'Getting Started with Vector', duration: '3:42', thumbnail: null },
+  { title: 'Getting Started with Shiny Jets CRM', duration: '3:42', thumbnail: null },
   { title: 'Building Your First Quote', duration: '2:15', thumbnail: null },
   { title: 'Setting Up Services & Packages', duration: '4:08', thumbnail: null },
   { title: 'Connecting Stripe & Getting Paid', duration: '2:55', thumbnail: null },

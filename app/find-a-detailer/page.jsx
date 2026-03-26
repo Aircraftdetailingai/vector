@@ -200,7 +200,7 @@ export default function FindADetailerPage() {
       <section className="py-16 border-t border-white/5">
         <div className="max-w-3xl mx-auto px-4 text-center">
           <h2 className="text-2xl font-bold text-white mb-3">Are you an aviation detailer?</h2>
-          <p className="text-gray-400 mb-6">Join Vector and get listed in our directory. Reach customers worldwide.</p>
+          <p className="text-gray-400 mb-6">Join Shiny Jets CRM and get listed in our directory. Reach customers worldwide.</p>
           <a
             href="/login"
             className="inline-block px-8 py-3 bg-gradient-to-r from-v-gold to-v-gold-dim text-white font-semibold rounded-xl hover:opacity-90 transition-opacity"

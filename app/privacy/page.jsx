@@ -1,6 +1,6 @@
 export const metadata = {
-  title: 'Privacy Policy - Vector',
-  description: 'Privacy Policy for Vector Aviation Software',
+  title: 'Privacy Policy - Shiny Jets CRM',
+  description: 'Privacy Policy for Shiny Jets CRM',
 };
 
 export default function PrivacyPage() {
@@ -9,7 +9,7 @@ export default function PrivacyPage() {
       <div className="max-w-3xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="mb-8">
-          <a href="/" className="text-v-gold hover:text-v-gold text-sm">&larr; Back to Vector</a>
+          <a href="/" className="text-v-gold hover:text-v-gold text-sm">&larr; Back to Shiny Jets CRM</a>
           <h1 className="text-3xl font-bold text-white mt-4">Privacy Policy</h1>
           <p className="text-gray-400 mt-2">Last updated: March 12, 2026</p>
         </div>
@@ -20,7 +20,7 @@ export default function PrivacyPage() {
             <p>
               Vector Aviation Artificial Intelligence (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) operates Vector Aviation Software
               (&ldquo;Vector&rdquo; or &ldquo;the Platform&rdquo;). This Privacy Policy explains how we collect, use,
-              disclose, and safeguard your information when you use our Platform. By using Vector,
+              disclose, and safeguard your information when you use our Platform. By using Shiny Jets CRM,
               you consent to the practices described in this policy.
             </p>
           </section>
@@ -55,7 +55,7 @@ export default function PrivacyPage() {
 
             <h3 className="font-medium text-gray-800 mt-4 mb-2">2.4 Business Activity Data</h3>
             <p className="mb-2">
-              As part of providing and improving the Platform, we collect data related to your business activity on Vector, including:
+              As part of providing and improving the Platform, we collect data related to your business activity on Shiny Jets CRM, including:
             </p>
             <ul className="list-disc ml-6 space-y-1">
               <li>Quote and pricing data (service types, frequencies, pricing patterns)</li>
@@ -195,7 +195,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">9. Cookies</h2>
             <p>
-              Vector uses essential cookies and local storage to maintain your session and
+              Shiny Jets CRM uses essential cookies and local storage to maintain your session and
               preferences. We do not use third-party advertising cookies or tracking pixels.
               Essential cookies are required for the Platform to function and cannot be disabled.
               These include:
@@ -209,7 +209,7 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">10. Children&apos;s Privacy</h2>
             <p>
-              Vector is not intended for use by individuals under 18 years of age. We do not
+              Shiny Jets CRM is not intended for use by individuals under 18 years of age. We do not
               knowingly collect personal information from children. If we learn that we have
               collected data from a child under 18, we will delete it promptly.
             </p>
@@ -268,7 +268,7 @@ export default function PrivacyPage() {
         <div className="mt-8 text-center text-sm text-gray-500">
           <a href="/terms" className="hover:text-gray-300 transition-colors">Terms of Service</a>
           <span className="mx-2">&middot;</span>
-          <a href="/" className="hover:text-gray-300 transition-colors">Back to Vector</a>
+          <a href="/" className="hover:text-gray-300 transition-colors">Back to Shiny Jets CRM</a>
         </div>
       </div>
     </div>

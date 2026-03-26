@@ -106,7 +106,7 @@ export async function GET(request) {
       plan: isAdmin ? 'enterprise' : (detailer.plan || 'free'),
       is_admin: isAdmin,
       status: detailer.status,
-      theme_primary: detailer.theme_primary || '#C9A84C',
+      theme_primary: detailer.theme_primary || '#007CB1',
       portal_theme: detailer.portal_theme || 'dark',
       theme_logo_url: detailer.theme_logo_url || null,
       terms_accepted_version: detailer.terms_accepted_version || null,

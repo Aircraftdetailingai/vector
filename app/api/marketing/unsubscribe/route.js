@@ -165,6 +165,6 @@ function unsubscribePage(status, detail, detailerId, token) {
   <div style="max-width:400px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,.1);">
     ${bodyContent[status] || bodyContent.error}
   </div>
-  <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:20px;">Powered by Vector - Aircraft Detailing Software</p>
+  <p style="text-align:center;color:#9ca3af;font-size:12px;margin-top:20px;">Powered by Shiny Jets - Aircraft Detailing Software</p>
 </body></html>`;
 }

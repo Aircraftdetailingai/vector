@@ -27,7 +27,7 @@ export async function POST(request) {
       .eq('id', user.id)
       .single();
 
-    const companyName = detailer?.company || detailer?.name || 'Vector';
+    const companyName = detailer?.company || detailer?.name || 'Shiny Jets CRM';
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'Vector <noreply@vectorav.ai>';
     const fromDomain = (fromEmail.match(/<([^>]+)>/) || [null, fromEmail])[1];
     const from = `${companyName} <${fromDomain}>`;

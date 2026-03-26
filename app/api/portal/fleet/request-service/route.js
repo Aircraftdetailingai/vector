@@ -114,7 +114,7 @@ export async function POST(request) {
             from: 'Vector <noreply@vectorav.ai>',
             to: routedDetailer.email,
             subject: 'New Fleet Service Request',
-            text: `New fleet service request!\n\nCustomer: ${customerName}\nAircraft: ${aircraftLabel}\nLocation: ${location || 'Not specified'}\nServices: ${servicesList}\n${preferred_date ? `Preferred Date: ${preferred_date}\n` : ''}${notes ? `Notes: ${notes}\n` : ''}\nLog in to Vector to send them a quote.`,
+            text: `New fleet service request!\n\nCustomer: ${customerName}\nAircraft: ${aircraftLabel}\nLocation: ${location || 'Not specified'}\nServices: ${servicesList}\n${preferred_date ? `Preferred Date: ${preferred_date}\n` : ''}${notes ? `Notes: ${notes}\n` : ''}\nLog in to Shiny Jets CRM to send them a quote.`,
           }),
         });
       } catch (e) {

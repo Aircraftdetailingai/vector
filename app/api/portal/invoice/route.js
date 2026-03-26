@@ -182,7 +182,7 @@ export async function GET(request) {
   ` : ''}
 
   <div style="margin-top: 40px; text-align: center; color: #9ca3af; font-size: 12px;">
-    <p>Powered by Vector - Aircraft Detailing Software</p>
+    <p>Powered by Shiny Jets - Aircraft Detailing Software</p>
   </div>
 </body>
 </html>`;

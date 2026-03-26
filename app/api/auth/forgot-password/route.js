@@ -36,7 +36,7 @@ function resetEmailHtml(resetLink) {
     <h1 style="color: #ffffff; margin: 0; font-size: 24px;">Reset Your Password</h1>
   </div>
   <div style="background: #ffffff; padding: 30px; border: 1px solid #e5e7eb; border-top: none; border-radius: 0 0 12px 12px;">
-    <p style="margin: 0 0 16px 0; font-size: 16px;">You requested a password reset for your Vector account.</p>
+    <p style="margin: 0 0 16px 0; font-size: 16px;">You requested a password reset for your Shiny Jets CRM account.</p>
     <p style="margin: 0 0 24px 0; font-size: 16px;">Click the button below to set a new password. This link expires in 1 hour.</p>
     <div style="text-align: center; margin: 32px 0;">
       <a href="${resetLink}" style="display: inline-block; background: linear-gradient(to right, #f59e0b, #d97706); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 16px; font-weight: 600;">
@@ -94,9 +94,9 @@ export async function POST(request) {
     const { error: emailError } = await getResend().emails.send({
       from: FROM_EMAIL,
       to: detailer.email,
-      subject: 'Reset your Vector password',
+      subject: 'Reset your Shiny Jets CRM password',
       html: resetEmailHtml(resetLink),
-      text: `Reset your Vector password.\n\nClick this link to set a new password (expires in 1 hour):\n${resetLink}\n\nIf you didn't request this, you can safely ignore this email.`,
+      text: `Reset your Shiny Jets CRM password.\n\nClick this link to set a new password (expires in 1 hour):\n${resetLink}\n\nIf you didn't request this, you can safely ignore this email.`,
     });
 
     if (emailError) {

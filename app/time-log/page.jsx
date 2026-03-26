@@ -161,7 +161,7 @@ export default function TimeLogPage() {
         <div className="text-center mb-8">
           <div className="text-white text-3xl font-bold flex items-center justify-center space-x-2">
             <span>&#9992;</span>
-            <span>Vector Time Log</span>
+            <span>Shiny Jets CRM Time Log</span>
           </div>
           <p className="text-white/60 mt-2">Clock in/out & log your work hours</p>
         </div>
