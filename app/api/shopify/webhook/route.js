@@ -228,7 +228,7 @@ async function handleCancellationByEmail(supabase, email) {
         <h2 style="color:#333;">Subscription Cancelled</h2>
         <p>Your Shiny Jets CRM subscription has been cancelled and your account has been moved to the Free plan.</p>
         <p>You can still access your account with limited features. Your data will be preserved.</p>
-        <p>If you'd like to resubscribe, visit <a href="https://shinyjets.com" style="color:#C9A84C;">shinyjets.com</a>.</p>
+        <p>If you'd like to resubscribe, visit <a href="https://shinyjets.com" style="color:#007CB1;">shinyjets.com</a>.</p>
         <p style="color:#999;font-size:12px;margin-top:24px;">Powered by Shiny Jets</p>
       </body></html>`,
       text: `Your Shiny Jets CRM subscription has been cancelled. Your account has been moved to the Free plan. You can resubscribe at shinyjets.com.`,
