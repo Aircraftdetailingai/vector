@@ -111,7 +111,7 @@ export async function POST(request) {
     }
 
     // Hardcode URL to avoid env var issues
-    const appUrl = 'https://app.vectorav.ai';
+    const appUrl = 'https://crm.shinyjets.com';
 
     // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({

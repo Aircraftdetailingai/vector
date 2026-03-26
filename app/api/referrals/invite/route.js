@@ -35,16 +35,16 @@ export async function POST(request) {
     await supabase.from('detailers').update({ referral_code: referralCode }).eq('id', user.id);
   }
 
-  const signupUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai'}/signup?ref=${referralCode}`;
+  const signupUrl = `${process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com'}/signup?ref=${referralCode}`;
   const senderName = detailer?.company || detailer?.name || 'A colleague';
 
   // Send invite email
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
     await resend.emails.send({
-      from: process.env.RESEND_FROM_EMAIL || 'Vector Aviation <noreply@vectorav.ai>',
+      from: process.env.RESEND_FROM_EMAIL || 'Shiny Jets CRM <noreply@vectorav.ai>',
       to: email,
-      subject: `${senderName} invited you to join Vector Aviation`,
+      subject: `${senderName} invited you to join Shiny Jets CRM`,
       reply_to: 'support@vectorav.ai',
       headers: {
         'List-Unsubscribe': '<mailto:unsubscribe@vectorav.ai?subject=Unsubscribe>',
@@ -59,7 +59,7 @@ export async function POST(request) {
   </div>
   <div style="background:#fff;padding:32px 30px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
     <p style="font-size:16px;margin-bottom:20px;">
-      <strong>${senderName}</strong> thinks you'd love <strong>Vector Aviation</strong> — the quoting and client management platform built for aircraft detailing professionals.
+      <strong>${senderName}</strong> thinks you'd love <strong>Shiny Jets CRM</strong> — the quoting and client management platform built for aircraft detailing professionals.
     </p>
     <div style="text-align:center;margin:32px 0;">
       <a href="${signupUrl}" style="display:inline-block;background:#C9A84C;color:#0F1117;text-decoration:none;padding:14px 36px;border-radius:4px;font-weight:600;font-size:15px;">
@@ -68,9 +68,9 @@ export async function POST(request) {
     </div>
     <p style="font-size:13px;color:#999;text-align:center;">Sign up and both of you earn bonus points.</p>
   </div>
-  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:16px;">Powered by <a href="https://vectorav.ai" style="color:#aaa;text-decoration:none;">Vector Aviation</a></p>
+  <p style="text-align:center;font-size:11px;color:#aaa;margin-top:16px;">Powered by <a href="https://shinyjets.com" style="color:#aaa;text-decoration:none;">Shiny Jets</a></p>
 </body></html>`,
-      text: `${senderName} invited you to join Vector Aviation — the quoting platform built for aircraft detailers. Sign up here: ${signupUrl}`,
+      text: `${senderName} invited you to join Shiny Jets CRM — the quoting platform built for aircraft detailers. Sign up here: ${signupUrl}`,
     });
   } catch (err) {
     console.error('Referral invite email error:', err);

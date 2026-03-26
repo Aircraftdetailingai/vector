@@ -173,7 +173,7 @@ function SignupForm() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-2xl sm:text-3xl font-heading text-v-text-primary tracking-wide">Vector Aviation</h1>
+          <h1 className="text-2xl sm:text-3xl font-heading text-v-text-primary tracking-wide">Shiny Jets CRM</h1>
           {!invite && (
             <p className="text-v-text-secondary mt-2 text-sm">Create your account</p>
           )}

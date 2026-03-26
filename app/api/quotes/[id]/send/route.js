@@ -214,7 +214,7 @@ export async function POST(request, { params }) {
   }
 
   // Always use the canonical app URL for quote links sent to customers
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai';
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
   const quoteLink = `${appUrl}/q/${quote.share_link}`;
   let emailSent = false;
   let emailError = null;
@@ -228,7 +228,7 @@ export async function POST(request, { params }) {
       emailError = 'Email service not configured (RESEND_API_KEY missing)';
     } else {
       try {
-        const fromAddr = process.env.RESEND_FROM_EMAIL || 'Vector <noreply@vectorav.ai>';
+        const fromAddr = process.env.RESEND_FROM_EMAIL || 'Shiny Jets CRM <noreply@vectorav.ai>';
         console.log(`Email: to=${clientEmail}, from=${fromAddr}`);
         const emailQuote = { ...updated, share_link: quote.share_link, client_email: clientEmail };
         const result = await sendQuoteSentEmail({

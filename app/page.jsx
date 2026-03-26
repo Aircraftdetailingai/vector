@@ -488,7 +488,7 @@ export default function LandingPage() {
               </p>
               <div className="flex items-center gap-4">
                 <div>
-                  <p className="text-white font-semibold">Vector Aviation</p>
+                  <p className="text-white font-semibold">Shiny Jets CRM</p>
                   <p className="text-gray-500 text-sm">Built by a professional aircraft detailer</p>
                   <p className="text-gray-500 text-sm">15+ years of aircraft detailing experience</p>
                 </div>

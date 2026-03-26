@@ -114,7 +114,7 @@ export async function GET(request) {
           .single();
 
         const contactPref = await getContactPreference(supabase, q.detailer_id, q.client_email);
-        const quoteUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.vectorav.ai'}/q/${q.share_link}`;
+        const quoteUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://crm.shinyjets.com'}/q/${q.share_link}`;
 
         // Send reminder email (SMS disabled pending 10DLC, always send email)
         if (q.client_email) {
@@ -182,7 +182,7 @@ export async function GET(request) {
         const originalPrice = q.total_price || 0;
         const discountedPrice = Math.round(originalPrice * (1 - discountPct / 100) * 100) / 100;
         const contactPref = await getContactPreference(supabase, q.detailer_id, q.client_email);
-        const quoteUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://app.vectorav.ai'}/q/${q.share_link}`;
+        const quoteUrl = `${process.env.NEXT_PUBLIC_BASE_URL || 'https://crm.shinyjets.com'}/q/${q.share_link}`;
 
         // Send discount email (SMS disabled pending 10DLC, always send email)
         if (q.client_email) {

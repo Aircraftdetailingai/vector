@@ -362,7 +362,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
         }
       }
 
-      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai';
+      const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
       const link = `${appUrl}/q/${share_link}`;
 
       // Show warnings for any delivery failures

@@ -239,7 +239,7 @@ export default function LeadIntakeSettingsPage() {
 
   const getWidgetCode = () => {
     const userId = user?.id || 'YOUR_DETAILER_ID';
-    return `<script src="https://app.vectorav.ai/widget.js" data-detailer-id="${userId}"></script>`;
+    return `<script src="https://crm.shinyjets.com/widget.js" data-detailer-id="${userId}"></script>`;
   };
 
   const copyWidgetCode = () => {

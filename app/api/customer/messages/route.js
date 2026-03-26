@@ -146,7 +146,7 @@ export async function POST(request) {
             <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">
               ${message}
             </div>
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai'}/dashboard"
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com'}/dashboard"
                style="display: inline-block; padding: 12px 24px; background: #f59e0b; color: white; text-decoration: none; border-radius: 8px;">
               Reply in Dashboard
             </a>

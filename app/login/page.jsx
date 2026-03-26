@@ -153,7 +153,7 @@ function LoginContent() {
           <a href="/crew/login" className="text-xs text-v-text-secondary hover:text-v-gold transition-colors">
             Crew login &rarr;
           </a>
-          <p className="text-xs text-v-text-secondary/50">By Vector Aviation</p>
+          <p className="text-xs text-v-text-secondary/50">By Shiny Jets</p>
         </div>
       </div>
 

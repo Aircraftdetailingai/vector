@@ -39,6 +39,6 @@ export default function robots() {
         ],
       },
     ],
-    sitemap: 'https://app.vectorav.ai/sitemap.xml',
+    sitemap: 'https://crm.shinyjets.com/sitemap.xml',
   };
 }

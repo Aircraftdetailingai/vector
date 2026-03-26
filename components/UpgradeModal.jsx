@@ -65,34 +65,22 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
     }
   };
 
-  const handleUpgrade = async () => {
+  const handleUpgrade = () => {
     if (!analysis?.nextTier) return;
-    setUpgrading(true);
-
-    try {
-      const token = localStorage.getItem('vector_token');
-      const body = { tier: analysis.nextTier };
-      if (promoResult?.code) body.promo_code = promoResult.code;
-      const res = await fetch('/api/upgrade', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else if (data.error) {
-        alert(data.error);
+    const planUrls = {
+      pro: 'https://shinyjets.com/products/shiny-jets-crm-pro',
+      business: 'https://shinyjets.com/products/shiny-jets-crm-business',
+      enterprise: 'https://shinyjets.com/products/shiny-jets-crm-enterprise',
+    };
+    const url = planUrls[analysis.nextTier];
+    if (url) {
+      try {
+        const user = JSON.parse(localStorage.getItem('vector_user') || '{}');
+        const email = user.email || '';
+        window.open(`${url}?email=${encodeURIComponent(email)}`, '_blank');
+      } catch {
+        window.open(url, '_blank');
       }
-    } catch (err) {
-      console.error('Upgrade failed:', err);
-      alert('Failed to start upgrade process');
-    } finally {
-      setUpgrading(false);
     }
   };
 

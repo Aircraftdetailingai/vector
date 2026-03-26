@@ -149,7 +149,7 @@ export async function POST(request) {
     }
 
     // Create account link - hardcode URL to avoid env var issues
-    const appUrl = 'https://app.vectorav.ai';
+    const appUrl = 'https://crm.shinyjets.com';
 
     console.log('Creating account link for:', accountId);
 

@@ -103,8 +103,8 @@ export async function POST(request) {
       payment_method_types: ['card'],
       line_items: lineItems,
       mode: 'payment',
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai'}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai'}/shop/cart`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com'}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com'}/shop/cart`,
       metadata: {
         detailer_id: user.id,
         order_items: JSON.stringify(orderItems.map(i => ({

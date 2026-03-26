@@ -28,7 +28,7 @@ export async function generateMetadata({ params }) {
       title,
       description,
       type: 'website',
-      url: `https://app.vectorav.ai/airport/${airport.icao}`,
+      url: `https://crm.shinyjets.com/airport/${airport.icao}`,
       siteName: 'Vector Aviation',
     },
     twitter: {
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }) {
       description,
     },
     alternates: {
-      canonical: `https://app.vectorav.ai/airport/${airport.icao}`,
+      canonical: `https://crm.shinyjets.com/airport/${airport.icao}`,
     },
   };
 }
@@ -179,7 +179,7 @@ export default async function AirportPage({ params }) {
       latitude: airport.lat,
       longitude: airport.lon,
     },
-    url: `https://app.vectorav.ai/airport/${airport.icao}`,
+    url: `https://crm.shinyjets.com/airport/${airport.icao}`,
   };
 
   return (

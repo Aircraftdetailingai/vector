@@ -59,7 +59,7 @@ export async function POST(request) {
       return Response.json({ error: 'Change order already processed' }, { status: 400 });
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai';
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
     const detailer = changeOrder.quotes?.detailers;
 
     // Build line items for Stripe

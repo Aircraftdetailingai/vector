@@ -93,11 +93,11 @@ export default function ReferralLandingPage() {
           href="/"
           className="block w-full py-3 border-2 border-[#1e3a5f] text-[#1e3a5f] font-semibold rounded-xl hover:bg-[#1e3a5f]/5 transition-colors"
         >
-          Learn More About Vector
+          Learn More About Shiny Jets CRM
         </a>
 
         <p className="mt-6 text-xs text-gray-400">
-          Powered by Vector &mdash; Aircraft Detailing Software
+          Powered by Shiny Jets &mdash; Aircraft Detailing Software
         </p>
       </div>
     </div>

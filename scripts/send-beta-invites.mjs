@@ -25,7 +25,7 @@ for (const line of envContent.split('\n')) {
 const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@vectorav.ai';
 
 if (!SUPABASE_URL || !SUPABASE_KEY) { console.error('Missing Supabase credentials'); process.exit(1); }
@@ -104,8 +104,8 @@ function buildEmailHtml(email, token) {
         </td></tr>
         <!-- Footer -->
         <tr><td style="background: #0F1117; padding: 24px 40px; text-align: center; border-radius: 0 0 8px 8px;">
-          <p style="margin: 0; color: rgba(255,255,255,0.4); font-size: 12px;">Vector Aviation CRM &mdash; Built for aircraft detailers</p>
-          <p style="margin: 8px 0 0; color: rgba(255,255,255,0.25); font-size: 11px;">vectorav.ai</p>
+          <p style="margin: 0; color: rgba(255,255,255,0.4); font-size: 12px;">Shiny Jets CRM &mdash; Built for aircraft detailers</p>
+          <p style="margin: 8px 0 0; color: rgba(255,255,255,0.25); font-size: 11px;">shinyjets.com</p>
         </td></tr>
       </table>
     </td></tr>
@@ -153,11 +153,11 @@ async function main() {
     // 2. Send email
     try {
       const emailResult = await resend.emails.send({
-        from: `Vector Aviation <${FROM_EMAIL}>`,
+        from: `Shiny Jets CRM <${FROM_EMAIL}>`,
         to: email,
-        subject: "You're invited to try Vector Aviation CRM — 6 months free",
+        subject: "You're invited to try Shiny Jets CRM — 6 months free",
         html: buildEmailHtml(email, token),
-        text: `You're invited to Vector Aviation CRM!\n\nBrett Berry has personally invited you to try Vector — the first CRM built exclusively for aircraft detailers.\n\n6 months of Pro access — completely free. No credit card required.\n\nAccept your invitation: ${signupUrl}\n\nThis invite is for ${email} only and can be used once.`,
+        text: `You're invited to Shiny Jets CRM!\n\nYou've been personally invited to try Shiny Jets CRM — the first CRM built exclusively for aircraft detailers.\n\n6 months of Pro access — completely free. No credit card required.\n\nAccept your invitation: ${signupUrl}\n\nThis invite is for ${email} only and can be used once.`,
       });
 
       if (emailResult.error) {

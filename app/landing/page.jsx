@@ -188,7 +188,7 @@ export default function LandingPage() {
               lineHeight: 1.2,
             }}
           >
-            VECTOR AVIATION
+            SHINY JETS CRM
           </h1>
 
           {/* Gold rule */}

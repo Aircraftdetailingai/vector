@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
             </div>
           </>
         )}
-        <p className="mt-6 text-xs text-gray-400 text-center">By Vector Aviation</p>
+        <p className="mt-6 text-xs text-gray-400 text-center">By Shiny Jets</p>
       </div>
     </div>
   );

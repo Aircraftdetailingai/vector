@@ -291,7 +291,7 @@ export default function OnboardingPage() {
     } catch {}
   };
 
-  const referralLink = referralCode ? `https://app.vectorav.ai/signup?ref=${referralCode}` : '';
+  const referralLink = referralCode ? `https://crm.shinyjets.com/signup?ref=${referralCode}` : '';
 
   const copyReferralLink = () => {
     if (!referralLink) return;

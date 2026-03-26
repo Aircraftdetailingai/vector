@@ -41,7 +41,7 @@ export default function ReferralsPage() {
   useEffect(() => { fetchReferrals(); }, [fetchReferrals]);
 
   const referralUrl = data?.referral_code
-    ? `https://app.vectorav.ai/ref/${data.referral_code}`
+    ? `https://crm.shinyjets.com/ref/${data.referral_code}`
     : '';
 
   const handleCopy = async () => {

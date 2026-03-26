@@ -17,7 +17,7 @@ function getResend() {
   return _resend;
 }
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Vector <noreply@vectorav.ai>';
-const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://app.vectorav.ai';
+const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
 
 function buildCampaignHtml(campaign, detailer, unsubscribeUrl) {
   const BRAND_COLOR = '#1e3a5f';

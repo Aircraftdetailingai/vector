@@ -86,7 +86,7 @@ export async function POST(request) {
       if (existingDetailer.status === 'suspended') {
         await supabase.from('detailers').update({ status: 'active', plan }).eq('id', existingDetailer.id);
         if (phone) {
-          await sendSMS(phone, `Your Vector account has been reactivated. Login at app.vectorav.ai`);
+          await sendSMS(phone, `Your Shiny Jets CRM account has been reactivated. Login at crm.shinyjets.com`);
         }
       } else {
         await supabase.from('detailers').update({ plan }).eq('id', existingDetailer.id);
@@ -110,13 +110,13 @@ export async function POST(request) {
         .maybeSingle();
       if (inserted) {
         if (phone) {
-          await sendSMS(phone, `Welcome to Vector, ${name}! Your account is ready at app.vectorav.ai. Temp password: ${tempPassword}`);
+          await sendSMS(phone, `Welcome to Shiny Jets CRM, ${name}! Your account is ready at crm.shinyjets.com. Temp password: ${tempPassword}`);
         }
         if (email) {
           await sendEmail(
             email,
-            'Welcome to Vector',
-            `<p>Hello ${name},</p><p>Your Vector account is ready. Your temporary password is <strong>${tempPassword}</strong>. Please log in at <a href="https://app.vectorav.ai">app.vectorav.ai</a> and complete onboarding.</p>`
+            'Welcome to Shiny Jets CRM',
+            `<p>Hello ${name},</p><p>Your Shiny Jets CRM account is ready. Your temporary password is <strong>${tempPassword}</strong>. Please log in at <a href="https://crm.shinyjets.com">crm.shinyjets.com</a> and complete onboarding.</p>`
           );
         }
         const now = new Date();
@@ -147,7 +147,7 @@ export async function POST(request) {
     if (detailer) {
       await supabase.from('detailers').update({ status: 'suspended' }).eq('id', detailer.id);
       if (detailer.phone) {
-        await sendSMS(detailer.phone, 'Your Vector payment failed. Account paused. Update at app.vectorav.ai/billing');
+        await sendSMS(detailer.phone, 'Your Shiny Jets CRM payment failed. Account paused. Update at crm.shinyjets.com/billing');
       }
     }
     const adminPhone = process.env.ADMIN_PHONE;
@@ -166,7 +166,7 @@ export async function POST(request) {
       if (detailer.status === 'suspended') {
         await supabase.from('detailers').update({ status: 'active' }).eq('id', detailer.id);
         if (detailer.phone) {
-          await sendSMS(detailer.phone, 'Your Vector account has been reactivated. Thank you for your payment.');
+          await sendSMS(detailer.phone, 'Your Shiny Jets CRM account has been reactivated. Thank you for your payment.');
         }
       }
     }

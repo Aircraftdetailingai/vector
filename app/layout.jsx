@@ -23,13 +23,13 @@ export const viewport = {
 }
 
 export const metadata = {
-  title: 'Vector - Aircraft Detailing Quotes',
+  title: 'Shiny Jets CRM - Aircraft Detailing Quotes',
   description: 'Professional quoting software for aircraft detailers',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
-    title: 'Vector',
+    title: 'Shiny Jets CRM',
   },
   alternates: {
     languages: {

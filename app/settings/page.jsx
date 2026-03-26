@@ -1982,139 +1982,46 @@ function SettingsContent() {
               <p className="capitalize mb-3 text-v-text-primary">{user?.plan} - ${planPrice}/mo</p>
               {!hasAllFeatures && (
                 <>
-                  {/* Annual/Monthly Toggle */}
-                  <div className="flex items-center gap-2 mb-3">
-                    <button
-                      onClick={() => setUpgradeBilling('monthly')}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                        upgradeBilling === 'monthly' ? 'bg-v-gold text-white' : 'text-v-text-secondary hover:text-v-text-primary border border-v-border'
-                      }`}
-                    >
-                      {'Monthly'}
-                    </button>
-                    <button
-                      onClick={() => setUpgradeBilling('annual')}
-                      className={`px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                        upgradeBilling === 'annual' ? 'bg-v-gold text-white' : 'text-v-text-secondary hover:text-v-text-primary border border-v-border'
-                      }`}
-                    >
-                      {'Annual'} <span className="text-green-500 font-bold">-25%</span>
-                    </button>
-                  </div>
-                  {/* Promo Code Section */}
-                  <div className="mb-3">
-                    <button
-                      onClick={() => setShowPromo(!showPromo)}
-                      className="text-sm text-v-text-secondary hover:text-v-text-primary transition-colors"
-                    >
-                      {showPromo ? 'Hide promo code' : 'Have a promo code?'}
-                    </button>
-                    {showPromo && (
-                      <div className="mt-2 flex items-center gap-2">
-                        <input
-                          type="text"
-                          value={promoCode}
-                          onChange={(e) => {
-                            setPromoCode(e.target.value.toUpperCase());
-                            setPromoResult(null);
-                            setPromoError('');
-                          }}
-                          onBlur={() => validatePromo(promoCode)}
-                          onKeyDown={(e) => e.key === 'Enter' && validatePromo(promoCode)}
-                          placeholder="Enter code"
-                          className="px-3 py-1.5 rounded bg-v-charcoal border border-v-border text-v-text-primary placeholder:text-v-text-secondary text-sm w-40"
-                        />
-                        {promoValidating && (
-                          <span className="text-xs text-v-text-secondary">{'Checking...'}</span>
-                        )}
-                        {promoResult && (
-                          <span className="text-xs text-green-400 font-medium">
-                            {promoResult.code}: {promoResult.description}
-                          </span>
-                        )}
-                        {promoError && (
-                          <span className="text-xs text-red-400">{promoError}</span>
-                        )}
-                      </div>
-                    )}
-                    {promoResult?.min_months > 0 && (
-                      <p className="text-xs text-v-text-secondary mt-1 ml-1">
-                        {promoResult.min_months} month minimum commitment required
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-2 mb-4">
                     {user?.plan !== 'pro' && user?.plan !== 'business' && (
-                      <button
-                        onClick={async () => {
-                          try {
-                            const token = localStorage.getItem('vector_token');
-                            const body = { tier: 'pro', billing: upgradeBilling };
-                            if (promoResult?.code) body.promo_code = promoResult.code;
-                            const res = await fetch('/api/upgrade', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                              body: JSON.stringify(body),
-                            });
-                            const data = await res.json();
-                            if (data.url) window.location.href = data.url;
-                            else if (data.error) alert(data.error);
-                          } catch (e) { alert('Upgrade failed'); }
-                        }}
+                      <a
+                        href={`https://shinyjets.com/products/shiny-jets-crm-pro?email=${encodeURIComponent(user?.email || '')}`}
+                        target="_blank"
+                        rel="noreferrer"
                         className="px-4 py-2 bg-v-gold text-v-charcoal text-xs uppercase tracking-widest font-semibold hover:bg-v-gold-dim transition-colors"
                       >
-                        Pro - ${upgradeBilling === 'annual' ? '59' : '79'}/mo
-                        {upgradeBilling === 'annual' && <span className="ml-1 text-xs opacity-75">($708/yr)</span>}
-                      </button>
+                        Upgrade to Pro - $79/mo
+                      </a>
                     )}
                     {user?.plan !== 'business' && user?.plan !== 'enterprise' && (
-                      <button
-                        onClick={async () => {
-                          try {
-                            const token = localStorage.getItem('vector_token');
-                            const body = { tier: 'business', billing: upgradeBilling };
-                            if (promoResult?.code) body.promo_code = promoResult.code;
-                            const res = await fetch('/api/upgrade', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                              body: JSON.stringify(body),
-                            });
-                            const data = await res.json();
-                            if (data.url) window.location.href = data.url;
-                            else if (data.error) alert(data.error);
-                          } catch (e) { alert('Upgrade failed'); }
-                        }}
+                      <a
+                        href={`https://shinyjets.com/products/shiny-jets-crm-business?email=${encodeURIComponent(user?.email || '')}`}
+                        target="_blank"
+                        rel="noreferrer"
                         className="px-4 py-2 rounded bg-gradient-to-r from-v-gold to-v-gold-dim text-white text-sm"
                       >
-                        Business - ${upgradeBilling === 'annual' ? '112' : '149'}/mo
-                        {upgradeBilling === 'annual' && <span className="ml-1 text-xs opacity-75">($1,344/yr)</span>}
-                      </button>
+                        Upgrade to Business - $149/mo
+                      </a>
                     )}
                     {user?.plan !== 'enterprise' && (
-                      <button
-                        onClick={async () => {
-                          try {
-                            const token = localStorage.getItem('vector_token');
-                            const body = { tier: 'enterprise', billing: upgradeBilling };
-                            if (promoResult?.code) body.promo_code = promoResult.code;
-                            const res = await fetch('/api/upgrade', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                              body: JSON.stringify(body),
-                            });
-                            const data = await res.json();
-                            if (data.url) window.location.href = data.url;
-                            else if (data.error) alert(data.error);
-                          } catch (e) { alert('Upgrade failed'); }
-                        }}
+                      <a
+                        href={`https://shinyjets.com/products/shiny-jets-crm-enterprise?email=${encodeURIComponent(user?.email || '')}`}
+                        target="_blank"
+                        rel="noreferrer"
                         className="px-4 py-2 border border-v-gold text-v-gold text-xs uppercase tracking-widest font-semibold hover:bg-v-gold/10 transition-colors"
                       >
-                        Enterprise - ${upgradeBilling === 'annual' ? '224' : '299'}/mo
-                        {upgradeBilling === 'annual' && <span className="ml-1 text-xs opacity-75">($2,688/yr)</span>}
-                      </button>
+                        Upgrade to Enterprise - $299/mo
+                      </a>
                     )}
                   </div>
+                  <a
+                    href="https://shinyjets.com/account/subscriptions"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-sm text-v-text-secondary hover:text-v-gold transition-colors underline"
+                  >
+                    Manage Subscription
+                  </a>
                 </>
               )}
             </div>
@@ -2198,7 +2105,7 @@ function SettingsContent() {
                   />
                   <span className="text-v-text-secondary text-xs leading-relaxed">
                     I understand I am solely responsible for all chargebacks and payment disputes with my customers.
-                    Vector Aviation is not liable for any chargeback losses or fees.
+                    Shiny Jets CRM is not liable for any chargeback losses or fees.
                     I agree to the{' '}
                     <a href="/terms" target="_blank" rel="noreferrer" className="text-v-gold hover:text-v-gold-dim underline">
                       Terms of Service

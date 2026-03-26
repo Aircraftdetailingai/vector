@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { US_AIRPORTS } from '@/lib/airports';
 
-const BASE_URL = 'https://app.vectorav.ai';
+const BASE_URL = 'https://crm.shinyjets.com';
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
