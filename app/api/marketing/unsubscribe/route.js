@@ -160,7 +160,7 @@ function unsubscribePage(status, detail, detailerId, token) {
   };
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Unsubscribe - Vector</title></head>
+<title>Unsubscribe - Shiny Jets CRM</title></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#f3f4f6;margin:0;padding:40px 20px;">
   <div style="max-width:400px;margin:0 auto;background:#fff;border-radius:12px;padding:32px;box-shadow:0 1px 3px rgba(0,0,0,.1);">
     ${bodyContent[status] || bodyContent.error}

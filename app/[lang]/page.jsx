@@ -16,7 +16,7 @@ export async function generateMetadata({ params }) {
   const langLabel = LANGUAGES.find(l => l.code === lang)?.label || lang;
 
   return {
-    title: `Vector - ${t.hero.headlineHighlight} | ${langLabel}`,
+    title: `Shiny Jets CRM - ${t.hero.headlineHighlight} | ${langLabel}`,
     description: t.hero.sub,
     alternates: {
       languages: Object.fromEntries([

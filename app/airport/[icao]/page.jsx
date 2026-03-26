@@ -17,7 +17,7 @@ export async function generateMetadata({ params }) {
   const { icao } = await params;
   const airport = AIRPORT_MAP[icao?.toUpperCase()];
   if (!airport) {
-    return { title: 'Airport Not Found | Vector' };
+    return { title: 'Airport Not Found | Shiny Jets CRM' };
   }
   const title = `Aircraft Detailing at ${airport.name} (${airport.icao}) | Vector`;
   const description = `Find professional aircraft detailing services at ${airport.name} in ${airport.city}, ${airport.state}. Browse verified aviation detailers, request quotes, and keep your aircraft looking its best at ${airport.icao}.`;

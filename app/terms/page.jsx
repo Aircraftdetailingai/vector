@@ -1,5 +1,5 @@
 export const metadata = {
-  title: 'Terms of Service - Vector',
+  title: 'Terms of Service - Shiny Jets CRM',
   description: 'Terms of Service for Vector Aviation Software',
 };
 
