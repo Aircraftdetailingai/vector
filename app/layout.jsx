@@ -19,13 +19,21 @@ const poppins = Poppins({
 })
 
 export const viewport = {
-  themeColor: '#0F1117',
+  themeColor: '#007CB1',
 }
 
 export const metadata = {
   title: 'Shiny Jets CRM - Aircraft Detailing Quotes',
   description: 'Professional quoting software for aircraft detailers',
+  applicationName: 'Shiny Jets CRM',
   manifest: '/manifest.json',
+  icons: {
+    icon: [
+      { url: '/icons/icon-192x192.png', sizes: '192x192', type: 'image/png' },
+      { url: '/icons/icon-512x512.png', sizes: '512x512', type: 'image/png' },
+    ],
+    apple: '/apple-touch-icon.png',
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -33,15 +41,15 @@ export const metadata = {
   },
   alternates: {
     languages: {
-      'en': 'https://vectorav.ai',
-      'es': 'https://vectorav.ai/es',
-      'pt': 'https://vectorav.ai/pt',
-      'fr': 'https://vectorav.ai/fr',
-      'de': 'https://vectorav.ai/de',
-      'it': 'https://vectorav.ai/it',
-      'nl': 'https://vectorav.ai/nl',
-      'ja': 'https://vectorav.ai/ja',
-      'zh': 'https://vectorav.ai/zh',
+      'en': 'https://crm.shinyjets.com',
+      'es': 'https://crm.shinyjets.com/es',
+      'pt': 'https://crm.shinyjets.com/pt',
+      'fr': 'https://crm.shinyjets.com/fr',
+      'de': 'https://crm.shinyjets.com/de',
+      'it': 'https://crm.shinyjets.com/it',
+      'nl': 'https://crm.shinyjets.com/nl',
+      'ja': 'https://crm.shinyjets.com/ja',
+      'zh': 'https://crm.shinyjets.com/zh',
     },
   },
 }

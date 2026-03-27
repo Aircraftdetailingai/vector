@@ -1,22 +1,22 @@
 {
-  "name": "Vector - Aircraft Detailing CRM",
-  "short_name": "Vector",
-  "description": "Professional quoting software for aircraft detailers",
-  "theme_color": "#0f172a",
-  "background_color": "#0f172a",
+  "name": "Shiny Jets CRM - Aircraft Detailing Software",
+  "short_name": "SJ CRM",
+  "description": "Professional aircraft detailing business software",
+  "theme_color": "#007CB1",
+  "background_color": "#0D1B2A",
   "display": "standalone",
   "orientation": "portrait-primary",
   "scope": "/",
   "start_url": "/dashboard",
   "icons": [
     {
-      "src": "/icon-192.png",
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "/icon-512.png",
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
