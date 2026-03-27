@@ -10,11 +10,13 @@ function getSupabase() {
   );
 }
 
-export async function GET(request, { params }) {
+export async function GET(request) {
   const user = await getAuthUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { tailNumber } = await params;
+  const { searchParams } = new URL(request.url);
+  const tailNumber = searchParams.get('tail');
+  if (!tailNumber) return Response.json({ error: 'tail param required' }, { status: 400 });
   const tail = decodeURIComponent(tailNumber).toUpperCase();
   const supabase = getSupabase();
 

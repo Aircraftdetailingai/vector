@@ -16,7 +16,7 @@ export default function AircraftDetailPage() {
     const token = localStorage.getItem('vector_token');
     if (!token) { router.push('/login'); return; }
 
-    fetch(`/api/aircraft/${encodeURIComponent(tailNumber)}`, {
+    fetch(`/api/aircraft/by-tail?tail=${encodeURIComponent(tailNumber)}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then(r => r.ok ? r.json() : null)
