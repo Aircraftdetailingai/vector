@@ -68,9 +68,9 @@ export default function UpgradeModal({ isOpen, onClose, detailerId, existingServ
   const handleUpgrade = () => {
     if (!analysis?.nextTier) return;
     const planUrls = {
-      pro: 'https://shinyjets.com/products/shiny-jets-crm-pro',
-      business: 'https://shinyjets.com/products/shiny-jets-crm-business',
-      enterprise: 'https://shinyjets.com/products/shiny-jets-crm-enterprise',
+      pro: 'https://shinyjets.com/products/shiny-jets-crm-pro-aircraft-detailing-business-software',
+      business: 'https://shinyjets.com/products/shiny-jets-crm-business-team-aircraft-detailing-software',
+      enterprise: 'https://shinyjets.com/products/shiny-jets-crm-enterprise-white-label-aircraft-detailing-platform',
     };
     const url = planUrls[analysis.nextTier];
     if (url) {
