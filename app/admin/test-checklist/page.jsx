@@ -13,7 +13,7 @@ const CHECKLIST_ITEMS = [
   { id: 'recurring_service', category: 'Features', label: 'Recurring service created', description: 'Set up a recurring service with auto-generation' },
   { id: 'ai_assistant', category: 'Features', label: 'AI Sales Assistant works', description: 'Test the AI sales assistant chat on lead intake page' },
   { id: 'promo_code', category: 'Billing', label: 'Promo code system works', description: 'Apply a promo code during upgrade and verify discount' },
-  { id: 'pwa_install', category: 'Mobile', label: 'PWA install works', description: 'Install Vector as a Progressive Web App on mobile device' },
+  { id: 'pwa_install', category: 'Mobile', label: 'PWA install works', description: 'Install Shiny Jets CRM as a Progressive Web App on mobile device' },
   { id: 'mobile_pages', category: 'Mobile', label: 'All pages load on mobile', description: 'Verify every page renders correctly on mobile viewport' },
 ];
 

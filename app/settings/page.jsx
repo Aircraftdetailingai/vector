@@ -1782,7 +1782,7 @@ function SettingsContent() {
             {/* Palette Strips */}
             <div className="space-y-2">
               {/* Default palette */}
-              {[{ name: 'Vector Default', primary: '#C9A84C', secondary: '#0D1B2A', neutral: '#0A0E17' }, ...palettes].map((pal, i) => {
+              {[{ name: 'Classic', primary: '#C9A84C', secondary: '#0D1B2A', neutral: '#0A0E17' }, ...palettes].map((pal, i) => {
                 const isActive = selectedPalette?.primary === pal.primary && selectedPalette?.secondary === pal.secondary && selectedPalette?.neutral === pal.neutral;
                 return (
                   <button

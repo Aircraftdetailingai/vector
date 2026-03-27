@@ -29,7 +29,7 @@ export async function generateMetadata({ params }) {
       description,
       type: 'website',
       url: `https://crm.shinyjets.com/airport/${airport.icao}`,
-      siteName: 'Vector Aviation',
+      siteName: 'Shiny Jets CRM',
     },
     twitter: {
       card: 'summary',
@@ -195,7 +195,7 @@ export default async function AirportPage({ params }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <Link href="/" className="flex items-center space-x-2 text-white text-xl font-bold">
             <span className="text-2xl">{'\u2708\uFE0F'}</span>
-            <span>Vector</span>
+            <span>Shiny Jets CRM</span>
           </Link>
           <div className="flex items-center space-x-4">
             <Link href="/find-a-detailer" className="text-gray-300 hover:text-white text-sm transition-colors">Directory</Link>
@@ -343,7 +343,7 @@ export default async function AirportPage({ params }) {
           <h2 className="text-2xl font-bold text-white mb-4">Aircraft Detailing Services at {airport.icao}</h2>
           <div className="prose prose-invert max-w-none text-gray-400 space-y-4">
             <p>
-              Vector connects aircraft owners and operators at {airport.name} ({airport.icao}) with professional aviation detailers.
+              Shiny Jets CRM connects aircraft owners and operators at {airport.name} ({airport.icao}) with professional aviation detailers.
               Whether you need a maintenance wash, full detail, ceramic coating, or interior cleaning, our verified detailers
               deliver premium results for jets, turboprops, and piston aircraft.
             </p>
@@ -384,7 +384,7 @@ export default async function AirportPage({ params }) {
           <div className="flex flex-col sm:flex-row justify-between items-center gap-4">
             <div className="flex items-center space-x-2 text-white font-bold">
               <span>{'\u2708\uFE0F'}</span>
-              <span>Vector</span>
+              <span>Shiny Jets CRM</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-gray-500">
               <Link href="/find-a-detailer" className="hover:text-white transition-colors">Directory</Link>
@@ -392,7 +392,7 @@ export default async function AirportPage({ params }) {
               <Link href="/terms" className="hover:text-white transition-colors">Terms</Link>
               <Link href="/privacy" className="hover:text-white transition-colors">Privacy</Link>
             </div>
-            <p className="text-xs text-gray-600">&copy; {new Date().getFullYear()} Vector Aviation</p>
+            <p className="text-xs text-gray-600">&copy; {new Date().getFullYear()} Shiny Jets</p>
           </div>
         </div>
       </footer>

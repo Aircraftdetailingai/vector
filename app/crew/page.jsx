@@ -339,7 +339,7 @@ export default function CrewDashboard() {
       <div className="bg-[#0f172a]/80 border-b border-white/10 px-4 py-3 flex items-center justify-between">
         <div>
           <h1 className="text-white font-bold text-lg flex items-center gap-2">
-            <span>✈️</span> {'Vector Crew'}
+            <span>✈️</span> {'Shiny Jets Crew'}
           </h1>
           <p className="text-white/60 text-sm">{user.name} {user.is_lead_tech && <span className="text-v-gold text-xs ml-1">{'Lead Tech'}</span>}</p>
         </div>

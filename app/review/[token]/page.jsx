@@ -274,7 +274,7 @@ export default function ReviewPage() {
         {/* Footer */}
         <div className="text-center pb-4">
           <p className="text-xs text-white/20">
-            Powered by <span className="font-medium">Vector</span>
+            Powered by <span className="font-medium">Shiny Jets</span>
           </p>
         </div>
       </div>

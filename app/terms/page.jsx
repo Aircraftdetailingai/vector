@@ -1,6 +1,6 @@
 export const metadata = {
   title: 'Terms of Service - Shiny Jets CRM',
-  description: 'Terms of Service for Vector Aviation Software',
+  description: 'Terms of Service for Shiny Jets CRM',
 };
 
 export default function TermsPage() {
@@ -9,7 +9,7 @@ export default function TermsPage() {
       <div className="max-w-3xl mx-auto px-4 py-12">
         {/* Header */}
         <div className="mb-8">
-          <a href="/" className="text-v-gold hover:text-v-gold text-sm">&larr; Back to Vector</a>
+          <a href="/" className="text-v-gold hover:text-v-gold text-sm">&larr; Back to Shiny Jets CRM</a>
           <h1 className="text-3xl font-bold text-white mt-4">Terms of Service</h1>
           <p className="text-gray-400 mt-2">Last updated: March 12, 2026</p>
         </div>
@@ -359,7 +359,7 @@ export default function TermsPage() {
               <p className="font-bold text-red-900 mb-2">CHARGEBACK RESPONSIBILITY:</p>
               <p className="text-red-800 mb-2">
                 Detailers are solely responsible for all chargebacks, disputes, and refunds initiated
-                by their customers. By using Vector CRM, detailers agree to:
+                by their customers. By using Shiny Jets CRM, detailers agree to:
               </p>
               <ul className="list-disc ml-6 space-y-1 text-red-800">
                 <li>Respond to all Stripe chargeback notifications within the required timeframe</li>
@@ -417,7 +417,7 @@ export default function TermsPage() {
         <div className="mt-8 text-center text-sm text-gray-500">
           <a href="/privacy" className="hover:text-gray-300 transition-colors">Privacy Policy</a>
           <span className="mx-2">&middot;</span>
-          <a href="/" className="hover:text-gray-300 transition-colors">Back to Vector</a>
+          <a href="/" className="hover:text-gray-300 transition-colors">Back to Shiny Jets CRM</a>
         </div>
       </div>
     </div>

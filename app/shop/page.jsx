@@ -150,7 +150,7 @@ export default function ShopPage() {
               >
                 &larr; Back
               </button>
-              <h1 className="text-2xl text-v-text-primary font-heading">Vector Shop</h1>
+              <h1 className="text-2xl text-v-text-primary font-heading">Shiny Jets CRM Shop</h1>
             </div>
 
             {/* Cart Button */}
