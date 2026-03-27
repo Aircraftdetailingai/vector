@@ -58,6 +58,7 @@ export default function CustomerDetailPage() {
   const [editContent, setEditContent] = useState('');
   const [quoteStats, setQuoteStats] = useState(null);
   const [loadError, setLoadError] = useState(null);
+  const [aircraft, setAircraft] = useState([]);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('vector_token') : null;
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -95,6 +96,38 @@ export default function CustomerDetailPage() {
       } else if (actRes) {
         console.error('Activity API error:', actRes.status);
       }
+
+      // Fetch aircraft (unique tail numbers from quotes)
+      try {
+        const quotesRes = await fetch(`/api/quotes?customer_id=${customerId}`, { headers });
+        if (quotesRes?.ok) {
+          const qData = await quotesRes.json();
+          const quotes = qData.quotes || qData || [];
+          const tailMap = {};
+          (Array.isArray(quotes) ? quotes : []).forEach(q => {
+            if (q.tail_number) {
+              const tail = q.tail_number.toUpperCase();
+              if (!tailMap[tail]) {
+                tailMap[tail] = {
+                  tail_number: tail,
+                  aircraft_model: q.aircraft_model,
+                  jobs: 0,
+                  last_service: null,
+                  total_revenue: 0,
+                };
+              }
+              tailMap[tail].jobs++;
+              tailMap[tail].total_revenue += parseFloat(q.total_price || 0);
+              const date = q.completed_at || q.scheduled_date || q.created_at;
+              if (date && (!tailMap[tail].last_service || date > tailMap[tail].last_service)) {
+                tailMap[tail].last_service = date;
+              }
+            }
+          });
+          setAircraft(Object.values(tailMap));
+        }
+      } catch {}
+
     } catch (err) {
       console.error('Load error:', err);
       setLoadError(err.message);
@@ -402,7 +435,7 @@ export default function CustomerDetailPage() {
         <div className="lg:col-span-2">
           {/* Tabs */}
           <div className="flex gap-1 mb-4">
-            {['activity', 'notes'].map(tab => (
+            {['activity', 'notes', 'aircraft'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -412,7 +445,7 @@ export default function CustomerDetailPage() {
                     : 'text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface/50'
                 }`}
               >
-                {tab === 'activity' ? `Timeline (${activity.length})` : `Notes (${notes.length})`}
+                {tab === 'activity' ? `Timeline (${activity.length})` : tab === 'notes' ? `Notes (${notes.length})` : 'Aircraft'}
               </button>
             ))}
           </div>
@@ -583,6 +616,49 @@ export default function CustomerDetailPage() {
                           </div>
                         </>
                       )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Aircraft Tab */}
+          {activeTab === 'aircraft' && (
+            <div>
+              {aircraft.length === 0 ? (
+                <div className="text-center py-8 text-v-text-secondary">No aircraft on file for this customer</div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {aircraft.map(ac => (
+                    <div
+                      key={ac.tail_number}
+                      onClick={() => router.push(`/aircraft/${encodeURIComponent(ac.tail_number)}`)}
+                      className="bg-v-surface border border-v-border rounded-lg p-5 cursor-pointer hover:border-v-gold/50 transition-colors"
+                    >
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="w-10 h-10 rounded-lg bg-v-gold/20 flex items-center justify-center text-lg">&#9992;</div>
+                        <div>
+                          <p className="text-v-text-primary font-semibold text-lg">{ac.tail_number}</p>
+                          <p className="text-v-text-secondary text-xs">{ac.aircraft_model || 'Aircraft'}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2 text-center">
+                        <div>
+                          <p className="text-xs text-v-text-secondary">Jobs</p>
+                          <p className="text-sm font-medium text-v-text-primary">{ac.jobs}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-v-text-secondary">Revenue</p>
+                          <p className="text-sm font-medium text-v-gold">${formatPrice(ac.total_revenue)}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-v-text-secondary">Last</p>
+                          <p className="text-sm font-medium text-v-text-primary">
+                            {ac.last_service ? new Date(ac.last_service).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) : '—'}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
