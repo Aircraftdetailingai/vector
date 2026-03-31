@@ -10,7 +10,7 @@ function getSupabase() {
   );
 }
 
-const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai', 'brett@shinyjets.com'];
+const ADMIN_EMAILS = ['brett@vectorav.ai', 'admin@vectorav.ai', 'brett@shinyjets.com', 'sales@shinyjets.com'];
 
 export async function POST(request) {
   try {
