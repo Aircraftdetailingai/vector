@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 export default function AuthCallbackPage() {
-  const router = useRouter();
   const [status, setStatus] = useState('Signing you in...');
   const [errorDetail, setErrorDetail] = useState(null);
 
@@ -20,7 +18,7 @@ export default function AuthCallbackPage() {
       const supabase = getSupabaseBrowser();
       if (!supabase) {
         console.error('[auth/callback] FAIL — no Supabase client');
-        router.replace('/login?error=auth_failed&message=' + encodeURIComponent('Supabase client not available'));
+        window.location.href = '/login?error=auth_failed&message=' + encodeURIComponent('Supabase client not available');
         return;
       }
 
@@ -47,7 +45,7 @@ export default function AuthCallbackPage() {
             console.log('[auth/callback] Fallback getSession succeeded');
             user = sessionData.session.user;
           } else {
-            router.replace('/login?error=auth_failed&message=' + encodeURIComponent('Code exchange failed: ' + error.message));
+            window.location.href = '/login?error=auth_failed&message=' + encodeURIComponent('Code exchange failed: ' + error.message);
             return;
           }
         } else {
@@ -65,7 +63,7 @@ export default function AuthCallbackPage() {
 
       if (!user) {
         console.error('[auth/callback] No user after all exchange attempts');
-        router.replace('/login?error=auth_failed&message=' + encodeURIComponent('No user session after OAuth'));
+        window.location.href = '/login?error=auth_failed&message=' + encodeURIComponent('No user session after OAuth');
         return;
       }
 
@@ -73,7 +71,7 @@ export default function AuthCallbackPage() {
       await finishLogin(user);
     } catch (err) {
       console.error('[auth/callback] Unexpected error:', err);
-      router.replace('/login?error=server_error&message=' + encodeURIComponent(err.message));
+      window.location.href = '/login?error=server_error&message=' + encodeURIComponent(err.message);
     }
   }
 
@@ -86,7 +84,7 @@ export default function AuthCallbackPage() {
     setStatus('Setting up your account...');
 
     if (!email) {
-      router.replace('/login?error=no_email');
+      window.location.href = '/login?error=no_email';
       return;
     }
 
@@ -108,27 +106,39 @@ export default function AuthCallbackPage() {
       if (!res.ok) {
         console.error('[auth/callback] oauth-complete failed:', res.status, data);
         const errMsg = encodeURIComponent(data.error || `API returned ${res.status}`);
-        router.replace(`/login?error=oauth_error&message=${errMsg}`);
+        window.location.href = `/login?error=oauth_error&message=${errMsg}`;
         return;
       }
 
-      const { token, user, redirect } = data;
-
-      if (!token) {
+      if (!data.token) {
         console.error('[auth/callback] No token in response:', data);
-        router.replace('/login?error=oauth_error&message=' + encodeURIComponent('No auth token received'));
+        window.location.href = '/login?error=oauth_error&message=' + encodeURIComponent('No auth token received');
         return;
       }
 
-      // Store auth in localStorage
-      localStorage.setItem('vector_token', token);
-      localStorage.setItem('vector_user', JSON.stringify(user));
+      console.log('[auth/callback] Got token, storing auth...');
 
-      console.log('[auth/callback] SUCCESS — redirecting to:', redirect);
-      router.replace(redirect);
+      // Store token in localStorage
+      localStorage.setItem('vector_token', data.token);
+      localStorage.setItem('vector_user', JSON.stringify(data.user));
+
+      // Also set as cookie for middleware/SSR
+      document.cookie = `auth_token=${data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
+
+      // Small delay to ensure storage is persisted before navigation
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Verify storage was set
+      const storedToken = localStorage.getItem('vector_token');
+      console.log('[auth/callback] Storage verified:', storedToken ? 'token present' : 'MISSING');
+
+      // Hard redirect (not router.replace) to ensure fresh page load reads localStorage
+      const dest = data.redirect || '/dashboard';
+      console.log('[auth/callback] SUCCESS — hard redirecting to:', dest);
+      window.location.href = dest;
     } catch (fetchErr) {
       console.error('[auth/callback] fetch error:', fetchErr);
-      router.replace('/login?error=server_error&message=' + encodeURIComponent('Network error: ' + fetchErr.message));
+      window.location.href = '/login?error=server_error&message=' + encodeURIComponent('Network error: ' + fetchErr.message);
     }
   }
 
