@@ -540,7 +540,7 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
 
   return (
     <div className="modal-overlay fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black bg-opacity-50">
-      <div className="modal-content bg-v-surface text-white border border-v-border rounded-t-2xl sm:rounded-lg p-5 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
+      <div className="modal-content bg-v-surface text-white border border-v-border rounded-t-2xl sm:rounded-lg p-4 sm:p-6 w-full sm:max-w-md overflow-y-auto max-h-[95vh] sm:max-h-[90vh]">
         <div>
             <h2 className="text-xl font-semibold mb-2">{'Send to Client'}</h2>
             <p className="mb-4 text-v-text-secondary">

@@ -767,7 +767,7 @@ export default function QuoteViewPage() {
         )}
 
         {/* Aircraft + Tail */}
-        <div className="grid grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
           <div>
             <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-1">Aircraft</p>
             <p className="text-[var(--brand-text,#F5F5F5)] text-[1.2rem]">{quote.aircraft_model || quote.aircraft_type}</p>
@@ -1055,7 +1055,7 @@ export default function QuoteViewPage() {
         {detailer && (detailer.phone || detailer.email) && (
           <div className="mt-8 pt-6 border-t border-[var(--brand-border,#1A2236)] text-center">
             <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Questions about this quote?</p>
-            <div className="flex justify-center gap-6 text-sm">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-2 sm:gap-6 text-sm">
               {detailer.phone && <a href={`tel:${detailer.phone}`} className="text-[var(--brand-primary,#007CB1)] hover:text-[var(--brand-primary,#007CB1)] transition-colors">{detailer.phone}</a>}
               {detailer.email && <a href={`mailto:${detailer.email}`} className="text-[var(--brand-primary,#007CB1)] hover:text-[var(--brand-primary,#007CB1)] transition-colors">{detailer.email}</a>}
             </div>

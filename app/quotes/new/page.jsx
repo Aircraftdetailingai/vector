@@ -669,7 +669,7 @@ function NewQuoteContent() {
                 {sortedCategories.map(cat => (
                   <div key={cat}>
                     <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-1">{categoryLabels[cat] || cat}</p>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                       {groupedModels[cat].map(aircraft => (
                         <button
                           key={aircraft.id}
@@ -882,7 +882,7 @@ function NewQuoteContent() {
           {selectedAircraft && selectedServicesList.length > 0 && (
             <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
               <h3 className="text-sm font-light tracking-wider uppercase text-gray-400 mb-3">Access Difficulty</h3>
-              <div className="grid grid-cols-3 sm:grid-cols-5 gap-px bg-v-border/30">
+              <div className="grid grid-cols-2 sm:grid-cols-5 gap-px bg-v-border/30">
                 {[
                   { label: 'Standard', value: 1.0 },
                   { label: 'Moderate', value: 1.1 },
@@ -1151,22 +1151,22 @@ function NewQuoteContent() {
       {/* Sticky footer bar */}
       {selectedAircraft && selectedServicesList.length > 0 && (
         <div className="fixed bottom-0 left-0 right-0 bg-v-charcoal/95 backdrop-blur-sm border-t border-v-gold/20 px-4 py-3 z-50">
-          <div className="max-w-3xl mx-auto flex items-center justify-between gap-4">
-            <div className="min-w-0">
-              <p className="text-white text-sm truncate">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
-              <p className="text-gray-500 text-xs">{selectedServicesList.length} service{selectedServicesList.length !== 1 ? 's' : ''} &middot; {totalHours.toFixed(1)}h</p>
+          <div className="max-w-3xl mx-auto">
+            <div className="flex items-center justify-between gap-3 mb-2 sm:mb-0">
+              <div className="min-w-0">
+                <p className="text-white text-sm truncate">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
+                <p className="text-gray-500 text-xs">{selectedServicesList.length} service{selectedServicesList.length !== 1 ? 's' : ''} &middot; {totalHours.toFixed(1)}h</p>
+              </div>
+              <span className="text-v-gold text-2xl font-extralight flex-shrink-0">{currencySymbol()}{formatPrice(totalPrice)}</span>
             </div>
-            <div className="flex items-center gap-4 flex-shrink-0">
-              <span className="text-v-gold text-2xl font-extralight">{currencySymbol()}{formatPrice(totalPrice)}</span>
-              <button
-                type="button"
-                onClick={openSendModal}
-                disabled={totalPrice === 0 || !airport || airport.length < 3}
-                className="px-5 sm:px-8 py-3 bg-v-gold text-v-charcoal font-medium uppercase tracking-[0.15em] hover:bg-v-gold-dim disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm min-h-[44px] whitespace-nowrap transition-colors"
-              >
-                {!airport || airport.length < 3 ? 'Enter Airport' : 'Send to Client'}
-              </button>
-            </div>
+            <button
+              type="button"
+              onClick={openSendModal}
+              disabled={totalPrice === 0 || !airport || airport.length < 3}
+              className="w-full sm:w-auto sm:float-right px-5 sm:px-8 py-3 bg-v-gold text-v-charcoal font-medium uppercase tracking-[0.15em] hover:bg-v-gold-dim disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm min-h-[44px] whitespace-nowrap transition-colors"
+            >
+              {!airport || airport.length < 3 ? 'Enter Airport' : 'Send to Client'}
+            </button>
           </div>
         </div>
       )}

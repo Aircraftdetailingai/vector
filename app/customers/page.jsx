@@ -580,7 +580,7 @@ export default function CustomersPage() {
           <select
             value={filterTag}
             onChange={(e) => setFilterTag(e.target.value)}
-            className="bg-v-surface border border-v-border rounded px-4 py-2 text-v-text-primary text-sm outline-none focus:border-v-gold/50"
+            className="w-full sm:w-auto bg-v-surface border border-v-border rounded px-4 py-2 text-v-text-primary text-sm outline-none focus:border-v-gold/50"
           >
             <option value="">All Tags</option>
             {usedTags.map((tag) => (
