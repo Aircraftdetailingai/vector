@@ -2910,6 +2910,51 @@ function SettingsContent() {
             Set your working hours so customers can self-schedule after paying. Leave unconfigured to skip the scheduling step.
           </p>
 
+          {/* Google Business Hours Import */}
+          {!availability?.weeklySchedule?.['1'] && (
+            <div className="bg-white/[0.03] border border-v-border rounded-lg p-4 mb-6">
+              <div className="flex items-center gap-3 mb-2">
+                <svg className="w-5 h-5 text-v-gold" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+                <div>
+                  <p className="text-v-text-primary text-sm font-medium">Import hours from Google Business Profile</p>
+                  <p className="text-v-text-secondary text-xs">Auto-fill your working hours from your GBP listing</p>
+                </div>
+              </div>
+              <div className="flex gap-2 mt-3">
+                <input
+                  type="url"
+                  placeholder="https://g.co/kgs/... or your Google Maps URL"
+                  className="flex-1 bg-v-surface border border-v-border text-v-text-primary rounded px-3 py-2 text-xs placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+                  id="gbp-url-input"
+                />
+                <button
+                  onClick={async () => {
+                    const url = document.getElementById('gbp-url-input')?.value?.trim();
+                    if (!url) return;
+                    try {
+                      const token = localStorage.getItem('vector_token');
+                      const res = await fetch('/api/integrations/gbp-hours', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                        body: JSON.stringify({ url }),
+                      });
+                      const data = await res.json();
+                      if (data.hours) {
+                        setAvailability(prev => ({ ...(prev || initAvailability()), weeklySchedule: data.hours }));
+                        markDirty('availability');
+                      } else {
+                        alert(data.error || 'Could not parse hours from that URL');
+                      }
+                    } catch { alert('Failed to import hours'); }
+                  }}
+                  className="px-4 py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim transition-colors whitespace-nowrap"
+                >
+                  Import
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Weekly Schedule */}
           <p className="text-xs font-medium text-v-text-secondary uppercase tracking-wide mb-3">Working Days</p>
           <div className="space-y-3 mb-6">
