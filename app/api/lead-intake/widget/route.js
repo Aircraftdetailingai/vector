@@ -66,7 +66,7 @@ export async function GET(request) {
     // Get detailer info
     const { data: detailer, error: detailerError } = await supabase
       .from('detailers')
-      .select('id, company_name, logo')
+      .select('id, company, logo_url')
       .eq('id', detailerId)
       .single();
 
@@ -102,8 +102,8 @@ export async function GET(request) {
     return Response.json({
       detailer: {
         id: detailer.id,
-        name: detailer.company_name,
-        logo: detailer.logo,
+        name: detailer.company,
+        logo: detailer.logo_url,
       },
       questions: formattedQuestions,
       faqs: faqData?.faqs || [],
@@ -131,7 +131,7 @@ export async function POST(request) {
     // Get detailer info
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('id, company_name')
+      .select('id, company')
       .eq('id', detailer_id)
       .single();
 
@@ -154,7 +154,7 @@ export async function POST(request) {
 
     // Try to use Claude
     const aiResponse = await callClaude(
-      `You are a helpful assistant for ${detailer.company_name}, an aircraft detailing company.
+      `You are a helpful assistant for ${detailer.company}, an aircraft detailing company.
 You're collecting information from potential customers for a quote.
 Be friendly, professional, and concise (1-2 sentences max).
 If asked about pricing, say you'll provide a custom quote based on their aircraft.
