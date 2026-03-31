@@ -12,34 +12,30 @@ import OnboardingChecklist from '../../components/OnboardingChecklist.jsx';
 import { TERMS_VERSION } from '../../lib/terms';
 
 
-function StripeWarningBanner({ onConnect, loading, error, onClearError, status }) {
-  const isDisconnected = status === 'INCOMPLETE' || status === 'PENDING';
+function StripeSetupCard({ onConnect, loading, onDismiss }) {
   return (
-    <div className="flex items-center justify-between py-4 px-0 border-b border-v-border-subtle">
-      {error && (
-        <div className="mb-3 p-3 text-v-danger text-sm flex justify-between items-start w-full">
-          <span>{error}</span>
-          <button onClick={onClearError} className="ml-2 text-v-danger hover:text-red-400">&times;</button>
-        </div>
-      )}
-      <div className="flex items-center gap-4">
-        <div className={`w-2 h-2 rounded-full ${isDisconnected ? 'bg-v-danger' : 'bg-v-gold'}`} />
+    <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-white/[0.03] border border-v-border-subtle mb-4">
+      <div className="flex items-center gap-3">
+        <div className="text-v-text-secondary text-lg">&#128179;</div>
         <div>
-          <p className="text-v-text-primary text-sm">
-            {isDisconnected ? 'Stripe disconnected' : 'Stripe not connected'}
-          </p>
-          <p className="text-v-text-secondary text-xs mt-0.5">
-            {isDisconnected ? 'Online payments are currently disabled.' : 'Connect to receive payments.'}
-          </p>
+          <p className="text-v-text-primary text-sm">Set up payments</p>
+          <p className="text-v-text-secondary text-xs mt-0.5">Connect your Stripe account to accept quote payments directly from customers.</p>
         </div>
       </div>
-      <button
-        onClick={onConnect}
-        disabled={loading}
-        className="px-5 py-2 text-xs uppercase tracking-widest text-v-gold border border-v-gold/30 hover:border-v-gold hover:bg-v-gold/5 transition-colors disabled:opacity-50"
-      >
-        {loading ? 'Connecting...' : isDisconnected ? 'Reconnect' : 'Connect Stripe'}
-      </button>
+      <div className="flex items-center gap-2 shrink-0 ml-4">
+        <button
+          onClick={onConnect}
+          disabled={loading}
+          className="px-4 py-1.5 text-xs text-v-gold border border-v-gold/30 hover:border-v-gold hover:bg-v-gold/5 rounded transition-colors disabled:opacity-50"
+        >
+          {loading ? 'Connecting...' : 'Connect'}
+        </button>
+        <button
+          onClick={onDismiss}
+          className="text-v-text-secondary hover:text-v-text-primary text-lg leading-none px-1"
+          title="Dismiss"
+        >&times;</button>
+      </div>
     </div>
   );
 }
@@ -131,6 +127,7 @@ function DashboardContent() {
   const [stripeStatus, setStripeStatus] = useState({ connected: false, status: 'CHECKING' });
   const [stripeLoading, setStripeLoading] = useState(false);
   const [stripeError, setStripeError] = useState(null);
+  const [stripeBannerDismissed, setStripeBannerDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [quickStats, setQuickStats] = useState(null);
   const [recentQuotes, setRecentQuotes] = useState([]);
@@ -146,6 +143,7 @@ function DashboardContent() {
     try { parsedUser = JSON.parse(stored); } catch { localStorage.removeItem('vector_user'); router.push('/login'); return; }
     setUser(parsedUser);
     setLoading(false);
+    if (localStorage.getItem('stripe_banner_dismissed')) setStripeBannerDismissed(true);
 
     const refreshUser = async () => {
       try {
@@ -272,14 +270,12 @@ function DashboardContent() {
           DASHBOARD
         </h1>
 
-        {/* Stripe Warning */}
-        {!stripeStatus.connected && stripeStatus.status !== 'CHECKING' && (
-          <StripeWarningBanner
+        {/* Stripe Setup */}
+        {!stripeStatus.connected && stripeStatus.status !== 'CHECKING' && !stripeBannerDismissed && (
+          <StripeSetupCard
             onConnect={handleConnectStripe}
             loading={stripeLoading}
-            error={stripeError}
-            onClearError={() => setStripeError(null)}
-            status={stripeStatus.status}
+            onDismiss={() => { setStripeBannerDismissed(true); localStorage.setItem('stripe_banner_dismissed', '1'); }}
           />
         )}
 
