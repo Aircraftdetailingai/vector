@@ -3,17 +3,27 @@ import { useState, useEffect } from 'react';
 
 const TOTAL_STEPS = 7;
 
-const CONDITION_OPTIONS = [
-  { value: 'never', label: 'Never detailed' },
-  { value: '6_months', label: 'Within 6 months' },
-  { value: '1_year', label: 'About a year ago' },
-  { value: '2_plus', label: '2+ years ago' },
+const AREAS = [
+  { key: 'paint', label: 'Paint', icon: '\u{1F3A8}' },
+  { key: 'brightwork', label: 'Brightwork', icon: '\u2728' },
+  { key: 'windows', label: 'Windows', icon: '\u{1FA9F}' },
+  { key: 'seats', label: 'Seats', icon: '\u{1FA91}' },
+  { key: 'carpets', label: 'Carpets', icon: '\u{1F9F9}' },
 ];
 
-const CONCERNS = [
-  'Oxidation', 'Scratches', 'Water spots', 'Interior stains',
-  'Brightwork tarnish', 'Exhaust soot', 'Bug/debris removal', 'Other',
+const LEVELS = [
+  { key: 'maintenance', label: 'Maintenance', desc: 'Regular upkeep, good condition', color: '#007CB1' },
+  { key: 'restoration', label: 'Restoration', desc: 'Needs work, visible wear', color: '#EAB308' },
+  { key: 'protection', label: 'Protection', desc: 'Seal and protect after cleaning', color: '#22C55E' },
 ];
+
+const SERVICE_MAP = {
+  paint:       { maintenance: ['Maintenance Wash', 'Decon Wash'], restoration: ['One-Step Polish', 'Two-Step Polish', 'Paint Correction'], protection: ['Wax', 'Spray Ceramic', 'Ceramic Coating'] },
+  brightwork:  { maintenance: ['Brightwork Polish'], restoration: ['Metal Restoration', 'Exhaust Stain Removal'], protection: ['Brightwork Sealant'] },
+  windows:     { maintenance: ['Window Cleaning'], restoration: ['Acrylic Scratch Removal', 'Optical Polish'], protection: ['Acrylic Window Coating'] },
+  seats:       { maintenance: ['Leather Clean & Condition'], restoration: ['Leather Restoration', 'Dye Treatment'], protection: ['Leather Protectant'] },
+  carpets:     { maintenance: ['Vacuum & Wipe Down'], restoration: ['Carpet Extraction', 'Stain Treatment'], protection: ['Fabric Guard'] },
+};
 
 export default function QuoteRequestFlow({ detailerId, detailerName, detailerLogo, embedded = false }) {
   const [step, setStep] = useState(1);
@@ -22,24 +32,38 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   const [error, setError] = useState('');
   const [serviceMode, setServiceMode] = useState(null);
 
-  // Aircraft selection state
+  // Aircraft
   const [manufacturers, setManufacturers] = useState([]);
   const [models, setModels] = useState([]);
   const [loadingModels, setLoadingModels] = useState(false);
 
+  // Smart service selection
+  const [selectedAreas, setSelectedAreas] = useState([]);
+  const [areaLevels, setAreaLevels] = useState({});
+  const [currentAreaIdx, setCurrentAreaIdx] = useState(0);
+  const [showRecommendation, setShowRecommendation] = useState(false);
+  const [areasConfirmed, setAreasConfirmed] = useState(false);
+
   const [data, setData] = useState({
     manufacturer: '', model: '', model_full: '',
     tail_number: '', airport: '',
-    service_text: '', selected_packages: [], concerns: [],
-    last_detailed: '', paint_condition: '',
+    service_text: '', recommended_services: [],
     name: '', email: '', phone: '',
   });
 
   const set = (field, value) => setData(prev => ({ ...prev, [field]: value }));
-  const goNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
-  const goBack = () => { if (step === 4 && serviceMode) { setServiceMode(null); return; } setStep(s => Math.max(s - 1, 1)); };
 
-  // Fetch manufacturers on mount
+  const goNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
+  const goBack = () => {
+    if (step === 4) {
+      if (showRecommendation) { setShowRecommendation(false); setCurrentAreaIdx(selectedAreas.length - 1); setAreaLevels(prev => { const n = { ...prev }; delete n[selectedAreas[selectedAreas.length - 1]]; return n; }); return; }
+      if (areasConfirmed && currentAreaIdx > 0) { setCurrentAreaIdx(i => i - 1); setAreaLevels(prev => { const n = { ...prev }; delete n[selectedAreas[currentAreaIdx - 1]]; return n; }); return; }
+      if (areasConfirmed) { setAreasConfirmed(false); setAreaLevels({}); setCurrentAreaIdx(0); return; }
+      if (serviceMode) { setServiceMode(null); setSelectedAreas([]); return; }
+    }
+    setStep(s => Math.max(s - 1, 1));
+  };
+
   useEffect(() => {
     fetch('/api/aircraft/manufacturers')
       .then(r => r.ok ? r.json() : { manufacturers: [] })
@@ -47,7 +71,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
       .catch(() => {});
   }, []);
 
-  // Fetch models when manufacturer changes
   useEffect(() => {
     if (!data.manufacturer) { setModels([]); return; }
     setLoadingModels(true);
@@ -58,9 +81,22 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
       .finally(() => setLoadingModels(false));
   }, [data.manufacturer]);
 
+  // Build recommended services from area+level selections
+  const getRecommendedServices = () => {
+    const services = [];
+    for (const area of selectedAreas) {
+      const level = areaLevels[area];
+      if (level && SERVICE_MAP[area]?.[level]) {
+        services.push(...SERVICE_MAP[area][level]);
+      }
+    }
+    return services;
+  };
+
   const handleSubmit = async () => {
     setSubmitting(true);
     setError('');
+    const recommended = getRecommendedServices();
     try {
       const res = await fetch('/api/lead-intake/leads', {
         method: 'POST',
@@ -73,12 +109,10 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           aircraft_model: data.model_full || `${data.manufacturer} ${data.model}`,
           tail_number: data.tail_number,
           airport: data.airport,
-          services_requested: data.service_text || data.selected_packages.join(', '),
-          notes: [
-            data.last_detailed ? `Last detailed: ${data.last_detailed}` : '',
-            data.paint_condition ? `Paint condition: ${data.paint_condition}` : '',
-            data.concerns.length ? `Concerns: ${data.concerns.join(', ')}` : '',
-          ].filter(Boolean).join('. '),
+          services_requested: data.service_text || recommended.join(', '),
+          notes: selectedAreas.length > 0
+            ? `Areas: ${selectedAreas.map(a => `${a} (${areaLevels[a] || 'unset'})`).join(', ')}`
+            : '',
           source: embedded ? 'embed_widget' : 'quote_request_page',
         }),
       });
@@ -128,7 +162,9 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   );
 
   const Input = ({ value, onChange, placeholder, type = 'text', autoComplete, autoCapitalize, autoFocus }) => (
-    <input type={type} value={value} onChange={e => onChange(e.target.value)}
+    <input type={type} value={value}
+      onChange={e => onChange(e.target.value)}
+      onInput={e => onChange(e.target.value)}
       placeholder={placeholder} autoComplete={autoComplete} autoCapitalize={autoCapitalize} autoFocus={autoFocus}
       className="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-4 text-base placeholder-white/40 outline-none focus:border-[#007CB1] transition-colors" />
   );
@@ -149,6 +185,10 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
     );
   }
 
+  // Current area for the level selection sub-flow
+  const currentArea = selectedAreas[currentAreaIdx];
+  const currentAreaLabel = AREAS.find(a => a.key === currentArea)?.label || currentArea;
+
   return (
     <div className="min-h-screen bg-[#0D1B2A] flex flex-col">
       <Header />
@@ -163,8 +203,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         {step === 1 && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-6">What aircraft do you fly?</h2>
-
-            {/* Manufacturer selector */}
             <p className="text-white/50 text-xs uppercase tracking-wider mb-2">Manufacturer</p>
             {!data.manufacturer ? (
               <div className="max-h-[45vh] overflow-y-auto rounded-lg border border-white/10 mb-4">
@@ -174,9 +212,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                     {m}
                   </button>
                 ))}
-                {manufacturers.length === 0 && (
-                  <p className="text-white/30 text-sm text-center py-8">Loading manufacturers...</p>
-                )}
+                {manufacturers.length === 0 && <p className="text-white/30 text-sm text-center py-8">Loading manufacturers...</p>}
               </div>
             ) : (
               <button onClick={() => { set('manufacturer', ''); set('model', ''); set('model_full', ''); }}
@@ -185,8 +221,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                 <span className="text-white/40 text-xs">Change</span>
               </button>
             )}
-
-            {/* Model selector */}
             {data.manufacturer && (
               <>
                 <p className="text-white/50 text-xs uppercase tracking-wider mb-2">Model</p>
@@ -197,11 +231,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                 ) : (
                   <div className="max-h-[35vh] overflow-y-auto rounded-lg border border-white/10">
                     {models.map(m => (
-                      <button key={m.id} onClick={() => {
-                        set('model', m.model);
-                        set('model_full', `${data.manufacturer} ${m.model}`);
-                        setTimeout(goNext, 150);
-                      }}
+                      <button key={m.id} onClick={() => { set('model', m.model); set('model_full', `${data.manufacturer} ${m.model}`); setTimeout(goNext, 150); }}
                         className={`w-full text-left px-4 py-3.5 text-sm border-b border-white/5 last:border-0 active:bg-[#007CB1]/30 transition-colors ${
                           data.model === m.model ? 'bg-[#007CB1]/20 text-white' : 'text-white/80 hover:bg-[#007CB1]/10'
                         }`}>
@@ -209,9 +239,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                         {m.category && <span className="text-white/30 text-xs ml-2">{m.category}</span>}
                       </button>
                     ))}
-                    {models.length === 0 && (
-                      <p className="text-white/30 text-sm text-center py-6">No models found</p>
-                    )}
+                    {models.length === 0 && <p className="text-white/30 text-sm text-center py-6">No models found</p>}
                   </div>
                 )}
               </>
@@ -256,13 +284,14 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
               </button>
               <button onClick={() => setServiceMode('options')}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all">
-                <p className="text-white font-medium text-sm">Show me options</p>
-                <p className="text-white/40 text-xs mt-1">Help me choose the right service</p>
+                <p className="text-white font-medium text-sm">Help me choose</p>
+                <p className="text-white/40 text-xs mt-1">We&apos;ll recommend services based on your needs</p>
               </button>
             </div>
           </div>
         )}
 
+        {/* "I know what I need" - free text */}
         {step === 4 && serviceMode === 'know' && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-2">Describe what you need</h2>
@@ -277,47 +306,95 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           </div>
         )}
 
-        {step === 4 && serviceMode === 'options' && (
+        {/* "Help me choose" - SCREEN A: Select areas */}
+        {step === 4 && serviceMode === 'options' && !areasConfirmed && (
           <div className="flex-1 flex flex-col">
-            <h2 className="text-xl font-light text-white mb-2">Tell us about your aircraft</h2>
-            {!data.last_detailed && (
-              <div>
-                <p className="text-white/60 text-sm mb-4">When was your aircraft last detailed?</p>
-                <div className="space-y-2">
-                  {CONDITION_OPTIONS.map(opt => (
-                    <button key={opt.value} onClick={() => set('last_detailed', opt.label)}
-                      className="w-full p-4 rounded-lg border border-white/15 bg-white/5 text-left text-white/80 text-sm hover:border-[#007CB1] transition-all">
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {data.last_detailed && !data.paint_condition && (
-              <div>
-                <p className="text-white/60 text-sm mb-4">How would you describe the paint condition?</p>
-                <div className="grid grid-cols-2 gap-2">
-                  {['Excellent', 'Good', 'Fair', 'Poor'].map(c => (
-                    <button key={c} onClick={() => set('paint_condition', c)}
-                      className="p-4 rounded-lg border border-white/15 bg-white/5 text-white/80 text-sm hover:border-[#007CB1] transition-all">{c}</button>
-                  ))}
-                </div>
-              </div>
-            )}
-            {data.last_detailed && data.paint_condition && (
-              <div>
-                <p className="text-white/60 text-sm mb-4">Any specific concerns? (select all that apply)</p>
-                <div className="grid grid-cols-2 gap-2 mb-6">
-                  {CONCERNS.map(c => (
-                    <button key={c} onClick={() => set('concerns', data.concerns.includes(c) ? data.concerns.filter(x => x !== c) : [...data.concerns, c])}
-                      className={`p-3 rounded-lg border text-sm text-left transition-all ${
-                        data.concerns.includes(c) ? 'border-[#007CB1] bg-[#007CB1]/20 text-white' : 'border-white/15 bg-white/5 text-white/60 hover:border-white/30'
-                      }`}>{c}</button>
-                  ))}
-                </div>
-                <Btn onClick={() => setStep(5)}>Next</Btn>
-              </div>
-            )}
+            <h2 className="text-xl font-light text-white mb-2">Which areas need attention?</h2>
+            <p className="text-white/40 text-xs mb-6">Select all that apply</p>
+            <AreaSelector selectedAreas={selectedAreas} onToggle={(key) => {
+              setSelectedAreas(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+            }} onSelectAll={() => setSelectedAreas(AREAS.map(a => a.key))}
+            onContinue={() => { setAreasConfirmed(true); setCurrentAreaIdx(0); }} />
+          </div>
+        )}
+
+        {/* SCREEN B: Level for each area, one at a time */}
+        {step === 4 && serviceMode === 'options' && areasConfirmed && !showRecommendation && currentArea && !areaLevels[currentArea] && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-2">What does <span className="text-[#007CB1]">{currentAreaLabel}</span> need?</h2>
+            <p className="text-white/40 text-xs mb-6">Area {currentAreaIdx + 1} of {selectedAreas.length}</p>
+            <div className="space-y-3">
+              {LEVELS.map(level => (
+                <button key={level.key} onClick={() => {
+                  const updated = { ...areaLevels, [currentArea]: level.key };
+                  setAreaLevels(updated);
+                  if (currentAreaIdx < selectedAreas.length - 1) {
+                    setCurrentAreaIdx(i => i + 1);
+                  } else {
+                    setShowRecommendation(true);
+                  }
+                }}
+                  className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-white/30 transition-all active:bg-white/10">
+                  <div className="flex items-center gap-3">
+                    <div className="w-3 h-3 rounded-full" style={{ backgroundColor: level.color }} />
+                    <div>
+                      <p className="text-white font-medium text-sm">{level.label}</p>
+                      <p className="text-white/40 text-xs mt-0.5">{level.desc}</p>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Already answered current area — advance */}
+        {step === 4 && serviceMode === 'options' && areasConfirmed && currentArea && areaLevels[currentArea] && !showRecommendation && (() => {
+          // Auto-advance if we land back on an already-answered area
+          const nextUnanswered = selectedAreas.findIndex((a, i) => i > currentAreaIdx && !areaLevels[a]);
+          if (nextUnanswered !== -1) { setTimeout(() => setCurrentAreaIdx(nextUnanswered), 0); }
+          else { setTimeout(() => setShowRecommendation(true), 0); }
+          return null;
+        })()}
+
+        {/* SCREEN C: Recommendation */}
+        {step === 4 && serviceMode === 'options' && areasConfirmed && showRecommendation && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-2">
+              Based on your {data.model_full || data.model}, here&apos;s what we recommend
+            </h2>
+            <div className="space-y-3 mt-4 flex-1 overflow-y-auto">
+              {selectedAreas.map(area => {
+                const level = areaLevels[area];
+                const services = SERVICE_MAP[area]?.[level] || [];
+                const areaInfo = AREAS.find(a => a.key === area);
+                const levelInfo = LEVELS.find(l => l.key === level);
+                return (
+                  <div key={area} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span>{areaInfo?.icon}</span>
+                      <span className="text-white text-sm font-medium">{areaInfo?.label}</span>
+                      <div className="w-2 h-2 rounded-full ml-auto" style={{ backgroundColor: levelInfo?.color }} />
+                      <span className="text-white/40 text-xs">{levelInfo?.label}</span>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {services.map(s => (
+                        <span key={s} className="text-xs bg-[#007CB1]/20 text-[#007CB1] px-2 py-1 rounded">{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="pt-6 space-y-3">
+              <Btn onClick={() => {
+                set('recommended_services', getRecommendedServices());
+                setStep(5);
+              }}>This looks right</Btn>
+              <Btn onClick={() => { setShowRecommendation(false); setAreasConfirmed(false); setAreaLevels({}); setCurrentAreaIdx(0); }} secondary>
+                I want to change something
+              </Btn>
+            </div>
           </div>
         )}
 
@@ -329,12 +406,8 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
               <SummaryRow label="Aircraft" value={data.model_full || `${data.manufacturer} ${data.model}`} />
               {data.tail_number && <SummaryRow label="Tail Number" value={data.tail_number} />}
               <SummaryRow label="Airport" value={data.airport} />
-              <SummaryRow label="Service" value={
-                data.service_text || [
-                  data.last_detailed ? `Last detailed: ${data.last_detailed}` : '',
-                  data.paint_condition ? `Paint: ${data.paint_condition}` : '',
-                  data.concerns.length ? data.concerns.join(', ') : '',
-                ].filter(Boolean).join(' \u00B7 ') || 'To be discussed'
+              <SummaryRow label="Services" value={
+                data.service_text || getRecommendedServices().join(', ') || 'To be discussed'
               } />
             </div>
             <div className="mt-auto pt-6">
@@ -369,6 +442,41 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+function AreaSelector({ selectedAreas, onToggle, onSelectAll, onContinue }) {
+  const allSelected = AREAS.every(a => selectedAreas.includes(a.key));
+  return (
+    <div className="space-y-3">
+      {AREAS.map(area => (
+        <button key={area.key} onClick={() => onToggle(area.key)}
+          className={`w-full p-4 rounded-lg border text-left transition-all active:scale-[0.98] ${
+            selectedAreas.includes(area.key)
+              ? 'border-[#007CB1] bg-[#007CB1]/15 text-white'
+              : 'border-white/15 bg-white/5 text-white/70 hover:border-white/30'
+          }`}>
+          <span className="text-lg mr-3">{area.icon}</span>
+          <span className="text-sm font-medium">{area.label}</span>
+        </button>
+      ))}
+      <button onClick={onSelectAll}
+        className={`w-full p-4 rounded-lg border text-sm font-medium transition-all ${
+          allSelected
+            ? 'border-[#007CB1] bg-[#007CB1]/15 text-white'
+            : 'border-white/15 bg-white/5 text-[#007CB1] hover:border-[#007CB1]/50'
+        }`}>
+        All of the above
+      </button>
+      {selectedAreas.length > 0 && (
+        <div className="pt-4">
+          <button onClick={onContinue}
+            className="w-full py-4 rounded-lg text-sm font-semibold uppercase tracking-wider bg-[#007CB1] text-white hover:bg-[#006a9e] min-h-[48px] transition-all">
+            Continue with {selectedAreas.length} area{selectedAreas.length !== 1 ? 's' : ''}
+          </button>
+        </div>
+      )}
     </div>
   );
 }
