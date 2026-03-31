@@ -5,7 +5,7 @@ import { getSupabaseBrowser } from '@/lib/supabase-browser';
 
 export default function AuthCallbackPage() {
   const [status, setStatus] = useState('Signing you in...');
-  const [errorDetail, setErrorDetail] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     handleCallback();
@@ -13,144 +13,105 @@ export default function AuthCallbackPage() {
 
   async function handleCallback() {
     try {
-      console.log('[auth/callback] START — URL:', window.location.href);
-
       const supabase = getSupabaseBrowser();
       if (!supabase) {
-        console.error('[auth/callback] FAIL — no Supabase client');
-        window.location.href = '/login?error=auth_failed&message=' + encodeURIComponent('Supabase client not available');
+        fail('Supabase client not available');
         return;
       }
 
-      // Step 1: Exchange the OAuth code for a session
-      // With PKCE flow, the code is in the URL query params
-      const params = new URLSearchParams(window.location.search);
-      const code = params.get('code');
-      const hashParams = new URLSearchParams(window.location.hash?.replace('#', ''));
-      const accessToken = hashParams.get('access_token');
+      // Get the code from the URL
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+      const errorParam = url.searchParams.get('error');
+      const errorDesc = url.searchParams.get('error_description');
 
-      console.log('[auth/callback] code:', code ? 'present' : 'missing', 'hash token:', accessToken ? 'present' : 'missing');
+      // Check for OAuth errors from provider
+      if (errorParam) {
+        fail(errorDesc || errorParam);
+        return;
+      }
 
-      let user = null;
+      let session = null;
 
       if (code) {
-        // PKCE flow — exchange code for session
-        console.log('[auth/callback] Exchanging code for session...');
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-        if (error) {
-          console.error('[auth/callback] Code exchange error:', error.message);
-          // Code may already be consumed — try getSession as fallback
-          const { data: sessionData } = await supabase.auth.getSession();
-          if (sessionData?.session?.user) {
-            console.log('[auth/callback] Fallback getSession succeeded');
-            user = sessionData.session.user;
-          } else {
-            window.location.href = '/login?error=auth_failed&message=' + encodeURIComponent('Code exchange failed: ' + error.message);
+        // Exchange the PKCE code for a session
+        const { data, error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
+        if (exchangeError) {
+          // If code was already used, try getting existing session
+          const { data: existing } = await supabase.auth.getSession();
+          session = existing?.session;
+          if (!session) {
+            fail('Code exchange failed: ' + exchangeError.message);
             return;
           }
         } else {
-          user = data?.session?.user;
+          session = data?.session;
         }
-      } else if (accessToken) {
-        // Implicit flow fallback
-        const { data: sessionData } = await supabase.auth.getSession();
-        user = sessionData?.session?.user;
       } else {
-        // No code and no token — try existing session
-        const { data: sessionData } = await supabase.auth.getSession();
-        user = sessionData?.session?.user;
+        // No code — check for existing session (hash-based flow)
+        const { data } = await supabase.auth.getSession();
+        session = data?.session;
       }
 
-      if (!user) {
-        console.error('[auth/callback] No user after all exchange attempts');
-        window.location.href = '/login?error=auth_failed&message=' + encodeURIComponent('No user session after OAuth');
+      if (!session?.user?.email) {
+        fail('No session after authentication');
         return;
       }
 
-      console.log('[auth/callback] Got user:', user.email);
-      await finishLogin(user);
-    } catch (err) {
-      console.error('[auth/callback] Unexpected error:', err);
-      window.location.href = '/login?error=server_error&message=' + encodeURIComponent(err.message);
-    }
-  }
+      setStatus('Setting up your account...');
 
-  async function finishLogin(oauthUser) {
-    const email = oauthUser.email?.toLowerCase()?.trim();
-    const fullName = oauthUser.user_metadata?.full_name || oauthUser.user_metadata?.name || email?.split('@')[0] || '';
-    const provider = oauthUser.app_metadata?.provider || 'google';
+      const email = session.user.email.toLowerCase().trim();
+      const name = session.user.user_metadata?.full_name || session.user.user_metadata?.name || '';
 
-    console.log('[auth/callback] finishLogin:', { email, fullName, provider, oauthUserId: oauthUser.id });
-    setStatus('Setting up your account...');
-
-    if (!email) {
-      window.location.href = '/login?error=no_email';
-      return;
-    }
-
-    // Call our API to handle detailer lookup/creation and JWT issuance
-    try {
+      // Call our backend to get/create detailer + issue JWT
       const res = await fetch('/api/auth/oauth-complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           email,
-          name: fullName,
-          provider,
-          oauth_id: oauthUser.id,
+          name,
+          provider: session.user.app_metadata?.provider || 'google',
+          oauth_id: session.user.id,
         }),
       });
 
-      const data = await res.json().catch(() => ({}));
+      const result = await res.json().catch(() => ({}));
 
-      if (!res.ok) {
-        console.error('[auth/callback] oauth-complete failed:', res.status, data);
-        const errMsg = encodeURIComponent(data.error || `API returned ${res.status}`);
-        window.location.href = `/login?error=oauth_error&message=${errMsg}`;
+      if (!res.ok || !result.token) {
+        fail(result.error || 'Failed to complete sign in');
         return;
       }
 
-      if (!data.token) {
-        console.error('[auth/callback] No token in response:', data);
-        window.location.href = '/login?error=oauth_error&message=' + encodeURIComponent('No auth token received');
-        return;
-      }
+      // Store auth
+      localStorage.setItem('vector_token', result.token);
+      localStorage.setItem('vector_user', JSON.stringify(result.user));
+      document.cookie = `auth_token=${result.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
 
-      console.log('[auth/callback] Got token, storing auth...');
+      // Wait for storage to persist
+      await new Promise(r => setTimeout(r, 150));
 
-      // Store token in localStorage
-      localStorage.setItem('vector_token', data.token);
-      localStorage.setItem('vector_user', JSON.stringify(data.user));
-
-      // Also set as cookie for middleware/SSR
-      document.cookie = `auth_token=${data.token}; path=/; max-age=${60 * 60 * 24 * 30}; SameSite=Lax`;
-
-      // Small delay to ensure storage is persisted before navigation
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      // Verify storage was set
-      const storedToken = localStorage.getItem('vector_token');
-      console.log('[auth/callback] Storage verified:', storedToken ? 'token present' : 'MISSING');
-
-      // Hard redirect (not router.replace) to ensure fresh page load reads localStorage
-      const dest = data.redirect || '/dashboard';
-      console.log('[auth/callback] SUCCESS — hard redirecting to:', dest);
-      window.location.href = dest;
-    } catch (fetchErr) {
-      console.error('[auth/callback] fetch error:', fetchErr);
-      window.location.href = '/login?error=server_error&message=' + encodeURIComponent('Network error: ' + fetchErr.message);
+      // Hard navigate
+      window.location.href = result.redirect || '/dashboard';
+    } catch (err) {
+      fail(err.message || 'Unexpected error');
     }
   }
 
+  function fail(msg) {
+    console.error('[auth/callback]', msg);
+    setError(msg);
+    setTimeout(() => {
+      window.location.href = '/login?error=auth_failed&message=' + encodeURIComponent(msg);
+    }, 1500);
+  }
+
   return (
-    <div className="min-h-screen bg-v-charcoal flex items-center justify-center">
-      <div className="text-center">
-        <div className="w-8 h-8 border-2 border-v-gold border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-v-text-secondary text-sm">{status}</p>
-        {errorDetail && (
-          <p className="text-red-400 text-xs mt-2 max-w-md">{errorDetail}</p>
-        )}
-      </div>
+    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', background: '#0D1B2A', color: 'white', flexDirection: 'column' }}>
+      {!error && <div style={{ width: 32, height: 32, border: '2px solid #C9A84C', borderTopColor: 'transparent', borderRadius: '50%', animation: 'spin 1s linear infinite', marginBottom: 16 }} />}
+      <p style={{ fontSize: 14, color: error ? '#f87171' : '#9ca3af' }}>
+        {error || status}
+      </p>
+      <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
     </div>
   );
 }
