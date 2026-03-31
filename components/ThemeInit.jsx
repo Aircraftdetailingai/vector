@@ -2,11 +2,13 @@
 import { useEffect } from 'react';
 import { applyFullTheme } from '@/lib/theme';
 
+const DEFAULT_COLOR = '#007CB1';
+
 /**
- * Global theme initializer — renders in root layout Providers so the
- * detailer's brand theme applies on EVERY page, not just those wrapped
- * in AppShell. Reads from localStorage first (instant, no flash), then
- * fetches the latest branding from the server.
+ * Global theme initializer — applies on every page load.
+ * 1. Instant apply from localStorage cache (prevents flash)
+ * 2. Always fetch fresh from server and re-apply
+ * 3. Update localStorage cache for next load
  */
 export default function ThemeInit() {
   useEffect(() => {
@@ -15,13 +17,15 @@ export default function ThemeInit() {
       const stored = localStorage.getItem('vector_user');
       if (stored) {
         const u = JSON.parse(stored);
-        if (u.theme_primary || u.portal_theme) {
-          applyFullTheme(u.portal_theme || 'dark', u.theme_primary || '#007CB1');
-        }
+        applyFullTheme(u.portal_theme || 'dark', u.theme_primary || DEFAULT_COLOR);
+      } else {
+        applyFullTheme('dark', DEFAULT_COLOR);
       }
-    } catch {}
+    } catch {
+      applyFullTheme('dark', DEFAULT_COLOR);
+    }
 
-    // 2. Fetch latest from server and re-apply if different
+    // 2. Always fetch fresh from server (source of truth)
     const token = localStorage.getItem('vector_token');
     if (token) {
       fetch('/api/user/branding', { headers: { Authorization: `Bearer ${token}` } })
@@ -29,9 +33,9 @@ export default function ThemeInit() {
         .then(data => {
           if (!data) return;
           const mode = data.portal_theme || 'dark';
-          const primary = data.theme_primary || '#007CB1';
+          const primary = data.theme_primary || DEFAULT_COLOR;
           applyFullTheme(mode, primary);
-          // Update localStorage so next page load is instant
+          // Update localStorage cache
           try {
             const u = JSON.parse(localStorage.getItem('vector_user') || '{}');
             u.theme_primary = primary;
@@ -40,7 +44,7 @@ export default function ThemeInit() {
             localStorage.setItem('vector_user', JSON.stringify(u));
           } catch {}
         })
-        .catch(() => {});
+        .catch(() => {}); // On network failure, keep localStorage cache applied
     }
   }, []);
 

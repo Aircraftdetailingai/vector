@@ -8,12 +8,17 @@ export default function BiometricPrompt() {
   const [done, setDone] = useState(false);
 
   useEffect(() => {
-    // Don't show if already registered, dismissed, or not supported
+    // Don't show if already registered
     if (localStorage.getItem('webauthn_registered')) return;
-    if (localStorage.getItem('webauthn_prompt_dismissed')) return;
+
+    // Don't show if dismissed (check expiry — 1 year)
+    const dismissedUntil = localStorage.getItem('webauthn_dismissed_until');
+    if (dismissedUntil && Date.now() < parseInt(dismissedUntil, 10)) return;
+
+    // Don't show if browser doesn't support WebAuthn
     if (!window.PublicKeyCredential) return;
 
-    // Only show after a short delay on dashboard
+    // Only show after a delay
     const timer = setTimeout(() => setShow(true), 3000);
     return () => clearTimeout(timer);
   }, []);
@@ -24,7 +29,6 @@ export default function BiometricPrompt() {
       const token = localStorage.getItem('vector_token');
       const user = JSON.parse(localStorage.getItem('vector_user') || '{}');
 
-      // Get registration options
       const optRes = await fetch('/api/auth/webauthn/register-options', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
@@ -32,10 +36,8 @@ export default function BiometricPrompt() {
       if (!optRes.ok) throw new Error('Failed to get options');
       const options = await optRes.json();
 
-      // Trigger browser registration
       const credential = await startRegistration({ optionsJSON: options });
 
-      // Verify with server
       const verRes = await fetch('/api/auth/webauthn/register-verify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
@@ -50,6 +52,8 @@ export default function BiometricPrompt() {
       if (err.name !== 'NotAllowedError') {
         console.error('WebAuthn registration error:', err);
       }
+      // On cancel/error, dismiss for 30 days
+      localStorage.setItem('webauthn_dismissed_until', String(Date.now() + 30 * 24 * 60 * 60 * 1000));
       setShow(false);
     } finally {
       setLoading(false);
@@ -57,7 +61,8 @@ export default function BiometricPrompt() {
   };
 
   const handleDismiss = () => {
-    localStorage.setItem('webauthn_prompt_dismissed', '1');
+    // Dismiss for 1 year
+    localStorage.setItem('webauthn_dismissed_until', String(Date.now() + 365 * 24 * 60 * 60 * 1000));
     setShow(false);
   };
 

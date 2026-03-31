@@ -146,8 +146,14 @@ function IntegrationsContent() {
     const url = icsUrl.trim();
     if (!url) return;
     // Validate the URL looks like an iCal feed
-    if (!url.includes('.ics') && !url.includes('ical') && !url.includes('/basic')) {
-      setGcalError("This doesn't look like an iCal URL. In Google Calendar, go to Settings \u2192 your calendar \u2192 scroll to \"Secret address in iCal format\" and copy the URL ending in .ics");
+    const looksLikeIcal = url.endsWith('.ics') || url.includes('/ical/') || url.includes('/basic.ics') || url.includes('webcal://');
+    const isCalendarViewUrl = url.match(/calendar\.google\.com\/calendar\/u\/\d+\/r/);
+    if (isCalendarViewUrl || !looksLikeIcal) {
+      setGcalError("Please paste the Secret address in iCal format. It should end in .ics\n\nIn Google Calendar: Settings \u2192 click your calendar \u2192 scroll to \"Secret address in iCal format\" \u2192 copy that URL.");
+      return;
+    }
+    if (!url.startsWith('http')) {
+      setGcalError('URL must start with https://');
       return;
     }
     setIcsImporting(true); setIcsResult(null); setGcalError(null);
