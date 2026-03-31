@@ -6,42 +6,12 @@ import LoadingSpinner from '../../components/LoadingSpinner.jsx';
 import { useToast } from '../../components/Toast.jsx';
 import AddCustomerModal from '../../components/AddCustomerModal.jsx';
 import { formatPriceWhole, currencySymbol } from '../../lib/formatPrice';
-import DashboardTour from '../../components/DashboardTour.jsx';
 import TermsConsentModal from '../../components/TermsConsentModal.jsx';
 import OnboardingChecklist from '../../components/OnboardingChecklist.jsx';
 import BiometricPrompt from '../../components/BiometricPrompt.jsx';
 import { TERMS_VERSION } from '../../lib/terms';
 
 
-function StripeSetupCard({ onConnect, loading, onDismiss }) {
-  return (
-    <div className="rounded-lg bg-white/[0.03] border border-v-border-subtle mb-4">
-      <div className="flex items-center justify-between py-3 px-4">
-        <div className="flex items-center gap-3">
-          <div className="text-v-text-secondary text-lg">&#128179;</div>
-          <div>
-            <p className="text-v-text-primary text-sm">Set up payments</p>
-            <p className="text-v-text-secondary text-xs mt-0.5">Connect your Stripe account to accept quote payments directly from customers.</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 shrink-0 ml-4">
-          <button
-            onClick={onConnect}
-            disabled={loading}
-            className="px-4 py-1.5 text-xs text-v-gold border border-v-gold/30 hover:border-v-gold hover:bg-v-gold/5 rounded transition-colors disabled:opacity-50"
-          >
-            {loading ? 'Connecting...' : 'Connect'}
-          </button>
-          <button
-            onClick={onDismiss}
-            className="text-v-text-secondary hover:text-v-text-primary text-lg leading-none px-1"
-            title="Dismiss"
-          >&times;</button>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function ExpiringQuotesWidget({ expiring = [], expired = [] }) {
   const [extending, setExtending] = useState(null);
@@ -127,10 +97,6 @@ function DashboardContent() {
   const [user, setUser] = useState(null);
   const [showAddCustomerModal, setShowAddCustomerModal] = useState(false);
   const [availableServices, setAvailableServices] = useState([]);
-  const [stripeStatus, setStripeStatus] = useState({ connected: false, status: 'CHECKING' });
-  const [stripeLoading, setStripeLoading] = useState(false);
-  const [stripeError, setStripeError] = useState(null);
-  const [stripeBannerDismissed, setStripeBannerDismissed] = useState(false);
   const [loading, setLoading] = useState(true);
   const [quickStats, setQuickStats] = useState(null);
   const [recentQuotes, setRecentQuotes] = useState([]);
@@ -146,8 +112,6 @@ function DashboardContent() {
     try { parsedUser = JSON.parse(stored); } catch { localStorage.removeItem('vector_user'); router.push('/login'); return; }
     setUser(parsedUser);
     setLoading(false);
-    if (localStorage.getItem('stripe_banner_dismissed')) setStripeBannerDismissed(true);
-
     const refreshUser = async () => {
       try {
         const res = await fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } });
@@ -188,8 +152,7 @@ function DashboardContent() {
         body: JSON.stringify({ action: 'DAILY_LOGIN' }),
       }).catch(() => {});
 
-      const [stripeRes, servicesRes, statsRes, quotesRes, upcomingRes, forecastRes] = await Promise.allSettled([
-        fetch('/api/stripe/status', { headers }),
+      const [servicesRes, statsRes, quotesRes, upcomingRes, forecastRes] = await Promise.allSettled([
         fetch('/api/services', { headers }),
         fetch('/api/dashboard/stats', { headers }),
         fetch('/api/quotes?limit=5&sort=created_at&order=desc', { headers }),
@@ -197,11 +160,6 @@ function DashboardContent() {
         fetch('/api/inventory/forecast?days=14', { headers }),
       ]);
 
-      if (stripeRes.status === 'fulfilled' && stripeRes.value.ok) {
-        setStripeStatus(await stripeRes.value.json());
-      } else {
-        setStripeStatus({ connected: false, status: 'UNKNOWN' });
-      }
       if (servicesRes.status === 'fulfilled' && servicesRes.value.ok) {
         setAvailableServices((await servicesRes.value.json()).services || []);
       }
@@ -233,30 +191,6 @@ function DashboardContent() {
     });
   }, [router]);
 
-  const handleConnectStripe = async () => {
-    setStripeLoading(true);
-    setStripeError(null);
-    try {
-      const token = localStorage.getItem('vector_token');
-      if (!token) { window.location.href = '/login'; return; }
-      const res = await fetch('/api/stripe/connect', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      });
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        // Redirect to integrations page instead of showing error on dashboard
-        window.location.href = '/settings/integrations';
-      }
-    } catch {
-      window.location.href = '/settings/integrations';
-    } finally {
-      setStripeLoading(false);
-    }
-  };
-
   if (loading) return <LoadingSpinner message="Loading..." />;
 
   const STATUS_COLORS = {
@@ -276,25 +210,14 @@ function DashboardContent() {
   return (
     <AppShell title="Dashboard">
       <div className="px-6 md:px-10 py-8 pb-40 max-w-[1200px]">
-        <DashboardTour />
-
         {/* Page Title */}
         <h1 className="font-heading text-[2rem] font-light text-v-text-primary mb-10" style={{ letterSpacing: '0.15em' }}>
           DASHBOARD
         </h1>
 
-        {/* Stripe Setup */}
-        {!stripeStatus.connected && stripeStatus.status !== 'CHECKING' && !stripeBannerDismissed && (
-          <StripeSetupCard
-            onConnect={handleConnectStripe}
-            loading={stripeLoading}
-            onDismiss={() => { setStripeBannerDismissed(true); localStorage.setItem('stripe_banner_dismissed', '1'); }}
-          />
-        )}
-
         {/* Services Setup */}
         {user && availableServices.length === 0 && (
-          <div data-tour="services-prompt" className="flex items-center justify-between py-5 border-b border-v-border-subtle">
+          <div className="flex items-center justify-between py-5 border-b border-v-border-subtle">
             <div>
               <p className="text-sm text-v-text-primary">Set up your service menu</p>
               <p className="text-xs text-v-text-secondary mt-0.5">Add services to start building quotes.</p>
@@ -309,7 +232,7 @@ function DashboardContent() {
         )}
 
         {/* KPI Section */}
-        <div data-tour="quick-stats" className="mt-10">
+        <div className="mt-10">
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-x-10 gap-y-8">
             {[
               { label: 'Revenue', value: `${currencySymbol()}${(quickStats?.monthRevenue || 0).toLocaleString()}`, sub: 'This Month' },
