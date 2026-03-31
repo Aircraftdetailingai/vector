@@ -141,6 +141,7 @@ export default function Sidebar() {
     localStorage.removeItem('vector_token');
     localStorage.removeItem('vector_user');
     localStorage.removeItem('stripe_banner_dismissed');
+    localStorage.removeItem('terms_accepted_session');
     // Clear any Supabase auth keys
     Object.keys(localStorage).forEach(key => {
       if (key.startsWith('sb-') || key.startsWith('supabase.auth')) {

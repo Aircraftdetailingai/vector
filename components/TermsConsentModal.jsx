@@ -26,6 +26,8 @@ export default function TermsConsentModal({ isOpen, onAccept }) {
             localStorage.setItem('vector_user', JSON.stringify(user));
           } catch {}
         }
+        // Prevent modal from re-appearing this session even if refresh races
+        localStorage.setItem('terms_accepted_session', TERMS_VERSION);
         onAccept();
       }
     } catch (err) {

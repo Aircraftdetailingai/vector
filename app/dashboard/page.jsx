@@ -156,7 +156,13 @@ function DashboardContent() {
           if (data.user) {
             setUser(data.user);
             localStorage.setItem('vector_user', JSON.stringify(data.user));
-            if (data.user.terms_accepted_version !== TERMS_VERSION) setShowTermsModal(true);
+            // Only show terms modal if server explicitly says version doesn't match
+            // and user hasn't already accepted in this session
+            const serverVersion = data.user.terms_accepted_version;
+            const alreadyAccepted = localStorage.getItem('terms_accepted_session');
+            if (serverVersion !== TERMS_VERSION && !alreadyAccepted) {
+              setShowTermsModal(true);
+            }
           }
         }
       } catch (e) {}
