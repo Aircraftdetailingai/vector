@@ -13,17 +13,9 @@ import BiometricPrompt from '../../components/BiometricPrompt.jsx';
 import { TERMS_VERSION } from '../../lib/terms';
 
 
-function StripeSetupCard({ onConnect, loading, error, onClearError, onDismiss }) {
+function StripeSetupCard({ onConnect, loading, onDismiss }) {
   return (
     <div className="rounded-lg bg-white/[0.03] border border-v-border-subtle mb-4">
-      {error && (
-        <div className="px-4 pt-3">
-          <div className="p-2 bg-red-900/20 border border-red-500/30 text-red-400 text-xs flex items-center justify-between rounded">
-            <span>{error}</span>
-            <button onClick={onClearError} className="ml-2 font-bold">&times;</button>
-          </div>
-        </div>
-      )}
       <div className="flex items-center justify-between py-3 px-4">
         <div className="flex items-center gap-3">
           <div className="text-v-text-secondary text-lg">&#128179;</div>
@@ -240,16 +232,20 @@ function DashboardContent() {
     setStripeError(null);
     try {
       const token = localStorage.getItem('vector_token');
-      if (!token) { setStripeError('Not logged in'); return; }
+      if (!token) { window.location.href = '/login'; return; }
       const res = await fetch('/api/stripe/connect', {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
       });
       const data = await res.json();
-      if (data.url) window.location.href = data.url;
-      else setStripeError(data.details ? `${data.error}: ${data.details}` : data.error || 'Failed');
-    } catch (err) {
-      setStripeError(`Network error: ${err.message}`);
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        // Redirect to integrations page instead of showing error on dashboard
+        window.location.href = '/settings/integrations';
+      }
+    } catch {
+      window.location.href = '/settings/integrations';
     } finally {
       setStripeLoading(false);
     }
@@ -286,8 +282,6 @@ function DashboardContent() {
           <StripeSetupCard
             onConnect={handleConnectStripe}
             loading={stripeLoading}
-            error={stripeError}
-            onClearError={() => setStripeError(null)}
             onDismiss={() => { setStripeBannerDismissed(true); localStorage.setItem('stripe_banner_dismissed', '1'); }}
           />
         )}
