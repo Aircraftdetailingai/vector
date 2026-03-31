@@ -13,29 +13,39 @@ import BiometricPrompt from '../../components/BiometricPrompt.jsx';
 import { TERMS_VERSION } from '../../lib/terms';
 
 
-function StripeSetupCard({ onConnect, loading, onDismiss }) {
+function StripeSetupCard({ onConnect, loading, error, onClearError, onDismiss }) {
   return (
-    <div className="flex items-center justify-between py-3 px-4 rounded-lg bg-white/[0.03] border border-v-border-subtle mb-4">
-      <div className="flex items-center gap-3">
-        <div className="text-v-text-secondary text-lg">&#128179;</div>
-        <div>
-          <p className="text-v-text-primary text-sm">Set up payments</p>
-          <p className="text-v-text-secondary text-xs mt-0.5">Connect your Stripe account to accept quote payments directly from customers.</p>
+    <div className="rounded-lg bg-white/[0.03] border border-v-border-subtle mb-4">
+      {error && (
+        <div className="px-4 pt-3">
+          <div className="p-2 bg-red-900/20 border border-red-500/30 text-red-400 text-xs flex items-center justify-between rounded">
+            <span>{error}</span>
+            <button onClick={onClearError} className="ml-2 font-bold">&times;</button>
+          </div>
         </div>
-      </div>
-      <div className="flex items-center gap-2 shrink-0 ml-4">
-        <button
-          onClick={onConnect}
-          disabled={loading}
-          className="px-4 py-1.5 text-xs text-v-gold border border-v-gold/30 hover:border-v-gold hover:bg-v-gold/5 rounded transition-colors disabled:opacity-50"
-        >
-          {loading ? 'Connecting...' : 'Connect'}
-        </button>
-        <button
-          onClick={onDismiss}
-          className="text-v-text-secondary hover:text-v-text-primary text-lg leading-none px-1"
-          title="Dismiss"
-        >&times;</button>
+      )}
+      <div className="flex items-center justify-between py-3 px-4">
+        <div className="flex items-center gap-3">
+          <div className="text-v-text-secondary text-lg">&#128179;</div>
+          <div>
+            <p className="text-v-text-primary text-sm">Set up payments</p>
+            <p className="text-v-text-secondary text-xs mt-0.5">Connect your Stripe account to accept quote payments directly from customers.</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2 shrink-0 ml-4">
+          <button
+            onClick={onConnect}
+            disabled={loading}
+            className="px-4 py-1.5 text-xs text-v-gold border border-v-gold/30 hover:border-v-gold hover:bg-v-gold/5 rounded transition-colors disabled:opacity-50"
+          >
+            {loading ? 'Connecting...' : 'Connect'}
+          </button>
+          <button
+            onClick={onDismiss}
+            className="text-v-text-secondary hover:text-v-text-primary text-lg leading-none px-1"
+            title="Dismiss"
+          >&times;</button>
+        </div>
       </div>
     </div>
   );
@@ -276,6 +286,8 @@ function DashboardContent() {
           <StripeSetupCard
             onConnect={handleConnectStripe}
             loading={stripeLoading}
+            error={stripeError}
+            onClearError={() => setStripeError(null)}
             onDismiss={() => { setStripeBannerDismissed(true); localStorage.setItem('stripe_banner_dismissed', '1'); }}
           />
         )}
