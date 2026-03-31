@@ -29,6 +29,10 @@ function IntegrationsContent() {
 
   // Stripe state
   const [stripeStatus, setStripeStatus] = useState({ connected: false, status: 'UNKNOWN' });
+  const [stripePk, setStripePk] = useState('');
+  const [stripeSk, setStripeSk] = useState('');
+  const [stripeKeySaving, setStripeKeySaving] = useState(false);
+  const [stripeKeyMsg, setStripeKeyMsg] = useState(null);
 
   // QuickBooks state
   const [qbStatus, setQbStatus] = useState({ connected: false, status: 'UNKNOWN' });
@@ -219,7 +223,7 @@ function IntegrationsContent() {
   const oauthConnected = gcalStatus.method === 'oauth' && gcalStatus.connected;
   const gcalConnected = icsConnected || oauthConnected;
   const calendlyConnected = !!calendlyUrl && calendlyUrl.includes('calendly.com');
-  const stripeConnected = stripeStatus.connected && stripeStatus.status === 'ACTIVE';
+  const stripeConnected = (stripeStatus.connected && stripeStatus.status === 'ACTIVE') || stripeStatus.hasKeys;
   const qbConnected = qbStatus.connected && qbStatus.status === 'ACTIVE';
 
   return (
@@ -408,24 +412,77 @@ function IntegrationsContent() {
               </div>
               {stripeConnected ? (
                 <span className="text-xs text-green-400 border border-green-400/30 px-2 py-0.5 uppercase tracking-wider">Active</span>
-              ) : stripeStatus.status === 'PENDING' ? (
-                <span className="text-xs text-v-gold border border-v-gold/30 px-2 py-0.5 uppercase tracking-wider">Pending</span>
               ) : (
-                <span className="text-xs text-red-400 border border-red-400/30 px-2 py-0.5 uppercase tracking-wider">Not Connected</span>
+                <span className="text-xs text-v-text-secondary border border-v-border px-2 py-0.5 uppercase tracking-wider">Not Set Up</span>
               )}
             </div>
 
             {stripeConnected ? (
               <div>
-                <p className="text-xs text-v-text-secondary mb-2">Payments active. Manage in Settings &rarr; Payments.</p>
-                <a href="/settings#payments" className="text-xs text-v-gold hover:text-v-gold-dim transition-colors">Manage Stripe &rarr;</a>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-green-500">&#10003;</span>
+                  <span className="text-green-400 text-xs font-medium">Stripe keys saved</span>
+                </div>
+                <a href="https://dashboard.stripe.com" target="_blank" rel="noreferrer" className="text-xs text-v-gold hover:text-v-gold-dim transition-colors">
+                  Manage in Stripe Dashboard &rarr;
+                </a>
               </div>
             ) : (
               <div>
-                <p className="text-xs text-v-text-secondary mb-3">Connect Stripe to accept payments from customers.</p>
-                <a href="/settings#payments" className="inline-block px-4 py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim transition-colors">
-                  Set Up Stripe
-                </a>
+                <p className="text-xs text-v-text-secondary mb-3">Enter your Stripe API keys to accept quote payments.</p>
+                {stripeKeyMsg && (
+                  <div className={`mb-2 p-2 text-xs rounded ${stripeKeyMsg.type === 'error' ? 'bg-red-900/20 border border-red-500/30 text-red-400' : 'bg-green-900/20 border border-green-500/30 text-green-400'}`}>
+                    {stripeKeyMsg.text}
+                  </div>
+                )}
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={stripePk}
+                    onChange={(e) => setStripePk(e.target.value)}
+                    placeholder="pk_live_..."
+                    className="w-full bg-v-surface border border-v-border text-v-text-primary rounded-sm px-3 py-2 text-xs font-mono placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+                  />
+                  <input
+                    type="password"
+                    value={stripeSk}
+                    onChange={(e) => setStripeSk(e.target.value)}
+                    placeholder="sk_live_..."
+                    className="w-full bg-v-surface border border-v-border text-v-text-primary rounded-sm px-3 py-2 text-xs font-mono placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50"
+                  />
+                  <button
+                    onClick={async () => {
+                      if (!stripePk.startsWith('pk_') || !stripeSk.startsWith('sk_')) {
+                        setStripeKeyMsg({ type: 'error', text: 'Keys must start with pk_ and sk_' });
+                        return;
+                      }
+                      setStripeKeySaving(true); setStripeKeyMsg(null);
+                      try {
+                        const res = await fetch('/api/user/settings', {
+                          method: 'POST', headers: getHeaders(),
+                          body: JSON.stringify({ stripe_publishable_key: stripePk.trim(), stripe_secret_key: stripeSk.trim() }),
+                        });
+                        if (res.ok) {
+                          setStripeKeyMsg({ type: 'success', text: 'Stripe keys saved!' });
+                          setStripeStatus({ connected: true, hasKeys: true, status: 'ACTIVE' });
+                        } else {
+                          const d = await res.json(); setStripeKeyMsg({ type: 'error', text: d.error || 'Failed to save' });
+                        }
+                      } catch (err) { setStripeKeyMsg({ type: 'error', text: err.message }); }
+                      finally { setStripeKeySaving(false); }
+                    }}
+                    disabled={stripeKeySaving || !stripePk || !stripeSk}
+                    className="w-full py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-widest hover:bg-v-gold-dim disabled:opacity-50 transition-colors"
+                  >
+                    {stripeKeySaving ? 'Saving...' : 'Save & Connect'}
+                  </button>
+                  <p className="text-[10px] text-v-text-secondary">
+                    Find keys at{' '}
+                    <a href="https://dashboard.stripe.com/apikeys" target="_blank" rel="noreferrer" className="text-v-gold underline">
+                      stripe.com/apikeys
+                    </a>
+                  </p>
+                </div>
               </div>
             )}
           </div>
