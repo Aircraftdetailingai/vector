@@ -7,6 +7,7 @@ const navItems = [
   { href: '/settings/services', label: 'Services', icon: '🛠️' },
   { href: '/settings/locations', label: 'Locations', icon: '📍' },
   { href: '/settings/integrations', label: 'Integrations', icon: '🔗' },
+  { href: '/settings/import', label: 'Import / Export', icon: '📦', section: 'Data' },
 ];
 
 export default function SettingsLayout({ children }) {
@@ -24,21 +25,26 @@ export default function SettingsLayout({ children }) {
         {/* Sidebar */}
         <nav className="w-full md:w-48 flex-shrink-0">
           <div className="bg-white/10 rounded-lg p-2 space-y-1">
-            {navItems.map((item) => {
+            {navItems.map((item, i) => {
               const isActive = pathname === item.href;
+              const showSection = item.section && (!navItems[i - 1] || navItems[i - 1].section !== item.section);
               return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
-                    isActive
-                      ? 'bg-v-gold text-white'
-                      : 'text-white/70 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  <span>{item.icon}</span>
-                  <span>{item.label}</span>
-                </Link>
+                <div key={item.href}>
+                  {showSection && (
+                    <div className="text-white/40 text-[10px] uppercase tracking-wider px-3 pt-3 pb-1">{item.section}</div>
+                  )}
+                  <Link
+                    href={item.href}
+                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-colors ${
+                      isActive
+                        ? 'bg-v-gold text-white'
+                        : 'text-white/70 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    <span>{item.icon}</span>
+                    <span>{item.label}</span>
+                  </Link>
+                </div>
               );
             })}
           </div>
