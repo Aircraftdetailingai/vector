@@ -548,7 +548,7 @@ A: Yes, we come to your hangar."
               <h3 className="font-medium text-blue-900 mb-2">Customization Options</h3>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li><code className="bg-blue-100 px-1">data-position</code> - "bottom-right" (default), "bottom-left", "top-right", "top-left"</li>
-                <li><code className="bg-blue-100 px-1">data-color</code> - Primary color (default: #f59e0b)</li>
+                <li><code className="bg-blue-100 px-1">data-color</code> - Primary color (default: your brand color)</li>
               </ul>
               <p className="text-sm text-blue-700 mt-3">
                 Example: <code className="bg-blue-100 px-1">&lt;script src="..." data-position="bottom-left" data-color="#3b82f6"&gt;&lt;/script&gt;</code>

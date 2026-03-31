@@ -2,17 +2,17 @@
   'use strict';
 
   // Get configuration from window object or script attributes
-  const widgetConfig = window.VectorWidget || {};
+  const widgetConfig = window.ShinyJetsWidget || window.VectorWidget || {};
   const script = document.currentScript;
 
   const detailerId = widgetConfig.detailerId || script?.getAttribute('data-detailer-id');
   const position = widgetConfig.position || script?.getAttribute('data-position') || 'right';
-  const primaryColor = widgetConfig.color || script?.getAttribute('data-color') || '#f59e0b';
+  const primaryColor = widgetConfig.color || script?.getAttribute('data-color') || '#007CB1';
   const buttonTitle = widgetConfig.title || script?.getAttribute('data-title') || 'Get a Quote';
   const apiBase = widgetConfig.apiBase || script?.getAttribute('data-api') || 'https://crm.shinyjets.com';
 
   if (!detailerId) {
-    console.error('Vector Widget: Missing detailerId. Set window.VectorWidget.detailerId or data-detailer-id attribute');
+    console.error('Shiny Jets Widget: Missing detailerId. Set window.ShinyJetsWidget.detailerId or data-detailer-id attribute');
     return;
   }
 

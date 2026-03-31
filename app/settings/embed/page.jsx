@@ -7,7 +7,7 @@ export default function EmbedSettingsPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [copied, setCopied] = useState(null);
-  const [widgetColor, setWidgetColor] = useState('#f59e0b');
+  const [widgetColor, setWidgetColor] = useState('#007CB1');
   const [widgetPosition, setWidgetPosition] = useState('right');
   const [widgetTitle, setWidgetTitle] = useState('Get a Quote');
   const qrRef = useRef(null);
@@ -19,7 +19,12 @@ export default function EmbedSettingsPage() {
       router.push('/login');
       return;
     }
-    try { setUser(JSON.parse(stored)); } catch { localStorage.removeItem('vector_user'); router.push('/login'); return; }
+    try {
+      const u = JSON.parse(stored);
+      setUser(u);
+      // Default widget color to detailer's brand color
+      if (u.theme_primary) setWidgetColor(u.theme_primary);
+    } catch { localStorage.removeItem('vector_user'); router.push('/login'); return; }
   }, [router]);
 
   const detailerId = user?.id || 'YOUR_DETAILER_ID';
@@ -66,7 +71,7 @@ export default function EmbedSettingsPage() {
   const downloadQR = () => {
     const link = document.createElement('a');
     link.href = qrCodeUrl;
-    link.download = 'vector-quote-qr.png';
+    link.download = 'shinyjets-quote-qr.png';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -252,9 +257,9 @@ export default function EmbedSettingsPage() {
         </div>
 
         {/* Usage Tips */}
-        <div className="bg-blue-900/20 border border-blue-200 rounded-lg p-6">
-          <h3 className="font-semibold text-blue-900 mb-2">Tips for Getting More Leads</h3>
-          <ul className="text-sm text-blue-800 space-y-2">
+        <div className="bg-v-gold/5 border border-v-gold/20 rounded-lg p-6">
+          <h3 className="font-semibold text-v-text-primary mb-2">Tips for Getting More Leads</h3>
+          <ul className="text-sm text-v-text-secondary space-y-2">
             <li>&#8226; Add the QR code to your business cards and leave them at FBOs</li>
             <li>&#8226; Put a sign with the QR code in hangars you service</li>
             <li>&#8226; Add the chat widget to your website's homepage and services page</li>
