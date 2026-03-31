@@ -9,6 +9,7 @@ import { formatPriceWhole, currencySymbol } from '../../lib/formatPrice';
 import DashboardTour from '../../components/DashboardTour.jsx';
 import TermsConsentModal from '../../components/TermsConsentModal.jsx';
 import OnboardingChecklist from '../../components/OnboardingChecklist.jsx';
+import BiometricPrompt from '../../components/BiometricPrompt.jsx';
 import { TERMS_VERSION } from '../../lib/terms';
 
 
@@ -467,6 +468,9 @@ function DashboardContent() {
 
         {/* Onboarding */}
         {user && !showTermsModal && <OnboardingChecklist user={user} />}
+
+        {/* Biometric Login Prompt */}
+        {user && !showTermsModal && <BiometricPrompt />}
 
         {/* Add Customer Modal */}
         <AddCustomerModal

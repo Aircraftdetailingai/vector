@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { setUserCurrency } from '@/lib/currency';
 import TermsConsentModal from '@/components/TermsConsentModal';
 import SocialLoginButtons from '@/components/SocialLoginButtons';
+import BiometricLogin from '@/components/BiometricLogin';
 import { TERMS_VERSION } from '@/lib/terms';
 
 function LoginContent() {
@@ -15,6 +16,7 @@ function LoginContent() {
   const [error, setError] = useState('');
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [pendingRedirect, setPendingRedirect] = useState(null);
+  const [webauthnEmail, setWebauthnEmail] = useState(null);
 
   useEffect(() => {
     // Skip auto-login if user just logged out
@@ -31,6 +33,13 @@ function LoginContent() {
     else if (errParam === 'account_creation_failed') setError(errMessage || 'Failed to create account. Please try email signup.');
     else if (errParam === 'oauth_error') setError(errMessage || 'OAuth sign-in failed. Please try again.');
     else if (errParam === 'server_error') setError(errMessage || 'Server error. Please try again.');
+
+    // Check for registered WebAuthn credential
+    const regEmail = localStorage.getItem('webauthn_registered');
+    if (regEmail && regEmail !== 'true' && window.PublicKeyCredential) {
+      setWebauthnEmail(regEmail);
+      setEmail(regEmail);
+    }
   }, [router, params]);
 
   const handleSubmit = async (e) => {
@@ -89,6 +98,26 @@ function LoginContent() {
         </div>
 
         <div className="bg-v-surface border border-v-border rounded-sm p-6">
+          {/* Biometric Login */}
+          {webauthnEmail && (
+            <>
+              <BiometricLogin
+                email={webauthnEmail}
+                onSuccess={(data) => {
+                  localStorage.setItem('vector_token', data.token);
+                  localStorage.setItem('vector_user', JSON.stringify(data.user));
+                  document.cookie = `auth_token=${data.token}; path=/; max-age=${60*60*24*30}; SameSite=Lax`;
+                  window.location.href = '/dashboard';
+                }}
+              />
+              <div className="flex items-center my-4">
+                <div className="flex-grow border-t border-v-border"></div>
+                <span className="mx-4 text-v-text-secondary text-xs uppercase tracking-widest">or</span>
+                <div className="flex-grow border-t border-v-border"></div>
+              </div>
+            </>
+          )}
+
           {/* Social Login */}
           <SocialLoginButtons />
 
