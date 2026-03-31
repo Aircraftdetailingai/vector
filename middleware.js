@@ -12,6 +12,15 @@ const OWNER_ONLY_PATHS = ['/dashboard', '/reports', '/settings', '/customers', '
 
 export async function middleware(request) {
   const { pathname } = request.nextUrl;
+  const hostname = request.headers.get('host') || '';
+
+  // Redirect old domain to new domain
+  if (hostname === 'app.vectorav.ai') {
+    const url = new URL(request.url);
+    url.host = 'crm.shinyjets.com';
+    url.protocol = 'https';
+    return NextResponse.redirect(url, 301);
+  }
 
   // Protect /admin/* routes
   if (pathname.startsWith('/admin')) {
@@ -44,5 +53,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*'],
+  matcher: ['/((?!_next/static|_next/image|favicon.ico|icons|sw.js|manifest.json).*)'],
 };
