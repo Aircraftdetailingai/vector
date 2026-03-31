@@ -43,6 +43,8 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   const [currentAreaIdx, setCurrentAreaIdx] = useState(0);
   const [showRecommendation, setShowRecommendation] = useState(false);
   const [areasConfirmed, setAreasConfirmed] = useState(false);
+  const [quickSelect, setQuickSelect] = useState(null); // null | 'quick_turn' | 'maint_wash' | 'detail'
+  const [washAddons, setWashAddons] = useState([]);
 
   const [data, setData] = useState({
     manufacturer: '', model: '', model_full: '',
@@ -59,7 +61,10 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
       if (showRecommendation) { setShowRecommendation(false); setCurrentAreaIdx(selectedAreas.length - 1); setAreaLevels(prev => { const n = { ...prev }; delete n[selectedAreas[selectedAreas.length - 1]]; return n; }); return; }
       if (areasConfirmed && currentAreaIdx > 0) { setCurrentAreaIdx(i => i - 1); setAreaLevels(prev => { const n = { ...prev }; delete n[selectedAreas[currentAreaIdx - 1]]; return n; }); return; }
       if (areasConfirmed) { setAreasConfirmed(false); setAreaLevels({}); setCurrentAreaIdx(0); return; }
-      if (serviceMode) { setServiceMode(null); setSelectedAreas([]); return; }
+      if (quickSelect === 'maint_wash') { setQuickSelect(null); setWashAddons([]); return; }
+      if (quickSelect === 'detail') { setQuickSelect(null); setSelectedAreas([]); return; }
+      if (quickSelect) { setQuickSelect(null); return; }
+      if (serviceMode) { setServiceMode(null); return; }
     }
     setStep(s => Math.max(s - 1, 1));
   };
@@ -272,7 +277,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           </div>
         )}
 
-        {/* STEP 4: Service Selection */}
+        {/* STEP 4: Service Selection — initial choice */}
         {step === 4 && !serviceMode && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-6">What are you looking for?</h2>
@@ -284,10 +289,82 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
               </button>
               <button onClick={() => setServiceMode('options')}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all">
-                <p className="text-white font-medium text-sm">Help me choose</p>
-                <p className="text-white/40 text-xs mt-1">We&apos;ll recommend services based on your needs</p>
+                <p className="text-white font-medium text-sm">Show me options</p>
+                <p className="text-white/40 text-xs mt-1">Quick shortcuts or full service selection</p>
               </button>
             </div>
+          </div>
+        )}
+
+        {/* Quick Select screen — shown right after "Show me options" */}
+        {step === 4 && serviceMode === 'options' && !quickSelect && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-6">What brings you in today?</h2>
+            <div className="space-y-4">
+              <button onClick={() => {
+                setQuickSelect('quick_turn');
+                set('service_text', 'Quick Turn — between flights, fast turnaround');
+                setStep(5);
+              }}
+                className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
+                <p className="text-white font-medium"><span className="mr-2">&#9889;</span>Quick Turn</p>
+                <p className="text-white/40 text-xs mt-1">Between flights, fast turnaround</p>
+              </button>
+              <button onClick={() => { setQuickSelect('maint_wash'); }}
+                className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
+                <p className="text-white font-medium"><span className="mr-2 text-[#007CB1]">&#9679;</span>Maintenance Wash</p>
+                <p className="text-white/40 text-xs mt-1">Regular scheduled wash</p>
+              </button>
+              <button onClick={() => { setQuickSelect('detail'); }}
+                className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
+                <p className="text-white font-medium"><span className="mr-2">&#10022;</span>Detailing</p>
+                <p className="text-white/40 text-xs mt-1">Let me choose what I need</p>
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Maintenance Wash add-ons */}
+        {step === 4 && serviceMode === 'options' && quickSelect === 'maint_wash' && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-2">Maintenance Wash</h2>
+            <p className="text-white/40 text-xs mb-6">Want to add anything else?</p>
+            <div className="space-y-3">
+              {[
+                { key: 'brightwork', label: 'Brightwork Polish' },
+                { key: 'windows', label: 'Window Cleaning' },
+                { key: 'interior', label: 'Interior Wipe Down' },
+                { key: 'wheels', label: 'Wheel & Tire Clean' },
+              ].map(addon => (
+                <button key={addon.key} onClick={() => setWashAddons(prev => prev.includes(addon.key) ? prev.filter(k => k !== addon.key) : [...prev, addon.key])}
+                  className={`w-full p-4 rounded-lg border text-left transition-all ${
+                    washAddons.includes(addon.key) ? 'border-[#007CB1] bg-[#007CB1]/15 text-white' : 'border-white/15 bg-white/5 text-white/70'
+                  }`}>
+                  <span className="text-sm">{addon.label}</span>
+                </button>
+              ))}
+            </div>
+            <div className="mt-auto pt-6 space-y-3">
+              <Btn onClick={() => {
+                const addons = washAddons.map(k => ({ brightwork: 'Brightwork Polish', windows: 'Window Cleaning', interior: 'Interior Wipe Down', wheels: 'Wheel & Tire Clean' })[k]).filter(Boolean);
+                set('service_text', ['Maintenance Wash', ...addons].join(', '));
+                setStep(5);
+              }}>
+                {washAddons.length > 0 ? `Continue with ${washAddons.length + 1} services` : 'Just the wash'}
+              </Btn>
+            </div>
+          </div>
+        )}
+
+        {/* "Detailing" → area selection (existing flow) */}
+        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && !areasConfirmed && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-2">Which areas need attention?</h2>
+            <p className="text-white/40 text-xs mb-6">Select all that apply</p>
+            <AreaSelector selectedAreas={selectedAreas} onToggle={(key) => {
+              setSelectedAreas(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+            }} onSelectAll={() => setSelectedAreas(AREAS.map(a => a.key))}
+            onContinue={() => { setAreasConfirmed(true); setCurrentAreaIdx(0); }} />
           </div>
         )}
 
@@ -306,20 +383,8 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           </div>
         )}
 
-        {/* "Help me choose" - SCREEN A: Select areas */}
-        {step === 4 && serviceMode === 'options' && !areasConfirmed && (
-          <div className="flex-1 flex flex-col">
-            <h2 className="text-xl font-light text-white mb-2">Which areas need attention?</h2>
-            <p className="text-white/40 text-xs mb-6">Select all that apply</p>
-            <AreaSelector selectedAreas={selectedAreas} onToggle={(key) => {
-              setSelectedAreas(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
-            }} onSelectAll={() => setSelectedAreas(AREAS.map(a => a.key))}
-            onContinue={() => { setAreasConfirmed(true); setCurrentAreaIdx(0); }} />
-          </div>
-        )}
-
         {/* SCREEN B: Level for each area, one at a time */}
-        {step === 4 && serviceMode === 'options' && areasConfirmed && !showRecommendation && currentArea && !areaLevels[currentArea] && (
+        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && !showRecommendation && currentArea && !areaLevels[currentArea] && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-2">What does <span className="text-[#007CB1]">{currentAreaLabel}</span> need?</h2>
             <p className="text-white/40 text-xs mb-6">Area {currentAreaIdx + 1} of {selectedAreas.length}</p>
@@ -349,7 +414,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         )}
 
         {/* Already answered current area — advance */}
-        {step === 4 && serviceMode === 'options' && areasConfirmed && currentArea && areaLevels[currentArea] && !showRecommendation && (() => {
+        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && currentArea && areaLevels[currentArea] && !showRecommendation && (() => {
           // Auto-advance if we land back on an already-answered area
           const nextUnanswered = selectedAreas.findIndex((a, i) => i > currentAreaIdx && !areaLevels[a]);
           if (nextUnanswered !== -1) { setTimeout(() => setCurrentAreaIdx(nextUnanswered), 0); }
@@ -358,7 +423,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         })()}
 
         {/* SCREEN C: Recommendation */}
-        {step === 4 && serviceMode === 'options' && areasConfirmed && showRecommendation && (
+        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && showRecommendation && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-2">
               Based on your {data.model_full || data.model}, here&apos;s what we recommend
