@@ -7,7 +7,7 @@ const FAQ_ITEMS = [
     category: 'Getting Started',
     questions: [
       { q: 'How do I create my first quote?', a: 'From the dashboard, click "New Quote". Select a manufacturer and aircraft model, choose your services or a package, then click "Send Quote" to deliver it via email or shareable link.' },
-      { q: 'How do I set up my services and rates?', a: 'Go to Settings > Services to add your service menu. Each service links to an aircraft hour column (e.g., Exterior Wash uses ext_wash_hours). Set your hourly rate, and Vector calculates pricing automatically based on aircraft size.' },
+      { q: 'How do I set up my services and rates?', a: 'Go to Settings > Services to add your service menu. Each service links to an aircraft hour column (e.g., Exterior Wash uses ext_wash_hours). Set your hourly rate, and Shiny Jets CRM calculates pricing automatically based on aircraft size.' },
       { q: 'How do I connect Stripe for payments?', a: 'Go to Settings and click "Connect Stripe" in the Payments section. You\'ll be redirected to Stripe to create or link your account. Once connected, customers can pay directly from your quotes.' },
       { q: 'What are the different subscription plans?', a: 'Free: 3 quotes/month, 5% fee. Pro ($79/mo): Unlimited quotes, 2% fee, priority support. Business ($149/mo): Team management, 1% fee. Enterprise: Custom pricing, 0% fee.' },
     ],
@@ -15,7 +15,7 @@ const FAQ_ITEMS = [
   {
     category: 'Quoting',
     questions: [
-      { q: 'How does aircraft-based pricing work?', a: 'Each aircraft in the database has pre-loaded hours for different services (wash, detail, ceramic, etc.). Vector multiplies those hours by your hourly rate to calculate the price. You can override hours on any individual quote.' },
+      { q: 'How does aircraft-based pricing work?', a: 'Each aircraft in the database has pre-loaded hours for different services (wash, detail, ceramic, etc.). Shiny Jets CRM multiplies those hours by your hourly rate to calculate the price. You can override hours on any individual quote.' },
       { q: 'Can I create custom services?', a: 'Yes. Go to Settings > Services and click "Add Service". Choose which aircraft hour column it uses, set your hourly rate, and optionally add product costs.' },
       { q: 'How do packages work?', a: 'Packages bundle multiple services together with an optional discount. Create them in Settings > Services by dragging services into a package. Customers see one bundled price.' },
       { q: 'Can I add fees to a quote?', a: 'Yes. Add-on fees (hazmat, after hours, rush, travel) can be added to any quote. Set them up in Settings > Services under the "Add-on Fees" section.' },
@@ -26,9 +26,9 @@ const FAQ_ITEMS = [
     category: 'Payments',
     questions: [
       { q: 'When do I get paid?', a: 'Payments are processed through Stripe and deposited to your connected bank account. Standard Stripe payout timing applies (typically 2 business days).' },
-      { q: 'What is the platform fee?', a: 'Vector charges a small fee on each transaction based on your plan: Free (5%), Pro (2%), Business (1%), Enterprise (0%). This is separate from Stripe\'s processing fees.' },
+      { q: 'What is the platform fee?', a: 'Shiny Jets CRM charges a small fee on each transaction based on your plan: Free (5%), Pro (2%), Business (1%), Enterprise (0%). This is separate from Stripe\'s processing fees.' },
       { q: 'Can I pass the platform fee to the customer?', a: 'Yes. In Settings, enable "Pass fee to customer" and the platform fee will be added to the customer\'s total instead of deducted from your payout.' },
-      { q: 'How do refunds work?', a: 'Refunds are handled through your Stripe dashboard at dashboard.stripe.com. Vector does not process refunds directly.' },
+      { q: 'How do refunds work?', a: 'Refunds are handled through your Stripe dashboard at dashboard.stripe.com. Shiny Jets CRM does not process refunds directly.' },
     ],
   },
   {
@@ -36,7 +36,7 @@ const FAQ_ITEMS = [
     questions: [
       { q: 'How do I add team members?', a: 'Go to Team > Add Member. Enter their name, role, and pay rate. Team members can be assigned to jobs and their hours tracked through the time log.' },
       { q: 'How does the calendar work?', a: 'The calendar shows all scheduled jobs. When a customer pays a quote, the job appears on the scheduled date. You can also manually schedule jobs from the calendar view.' },
-      { q: 'What are recurring services?', a: 'When sending a quote, toggle "Make Recurring" and select an interval (4 weeks, monthly, quarterly). Vector will automatically generate new quotes at each interval.' },
+      { q: 'What are recurring services?', a: 'When sending a quote, toggle "Make Recurring" and select an interval (4 weeks, monthly, quarterly). Shiny Jets CRM will automatically generate new quotes at each interval.' },
     ],
   },
   {
@@ -150,7 +150,7 @@ export default function HelpPage() {
           <a href="/dashboard" className="text-2xl hover:text-gray-300">&larr;</a>
           <div>
             <h1 className="text-2xl font-bold">{'Help'} & Support</h1>
-            <p className="text-gray-400 text-sm">Everything you need to get the most out of {'Vector'}</p>
+            <p className="text-gray-400 text-sm">Everything you need to get the most out of {'Shiny Jets CRM'}</p>
           </div>
         </header>
 
@@ -201,7 +201,7 @@ export default function HelpPage() {
         {activeTab === 'guides' && (
           <div>
             <div className="flex items-center justify-between mb-4">
-              <p className="text-gray-400 text-sm">Follow these guides to set up {'Vector'} and start sending professional quotes.</p>
+              <p className="text-gray-400 text-sm">Follow these guides to set up {'Shiny Jets CRM'} and start sending professional quotes.</p>
               <button
                 onClick={() => { restartTour(); window.location.href = '/dashboard'; }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-v-gold/10 text-v-gold border border-v-gold/20 hover:bg-v-gold/20 transition-colors whitespace-nowrap ml-4"
@@ -239,7 +239,7 @@ export default function HelpPage() {
         {/* Videos Tab */}
         {activeTab === 'videos' && (
           <div>
-            <p className="text-gray-400 text-sm mb-4">Video walkthroughs to help you learn {'Vector'} quickly.</p>
+            <p className="text-gray-400 text-sm mb-4">Video walkthroughs to help you learn {'Shiny Jets CRM'} quickly.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {VIDEOS.map((video, i) => (
                 <div

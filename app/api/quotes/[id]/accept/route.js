@@ -102,7 +102,7 @@ export async function POST(request, { params }) {
 <p>They chose to pay by check/ACH instead of credit card. Please send them an invoice directly.</p>
 <p>Quote total: <strong>${amount}</strong></p>
 ${quote.client_email ? `<p>Customer email: <a href="mailto:${quote.client_email}">${quote.client_email}</a></p>` : ''}
-<p style="color:#999;font-size:12px;">— Vector Aviation</p>`,
+<p style="color:#999;font-size:12px;">— Shiny Jets</p>`,
         });
       } catch (emailErr) {
         console.error('Failed to send invoice request notification:', emailErr);

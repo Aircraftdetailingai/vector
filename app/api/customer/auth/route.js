@@ -76,7 +76,7 @@ export async function POST(request) {
         await getResend().emails.send({
           from: 'Vector <noreply@vectorav.ai>',
           to: normalizedEmail,
-          subject: 'Your Vector Login Code',
+          subject: 'Your Login Code',
           html: `
             <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
               <h2 style="color: #1e3a5f;">Your Login Code</h2>

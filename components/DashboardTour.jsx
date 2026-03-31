@@ -7,7 +7,7 @@ const TOUR_STEPS = [
   {
     target: '[data-tour="quote-builder"]',
     title: 'Create Your First Quote',
-    description: 'Select an aircraft, choose services, and generate a professional quote in seconds. This is the heart of Vector.',
+    description: 'Select an aircraft, choose services, and generate a professional quote in seconds. This is the heart of Shiny Jets CRM.',
     position: 'bottom',
   },
   {

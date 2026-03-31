@@ -151,7 +151,7 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees }) {
         <View style={s.header}>
           <View style={s.headerRow}>
             <View>
-              <Text style={s.logoText}>Vector Aviation</Text>
+              <Text style={s.logoText}>Shiny Jets</Text>
               <Text style={s.logoSub}>AIRCRAFT DETAILING</Text>
               <Text style={s.companyName}>{companyName}</Text>
               {detailer?.email && <Text style={s.companyDetail}>{detailer.email}</Text>}

@@ -120,7 +120,7 @@ export async function GET(request) {
 </head>
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #1f2937; max-width: 600px; margin: 0 auto; padding: 20px;">
   <div style="text-align: center; margin-bottom: 30px;">
-    <h1 style="color: #0f172a; margin-bottom: 5px;">Your Vector Month in Review</h1>
+    <h1 style="color: #0f172a; margin-bottom: 5px;">Your Shiny Jets Month in Review</h1>
     <p style="color: #6b7280; margin: 0;">${monthName}</p>
   </div>
 
@@ -172,7 +172,7 @@ export async function GET(request) {
         await getResend().emails.send({
           from: 'Vector <noreply@vectorav.ai>',
           to: detailer.email,
-          subject: `Your Vector Month in Review - ${monthName}`,
+          subject: `Your Shiny Jets Month in Review - ${monthName}`,
           html: emailHtml,
         });
 

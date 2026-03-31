@@ -50,7 +50,7 @@ function resetEmailHtml(resetLink) {
     </div>
   </div>
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 12px;">
-    <p style="margin: 0;">Powered by <strong>Vector</strong> - Aircraft Detailing Software</p>
+    <p style="margin: 0;">Powered by <strong>Shiny Jets CRM</strong></p>
   </div>
 </body>
 </html>`.trim();

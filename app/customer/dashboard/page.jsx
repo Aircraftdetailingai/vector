@@ -297,7 +297,7 @@ export default function CustomerDashboardPage() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold flex items-center gap-2">
-                <span>&#9992;</span> {'Vector'}
+                <span>&#9992;</span> {'Shiny Jets CRM'}
               </h1>
               <p className="text-blue-200 text-sm mt-1">{'Customer'} Portal</p>
             </div>
@@ -413,7 +413,7 @@ export default function CustomerDashboardPage() {
             {!data?.activeQuotes?.length && !data?.upcomingJobs?.length && (
               <div className="bg-white rounded-lg shadow p-12 text-center">
                 <div className="text-6xl mb-4">&#9992;</div>
-                <h2 className="text-xl font-semibold text-gray-700">Welcome to {'Vector'}</h2>
+                <h2 className="text-xl font-semibold text-gray-700">Welcome to {'Shiny Jets CRM'}</h2>
                 <p className="text-gray-500 mt-2">Your quotes and appointments will appear here.</p>
               </div>
             )}

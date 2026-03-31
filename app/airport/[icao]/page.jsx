@@ -19,7 +19,7 @@ export async function generateMetadata({ params }) {
   if (!airport) {
     return { title: 'Airport Not Found | Shiny Jets CRM' };
   }
-  const title = `Aircraft Detailing at ${airport.name} (${airport.icao}) | Vector`;
+  const title = `Aircraft Detailing at ${airport.name} (${airport.icao}) | Shiny Jets CRM`;
   const description = `Find professional aircraft detailing services at ${airport.name} in ${airport.city}, ${airport.state}. Browse verified aviation detailers, request quotes, and keep your aircraft looking its best at ${airport.icao}.`;
   return {
     title,

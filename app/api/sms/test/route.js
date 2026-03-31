@@ -33,7 +33,7 @@ export async function GET(request) {
     if (!phone.startsWith('+')) phone = '+' + phone;
 
     const message = await client.messages.create({
-      body: 'Vector CRM Test - SMS is working! \u{1F6E9}\u{FE0F}',
+      body: 'Shiny Jets CRM Test - SMS is working! \u{1F6E9}\u{FE0F}',
       from: process.env.TWILIO_PHONE_NUMBER,
       to: phone
     });

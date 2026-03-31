@@ -149,7 +149,7 @@
     "brightwork": "Brightwork"
   },
   "dashboard": {
-    "title": "Vector",
+    "title": "Shiny Jets CRM",
     "selectAircraft": "Selecteer vliegtuig",
     "manufacturer": "Fabrikant",
     "searchModels": "Modellen zoeken...",
@@ -638,7 +638,7 @@
     "invested": "geïnvesteerd"
   },
   "crew": {
-    "title": "Vector Crew",
+    "title": "Shiny Jets Crew",
     "leadTech": "Hoofdtechnicus",
     "activeJobs": "Actieve opdrachten",
     "noActiveJobs": "Geen actieve opdrachten",
@@ -774,7 +774,7 @@
     "loadingPhotos": "Foto's laden..."
   },
   "timeLog": {
-    "vectorTimeLog": "Vector Tijdregistratie",
+    "vectorTimeLog": "Shiny Jets Tijdregistratie",
     "logYourWorkHours": "Registreer uw werkuren",
     "enterYourPin": "Voer uw PIN in",
     "invalidPin": "Ongeldige PIN. Probeer het opnieuw.",
@@ -1033,7 +1033,7 @@
   },
   "tour": {
     "createFirstQuote": "Maak uw eerste offerte",
-    "createFirstQuoteDesc": "Selecteer een vliegtuig, kies diensten en genereer in enkele seconden een professionele offerte. Dit is het hart van Vector.",
+    "createFirstQuoteDesc": "Selecteer een vliegtuig, kies diensten en genereer in enkele seconden een professionele offerte. Dit is het hart van Shiny Jets CRM.",
     "addServicesRates": "Diensten & tarieven toevoegen",
     "addServicesRatesDesc": "Stel de diensten in die u aanbiedt met uw prijzen. Ga naar Instellingen om uw dienstenmenu, uurtarieven en pakketten te configureren.",
     "viewCalendar": "Bekijk uw kalender",
@@ -1132,7 +1132,7 @@
   "roi": {
     "title": "ROI Dashboard",
     "shareTestimonial": "Wilt u een korte aanbeveling delen?",
-    "testimonialPlaceholder": "Vertel ons wat u geweldig vindt aan Vector... (optioneel)",
+    "testimonialPlaceholder": "Vertel ons wat u geweldig vindt aan Shiny Jets CRM... (optioneel)",
     "bonusPoints": "+{points} bonuspunten",
     "maybeLater": "Misschien later",
     "submitting": "Verzenden..."
@@ -1297,7 +1297,7 @@
     "liveModeWarning": "Live-modus verwerkt echte betalingen",
     "liveModeWarningDesc": "Klanten worden met echt geld belast. Zorg ervoor dat uw Stripe-account volledig geverifieerd is en uw diensten/prijzen correct zijn.",
     "switchingMode": "Modus wisselen...",
-    "platformFeeDesc": "Vector rekent een platformkosten van {rate} per opdracht. Kies wie ze betaalt.",
+    "platformFeeDesc": "Shiny Jets CRM rekent een platformkosten van {rate} per opdracht. Kies wie ze betaalt.",
     "iAbsorbFee": "Ik absorbeer de kosten",
     "iAbsorbFeeDesc": "De kosten worden afgetrokken van uw uitbetaling. De klant ziet alleen de offerteprijs.",
     "passFeeDesc": "Een \"Servicekosten\" regelitem wordt toegevoegd aan de offerte van de klant. U ontvangt het volledige offertebedrag.",
@@ -1365,7 +1365,7 @@
     "every6Months": "Elke 6 maanden",
     "every12Months": "Elke 12 maanden",
     "referralProgram": "Verwijzingsprogramma",
-    "referralDesc": "Nodig andere detailers uit voor Vector. U krijgt 1 maand gratis per aanmelding, zij krijgen een proefperiode van 30 dagen.",
+    "referralDesc": "Nodig andere detailers uit voor Shiny Jets CRM. U krijgt 1 maand gratis per aanmelding, zij krijgen een proefperiode van 30 dagen.",
     "loadingReferral": "Verwijzingsgegevens laden...",
     "yourReferralLink": "Uw verwijzingslink",
     "generating": "Genereren...",

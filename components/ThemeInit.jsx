@@ -16,7 +16,7 @@ export default function ThemeInit() {
       if (stored) {
         const u = JSON.parse(stored);
         if (u.theme_primary || u.portal_theme) {
-          applyFullTheme(u.portal_theme || 'dark', u.theme_primary || '#C9A84C');
+          applyFullTheme(u.portal_theme || 'dark', u.theme_primary || '#007CB1');
         }
       }
     } catch {}
@@ -29,7 +29,7 @@ export default function ThemeInit() {
         .then(data => {
           if (!data) return;
           const mode = data.portal_theme || 'dark';
-          const primary = data.theme_primary || '#C9A84C';
+          const primary = data.theme_primary || '#007CB1';
           applyFullTheme(mode, primary);
           // Update localStorage so next page load is instant
           try {

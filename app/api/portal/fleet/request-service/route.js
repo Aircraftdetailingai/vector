@@ -138,7 +138,7 @@ export async function POST(request) {
             body: new URLSearchParams({
               From: fromNumber,
               To: routedDetailer.phone,
-              Body: `New fleet service request from ${customerName} for ${aircraftLabel} at ${location || 'N/A'}. Check Vector.`,
+              Body: `New fleet service request from ${customerName} for ${aircraftLabel} at ${location || 'N/A'}. Check your dashboard.`,
             }).toString(),
           });
         }

@@ -21,7 +21,7 @@ if (firebaseConfig.apiKey) {
   messaging.onBackgroundMessage((payload) => {
     console.log('Received background message:', payload);
 
-    const notificationTitle = payload.notification?.title || 'Vector';
+    const notificationTitle = payload.notification?.title || 'Shiny Jets CRM';
     const notificationOptions = {
       body: payload.notification?.body || '',
       icon: '/icon-192.png',

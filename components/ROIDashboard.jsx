@@ -63,7 +63,7 @@ export default function ROIDashboard({ compact = false }) {
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <span className="text-xl">📈</span>
-            <h3 className="font-semibold text-emerald-900">Your Vector ROI</h3>
+            <h3 className="font-semibold text-emerald-900">Your Shiny Jets ROI</h3>
           </div>
           <a
             href="/roi"
@@ -122,7 +122,7 @@ export default function ROIDashboard({ compact = false }) {
       {/* Main ROI Card */}
       <div className="bg-gradient-to-br from-emerald-500 to-green-600 rounded-xl p-6 text-white">
         <h2 className="text-xl font-semibold mb-1 flex items-center gap-2">
-          <span>📈</span> Your Vector ROI
+          <span>📈</span> Your Shiny Jets ROI
         </h2>
         <p className="text-emerald-100 text-sm mb-6">
           {period === 'month' ? 'This Month' : period === 'year' ? 'This Year' : 'Since You Joined'}
@@ -228,7 +228,7 @@ export default function ROIDashboard({ compact = false }) {
       {/* Baseline Comparison */}
       {baseline && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-6">
-          <h3 className="font-semibold text-blue-900 mb-4">Before vs After Vector</h3>
+          <h3 className="font-semibold text-blue-900 mb-4">Before vs After Shiny Jets CRM</h3>
           <div className="grid grid-cols-2 gap-4">
             {baseline.quote_creation_time_minutes && m.avgQuoteCreationMinutes && (
               <div className="bg-white rounded-lg p-4">

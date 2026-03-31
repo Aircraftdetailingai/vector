@@ -25,7 +25,7 @@ export default function PushNotifications() {
   const setupForegroundHandler = () => {
     onForegroundMessage((payload) => {
       if (Notification.permission === 'granted') {
-        new Notification(payload.notification?.title || 'Vector', {
+        new Notification(payload.notification?.title || 'Shiny Jets CRM', {
           body: payload.notification?.body,
           icon: '/icon-192.png',
         });

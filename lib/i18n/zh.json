@@ -149,7 +149,7 @@
     "brightwork": "金属亮面处理"
   },
   "dashboard": {
-    "title": "Vector",
+    "title": "Shiny Jets CRM",
     "selectAircraft": "选择飞机",
     "manufacturer": "制造商",
     "searchModels": "搜索机型...",
@@ -638,7 +638,7 @@
     "invested": "已投资"
   },
   "crew": {
-    "title": "Vector 团队",
+    "title": "Shiny Jets 团队",
     "leadTech": "首席技师",
     "activeJobs": "进行中的工单",
     "noActiveJobs": "无进行中的工单",
@@ -774,7 +774,7 @@
     "loadingPhotos": "加载照片..."
   },
   "timeLog": {
-    "vectorTimeLog": "Vector 工时记录",
+    "vectorTimeLog": "Shiny Jets 工时记录",
     "logYourWorkHours": "记录您的工作时间",
     "enterYourPin": "输入您的 PIN 码",
     "invalidPin": "PIN 码无效，请重试。",
@@ -1033,7 +1033,7 @@
   },
   "tour": {
     "createFirstQuote": "创建您的第一个报价",
-    "createFirstQuoteDesc": "选择飞机、选择服务，几秒钟内即可生成专业报价。这是 Vector 的核心功能。",
+    "createFirstQuoteDesc": "选择飞机、选择服务，几秒钟内即可生成专业报价。这是 Shiny Jets CRM 的核心功能。",
     "addServicesRates": "添加服务和费率",
     "addServicesRatesDesc": "设置您提供的服务及定价。前往设置配置您的服务菜单、时薪和套餐。",
     "viewCalendar": "查看您的日历",
@@ -1132,7 +1132,7 @@
   "roi": {
     "title": "投资回报仪表盘",
     "shareTestimonial": "愿意分享一段使用感言吗？",
-    "testimonialPlaceholder": "告诉我们您喜欢 Vector 的哪些方面...（可选）",
+    "testimonialPlaceholder": "告诉我们您喜欢 Shiny Jets CRM 的哪些方面...（可选）",
     "bonusPoints": "+{points} 额外积分",
     "maybeLater": "以后再说",
     "submitting": "提交中..."
@@ -1297,7 +1297,7 @@
     "liveModeWarning": "正式模式处理真实付款",
     "liveModeWarningDesc": "客户将被收取真实金额。在启用正式模式之前，请确保您的Stripe账户已完全验证，且服务/定价正确。",
     "switchingMode": "切换模式中...",
-    "platformFeeDesc": "Vector对每个工单收取{rate}的平台费。选择由谁支付。",
+    "platformFeeDesc": "Shiny Jets CRM对每个工单收取{rate}的平台费。选择由谁支付。",
     "iAbsorbFee": "我承担费用",
     "iAbsorbFeeDesc": "费用从您的付款中扣除。客户只看到报价价格。",
     "passFeeDesc": "\"服务费\"项目将添加到客户的报价单中。您将收到报价全额。",
@@ -1365,7 +1365,7 @@
     "every6Months": "每6个月",
     "every12Months": "每12个月",
     "referralProgram": "推荐计划",
-    "referralDesc": "邀请其他美容技师加入Vector。每次注册您获得1个月免费，他们获得30天试用。",
+    "referralDesc": "邀请其他美容技师加入Shiny Jets CRM。每次注册您获得1个月免费，他们获得30天试用。",
     "loadingReferral": "加载推荐数据...",
     "yourReferralLink": "您的推荐链接",
     "generating": "生成中...",

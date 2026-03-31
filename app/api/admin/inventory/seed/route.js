@@ -57,8 +57,8 @@ const SEED_REWARDS = [
     active: true,
   },
   {
-    name: 'Vector Hat',
-    description: 'Premium embroidered Vector CRM hat',
+    name: 'Shiny Jets Hat',
+    description: 'Premium embroidered Shiny Jets CRM hat',
     points_cost: 1000,
     quantity_available: 0,
     category: 'swag',
@@ -68,8 +68,8 @@ const SEED_REWARDS = [
     active: true,
   },
   {
-    name: 'Vector Polo',
-    description: 'Premium Vector CRM polo shirt',
+    name: 'Shiny Jets Polo',
+    description: 'Premium Shiny Jets CRM polo shirt',
     points_cost: 2000,
     quantity_available: 0,
     category: 'swag',

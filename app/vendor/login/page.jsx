@@ -64,7 +64,7 @@ export default function VendorLoginPage() {
         {/* Logo */}
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-white flex items-center justify-center gap-2">
-            <span>&#9992;</span> {'Vector'}
+            <span>&#9992;</span> {'Shiny Jets'}
           </h1>
           <p className="text-blue-200 mt-2">Vendor Portal</p>
         </div>

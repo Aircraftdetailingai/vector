@@ -1038,7 +1038,7 @@ export default function QuoteViewPage() {
         {stripeConnected && !isPaid && !isExpired && (
           <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[9px] leading-relaxed mt-4 text-center">
             Payments are processed securely by Stripe. All payment disputes and refund requests
-            should be directed to {detailer?.company || 'your service provider'}. Vector Aviation
+            should be directed to {detailer?.company || 'your service provider'}. Shiny Jets
             is a software platform and is not a party to this transaction.
           </p>
         )}

@@ -66,7 +66,7 @@ function ResetPasswordContent() {
       <div className="bg-white rounded-2xl shadow-lg w-full max-w-md p-8">
         <div className="flex flex-col items-center mb-6">
           <h1 className="text-2xl font-bold text-[#1e3a5f] flex items-center">
-            <span className="mr-2">&#9992;&#65039;</span> {'Vector'}
+            <span className="mr-2">&#9992;&#65039;</span> {'Shiny Jets CRM'}
           </h1>
           <p className="text-gray-500 mt-1 text-center">Set New Password</p>
         </div>
@@ -125,7 +125,7 @@ function ResetPasswordContent() {
             </form>
           </>
         )}
-        <p className="mt-6 text-xs text-gray-400 text-center">By Vector Aviation</p>
+        <p className="mt-6 text-xs text-gray-400 text-center">By Shiny Jets</p>
       </div>
     </div>
   );

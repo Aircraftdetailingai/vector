@@ -79,7 +79,7 @@ export default function VendorDashboardPage() {
           <div className="flex items-center gap-3">
             <span className="text-2xl">&#9992;</span>
             <div>
-              <h1 className="font-bold text-xl">{'Vector'} Vendor Portal</h1>
+              <h1 className="font-bold text-xl">{'Shiny Jets'} Vendor Portal</h1>
               <p className="text-blue-200 text-sm">{vendor.company_name}</p>
             </div>
           </div>
@@ -205,7 +205,7 @@ export default function VendorDashboardPage() {
               <div className="flex justify-between items-start">
                 <div>
                   <h3 className="font-semibold text-lg">{tierBenefits.name} Tier Benefits</h3>
-                  <p className="text-v-gold/10 text-sm">{tierBenefits.commission}% commission to {'Vector'}</p>
+                  <p className="text-v-gold/10 text-sm">{tierBenefits.commission}% commission to Shiny Jets</p>
                 </div>
                 {vendor.commission_tier !== 'partner' && (
                   <button
@@ -511,7 +511,7 @@ function VendorProducts() {
                   className="w-full border rounded px-3 py-2"
                 >
                   <option value="vendor">I ship orders myself</option>
-                  <option value="vector">Vector handles shipping</option>
+                  <option value="vector">Shiny Jets handles shipping</option>
                 </select>
               </div>
               <div className="flex justify-end gap-3 pt-4">
@@ -888,7 +888,7 @@ function VendorSettings({ vendor, onUpdate }) {
             >
               <h4 className="font-semibold">{tier.name}</h4>
               <p className="text-2xl font-bold text-v-gold-dim">{tier.commission}%</p>
-              <p className="text-xs text-gray-500 mb-3">commission to {'Vector'}</p>
+              <p className="text-xs text-gray-500 mb-3">commission to Shiny Jets</p>
               <ul className="text-xs space-y-1 mb-4">
                 {tier.benefits.map((b, i) => (
                   <li key={i}>&#10003; {b}</li>

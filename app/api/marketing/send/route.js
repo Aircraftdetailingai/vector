@@ -35,7 +35,7 @@ function buildCampaignHtml(campaign, detailer, unsubscribeUrl) {
 <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f3f4f6;">
   <div style="background: ${headerBg}; padding: 30px; border-radius: 12px 12px 0 0; text-align: center;">
     <div style="margin-bottom: 12px;">
-      <span style="color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">&#9992;&#65039; Vector</span>
+      <span style="color: #ffffff; font-size: 28px; font-weight: 700; letter-spacing: -0.5px;">&#9992;&#65039; Shiny Jets</span>
     </div>
     <h1 style="color: #ffffff; margin: 0; font-size: 22px; font-weight: 600;">${campaign.subject}</h1>
     ${companyName ? `<p style="color: #cbd5e1; margin: 8px 0 0 0; font-size: 14px;">from ${companyName}</p>` : ''}

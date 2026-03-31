@@ -151,7 +151,7 @@
     "brightwork": "Brightwork"
   },
   "dashboard": {
-    "title": "Vector",
+    "title": "Shiny Jets CRM",
     "selectAircraft": "Select Aircraft",
     "manufacturer": "Manufacturer",
     "selectManufacturer": "Select Manufacturer...",
@@ -681,7 +681,7 @@
     "invested": "invested"
   },
   "crew": {
-    "title": "Vector Crew",
+    "title": "Shiny Jets Crew",
     "leadTech": "Lead Tech",
     "activeJobs": "Active Jobs",
     "noActiveJobs": "No active jobs",
@@ -825,7 +825,7 @@
     "loadingPhotos": "Loading photos..."
   },
   "timeLog": {
-    "vectorTimeLog": "Vector Time Log",
+    "vectorTimeLog": "Shiny Jets Time Log",
     "logYourWorkHours": "Log your work hours",
     "enterYourPin": "Enter Your PIN",
     "invalidPin": "Invalid PIN. Please try again.",
@@ -1084,7 +1084,7 @@
   },
   "tour": {
     "createFirstQuote": "Create Your First Quote",
-    "createFirstQuoteDesc": "Select an aircraft, choose services, and generate a professional quote in seconds. This is the heart of Vector.",
+    "createFirstQuoteDesc": "Select an aircraft, choose services, and generate a professional quote in seconds. This is the heart of Shiny Jets CRM.",
     "addServicesRates": "Add Services & Rates",
     "addServicesRatesDesc": "Set up the services you offer with your pricing. Head to Settings to configure your service menu, hourly rates, and packages.",
     "viewCalendar": "View Your Calendar",
@@ -1196,7 +1196,7 @@
   "roi": {
     "title": "ROI Dashboard",
     "shareTestimonial": "Would you share a quick testimonial?",
-    "testimonialPlaceholder": "Tell us what you love about Vector... (optional)",
+    "testimonialPlaceholder": "Tell us what you love about Shiny Jets CRM... (optional)",
     "bonusPoints": "+{points} bonus points",
     "maybeLater": "Maybe Later",
     "submitting": "Submitting..."
@@ -1361,7 +1361,7 @@
     "liveModeWarning": "Live mode processes real payments",
     "liveModeWarningDesc": "Customers will be charged real money. Make sure your Stripe account is fully verified and your services/pricing are correct before enabling live mode.",
     "switchingMode": "Switching mode...",
-    "platformFeeDesc": "Vector charges a {rate} platform fee on each job. Choose who pays it.",
+    "platformFeeDesc": "Shiny Jets CRM charges a {rate} platform fee on each job. Choose who pays it.",
     "iAbsorbFee": "I absorb the fee",
     "iAbsorbFeeDesc": "Fee is deducted from your payout. Customer sees only the quote price.",
     "passFeeDesc": "A \"Service Fee\" line item is added to the customer's quote. You receive the full quote amount.",
@@ -1429,7 +1429,7 @@
     "every6Months": "Every 6 months",
     "every12Months": "Every 12 months",
     "referralProgram": "Referral Program",
-    "referralDesc": "Invite other detailers to Vector. You get 1 month free for each signup, they get a 30-day trial.",
+    "referralDesc": "Invite other detailers to Shiny Jets CRM. You get 1 month free for each signup, they get a 30-day trial.",
     "loadingReferral": "Loading referral data...",
     "yourReferralLink": "Your Referral Link",
     "generating": "Generating...",

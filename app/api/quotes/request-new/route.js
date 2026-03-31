@@ -102,7 +102,7 @@ export async function POST(request) {
             body: new URLSearchParams({
               From: fromNumber,
               To: detailer.phone,
-              Body: `New quote request! ${originalQuote.client_name || 'A customer'} wants an updated quote for ${originalQuote.aircraft_model || originalQuote.aircraft_type}. Check Vector.`
+              Body: `New quote request! ${originalQuote.client_name || 'A customer'} wants an updated quote for ${originalQuote.aircraft_model || originalQuote.aircraft_type}. Check your dashboard.`
             }).toString()
           });
         }

@@ -99,7 +99,7 @@ function ReportPDF({ type, data, detailer, startDate, endDate }) {
         <View style={s.header}>
           <View style={s.headerRow}>
             <View>
-              <Text style={s.logoText}>Vector Aviation</Text>
+              <Text style={s.logoText}>Shiny Jets</Text>
               <Text style={s.logoSub}>AIRCRAFT DETAILING</Text>
               <Text style={s.companyName}>{companyName}</Text>
               {detailer?.email && <Text style={s.companyDetail}>{detailer.email}</Text>}
@@ -363,7 +363,7 @@ export async function GET(request) {
     );
 
     const typeLabels = { revenue: 'Revenue', customers: 'Customer', services: 'Services', tax: 'Tax-Summary' };
-    const filename = `Vector-${typeLabels[type] || 'Report'}-${new Date().toISOString().slice(0, 10)}.pdf`;
+    const filename = `ShinyjetsReport-${typeLabels[type] || 'Report'}-${new Date().toISOString().slice(0, 10)}.pdf`;
 
     return new Response(buffer, {
       status: 200,

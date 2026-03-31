@@ -149,7 +149,7 @@
     "brightwork": "ブライトワーク"
   },
   "dashboard": {
-    "title": "Vector",
+    "title": "Shiny Jets CRM",
     "selectAircraft": "航空機を選択",
     "manufacturer": "メーカー",
     "searchModels": "モデルを検索...",
@@ -638,7 +638,7 @@
     "invested": "投資額"
   },
   "crew": {
-    "title": "Vector Crew",
+    "title": "Shiny Jets Crew",
     "leadTech": "リードテック",
     "activeJobs": "アクティブなジョブ",
     "noActiveJobs": "アクティブなジョブはありません",
@@ -774,7 +774,7 @@
     "loadingPhotos": "写真を読み込み中..."
   },
   "timeLog": {
-    "vectorTimeLog": "Vector タイムログ",
+    "vectorTimeLog": "Shiny Jets タイムログ",
     "logYourWorkHours": "作業時間を記録",
     "enterYourPin": "PINを入力してください",
     "invalidPin": "無効なPINです。もう一度お試しください。",
@@ -1033,7 +1033,7 @@
   },
   "tour": {
     "createFirstQuote": "最初の見積書を作成",
-    "createFirstQuoteDesc": "航空機を選択し、サービスを選んで、数秒でプロフェッショナルな見積書を作成できます。これがVectorの中核機能です。",
+    "createFirstQuoteDesc": "航空機を選択し、サービスを選んで、数秒でプロフェッショナルな見積書を作成できます。これがShiny Jets CRMの中核機能です。",
     "addServicesRates": "サービスと料金を追加",
     "addServicesRatesDesc": "提供するサービスと料金を設定しましょう。設定からサービスメニュー、時間単価、パッケージを構成できます。",
     "viewCalendar": "カレンダーを表示",
@@ -1132,7 +1132,7 @@
   "roi": {
     "title": "ROIダッシュボード",
     "shareTestimonial": "推薦コメントをいただけますか？",
-    "testimonialPlaceholder": "Vectorの良いところを教えてください...（任意）",
+    "testimonialPlaceholder": "Shiny Jets CRMの良いところを教えてください...（任意）",
     "bonusPoints": "+{points}ボーナスポイント",
     "maybeLater": "後で検討する",
     "submitting": "送信中..."
@@ -1297,7 +1297,7 @@
     "liveModeWarning": "ライブモードでは実際の支払いが処理されます",
     "liveModeWarningDesc": "お客様には実際の金額が請求されます。ライブモードを有効にする前に、Stripeアカウントが完全に認証され、サービス/料金が正しいことを確認してください。",
     "switchingMode": "モード切替中...",
-    "platformFeeDesc": "Vectorは各ジョブに{rate}のプラットフォーム手数料を請求します。誰が支払うか選択してください。",
+    "platformFeeDesc": "Shiny Jets CRMは各ジョブに{rate}のプラットフォーム手数料を請求します。誰が支払うか選択してください。",
     "iAbsorbFee": "手数料を吸収する",
     "iAbsorbFeeDesc": "手数料は支払いから差し引かれます。お客様には見積価格のみ表示されます。",
     "passFeeDesc": "「サービス手数料」の項目がお客様の見積書に追加されます。見積金額の全額を受け取ります。",
@@ -1365,7 +1365,7 @@
     "every6Months": "6ヶ月ごと",
     "every12Months": "12ヶ月ごと",
     "referralProgram": "紹介プログラム",
-    "referralDesc": "他のディテーラーをVectorに招待しましょう。登録ごとに1ヶ月無料、紹介された方は30日間のトライアルを取得できます。",
+    "referralDesc": "他のディテーラーをShiny Jets CRMに招待しましょう。登録ごとに1ヶ月無料、紹介された方は30日間のトライアルを取得できます。",
     "loadingReferral": "紹介データを読み込み中...",
     "yourReferralLink": "あなたの紹介リンク",
     "generating": "生成中...",

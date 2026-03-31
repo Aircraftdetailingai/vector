@@ -54,7 +54,7 @@ export default function FindADetailerPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <a href="/" className="flex items-center space-x-2 text-white text-xl font-bold">
             <span className="text-2xl">{'\u2708\uFE0F'}</span>
-            <span>Vector</span>
+            <span>Shiny Jets</span>
           </a>
           <div className="flex items-center space-x-4">
             <a href="/find-a-detailer" className="text-v-gold text-sm font-medium hidden sm:inline">Directory</a>

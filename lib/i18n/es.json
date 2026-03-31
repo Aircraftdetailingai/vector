@@ -149,7 +149,7 @@
     "brightwork": "Pulido de metales"
   },
   "dashboard": {
-    "title": "Vector",
+    "title": "Shiny Jets CRM",
     "selectAircraft": "Seleccionar aeronave",
     "manufacturer": "Fabricante",
     "searchModels": "Buscar modelos...",
@@ -638,7 +638,7 @@
     "invested": "invertido"
   },
   "crew": {
-    "title": "Vector Crew",
+    "title": "Shiny Jets Crew",
     "leadTech": "Tecnico lider",
     "activeJobs": "Trabajos activos",
     "noActiveJobs": "No hay trabajos activos",
@@ -774,7 +774,7 @@
     "loadingPhotos": "Cargando fotos..."
   },
   "timeLog": {
-    "vectorTimeLog": "Registro de horas Vector",
+    "vectorTimeLog": "Registro de horas Shiny Jets",
     "logYourWorkHours": "Registra tus horas de trabajo",
     "enterYourPin": "Ingresa tu PIN",
     "invalidPin": "PIN invalido. Intenta de nuevo.",
@@ -1033,7 +1033,7 @@
   },
   "tour": {
     "createFirstQuote": "Crea tu primera cotizacion",
-    "createFirstQuoteDesc": "Selecciona una aeronave, elige servicios y genera una cotizacion profesional en segundos. Este es el corazon de Vector.",
+    "createFirstQuoteDesc": "Selecciona una aeronave, elige servicios y genera una cotizacion profesional en segundos. Este es el corazon de Shiny Jets CRM.",
     "addServicesRates": "Agrega servicios y tarifas",
     "addServicesRatesDesc": "Configura los servicios que ofreces con tus precios. Ve a Configuracion para configurar tu menu de servicios, tarifas por hora y paquetes.",
     "viewCalendar": "Revisa tu calendario",
@@ -1132,7 +1132,7 @@
   "roi": {
     "title": "Panel de retorno de inversion",
     "shareTestimonial": "Compartirias un breve testimonio?",
-    "testimonialPlaceholder": "Cuentanos que te encanta de Vector... (opcional)",
+    "testimonialPlaceholder": "Cuentanos que te encanta de Shiny Jets CRM... (opcional)",
     "bonusPoints": "+{points} puntos de bonificacion",
     "maybeLater": "Quiza despues",
     "submitting": "Enviando..."
@@ -1297,7 +1297,7 @@
     "liveModeWarning": "El modo real procesa pagos reales",
     "liveModeWarningDesc": "Se cobrara dinero real a los clientes. Asegurate de que tu cuenta de Stripe este completamente verificada y que tus servicios/precios sean correctos antes de activar el modo real.",
     "switchingMode": "Cambiando modo...",
-    "platformFeeDesc": "Vector cobra una comision de plataforma del {rate} por cada trabajo. Elige quien la paga.",
+    "platformFeeDesc": "Shiny Jets CRM cobra una comision de plataforma del {rate} por cada trabajo. Elige quien la paga.",
     "iAbsorbFee": "Yo absorbo la comision",
     "iAbsorbFeeDesc": "La comision se descuenta de tu pago. El cliente solo ve el precio de la cotizacion.",
     "passFeeDesc": "Se agrega un concepto de \"Cargo por servicio\" a la cotizacion del cliente. Tu recibes el monto total de la cotizacion.",
@@ -1365,7 +1365,7 @@
     "every6Months": "Cada 6 meses",
     "every12Months": "Cada 12 meses",
     "referralProgram": "Programa de referidos",
-    "referralDesc": "Invita a otros detalladores a Vector. Tu obtienes 1 mes gratis por cada registro, ellos obtienen una prueba de 30 dias.",
+    "referralDesc": "Invita a otros detalladores a Shiny Jets CRM. Tu obtienes 1 mes gratis por cada registro, ellos obtienen una prueba de 30 dias.",
     "loadingReferral": "Cargando datos de referidos...",
     "yourReferralLink": "Tu enlace de referido",
     "generating": "Generando...",

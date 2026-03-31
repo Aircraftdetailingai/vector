@@ -875,7 +875,7 @@ export default function OnboardingPage() {
                 </svg>
               </div>
               <h2 className="font-heading text-3xl text-v-gold uppercase tracking-wider mb-2">You&apos;re All Set!</h2>
-              <p className="text-v-text-secondary mb-6">Your Vector account is ready to go</p>
+              <p className="text-v-text-secondary mb-6">Your Shiny Jets CRM account is ready to go</p>
 
               <div className="text-left space-y-3 max-w-xs mx-auto mb-6">
                 {[

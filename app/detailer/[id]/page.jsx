@@ -91,7 +91,7 @@ export default function DetailerProfilePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <a href="/" className="flex items-center space-x-2 text-white text-xl font-bold">
             <span className="text-2xl">{'\u2708\uFE0F'}</span>
-            <span>Vector</span>
+            <span>Shiny Jets</span>
           </a>
           <div className="flex items-center space-x-4">
             <a href="/find-a-detailer" className="text-gray-300 hover:text-white text-sm transition-colors">Directory</a>

@@ -55,7 +55,7 @@ export async function POST(request) {
         subject = 'The script I use when presenting quotes [Video]';
         sendEmail = true;
       } else if (messageId === 'day7_checkin') {
-        subject = "How's Vector working for you?";
+        subject = "How's Shiny Jets CRM working for you?";
         sendEmail = true;
         sendSms = true;
       } else {

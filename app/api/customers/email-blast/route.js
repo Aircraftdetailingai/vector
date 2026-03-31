@@ -59,7 +59,7 @@ export async function POST(request) {
             <p>Hi ${customer.name || 'there'},</p>
             <div style="white-space:pre-wrap;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/\n/g, '<br>')}</div>
             <hr style="margin:20px 0;border:none;border-top:1px solid #eee;">
-            <p style="color:#999;font-size:12px;">Sent by ${companyName} via Vector</p>
+            <p style="color:#999;font-size:12px;">Sent by ${companyName} via Shiny Jets CRM</p>
           </div>`,
         });
         sent++;
