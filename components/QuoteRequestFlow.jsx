@@ -31,8 +31,8 @@ const SERVICE_MAP = {
   paint:       { maintenance: ['Exterior Wash'], restoration: ['Compounding', 'Polishing', 'Orange Peel Removal'], protection: ['Wax', 'Ceramic Coating', 'Paint Sealant'] },
   brightwork:  { maintenance: ['Brightwork Cleaning', 'Bug Removal', 'Wipe Down'], restoration: ['Brightwork Polish'], protection: ['Brightwork Sealant'] },
   windows:     { maintenance: ['Window Cleaning (Glass Only)'], restoration: ['Window Polish', 'Window Compound', 'Wet Sand (Acrylic Only)'], protection: ['Approved Window Coating (Acrylic Only)'] },
-  seats:       { maintenance: ['Vacuum', 'Wipe Down', 'Seatbelt Dressing'], restoration: [], protection: ['Leather Conditioning'] }, // restoration filled dynamically based on seat type
-  carpets:     { maintenance: ['Vacuum'], restoration: ['Carpet Extraction', 'Encapsulation', 'Carpet Shampoo'], protection: [] },
+  seats:       { maintenance: ['Seatbelt Dressing'], restoration: [], protection: ['Leather Conditioning'], _note: 'Vacuum & wipe down included with Maintenance Wash' },
+  carpets:     { maintenance: [], restoration: ['Carpet Extraction', 'Encapsulation', 'Carpet Shampoo'], protection: [], _note: 'Vacuum included with Maintenance Wash' },
   deice_boots: { maintenance: ['De-ice Boot Cleaning', 'Boot Inspection'], restoration: ['Boot Treatment', 'Boot Reconditioning'], protection: ['Boot Protectant'] },
 };
 
@@ -344,17 +344,17 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
             <div className="space-y-4">
               <button onClick={() => {
                 setQuickSelect('quick_turn');
-                set('service_text', 'Quick Turn — between flights, fast turnaround');
+                set('service_text', 'Quick Turn — Exterior rinse, Interior vacuum, Window wipe, Trash removal');
                 setStep(5);
               }}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
                 <p className="text-white font-medium"><span className="mr-2">&#9889;</span>Quick Turn</p>
-                <p className="text-white/40 text-xs mt-1">Between flights, fast turnaround</p>
+                <p className="text-white/40 text-xs mt-1">Exterior rinse, interior vacuum, window wipe, trash removal</p>
               </button>
               <button onClick={() => { setQuickSelect('maint_wash'); }}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
                 <p className="text-white font-medium"><span className="mr-2 text-[#007CB1]">&#9679;</span>Maintenance Wash</p>
-                <p className="text-white/40 text-xs mt-1">Regular scheduled wash</p>
+                <p className="text-white/40 text-xs mt-1">Full exterior wash and interior vacuum</p>
               </button>
               <button onClick={() => { setQuickSelect('detail'); }}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
@@ -369,7 +369,10 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         {step === 4 && serviceMode === 'options' && quickSelect === 'maint_wash' && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-2">Maintenance Wash</h2>
-            <p className="text-white/40 text-xs mb-6">Want to add anything else?</p>
+            <div className="bg-white/5 border border-white/10 rounded-lg p-3 mb-4">
+              <p className="text-white/50 text-xs">Includes: Exterior wash and interior vacuum</p>
+            </div>
+            <p className="text-white/40 text-xs mb-4">Want to add anything else?</p>
             <div className="space-y-3">
               {[
                 { key: 'brightwork', label: 'Brightwork Polish' },
