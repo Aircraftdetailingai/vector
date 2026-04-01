@@ -117,8 +117,15 @@ function NewQuoteContent() {
   useEffect(() => {
     if (!pendingAircraftMatch || models.length === 0) return;
     const headers = { Authorization: `Bearer ${localStorage.getItem('vector_token')}` };
-    const q = pendingAircraftMatch.model.toLowerCase();
+    let q = pendingAircraftMatch.model.toLowerCase().trim();
+    // FAA model code mappings
+    const faaMap = { 'g-iv': 'g4', 'g-ivsp': 'g4', 'g-v': 'g550', 'gv-sp': 'g550', 'g-vi': 'g650', 'g-200': 'g280', 'giv-x': 'g450' };
+    if (faaMap[q]) q = faaMap[q];
+    // Strip common suffixes
+    const cleaned = q.replace(/[-\s]/g, '');
+
     const match = models.find(m => m.model.toLowerCase() === q)
+      || models.find(m => m.model.toLowerCase().replace(/[-\s]/g, '') === cleaned)
       || models.find(m => m.model.toLowerCase().includes(q) || q.includes(m.model.toLowerCase()));
     if (match) {
       fetch(`/api/aircraft/${match.id}`, { headers })
