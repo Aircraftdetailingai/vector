@@ -66,6 +66,7 @@ function NewQuoteContent() {
   const [bufferMinutes, setBufferMinutes] = useState(60);
   const [excludeWeekends, setExcludeWeekends] = useState(true);
   const [leadContext, setLeadContext] = useState(null); // { service, notes, photos, aircraft, tail, airport }
+  const [pendingAircraftMatch, setPendingAircraftMatch] = useState(null); // { manufacturer, model, id }
   const [customProductRatios, setCustomProductRatios] = useState(null);
   const [serviceProductLinks, setServiceProductLinks] = useState([]);
   const [serviceEquipmentLinks, setServiceEquipmentLinks] = useState([]);
@@ -108,8 +109,25 @@ function NewQuoteContent() {
       }
     };
     fetchModels();
-    setSelectedAircraft(null);
+    // Only clear aircraft if not doing a prefill
+    if (!pendingAircraftMatch) setSelectedAircraft(null);
   }, [selectedManufacturer]);
+
+  // Auto-select model after models list loads (from prefill)
+  useEffect(() => {
+    if (!pendingAircraftMatch || models.length === 0) return;
+    const headers = { Authorization: `Bearer ${localStorage.getItem('vector_token')}` };
+    const q = pendingAircraftMatch.model.toLowerCase();
+    const match = models.find(m => m.model.toLowerCase() === q)
+      || models.find(m => m.model.toLowerCase().includes(q) || q.includes(m.model.toLowerCase()));
+    if (match) {
+      fetch(`/api/aircraft/${match.id}`, { headers })
+        .then(r => r.ok ? r.json() : null)
+        .then(data => { if (data?.aircraft) setSelectedAircraft(data.aircraft); })
+        .catch(() => {});
+    }
+    setPendingAircraftMatch(null);
+  }, [models, pendingAircraftMatch]);
 
   // Auth + fetch services/packages/addons/minimum fee
   useEffect(() => {
@@ -216,36 +234,23 @@ function NewQuoteContent() {
             });
           }
 
-          // Fuzzy match aircraft
+          // Match aircraft: find manufacturer and model from lead text
           if (prefill.aircraft) {
-            fetch('/api/aircraft/models', { headers })
-              .then(r => r.ok ? r.json() : { models: [] })
-              .then(d => {
-                const models = d.models || [];
-                const q = prefill.aircraft.toLowerCase().trim();
-                let match = models.find(m => `${m.manufacturer} ${m.model}`.toLowerCase() === q);
-                if (!match) match = models.find(m => m.model.toLowerCase() === q);
-                if (!match) {
-                  const parts = q.split(/\s+/);
-                  if (parts.length >= 2) {
-                    const mfr = parts[0];
-                    const mdl = parts.slice(1).join(' ');
-                    match = models.find(m => m.manufacturer.toLowerCase().includes(mfr) && m.model.toLowerCase().includes(mdl));
-                    if (!match) match = models.find(m => m.model.toLowerCase().includes(mdl));
-                  }
-                }
-                if (!match) match = models.find(m => q.split(/\s+/).every(w => `${m.manufacturer} ${m.model}`.toLowerCase().includes(w)));
-                if (match) {
-                  // Set manufacturer dropdown first — this triggers model list to reload
-                  setSelectedManufacturer(match.manufacturer);
-                  // Then fetch full aircraft data and select it
-                  fetch(`/api/aircraft/${match.id}`, { headers })
-                    .then(r => r.ok ? r.json() : null)
-                    .then(data => { if (data?.aircraft) setSelectedAircraft(data.aircraft); })
-                    .catch(() => {});
-                }
-              })
-              .catch(() => {});
+            const q = prefill.aircraft.toLowerCase().trim();
+            const parts = q.split(/\s+/);
+            // Try to identify manufacturer (first word) and model (rest)
+            if (parts.length >= 2) {
+              // Capitalize first word as manufacturer guess
+              const mfrGuess = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
+              const mdlGuess = parts.slice(1).join(' ');
+              // Set manufacturer dropdown — models will load via useEffect
+              setSelectedManufacturer(mfrGuess);
+              // Store pending model to auto-select once models load
+              setPendingAircraftMatch({ manufacturer: mfrGuess, model: mdlGuess });
+            } else if (parts.length === 1) {
+              // Single word — could be model name, search all
+              setPendingAircraftMatch({ manufacturer: '', model: parts[0] });
+            }
           }
         }
         localStorage.removeItem('quote_prefill');
