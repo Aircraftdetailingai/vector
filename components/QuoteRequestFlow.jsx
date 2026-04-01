@@ -12,37 +12,82 @@ const AREAS = [
   { key: 'deice_boots', label: 'De-ice Boots' },
 ];
 
-const LEVELS_BY_AREA = {
-  paint:       ['maintenance', 'restoration', 'protection'],
-  brightwork:  ['maintenance', 'restoration', 'protection'],
-  windows:     ['maintenance', 'restoration', 'protection'],
-  seats:       ['maintenance', 'restoration', 'protection'],
-  carpets:     ['maintenance', 'restoration'], // no protection for carpets
-  deice_boots: ['maintenance', 'restoration', 'protection'],
+// Condition questions per area — customer describes what they SEE
+const CONDITION_QUESTIONS = {
+  paint: {
+    question: 'How does the paint look?',
+    options: [
+      { key: 'good', label: 'Looks good, just needs a wash', services: ['Exterior Wash'], tier: 'maintenance' },
+      { key: 'dull', label: 'Some dullness or light scratches', services: ['One-Step Polish'], tier: 'restoration' },
+      { key: 'heavy', label: 'Significant oxidation, heavy scratches or swirl marks', services: ['Compounding', 'Two-Step Polish', 'Paint Correction'], tier: 'restoration' },
+      { key: 'unsure', label: 'Not sure \u2014 detailer should assess', services: ['Detailer Assessment'], tier: 'restoration' },
+    ],
+  },
+  brightwork: {
+    question: 'How does the brightwork look?',
+    options: [
+      { key: 'shiny', label: 'Shiny, just needs cleaning', services: ['Wipe Down & Bug Removal'], tier: 'maintenance' },
+      { key: 'tarnish', label: 'Some tarnish or dullness', services: ['Brightwork Polish'], tier: 'restoration' },
+      { key: 'heavy', label: 'Heavy tarnish or pitting', services: ['Brightwork Polish \u2014 multiple steps'], tier: 'restoration' },
+      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
+    ],
+  },
+  windows: {
+    question: 'How do the windows look?',
+    options: [
+      { key: 'clear', label: 'Clear, just needs cleaning', services: ['Window Cleaning (glass only)'], tier: 'maintenance' },
+      { key: 'spots', label: 'Water spots or light haze', services: ['Window Polish (acrylic only)'], tier: 'restoration' },
+      { key: 'scratches', label: 'Scratches or significant cloudiness', services: ['Compound / Wet Sand (acrylic only)'], tier: 'restoration' },
+      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
+    ],
+  },
+  seats: {
+    question: 'What condition are the seats in?',
+    options: [
+      { key: 'good', label: 'Good condition, just need cleaning', services: ['Wipe Down', 'Seatbelt Dressing'], tier: 'maintenance' },
+      { key: 'stained', label: 'Some staining or light wear', services: [], tier: 'restoration', needsSeatType: true },
+      { key: 'damaged', label: 'Significant staining, cracking or damage', services: [], tier: 'restoration', needsSeatType: true },
+      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
+    ],
+  },
+  carpets: {
+    question: 'How are the carpets?',
+    options: [
+      { key: 'fine', label: 'Fine, just need a vacuum', services: ['Vacuum'], tier: 'maintenance' },
+      { key: 'stained', label: 'Some staining or odor', services: ['Carpet Extraction'], tier: 'restoration' },
+      { key: 'heavy', label: 'Heavy staining or soiling', services: ['Carpet Extraction', 'Encapsulation', 'Carpet Shampoo'], tier: 'restoration' },
+      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
+    ],
+  },
+  deice_boots: {
+    question: 'What condition are the de-ice boots in?',
+    options: [
+      { key: 'good', label: 'Good condition, just need cleaning', services: ['Boot Cleaning', 'Boot Inspection'], tier: 'maintenance' },
+      { key: 'cracking', label: 'Some cracking or wear', services: ['Boot Treatment', 'Boot Reconditioning'], tier: 'restoration' },
+      { key: 'deteriorated', label: 'Significant deterioration', services: ['Boot Reconditioning'], tier: 'restoration' },
+      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
+    ],
+  },
 };
 
-const LEVEL_INFO = {
-  maintenance: { label: 'Maintenance', desc: 'Regular upkeep, good condition', color: '#007CB1' },
-  restoration: { label: 'Restoration', desc: 'Needs work, visible wear', color: '#EAB308' },
-  protection:  { label: 'Protection', desc: 'Seal and protect after cleaning', color: '#22C55E' },
+// Seat-type-specific services for restoration tier
+const SEAT_TYPE_SERVICES = {
+  leather: { stained: ['Leather Clean & Condition'], damaged: ['Leather Restoration', 'Dye Treatment'] },
+  fabric:  { stained: ['Fabric Extraction / Steam'], damaged: ['Fabric Extraction / Steam', 'Stain Treatment'] },
+  mixed:   { stained: ['Leather Clean & Condition', 'Fabric Extraction / Steam'], damaged: ['Leather Restoration', 'Fabric Extraction / Steam'] },
 };
 
-const SERVICE_MAP = {
-  paint:       { maintenance: ['Exterior Wash'], restoration: ['Compounding', 'Polishing', 'Orange Peel Removal'], protection: ['Wax', 'Ceramic Coating', 'Paint Sealant'] },
-  brightwork:  { maintenance: ['Wipe Down & Bug Removal'], restoration: ['Brightwork Polish'], protection: ['Brightwork Sealant'] },
-  windows:     { maintenance: ['Window Cleaning (Glass Only)'], restoration: ['Window Polish', 'Window Compound', 'Wet Sand (Acrylic Only)'], protection: ['Approved Window Coating (Acrylic Only)'] },
-  seats:       { maintenance: ['Seatbelt Dressing'], restoration: [], protection: ['Leather Conditioning'], _note: 'Vacuum & wipe down included with Maintenance Wash' },
-  carpets:     { maintenance: [], restoration: ['Carpet Extraction', 'Encapsulation', 'Carpet Shampoo'], protection: [], _note: 'Vacuum included with Maintenance Wash' },
-  deice_boots: { maintenance: ['De-ice Boot Cleaning', 'Boot Inspection'], restoration: ['Boot Treatment', 'Boot Reconditioning'], protection: ['Boot Protectant'] },
-};
-
-const SEATS_RESTORATION = {
-  leather: ['Leather Clean & Condition'],
-  fabric: ['Fabric Extraction/Steam'],
+// Protection options — only offered after restoration areas
+const PROTECTION_OPTIONS = {
+  paint:       [{ key: 'wax', label: 'Wax' }, { key: 'ceramic', label: 'Ceramic Coating' }, { key: 'sealant', label: 'Paint Sealant' }],
+  brightwork:  [{ key: 'bw_sealant', label: 'Brightwork Sealant' }],
+  windows:     [{ key: 'win_coat', label: 'Approved Window Coating (acrylic only)' }],
+  seats:       [{ key: 'leather_cond', label: 'Leather Conditioning' }],
+  deice_boots: [{ key: 'boot_prot', label: 'Boot Protectant' }],
 };
 
 const DISCLAIMERS = {
-  windows_restoration: 'Window restoration on pressurized aircraft requires coordination with a licensed A&P mechanic. Detailer will advise upon inspection.',
+  windows_restoration: 'Window restoration on pressurized aircraft requires coordination with a licensed A&P mechanic. Service scope determined after inspection.',
   windows_protection: 'Window coatings are for acrylic windows only. Glass windshields require manufacturer-approved products.',
 };
 
@@ -60,13 +105,16 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
 
   // Smart service selection
   const [selectedAreas, setSelectedAreas] = useState([]);
-  const [areaLevels, setAreaLevels] = useState({});
+  const [areaConditions, setAreaConditions] = useState({}); // { paint: { key, label, services, tier }, ... }
   const [currentAreaIdx, setCurrentAreaIdx] = useState(0);
   const [showRecommendation, setShowRecommendation] = useState(false);
+  const [showProtectionOffer, setShowProtectionOffer] = useState(false);
+  const [protectionSelections, setProtectionSelections] = useState({});
   const [areasConfirmed, setAreasConfirmed] = useState(false);
   const [quickSelect, setQuickSelect] = useState(null);
   const [washAddons, setWashAddons] = useState([]);
-  const [seatType, setSeatType] = useState(null); // 'leather' | 'fabric'
+  const [seatType, setSeatType] = useState(null);
+  const [askingSeatType, setAskingSeatType] = useState(false);
 
   const [data, setData] = useState({
     manufacturer: '', model: '', model_full: '',
@@ -80,9 +128,11 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   const goNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
   const goBack = () => {
     if (step === 4) {
-      if (showRecommendation) { setShowRecommendation(false); setCurrentAreaIdx(selectedAreas.length - 1); setAreaLevels(prev => { const n = { ...prev }; delete n[selectedAreas[selectedAreas.length - 1]]; return n; }); return; }
-      if (areasConfirmed && currentAreaIdx > 0) { setCurrentAreaIdx(i => i - 1); setAreaLevels(prev => { const n = { ...prev }; delete n[selectedAreas[currentAreaIdx - 1]]; return n; }); return; }
-      if (areasConfirmed) { setAreasConfirmed(false); setAreaLevels({}); setCurrentAreaIdx(0); return; }
+      if (showProtectionOffer) { setShowProtectionOffer(false); return; }
+      if (showRecommendation) { setShowRecommendation(false); setShowProtectionOffer(false); return; }
+      if (askingSeatType) { setAskingSeatType(false); const n = { ...areaConditions }; delete n.seats; setAreaConditions(n); return; }
+      if (areasConfirmed && currentAreaIdx > 0) { setCurrentAreaIdx(i => i - 1); const n = { ...areaConditions }; delete n[selectedAreas[currentAreaIdx - 1]]; setAreaConditions(n); return; }
+      if (areasConfirmed) { setAreasConfirmed(false); setAreaConditions({}); setCurrentAreaIdx(0); return; }
       if (quickSelect === 'maint_wash') { setQuickSelect(null); setWashAddons([]); return; }
       if (quickSelect === 'detail') { setQuickSelect(null); setSelectedAreas([]); return; }
       if (quickSelect) { setQuickSelect(null); return; }
@@ -108,34 +158,44 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
       .finally(() => setLoadingModels(false));
   }, [data.manufacturer]);
 
-  // Build recommended services from area+level selections
+  // Build recommended services from condition selections
   const getRecommendedServices = () => {
     const services = [];
     for (const area of selectedAreas) {
-      const level = areaLevels[area];
-      if (!level || !SERVICE_MAP[area]) continue;
-      const mapped = SERVICE_MAP[area][level] || [];
-      services.push(...mapped);
-      // Seats: add type-specific restoration services
-      if (area === 'seats' && (level === 'restoration' || level === 'protection') && seatType) {
-        services.push(...(SEATS_RESTORATION[seatType] || []));
+      const cond = areaConditions[area];
+      if (!cond) continue;
+      services.push(...(cond.services || []));
+      // Seat-type-specific services
+      if (area === 'seats' && cond.needsSeatType && seatType && SEAT_TYPE_SERVICES[seatType]) {
+        services.push(...(SEAT_TYPE_SERVICES[seatType][cond.key] || []));
       }
-      // Protection auto-includes restoration prep
-      if (level === 'protection' && SERVICE_MAP[area].restoration) {
-        const restorationServices = SERVICE_MAP[area].restoration;
-        for (const s of restorationServices) {
-          if (!services.includes(s)) services.push(s);
-        }
+    }
+    // Add protection selections
+    for (const [area, opts] of Object.entries(protectionSelections)) {
+      for (const opt of opts) {
+        const pOpt = PROTECTION_OPTIONS[area]?.find(p => p.key === opt);
+        if (pOpt) services.push(pOpt.label);
       }
     }
     return [...new Set(services)];
   };
 
+  // Check if any area has restoration tier (for protection offer)
+  const hasRestorationAreas = () => {
+    return selectedAreas.some(a => areaConditions[a]?.tier === 'restoration');
+  };
+
+  // Areas eligible for protection
+  const protectionEligibleAreas = () => {
+    return selectedAreas.filter(a => areaConditions[a]?.tier === 'restoration' && PROTECTION_OPTIONS[a]?.length > 0);
+  };
+
   // Get applicable disclaimers
   const getDisclaimers = () => {
     const disclaimers = [];
-    if (areaLevels.windows === 'restoration') disclaimers.push(DISCLAIMERS.windows_restoration);
-    if (areaLevels.windows === 'protection') disclaimers.push(DISCLAIMERS.windows_protection);
+    const winCond = areaConditions.windows;
+    if (winCond && winCond.tier === 'restoration') disclaimers.push(DISCLAIMERS.windows_restoration);
+    if (protectionSelections.windows?.length > 0) disclaimers.push(DISCLAIMERS.windows_protection);
     return disclaimers;
   };
 
@@ -388,7 +448,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                 </button>
               ))}
             </div>
-            <div className="mt-auto pt-6 space-y-3">
+            <div className="mt-auto pt-6">
               <Btn onClick={() => {
                 const addons = washAddons.map(k => ({ brightwork: 'Brightwork Polish', windows: 'Window Cleaning', interior: 'Interior Wipe Down', wheels: 'Wheel & Tire Clean' })[k]).filter(Boolean);
                 set('service_text', ['Maintenance Wash', ...addons].join(', '));
@@ -397,18 +457,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                 {washAddons.length > 0 ? `Continue with ${washAddons.length + 1} services` : 'Just the wash'}
               </Btn>
             </div>
-          </div>
-        )}
-
-        {/* "Detailing" → area selection (existing flow) */}
-        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && !areasConfirmed && (
-          <div className="flex-1 flex flex-col">
-            <h2 className="text-xl font-light text-white mb-2">Which areas need attention?</h2>
-            <p className="text-white/40 text-xs mb-6">Select all that apply</p>
-            <AreaSelector selectedAreas={selectedAreas} onToggle={(key) => {
-              setSelectedAreas(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
-            }} onSelectAll={() => setSelectedAreas(AREAS.map(a => a.key))}
-            onContinue={() => { setAreasConfirmed(true); setCurrentAreaIdx(0); }} />
           </div>
         )}
 
@@ -427,104 +475,157 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           </div>
         )}
 
-        {/* SCREEN B: Seat type question (if seats selected and restoration/protection chosen) */}
-        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && !showRecommendation && currentArea === 'seats' && !seatType && areaLevels[currentArea] && (areaLevels[currentArea] === 'restoration' || areaLevels[currentArea] === 'protection') && (
+        {/* "Detailing" → area selection */}
+        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && !areasConfirmed && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-2">Which areas need attention?</h2>
+            <p className="text-white/40 text-xs mb-6">Select all that apply</p>
+            <AreaSelector selectedAreas={selectedAreas} onToggle={(key) => {
+              setSelectedAreas(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
+            }} onSelectAll={() => setSelectedAreas(AREAS.map(a => a.key))}
+            onContinue={() => { setAreasConfirmed(true); setCurrentAreaIdx(0); }} />
+          </div>
+        )}
+
+        {/* Condition question for current area */}
+        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && !askingSeatType && !showRecommendation && !showProtectionOffer && currentArea && !areaConditions[currentArea] && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-2">{CONDITION_QUESTIONS[currentArea]?.question}</h2>
+            <p className="text-white/40 text-xs mb-6">Area {currentAreaIdx + 1} of {selectedAreas.length}</p>
+            <div className="space-y-3">
+              {(CONDITION_QUESTIONS[currentArea]?.options || []).map(opt => (
+                <button key={opt.key} onClick={() => {
+                  setAreaConditions(prev => ({ ...prev, [currentArea]: opt }));
+                  // If seats need type question
+                  if (currentArea === 'seats' && opt.needsSeatType) {
+                    setAskingSeatType(true);
+                    return;
+                  }
+                  // Advance to next area or recommendation
+                  if (currentAreaIdx < selectedAreas.length - 1) {
+                    setCurrentAreaIdx(i => i + 1);
+                  } else {
+                    // Check if we should offer protection
+                    const allConds = { ...areaConditions, [currentArea]: opt };
+                    const hasRestoration = selectedAreas.some(a => allConds[a]?.tier === 'restoration');
+                    if (hasRestoration) setShowProtectionOffer(true);
+                    else setShowRecommendation(true);
+                  }
+                }}
+                  className="w-full p-4 rounded-lg border border-white/15 bg-white/5 text-left hover:border-white/30 transition-all active:bg-white/10">
+                  <p className="text-white/90 text-sm">{opt.label}</p>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Seat type question */}
+        {step === 4 && askingSeatType && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-2">Are your seats leather or fabric?</h2>
             <p className="text-white/40 text-xs mb-6">This determines the right cleaning method</p>
             <div className="space-y-3">
-              <button onClick={() => { setSeatType('leather'); if (currentAreaIdx < selectedAreas.length - 1) setCurrentAreaIdx(i => i + 1); else setShowRecommendation(true); }}
-                className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-white/30 transition-all active:bg-white/10">
-                <p className="text-white font-medium text-sm">Leather</p>
-              </button>
-              <button onClick={() => { setSeatType('fabric'); if (currentAreaIdx < selectedAreas.length - 1) setCurrentAreaIdx(i => i + 1); else setShowRecommendation(true); }}
-                className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-white/30 transition-all active:bg-white/10">
-                <p className="text-white font-medium text-sm">Fabric</p>
-              </button>
+              {['leather', 'fabric', 'mixed'].map(type => (
+                <button key={type} onClick={() => {
+                  setSeatType(type);
+                  setAskingSeatType(false);
+                  if (currentAreaIdx < selectedAreas.length - 1) {
+                    setCurrentAreaIdx(i => i + 1);
+                  } else {
+                    const hasRestoration = selectedAreas.some(a => (areaConditions[a] || (a === 'seats' ? areaConditions.seats : null))?.tier === 'restoration');
+                    if (hasRestoration) setShowProtectionOffer(true);
+                    else setShowRecommendation(true);
+                  }
+                }}
+                  className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-white/30 transition-all active:bg-white/10">
+                  <p className="text-white font-medium text-sm capitalize">{type === 'mixed' ? 'Mix of both' : type}</p>
+                </button>
+              ))}
             </div>
           </div>
         )}
 
-        {/* SCREEN B: Level for each area, one at a time */}
-        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && !showRecommendation && currentArea && !areaLevels[currentArea] && !(currentArea === 'seats' && !seatType && areaLevels[currentArea]) && (
-          <div className="flex-1 flex flex-col">
-            <h2 className="text-xl font-light text-white mb-2">What does <span className="text-[#007CB1]">{currentAreaLabel}</span> need?</h2>
-            <p className="text-white/40 text-xs mb-6">Area {currentAreaIdx + 1} of {selectedAreas.length}</p>
-            <div className="space-y-3">
-              {(LEVELS_BY_AREA[currentArea] || ['maintenance', 'restoration', 'protection']).map(levelKey => {
-                const level = LEVEL_INFO[levelKey];
-                const isProtectionLocked = levelKey === 'protection' && !areaLevels[currentArea];
-                return (
-                  <button key={levelKey} onClick={() => {
-                    let updated = { ...areaLevels, [currentArea]: levelKey };
-                    // Protection requires restoration — auto-add restoration
-                    if (levelKey === 'protection') {
-                      updated[currentArea] = 'protection';
-                      // We'll note this in the recommendation
-                    }
-                    setAreaLevels(updated);
-                    // If seats and restoration/protection, ask seat type
-                    if (currentArea === 'seats' && (levelKey === 'restoration' || levelKey === 'protection') && !seatType) {
-                      return; // Stay on this step — seat type question will show
-                    }
-                    if (currentAreaIdx < selectedAreas.length - 1) {
-                      setCurrentAreaIdx(i => i + 1);
-                    } else {
-                      setShowRecommendation(true);
-                    }
-                  }}
-                    className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-white/30 transition-all active:bg-white/10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-3 h-3 rounded-full" style={{ backgroundColor: level.color }} />
-                      <div>
-                        <p className="text-white font-medium text-sm">{level.label}</p>
-                        <p className="text-white/40 text-xs mt-0.5">{level.desc}</p>
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* Already answered current area — advance */}
-        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && currentArea && areaLevels[currentArea] && !showRecommendation && (() => {
-          // Auto-advance if we land back on an already-answered area
-          const nextUnanswered = selectedAreas.findIndex((a, i) => i > currentAreaIdx && !areaLevels[a]);
+        {/* Auto-advance past already-answered areas */}
+        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && currentArea && areaConditions[currentArea] && !askingSeatType && !showRecommendation && !showProtectionOffer && (() => {
+          const nextUnanswered = selectedAreas.findIndex((a, i) => i > currentAreaIdx && !areaConditions[a]);
           if (nextUnanswered !== -1) { setTimeout(() => setCurrentAreaIdx(nextUnanswered), 0); }
-          else { setTimeout(() => setShowRecommendation(true), 0); }
+          else {
+            const hasRestoration = selectedAreas.some(a => areaConditions[a]?.tier === 'restoration');
+            if (hasRestoration && !showProtectionOffer) setTimeout(() => setShowProtectionOffer(true), 0);
+            else setTimeout(() => setShowRecommendation(true), 0);
+          }
           return null;
         })()}
 
-        {/* SCREEN C: Recommendation */}
-        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && showRecommendation && (
+        {/* Protection offer — only after restoration areas */}
+        {step === 4 && showProtectionOffer && !showRecommendation && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-2">Would you like to add protection?</h2>
+            <p className="text-white/40 text-xs mb-6">Recommended after restoration work</p>
+            <div className="space-y-3 flex-1 overflow-y-auto">
+              {protectionEligibleAreas().map(area => {
+                const areaInfo = AREAS.find(a => a.key === area);
+                const opts = PROTECTION_OPTIONS[area] || [];
+                if (opts.length === 0) return null;
+                return (
+                  <div key={area} className="bg-white/5 border border-white/10 rounded-lg p-4">
+                    <p className="text-white text-sm font-medium mb-2">{areaInfo?.label}</p>
+                    <div className="space-y-2">
+                      {opts.map(opt => {
+                        const selected = protectionSelections[area]?.includes(opt.key);
+                        return (
+                          <button key={opt.key} onClick={() => {
+                            setProtectionSelections(prev => {
+                              const current = prev[area] || [];
+                              return { ...prev, [area]: selected ? current.filter(k => k !== opt.key) : [...current, opt.key] };
+                            });
+                          }}
+                            className={`w-full p-3 rounded border text-left text-sm transition-all ${
+                              selected ? 'border-[#22C55E] bg-[#22C55E]/10 text-white' : 'border-white/15 bg-white/5 text-white/70'
+                            }`}>
+                            {opt.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            <div className="pt-6 space-y-3">
+              <Btn onClick={() => setShowRecommendation(true)}>
+                {Object.values(protectionSelections).flat().length > 0 ? 'Continue with protection' : 'Skip protection'}
+              </Btn>
+            </div>
+          </div>
+        )}
+
+        {/* Recommendation screen */}
+        {step === 4 && showRecommendation && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-2">
               Based on your {data.model_full || data.model}, here&apos;s what we recommend
             </h2>
             <div className="space-y-3 mt-4 flex-1 overflow-y-auto">
               {selectedAreas.map(area => {
-                const level = areaLevels[area];
-                let services = [...(SERVICE_MAP[area]?.[level] || [])];
-                // Add seat-type-specific services
-                if (area === 'seats' && (level === 'restoration' || level === 'protection') && seatType) {
-                  services.push(...(SEATS_RESTORATION[seatType] || []));
+                const cond = areaConditions[area];
+                if (!cond) return null;
+                let services = [...(cond.services || [])];
+                if (area === 'seats' && cond.needsSeatType && seatType && SEAT_TYPE_SERVICES[seatType]) {
+                  services.push(...(SEAT_TYPE_SERVICES[seatType][cond.key] || []));
                 }
-                // Protection includes restoration prep
-                if (level === 'protection' && SERVICE_MAP[area]?.restoration) {
-                  for (const s of SERVICE_MAP[area].restoration) { if (!services.includes(s)) services.push(s); }
+                // Add protection services
+                const protOpts = protectionSelections[area] || [];
+                for (const pk of protOpts) {
+                  const po = PROTECTION_OPTIONS[area]?.find(p => p.key === pk);
+                  if (po) services.push(po.label);
                 }
                 const areaInfo = AREAS.find(a => a.key === area);
-                const levelInfo = LEVEL_INFO[level];
                 return (
                   <div key={area} className="bg-white/5 border border-white/10 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-white text-sm font-medium">{areaInfo?.label}</span>
-                      <div className="w-2 h-2 rounded-full ml-auto" style={{ backgroundColor: levelInfo?.color }} />
-                      <span className="text-white/40 text-xs">{levelInfo?.label}</span>
-                      {level === 'protection' && <span className="text-white/30 text-[10px]">+ prep</span>}
-                    </div>
+                    <p className="text-white text-sm font-medium mb-1">{areaInfo?.label}</p>
+                    <p className="text-white/40 text-xs mb-2">{cond.label}</p>
                     <div className="flex flex-wrap gap-1.5">
                       {services.map(s => (
                         <span key={s} className="text-xs bg-[#007CB1]/20 text-[#007CB1] px-2 py-1 rounded">{s}</span>
@@ -534,20 +635,20 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                 );
               })}
               {getDisclaimers().length > 0 && (
-                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3 mt-2">
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded-lg p-3">
                   {getDisclaimers().map((d, i) => (
                     <p key={i} className="text-yellow-300/80 text-[11px] leading-relaxed">{i > 0 && <br />}{d}</p>
                   ))}
                 </div>
               )}
-              <p className="text-white/30 text-[10px] text-center pt-2">Final service steps determined after inspection and photo documentation</p>
+              <p className="text-white/30 text-[10px] text-center pt-2">Final scope determined by detailer after inspection and photo documentation</p>
             </div>
             <div className="pt-6 space-y-3">
               <Btn onClick={() => {
                 set('recommended_services', getRecommendedServices());
                 setStep(5);
               }}>This looks right</Btn>
-              <Btn onClick={() => { setShowRecommendation(false); setAreasConfirmed(false); setAreaLevels({}); setCurrentAreaIdx(0); setSeatType(null); }} secondary>
+              <Btn onClick={() => { setShowRecommendation(false); setShowProtectionOffer(false); setAreasConfirmed(false); setAreaConditions({}); setProtectionSelections({}); setCurrentAreaIdx(0); setSeatType(null); }} secondary>
                 I want to change something
               </Btn>
             </div>
@@ -573,6 +674,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                 ))}
               </div>
             )}
+            <p className="text-white/30 text-[10px] text-center mt-3">Final scope determined by detailer after inspection and photo documentation</p>
             <div className="mt-auto pt-6">
               <Btn onClick={goNext}>Looks good — continue</Btn>
             </div>
