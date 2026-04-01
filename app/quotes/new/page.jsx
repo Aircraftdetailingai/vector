@@ -184,15 +184,17 @@ function NewQuoteContent() {
     }
 
     // Pre-fill from lead/request URL params
-    const leadName = searchParams.get('name');
-    const leadEmail = searchParams.get('email');
-    const leadPhone = searchParams.get('phone');
-    const leadAircraft = searchParams.get('aircraft');
-    const leadTail = searchParams.get('tail');
-    const leadAirport = searchParams.get('airport');
+    // Read directly from window.location to avoid Next.js searchParams timing issues
+    const urlParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : searchParams;
+    const leadName = urlParams.get('name');
+    const leadEmail = urlParams.get('email');
+    const leadPhone = urlParams.get('phone');
+    const leadAircraft = urlParams.get('aircraft');
+    const leadTail = urlParams.get('tail');
+    const leadAirport = urlParams.get('airport');
 
     if (leadName || leadEmail) {
-      setPreselectedCustomer(prev => prev || {
+      setPreselectedCustomer({
         name: leadName || '',
         email: leadEmail || '',
         phone: leadPhone || '',
