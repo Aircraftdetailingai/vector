@@ -1271,7 +1271,7 @@ export default function PortalPage() {
 
         {/* Footer */}
         <div className="text-center mt-10 pb-8">
-          <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase">Powered by <a href="https://shinyjets.com" className="hover:text-[var(--brand-primary,#007CB1)] transition-colors">Shiny Jets</a></p>
+          {detailer?.plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase">Powered by <a href="https://shinyjets.com" className="hover:text-[var(--brand-primary,#007CB1)] transition-colors">Shiny Jets</a></p>}
         </div>
       </div>
     </div>

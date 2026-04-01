@@ -47,7 +47,7 @@ export async function GET(request) {
   // Get detailer info with branding
   const { data: detailer } = await supabase
     .from('detailers')
-    .select('id, name, company, theme_primary, theme_accent, theme_bg, theme_surface, theme_logo_url, logo_url, font_heading, font_body, font_embed_url')
+    .select('id, name, company, plan, theme_primary, theme_accent, theme_bg, theme_surface, theme_logo_url, logo_url, font_heading, font_body, font_embed_url')
     .eq('id', quote.detailer_id)
     .single();
 

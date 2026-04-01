@@ -365,7 +365,7 @@ export default function QuoteViewPage() {
           )}
         </div>
 
-        <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>
+        {plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>}
       </div>
     );
   }
@@ -412,7 +412,7 @@ export default function QuoteViewPage() {
               Skip for now
             </button>
           </div>
-          <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>
+          {plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>}
         </div>
       );
     }
@@ -604,7 +604,7 @@ export default function QuoteViewPage() {
             </div>
           )}
         </div>
-        <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>
+        {plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>}
       </div>
     );
   }
@@ -724,7 +724,7 @@ export default function QuoteViewPage() {
           )}
         </div>
 
-        <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>
+        {plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>}
       </div>
     );
   }

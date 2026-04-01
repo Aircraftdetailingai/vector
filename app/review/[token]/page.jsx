@@ -272,11 +272,13 @@ export default function ReviewPage() {
         </div>
 
         {/* Footer */}
-        <div className="text-center pb-4">
-          <p className="text-xs text-white/20">
-            Powered by <span className="font-medium">Shiny Jets</span>
-          </p>
-        </div>
+        {detailer?.plan !== 'enterprise' && (
+          <div className="text-center pb-4">
+            <p className="text-xs text-white/20">
+              Powered by <span className="font-medium">Shiny Jets</span>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );

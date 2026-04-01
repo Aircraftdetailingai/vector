@@ -99,9 +99,9 @@ function ReportPDF({ type, data, detailer, startDate, endDate }) {
         <View style={s.header}>
           <View style={s.headerRow}>
             <View>
-              <Text style={s.logoText}>Shiny Jets</Text>
+              <Text style={s.logoText}>{detailer?.plan === 'enterprise' ? companyName : 'Shiny Jets'}</Text>
               <Text style={s.logoSub}>AIRCRAFT DETAILING</Text>
-              <Text style={s.companyName}>{companyName}</Text>
+              {detailer?.plan !== 'enterprise' && <Text style={s.companyName}>{companyName}</Text>}
               {detailer?.email && <Text style={s.companyDetail}>{detailer.email}</Text>}
             </View>
             <View style={{ alignItems: 'flex-end' }}>
@@ -123,7 +123,7 @@ function ReportPDF({ type, data, detailer, startDate, endDate }) {
         {/* Footer */}
         <View style={s.footer} fixed>
           <Text style={s.footerText}>Generated {generatedDate}</Text>
-          <Text style={s.footerGold}>Powered by Shiny Jets Aviation</Text>
+          {detailer?.plan !== 'enterprise' && <Text style={s.footerGold}>Powered by Shiny Jets Aviation</Text>}
         </View>
       </Page>
     </Document>
@@ -345,7 +345,7 @@ export async function GET(request) {
     // Fetch detailer info
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('name, company, email, phone')
+      .select('name, company, email, phone, plan')
       .eq('id', user.id)
       .single();
 
