@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 6;
 
 const AREAS = [
   { key: 'paint', label: 'Paint' },
@@ -77,19 +77,6 @@ const SEAT_TYPE_SERVICES = {
   mixed:   { stained: ['Leather Clean & Condition', 'Fabric Extraction / Steam'], damaged: ['Leather Restoration', 'Fabric Extraction / Steam'] },
 };
 
-// Protection options — only offered after restoration areas
-const PROTECTION_OPTIONS = {
-  paint:       [{ key: 'wax', label: 'Wax' }, { key: 'ceramic', label: 'Ceramic Coating' }, { key: 'sealant', label: 'Paint Sealant' }],
-  brightwork:  [{ key: 'bw_sealant', label: 'Brightwork Sealant' }],
-  windows:     [{ key: 'win_coat', label: 'Approved Window Coating (acrylic only)' }],
-  seats:       [{ key: 'leather_cond', label: 'Leather Conditioning' }],
-  deice_boots: [{ key: 'boot_prot', label: 'Boot Protectant' }],
-};
-
-const DISCLAIMERS = {
-  windows_restoration: 'Window restoration on pressurized aircraft requires coordination with a licensed A&P mechanic. Service scope determined after inspection.',
-  windows_protection: 'Window coatings are for acrylic windows only. Glass windshields require manufacturer-approved products.',
-};
 
 export default function QuoteRequestFlow({ detailerId, detailerName, detailerLogo, detailerPlan = 'free', embedded = false }) {
   const [step, setStep] = useState(1);
@@ -107,8 +94,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   const [selectedAreas, setSelectedAreas] = useState([]);
   const [areaConditions, setAreaConditions] = useState({}); // { paint: { key, label, services, tier }, ... }
   const [currentAreaIdx, setCurrentAreaIdx] = useState(0);
-  const [showProtectionOffer, setShowProtectionOffer] = useState(false);
-  const [protectionSelections, setProtectionSelections] = useState({});
   const [areasConfirmed, setAreasConfirmed] = useState(false);
   const [quickSelect, setQuickSelect] = useState(null);
   const [washAddons, setWashAddons] = useState([]);
@@ -129,7 +114,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   const goNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
   const goBack = () => {
     if (step === 4) {
-      if (showProtectionOffer) { setShowProtectionOffer(false); return; }
       if (askingSeatType) { setAskingSeatType(false); return; }
       if (areasConfirmed && Object.keys(areaConditions).length > 0) { setAreaConditions({}); return; }
       if (areasConfirmed) { setAreasConfirmed(false); setAreaConditions({}); return; }
@@ -158,15 +142,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
       .finally(() => setLoadingModels(false));
   }, [data.manufacturer]);
 
-  // Check if any area has restoration tier (for protection offer)
-  const hasRestorationAreas = () => {
-    return selectedAreas.some(a => areaConditions[a]?.tier === 'restoration');
-  };
-
-  // Areas eligible for protection
-  const protectionEligibleAreas = () => {
-    return selectedAreas.filter(a => areaConditions[a]?.tier === 'restoration' && PROTECTION_OPTIONS[a]?.length > 0);
-  };
 
   const handleSubmitWithContact = async (name, email, phone, smsOptIn = false) => {
     setSubmitting(true);
@@ -203,10 +178,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         return `${areaInfo?.label}${seatLabel} \u2014 ${cond?.label || 'Not assessed'}`;
       }).join('\n');
 
-      const protectionNotes = Object.entries(protectionSelections).flatMap(([area, keys]) =>
-        keys.map(k => PROTECTION_OPTIONS[area]?.find(p => p.key === k)?.label).filter(Boolean)
-      ).join(', ');
-
       const res = await fetch('/api/lead-intake/leads', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -217,10 +188,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           tail_number: data.tail_number,
           airport: data.airport,
           services_requested: data.service_text || serviceType,
-          notes: [
-            areaNotes,
-            protectionNotes ? `Protection requested: ${protectionNotes}` : '',
-          ].filter(Boolean).join('\n'),
+          notes: areaNotes || '',
           photo_urls: photoUrls,
           sms_opted_in: smsOptIn,
           source: embedded ? 'embed_widget' : 'quote_request_page',
@@ -500,7 +468,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         )}
 
         {/* Combined condition screen — all areas on one page */}
-        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && !askingSeatType && !showProtectionOffer && (
+        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && !askingSeatType && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-1">How does each area look?</h2>
             <p className="text-white/40 text-xs mb-5">This helps us understand your needs</p>
@@ -546,9 +514,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                   setAskingSeatType(true);
                   return;
                 }
-                // Check for protection offer
-                if (hasRestorationAreas()) setShowProtectionOffer(true);
-                else setStep(5);
+                setStep(5);
               }} disabled={selectedAreas.some(a => !areaConditions[a])}>
                 Next
               </Btn>
@@ -566,56 +532,12 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                 <button key={type} onClick={() => {
                   setSeatType(type);
                   setAskingSeatType(false);
-                  if (hasRestorationAreas()) setShowProtectionOffer(true);
-                  else setStep(5);
+                  setStep(5);
                 }}
                   className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-white/30 transition-all active:bg-white/10">
                   <p className="text-white font-medium text-sm capitalize">{type === 'mixed' ? 'Mix of both' : type}</p>
                 </button>
               ))}
-            </div>
-          </div>
-        )}
-
-        {/* Protection offer — only after restoration areas */}
-        {step === 4 && showProtectionOffer && (
-          <div className="flex-1 flex flex-col">
-            <h2 className="text-xl font-light text-white mb-2">Would you like to add protection?</h2>
-            <p className="text-white/40 text-xs mb-6">Recommended after restoration work</p>
-            <div className="space-y-3 flex-1 overflow-y-auto">
-              {protectionEligibleAreas().map(area => {
-                const areaInfo = AREAS.find(a => a.key === area);
-                const opts = PROTECTION_OPTIONS[area] || [];
-                if (opts.length === 0) return null;
-                return (
-                  <div key={area} className="bg-white/5 border border-white/10 rounded-lg p-4">
-                    <p className="text-white text-sm font-medium mb-2">{areaInfo?.label}</p>
-                    <div className="space-y-2">
-                      {opts.map(opt => {
-                        const selected = protectionSelections[area]?.includes(opt.key);
-                        return (
-                          <button key={opt.key} onClick={() => {
-                            setProtectionSelections(prev => {
-                              const current = prev[area] || [];
-                              return { ...prev, [area]: selected ? current.filter(k => k !== opt.key) : [...current, opt.key] };
-                            });
-                          }}
-                            className={`w-full p-3 rounded border text-left text-sm transition-all ${
-                              selected ? 'border-[#22C55E] bg-[#22C55E]/10 text-white' : 'border-white/15 bg-white/5 text-white/70'
-                            }`}>
-                            {opt.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            <div className="pt-6 space-y-3">
-              <Btn onClick={() => setStep(5)}>
-                {Object.values(protectionSelections).flat().length > 0 ? 'Continue with protection' : 'Skip protection'}
-              </Btn>
             </div>
           </div>
         )}
