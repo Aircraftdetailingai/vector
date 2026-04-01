@@ -328,27 +328,27 @@ function DashboardContent() {
         {/* New Quote Requests */}
         {quoteRequests.length > 0 && (
           <div className="mt-10">
-            <div className="flex items-center gap-3 mb-4">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">New Quote Requests</p>
-              <span className="bg-v-gold text-v-charcoal text-[10px] font-bold px-2 py-0.5 rounded-full">{quoteRequests.length}</span>
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">New Requests</p>
+                <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{quoteRequests.length}</span>
+              </div>
+              <a href="/requests" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">View All</a>
             </div>
             <div className="space-y-2">
-              {quoteRequests.map((req) => (
-                <div key={req.id} className="bg-white/[0.02] border border-v-border-subtle rounded-lg px-4 py-3 flex items-center justify-between">
-                  <div className="min-w-0">
-                    <p className="text-white text-sm truncate">{req.name || req.customer_name || 'Customer'}</p>
-                    <p className="text-v-text-secondary text-xs truncate">
-                      {req.aircraft_model || 'Aircraft'}{req.airport ? ` \u00B7 ${req.airport}` : ''}{req.services_requested ? ` \u00B7 ${req.services_requested}` : ''}
-                    </p>
+              {quoteRequests.slice(0, 5).map((req) => (
+                <a key={req.id} href={`/requests/${req.id}`}
+                  className="block bg-white/[0.02] border border-v-border-subtle rounded-lg px-4 py-3 hover:bg-white/[0.04] transition-colors">
+                  <div className="flex items-center justify-between">
+                    <div className="min-w-0">
+                      <p className="text-white text-sm truncate">{req.name || req.customer_name || 'Customer'}</p>
+                      <p className="text-v-text-secondary text-xs truncate">
+                        {req.aircraft_model || 'Aircraft'}{req.airport ? ` \u00B7 ${req.airport}` : ''}{req.services_requested ? ` \u00B7 ${req.services_requested}` : ''}
+                      </p>
+                    </div>
+                    <span className="text-v-text-secondary text-[10px] ml-3 shrink-0">{req.created_at ? new Date(req.created_at).toLocaleDateString() : ''}</span>
                   </div>
-                  <div className="flex items-center gap-3 ml-3 shrink-0">
-                    <span className="text-v-text-secondary text-[10px]">{req.created_at ? new Date(req.created_at).toLocaleDateString() : ''}</span>
-                    <a href={`/quotes/new?lead=${req.id}&name=${encodeURIComponent(req.name || '')}&email=${encodeURIComponent(req.email || '')}&aircraft=${encodeURIComponent(req.aircraft_model || '')}&tail=${encodeURIComponent(req.tail_number || '')}&airport=${encodeURIComponent(req.airport || '')}`}
-                      className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-v-gold border border-v-gold/30 hover:bg-v-gold/5 transition-colors rounded">
-                      Quote
-                    </a>
-                  </div>
-                </div>
+                </a>
               ))}
             </div>
           </div>

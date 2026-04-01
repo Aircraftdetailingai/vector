@@ -23,24 +23,30 @@ export default function RequestDetailPage() {
     const token = localStorage.getItem('vector_token');
     if (!token) { router.push('/login'); return; }
 
-    // Fetch lead detail
-    fetch(`/api/lead-intake/leads?id=${id}`, { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : Promise.reject())
-      .then(data => {
-        const found = data.leads?.find(l => l.id === id) || data.lead;
-        setLead(found);
-
-        // Mark as viewed if currently new
-        if (found?.status === 'new') {
-          fetch('/api/lead-intake/leads', {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'update_status', lead_id: id, status: 'viewed' }),
-          }).catch(() => {});
+    // Fetch all leads then find by ID (API returns array)
+    const fetchLead = async () => {
+      try {
+        const res = await fetch('/api/lead-intake/leads', { headers: { Authorization: `Bearer ${token}` } });
+        if (!res.ok) { setLoading(false); return; }
+        const data = await res.json();
+        const found = (data.leads || []).find(l => l.id === id);
+        if (found) {
+          setLead(found);
+          // Mark as viewed if currently new
+          if (found.status === 'new') {
+            fetch('/api/lead-intake/leads', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ action: 'update_status', lead_id: id, status: 'viewed' }),
+            }).catch(() => {});
+          }
         }
-      })
-      .catch(() => {})
-      .finally(() => setLoading(false));
+      } catch (err) {
+        console.error('Failed to fetch lead:', err);
+      }
+      setLoading(false);
+    };
+    fetchLead();
   }, [id, router]);
 
   const handleDismiss = async () => {
