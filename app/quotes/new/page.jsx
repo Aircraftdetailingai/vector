@@ -114,11 +114,13 @@ function NewQuoteContent() {
 
   // Fetch models when manufacturer changes
   useEffect(() => {
+    if (!selectedManufacturer) {
+      setModels([]);
+      return;
+    }
     const fetchModels = async () => {
-      const params = new URLSearchParams();
-      if (selectedManufacturer) params.set('make', selectedManufacturer);
       try {
-        const res = await fetch(`/api/aircraft/models?${params}`);
+        const res = await fetch(`/api/aircraft/models?make=${encodeURIComponent(selectedManufacturer)}`);
         if (res.ok) {
           const data = await res.json();
           setModels(data.models || []);
@@ -251,6 +253,8 @@ function NewQuoteContent() {
           // Store lead context for reference panel
           if (prefill.notes || prefill.service || prefill.photos?.length) {
             setLeadContext({
+              leadId: prefill.leadId,
+              customerName: prefill.name,
               service: prefill.service,
               notes: prefill.notes,
               photos: prefill.photos || [],
@@ -653,8 +657,10 @@ function NewQuoteContent() {
       {/* Header */}
       <header className="sticky top-0 z-40 -mx-4 -mt-4 px-4 pt-4 pb-3 mb-6 bg-gradient-to-b from-v-charcoal via-v-charcoal to-transparent flex justify-between items-center text-white">
         <div className="flex items-center gap-4">
-          <a href="/dashboard" className="text-lg text-gray-400 hover:text-v-gold transition-colors">&#8592;</a>
-          <h1 className="text-2xl font-normal tracking-[0.2em] uppercase" style={{ fontFamily: "var(--font-playfair), 'Playfair Display', serif" }}>New Quote</h1>
+          <a href={leadContext?.leadId ? `/requests/${leadContext.leadId}` : '/quotes'} className="text-lg text-gray-400 hover:text-v-gold transition-colors">&#8592;</a>
+          <h1 className="text-2xl font-normal tracking-[0.2em] uppercase" style={{ fontFamily: "var(--font-playfair), 'Playfair Display', serif" }}>
+            {leadContext?.customerName ? `Quote for ${leadContext.customerName.split(' ')[0]}` : 'New Quote'}
+          </h1>
         </div>
         <div className="hidden sm:flex items-center gap-4 text-sm">
           <a href="/quotes" className="text-gray-400 hover:text-white transition-colors">Quotes</a>
