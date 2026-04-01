@@ -4,12 +4,12 @@ import { useState, useEffect } from 'react';
 const TOTAL_STEPS = 7;
 
 const AREAS = [
-  { key: 'paint', label: 'Paint', icon: '\u{1F3A8}' },
-  { key: 'brightwork', label: 'Brightwork', icon: '\u2728' },
-  { key: 'windows', label: 'Windows', icon: '\u{1FA9F}' },
-  { key: 'seats', label: 'Seats', icon: '\u{1FA91}' },
-  { key: 'carpets', label: 'Carpets', icon: '\u{1F9F9}' },
-  { key: 'deice_boots', label: 'De-ice Boots', icon: '\u2744' },
+  { key: 'paint', label: 'Paint' },
+  { key: 'brightwork', label: 'Brightwork' },
+  { key: 'windows', label: 'Windows' },
+  { key: 'seats', label: 'Seats' },
+  { key: 'carpets', label: 'Carpets' },
+  { key: 'deice_boots', label: 'De-ice Boots' },
 ];
 
 const LEVELS_BY_AREA = {
@@ -29,7 +29,7 @@ const LEVEL_INFO = {
 
 const SERVICE_MAP = {
   paint:       { maintenance: ['Exterior Wash'], restoration: ['Compounding', 'Polishing', 'Orange Peel Removal'], protection: ['Wax', 'Ceramic Coating', 'Paint Sealant'] },
-  brightwork:  { maintenance: ['Brightwork Cleaning', 'Bug Removal', 'Wipe Down'], restoration: ['Brightwork Polish'], protection: ['Brightwork Sealant'] },
+  brightwork:  { maintenance: ['Wipe Down & Bug Removal'], restoration: ['Brightwork Polish'], protection: ['Brightwork Sealant'] },
   windows:     { maintenance: ['Window Cleaning (Glass Only)'], restoration: ['Window Polish', 'Window Compound', 'Wet Sand (Acrylic Only)'], protection: ['Approved Window Coating (Acrylic Only)'] },
   seats:       { maintenance: ['Seatbelt Dressing'], restoration: [], protection: ['Leather Conditioning'], _note: 'Vacuum & wipe down included with Maintenance Wash' },
   carpets:     { maintenance: [], restoration: ['Carpet Extraction', 'Encapsulation', 'Carpet Shampoo'], protection: [], _note: 'Vacuum included with Maintenance Wash' },
@@ -348,17 +348,17 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                 setStep(5);
               }}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
-                <p className="text-white font-medium"><span className="mr-2">&#9889;</span>Quick Turn</p>
+                <p className="text-white font-medium">Quick Turn</p>
                 <p className="text-white/40 text-xs mt-1">Exterior rinse, interior vacuum, window wipe, trash removal</p>
               </button>
               <button onClick={() => { setQuickSelect('maint_wash'); }}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
-                <p className="text-white font-medium"><span className="mr-2 text-[#007CB1]">&#9679;</span>Maintenance Wash</p>
+                <p className="text-white font-medium">Maintenance Wash</p>
                 <p className="text-white/40 text-xs mt-1">Full exterior wash and interior vacuum</p>
               </button>
               <button onClick={() => { setQuickSelect('detail'); }}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
-                <p className="text-white font-medium"><span className="mr-2">&#10022;</span>Detailing</p>
+                <p className="text-white font-medium">Detailing</p>
                 <p className="text-white/40 text-xs mt-1">Let me choose what I need</p>
               </button>
             </div>
@@ -520,7 +520,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
                 return (
                   <div key={area} className="bg-white/5 border border-white/10 rounded-lg p-4">
                     <div className="flex items-center gap-2 mb-2">
-                      <span>{areaInfo?.icon}</span>
                       <span className="text-white text-sm font-medium">{areaInfo?.label}</span>
                       <div className="w-2 h-2 rounded-full ml-auto" style={{ backgroundColor: levelInfo?.color }} />
                       <span className="text-white/40 text-xs">{levelInfo?.label}</span>
@@ -621,7 +620,6 @@ function AreaSelector({ selectedAreas, onToggle, onSelectAll, onContinue }) {
               ? 'border-[#007CB1] bg-[#007CB1]/15 text-white'
               : 'border-white/15 bg-white/5 text-white/70 hover:border-white/30'
           }`}>
-          <span className="text-lg mr-3">{area.icon}</span>
           <span className="text-sm font-medium">{area.label}</span>
         </button>
       ))}
