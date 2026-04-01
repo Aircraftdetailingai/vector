@@ -679,9 +679,18 @@ function NewQuoteContent() {
               </p>
             )}
             {leadContext.service && <p className="text-v-text-secondary"><span className="text-v-text-secondary/60">Service:</span> {leadContext.service}</p>}
-            {leadContext.notes && leadContext.notes.split('\n').filter(Boolean).map((line, i) => (
-              <p key={i} className="text-v-text-secondary text-xs">{line}</p>
-            ))}
+            {leadContext.notes && leadContext.notes.split('\n').filter(Boolean).map((line, i) => {
+              // Extract "Area — Long description" → "Area: Short label"
+              const parts = line.split(/\s*[\u2014—]\s*/);
+              if (parts.length >= 2) {
+                const area = parts[0].trim();
+                const desc = parts[1].trim();
+                // Take first few words as short label
+                const short = desc.split(',')[0].split('.')[0].trim();
+                return <p key={i} className="text-v-text-secondary text-xs">{area}: {short}</p>;
+              }
+              return <p key={i} className="text-v-text-secondary text-xs">{line}</p>;
+            })}
             {leadContext.photos?.length > 0 && (
               <div className="flex gap-2 mt-2 overflow-x-auto">
                 {leadContext.photos.slice(0, 6).map((p, i) => (
