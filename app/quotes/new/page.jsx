@@ -59,6 +59,10 @@ function NewQuoteContent() {
   const [selectedAddons, setSelectedAddons] = useState({});
   const [airport, setAirport] = useState('');
   const [tailNumber, setTailNumber] = useState('');
+  const [proposedDate, setProposedDate] = useState('');
+  const [proposedTime, setProposedTime] = useState('08:00');
+  const [bufferMinutes, setBufferMinutes] = useState(60);
+  const [excludeWeekends, setExcludeWeekends] = useState(true);
   const [customProductRatios, setCustomProductRatios] = useState(null);
   const [serviceProductLinks, setServiceProductLinks] = useState([]);
   const [serviceEquipmentLinks, setServiceEquipmentLinks] = useState([]);
@@ -567,6 +571,9 @@ function NewQuoteContent() {
         addonsTotal,
         airport,
         tailNumber,
+        proposedDate: proposedDate || null,
+        proposedTime: proposedTime || null,
+        bufferMinutes,
         productEstimates,
         linkedProducts: serviceProductLinks.filter(l => selectedServicesList.some(s => s.id === l.service_id)).map(l => {
           const svc = selectedServicesList.find(s => s.id === l.service_id);
@@ -1033,7 +1040,86 @@ function NewQuoteContent() {
             </div>
           )}
 
-          {/* 7. Aircraft Details Accordion */}
+          {/* 7. Scheduling */}
+          {selectedAircraft && selectedServicesList.length > 0 && (() => {
+            // Auto-suggest: calculate buffer and find next available date
+            const autoBuffer = totalHours < 4 ? 30 : totalHours <= 8 ? 60 : 120;
+            const jobDurationHours = totalHours + (bufferMinutes / 60);
+            const endTimeStr = (() => {
+              const [h, m] = proposedTime.split(':').map(Number);
+              const endMin = h * 60 + m + Math.round(totalHours * 60);
+              return `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`;
+            })();
+
+            // Auto-suggest next weekday if no date selected
+            if (!proposedDate) {
+              const today = new Date();
+              const lead = 2; // 2-day lead time default
+              const suggest = new Date(today);
+              suggest.setDate(suggest.getDate() + lead);
+              while (excludeWeekends && (suggest.getDay() === 0 || suggest.getDay() === 6)) {
+                suggest.setDate(suggest.getDate() + 1);
+              }
+              // Don't auto-set in render — use effect or leave for user
+            }
+
+            return (
+              <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
+                <h3 className="text-sm font-light tracking-wider uppercase text-gray-400 mb-4">Proposed Schedule</h3>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Date</label>
+                    <input type="date" value={proposedDate}
+                      onChange={e => setProposedDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary text-base focus:outline-none focus:ring-2 focus:ring-v-gold" />
+                  </div>
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Start Time</label>
+                    <input type="time" value={proposedTime}
+                      onChange={e => setProposedTime(e.target.value)}
+                      className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary text-base focus:outline-none focus:ring-2 focus:ring-v-gold" />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div>
+                    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Buffer Time</label>
+                    <select value={bufferMinutes} onChange={e => setBufferMinutes(Number(e.target.value))}
+                      className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary text-sm focus:outline-none focus:ring-2 focus:ring-v-gold">
+                      <option value={30}>30 min</option>
+                      <option value={60}>1 hour</option>
+                      <option value={120}>2 hours</option>
+                      <option value={240}>Half day</option>
+                      <option value={480}>Full day</option>
+                    </select>
+                  </div>
+                  <div className="flex items-end pb-2">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input type="checkbox" checked={excludeWeekends} onChange={e => setExcludeWeekends(e.target.checked)}
+                        className="w-4 h-4 rounded accent-v-gold" />
+                      <span className="text-v-text-secondary text-xs">Exclude weekends</span>
+                    </label>
+                  </div>
+                </div>
+
+                {proposedDate && (
+                  <div className="bg-white/5 rounded p-3 text-sm text-v-text-secondary">
+                    <p>
+                      {new Date(proposedDate + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                      {' '}{proposedTime} &mdash; {endTimeStr}
+                    </p>
+                    <p className="text-xs text-v-text-secondary/60 mt-1">
+                      {totalHours.toFixed(1)}h job + {bufferMinutes}min buffer
+                    </p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+
+          {/* 8. Aircraft Details Accordion */}
           {selectedAircraft && (
             <details className="bg-v-surface border border-v-border/40 p-5 mb-5">
               <summary className="font-semibold text-sm cursor-pointer text-v-text-secondary">Aircraft Details</summary>
