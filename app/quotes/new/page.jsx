@@ -93,6 +93,25 @@ function NewQuoteContent() {
     fetchManufacturers();
   }, []);
 
+  // Match pending aircraft after manufacturers load
+  useEffect(() => {
+    if (manufacturers.length === 0) return;
+    const pending = localStorage.getItem('_pending_aircraft');
+    if (!pending) return;
+    localStorage.removeItem('_pending_aircraft');
+
+    const q = pending.toLowerCase();
+    // Find which manufacturer the aircraft string starts with (longest match first)
+    const sortedMfrs = [...manufacturers].sort((a, b) => b.length - a.length);
+    const mfrMatch = sortedMfrs.find(m => q.startsWith(m.toLowerCase()));
+
+    if (mfrMatch) {
+      const mdl = q.slice(mfrMatch.length).trim();
+      setSelectedManufacturer(mfrMatch);
+      if (mdl) setPendingAircraftMatch({ manufacturer: mfrMatch, model: mdl });
+    }
+  }, [manufacturers]);
+
   // Fetch models when manufacturer changes
   useEffect(() => {
     const fetchModels = async () => {
@@ -241,23 +260,11 @@ function NewQuoteContent() {
             });
           }
 
-          // Match aircraft: find manufacturer and model from lead text
+          // Match aircraft — store for deferred matching after manufacturers load
           if (prefill.aircraft) {
-            const q = prefill.aircraft.toLowerCase().trim();
-            const parts = q.split(/\s+/);
-            // Try to identify manufacturer (first word) and model (rest)
-            if (parts.length >= 2) {
-              // Capitalize first word as manufacturer guess
-              const mfrGuess = parts[0].charAt(0).toUpperCase() + parts[0].slice(1);
-              const mdlGuess = parts.slice(1).join(' ');
-              // Set manufacturer dropdown — models will load via useEffect
-              setSelectedManufacturer(mfrGuess);
-              // Store pending model to auto-select once models load
-              setPendingAircraftMatch({ manufacturer: mfrGuess, model: mdlGuess });
-            } else if (parts.length === 1) {
-              // Single word — could be model name, search all
-              setPendingAircraftMatch({ manufacturer: '', model: parts[0] });
-            }
+            const q = prefill.aircraft.trim();
+            // Store raw aircraft string — will be matched in useEffect after manufacturers load
+            localStorage.setItem('_pending_aircraft', q);
           }
         }
         localStorage.removeItem('quote_prefill');
