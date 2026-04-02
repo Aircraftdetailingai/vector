@@ -3,79 +3,26 @@ import { useState, useEffect, useRef } from 'react';
 
 const TOTAL_STEPS = 6;
 
-const AREAS = [
-  { key: 'paint', label: 'Paint' },
-  { key: 'brightwork', label: 'Brightwork' },
-  { key: 'windows', label: 'Windows' },
-  { key: 'seats', label: 'Seats' },
-  { key: 'carpets', label: 'Carpets' },
-  { key: 'deice_boots', label: 'De-ice Boots' },
+// Service picker options for Detailing path
+const SERVICE_OPTIONS = [
+  { key: 'ext_wash', label: 'Exterior Wash & Detail', group: 'exterior' },
+  { key: 'polish', label: 'Paint Polish / One-Step', group: 'exterior' },
+  { key: 'ceramic', label: 'Ceramic Coating', group: 'exterior' },
+  { key: 'spray_ceramic', label: 'Spray Ceramic', group: 'exterior' },
+  { key: 'wax', label: 'Wax', group: 'exterior' },
+  { key: 'decon', label: 'Decon Wash', group: 'exterior' },
+  { key: 'brightwork', label: 'Brightwork / Chrome Polish', group: 'exterior' },
+  { key: 'interior', label: 'Interior Detail', group: 'interior' },
+  { key: 'leather', label: 'Leather Clean & Condition', group: 'interior' },
+  { key: 'carpet', label: 'Carpet Extraction', group: 'interior' },
+  { key: 'windows', label: 'Windows', group: 'exterior' },
 ];
 
-// Condition questions per area — customer describes what they SEE
-const CONDITION_QUESTIONS = {
-  paint: {
-    question: 'How does the paint look?',
-    options: [
-      { key: 'good', label: 'Looks good, just needs a wash', services: ['Exterior Wash'], tier: 'maintenance' },
-      { key: 'dull', label: 'Some dullness or light scratches', services: ['One-Step Polish'], tier: 'restoration' },
-      { key: 'heavy', label: 'Significant oxidation, heavy scratches or swirl marks', services: ['Compounding', 'Two-Step Polish', 'Paint Correction'], tier: 'restoration' },
-      { key: 'unsure', label: 'Not sure \u2014 detailer should assess', services: ['Detailer Assessment'], tier: 'restoration' },
-    ],
-  },
-  brightwork: {
-    question: 'How does the brightwork look?',
-    options: [
-      { key: 'shiny', label: 'Shiny, just needs cleaning', services: ['Wipe Down & Bug Removal'], tier: 'maintenance' },
-      { key: 'tarnish', label: 'Some tarnish or dullness', services: ['Brightwork Polish'], tier: 'restoration' },
-      { key: 'heavy', label: 'Heavy tarnish or pitting', services: ['Brightwork Polish \u2014 multiple steps'], tier: 'restoration' },
-      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
-    ],
-  },
-  windows: {
-    question: 'How do the windows look?',
-    options: [
-      { key: 'clear', label: 'Clear, just needs cleaning', services: ['Window Cleaning (glass only)'], tier: 'maintenance' },
-      { key: 'spots', label: 'Water spots or light haze', services: ['Window Polish (acrylic only)'], tier: 'restoration' },
-      { key: 'scratches', label: 'Scratches or significant cloudiness', services: ['Compound / Wet Sand (acrylic only)'], tier: 'restoration' },
-      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
-    ],
-  },
-  seats: {
-    question: 'What condition are the seats in?',
-    options: [
-      { key: 'good', label: 'Good condition, just need cleaning', services: ['Wipe Down', 'Seatbelt Dressing'], tier: 'maintenance' },
-      { key: 'stained', label: 'Some staining or light wear', services: [], tier: 'restoration', needsSeatType: true },
-      { key: 'damaged', label: 'Significant staining, cracking or damage', services: [], tier: 'restoration', needsSeatType: true },
-      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
-    ],
-  },
-  carpets: {
-    question: 'How are the carpets?',
-    options: [
-      { key: 'fine', label: 'Fine, just need a vacuum', services: ['Vacuum'], tier: 'maintenance' },
-      { key: 'stained', label: 'Some staining or odor', services: ['Carpet Extraction'], tier: 'restoration' },
-      { key: 'heavy', label: 'Heavy staining or soiling', services: ['Carpet Extraction', 'Encapsulation', 'Carpet Shampoo'], tier: 'restoration' },
-      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
-    ],
-  },
-  deice_boots: {
-    question: 'What condition are the de-ice boots in?',
-    options: [
-      { key: 'good', label: 'Good condition, just need cleaning', services: ['Boot Cleaning', 'Boot Inspection'], tier: 'maintenance' },
-      { key: 'cracking', label: 'Some cracking or wear', services: ['Boot Treatment', 'Boot Reconditioning'], tier: 'restoration' },
-      { key: 'deteriorated', label: 'Significant deterioration', services: ['Boot Reconditioning'], tier: 'restoration' },
-      { key: 'unsure', label: 'Not sure', services: ['Detailer Assessment'], tier: 'restoration' },
-    ],
-  },
-};
-
-// Seat-type-specific services for restoration tier
-const SEAT_TYPE_SERVICES = {
-  leather: { stained: ['Leather Clean & Condition'], damaged: ['Leather Restoration', 'Dye Treatment'] },
-  fabric:  { stained: ['Fabric Extraction / Steam'], damaged: ['Fabric Extraction / Steam', 'Stain Treatment'] },
-  mixed:   { stained: ['Leather Clean & Condition', 'Fabric Extraction / Steam'], damaged: ['Leather Restoration', 'Fabric Extraction / Steam'] },
-};
+const PAINT_GOALS = [
+  { key: 'max_gloss', label: 'Maximum gloss & protection' },
+  { key: 'clean_protect', label: 'Clean and protected' },
+  { key: 'just_clean', label: 'Just clean' },
+];
 
 
 export default function QuoteRequestFlow({ detailerId, detailerName, detailerLogo, detailerPlan = 'free', embedded = false }) {
@@ -90,22 +37,19 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   const [models, setModels] = useState([]);
   const [loadingModels, setLoadingModels] = useState(false);
 
-  // Smart service selection
-  const [selectedAreas, setSelectedAreas] = useState([]);
-  const [areaConditions, setAreaConditions] = useState({}); // { paint: { key, label, services, tier }, ... }
-  const [currentAreaIdx, setCurrentAreaIdx] = useState(0);
-  const [areasConfirmed, setAreasConfirmed] = useState(false);
-  const [quickSelect, setQuickSelect] = useState(null);
+  // Service selection
+  const [quickSelect, setQuickSelect] = useState(null); // null | 'quick_turn' | 'maint_wash' | 'detail'
+  const [selectedServices, setSelectedServices] = useState([]); // keys from SERVICE_OPTIONS
+  const [paintGoal, setPaintGoal] = useState(null);
+  const [freeTextNote, setFreeTextNote] = useState('');
   const [washAddons, setWashAddons] = useState([]);
-  const [seatType, setSeatType] = useState(null);
-  const [askingSeatType, setAskingSeatType] = useState(false);
-  const [photos, setPhotos] = useState([]); // [{ file, preview, caption }]
+  const [photos, setPhotos] = useState([]);
   const [uploading, setUploading] = useState(false);
 
   const [data, setData] = useState({
     manufacturer: '', model: '', model_full: '',
     tail_number: '', airport: '',
-    service_text: '',
+    service_text: '', company: '',
     name: '', email: '', phone: '',
   });
 
@@ -114,11 +58,11 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   const goNext = () => setStep(s => Math.min(s + 1, TOTAL_STEPS));
   const goBack = () => {
     if (step === 4) {
-      if (askingSeatType) { setAskingSeatType(false); return; }
-      if (areasConfirmed && Object.keys(areaConditions).length > 0) { setAreaConditions({}); return; }
-      if (areasConfirmed) { setAreasConfirmed(false); setAreaConditions({}); return; }
-      if (quickSelect === 'maint_wash') { setQuickSelect(null); setWashAddons([]); return; }
-      if (quickSelect === 'detail') { setQuickSelect(null); setSelectedAreas([]); return; }
+      if (paintGoal !== null && selectedServices.length > 0) { setPaintGoal(null); return; }
+      if (quickSelect === 'maint_wash') { setQuickSelect(null); setWashAddons([]); setFreeTextNote(''); return; }
+      if (quickSelect === 'detail' && selectedServices.length > 0) { setSelectedServices([]); setPaintGoal(null); return; }
+      if (quickSelect === 'detail') { setQuickSelect(null); return; }
+      if (quickSelect === 'quick_turn') { setQuickSelect(null); setFreeTextNote(''); return; }
       if (quickSelect) { setQuickSelect(null); return; }
       if (serviceMode) { setServiceMode(null); return; }
     }
@@ -168,15 +112,15 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         setUploading(false);
       }
 
-      // Build plain-language description — customer's exact words
+      // Build submission data
       const serviceType = quickSelect === 'quick_turn' ? 'Quick Turn' : quickSelect === 'maint_wash' ? 'Maintenance Wash' : 'Detailing';
-
-      const areaNotes = selectedAreas.map(a => {
-        const cond = areaConditions[a];
-        const areaInfo = AREAS.find(ar => ar.key === a);
-        const seatLabel = a === 'seats' && seatType ? ` (${seatType})` : '';
-        return `${areaInfo?.label}${seatLabel} \u2014 ${cond?.label || 'Not assessed'}`;
-      }).join('\n');
+      const serviceLabels = selectedServices.map(k => SERVICE_OPTIONS.find(s => s.key === k)?.label).filter(Boolean);
+      const paintGoalLabel = paintGoal ? PAINT_GOALS.find(p => p.key === paintGoal)?.label : '';
+      const areaNotes = [
+        serviceLabels.length > 0 ? `Services: ${serviceLabels.join(', ')}` : '',
+        paintGoalLabel ? `Paint goal: ${paintGoalLabel}` : '',
+        freeTextNote ? `Note: ${freeTextNote}` : '',
+      ].filter(Boolean).join('\n');
 
       const res = await fetch('/api/lead-intake/leads', {
         method: 'POST',
@@ -184,6 +128,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         body: JSON.stringify({
           detailer_id: detailerId,
           name, email, phone,
+          company: data.company || null,
           aircraft_model: data.model_full || `${data.manufacturer} ${data.model}`,
           tail_number: data.tail_number,
           airport: data.airport,
@@ -376,16 +321,12 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           </div>
         )}
 
-        {/* Quick Select screen — shown right after "Show me options" */}
+        {/* Quick Select */}
         {step === 4 && serviceMode === 'options' && !quickSelect && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-6">What brings you in today?</h2>
             <div className="space-y-4">
-              <button onClick={() => {
-                setQuickSelect('quick_turn');
-                set('service_text', 'Quick Turn — Exterior rinse, Interior vacuum, Window wipe, Trash removal');
-                setStep(5);
-              }}
+              <button onClick={() => { setQuickSelect('quick_turn'); }}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
                 <p className="text-white font-medium">Quick Turn</p>
                 <p className="text-white/40 text-xs mt-1">Exterior rinse, interior vacuum, window wipe, trash removal</p>
@@ -398,43 +339,44 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
               <button onClick={() => { setQuickSelect('detail'); }}
                 className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
                 <p className="text-white font-medium">Detailing</p>
-                <p className="text-white/40 text-xs mt-1">Let me choose what I need</p>
+                <p className="text-white/40 text-xs mt-1">Choose specific services</p>
               </button>
             </div>
           </div>
         )}
 
-        {/* Maintenance Wash add-ons */}
-        {step === 4 && serviceMode === 'options' && quickSelect === 'maint_wash' && (
+        {/* Quick Turn — optional note */}
+        {step === 4 && quickSelect === 'quick_turn' && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-2">Quick Turn</h2>
+            <div className="bg-white/5 border border-white/10 rounded-lg p-3 mb-4">
+              <p className="text-white/50 text-xs">Includes: Exterior rinse, interior vacuum, window wipe, trash removal</p>
+            </div>
+            <p className="text-white/40 text-xs mb-3">Anything we should know?</p>
+            <textarea value={freeTextNote} onChange={e => setFreeTextNote(e.target.value)}
+              placeholder="Optional — special instructions, access details, timing..."
+              rows={3}
+              className="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-base placeholder-white/30 outline-none focus:border-[#007CB1] resize-none" />
+            <div className="mt-auto pt-6">
+              <Btn onClick={() => { set('service_text', 'Quick Turn'); setStep(5); }}>Next</Btn>
+            </div>
+          </div>
+        )}
+
+        {/* Maintenance Wash — optional note */}
+        {step === 4 && quickSelect === 'maint_wash' && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-2">Maintenance Wash</h2>
             <div className="bg-white/5 border border-white/10 rounded-lg p-3 mb-4">
               <p className="text-white/50 text-xs">Includes: Exterior wash and interior vacuum</p>
             </div>
-            <p className="text-white/40 text-xs mb-4">Want to add anything else?</p>
-            <div className="space-y-3">
-              {[
-                { key: 'brightwork', label: 'Brightwork Polish' },
-                { key: 'windows', label: 'Window Cleaning' },
-                { key: 'interior', label: 'Interior Wipe Down' },
-                { key: 'wheels', label: 'Wheel & Tire Clean' },
-              ].map(addon => (
-                <button key={addon.key} onClick={() => setWashAddons(prev => prev.includes(addon.key) ? prev.filter(k => k !== addon.key) : [...prev, addon.key])}
-                  className={`w-full p-4 rounded-lg border text-left transition-all ${
-                    washAddons.includes(addon.key) ? 'border-[#007CB1] bg-[#007CB1]/15 text-white' : 'border-white/15 bg-white/5 text-white/70'
-                  }`}>
-                  <span className="text-sm">{addon.label}</span>
-                </button>
-              ))}
-            </div>
+            <p className="text-white/40 text-xs mb-3">Anything we should know?</p>
+            <textarea value={freeTextNote} onChange={e => setFreeTextNote(e.target.value)}
+              placeholder="Optional — special instructions, access details, timing..."
+              rows={3}
+              className="w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-3 text-base placeholder-white/30 outline-none focus:border-[#007CB1] resize-none" />
             <div className="mt-auto pt-6">
-              <Btn onClick={() => {
-                const addons = washAddons.map(k => ({ brightwork: 'Brightwork Polish', windows: 'Window Cleaning', interior: 'Interior Wipe Down', wheels: 'Wheel & Tire Clean' })[k]).filter(Boolean);
-                set('service_text', ['Maintenance Wash', ...addons].join(', '));
-                setStep(5);
-              }}>
-                {washAddons.length > 0 ? `Continue with ${washAddons.length + 1} services` : 'Just the wash'}
-              </Btn>
+              <Btn onClick={() => { set('service_text', 'Maintenance Wash'); setStep(5); }}>Next</Btn>
             </div>
           </div>
         )}
@@ -454,87 +396,58 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           </div>
         )}
 
-        {/* "Detailing" → area selection */}
-        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && !areasConfirmed && (
+        {/* Detailing — service picker grid */}
+        {step === 4 && quickSelect === 'detail' && selectedServices.length === 0 && paintGoal === null && (
           <div className="flex-1 flex flex-col">
-            <h2 className="text-xl font-light text-white mb-2">Which areas need attention?</h2>
-            <p className="text-white/40 text-xs mb-6">Select all that apply</p>
-            <AreaSelector selectedAreas={selectedAreas} onToggle={(key) => {
-              setSelectedAreas(prev => prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]);
-            }} onSelectAll={() => setSelectedAreas(AREAS.map(a => a.key))}
-            onContinue={() => { setAreasConfirmed(true); setCurrentAreaIdx(0); }} />
-          </div>
-        )}
-
-        {/* Combined condition screen — all areas on one page */}
-        {step === 4 && serviceMode === 'options' && quickSelect === 'detail' && areasConfirmed && !askingSeatType && (
-          <div className="flex-1 flex flex-col">
-            <h2 className="text-xl font-light text-white mb-1">How does each area look?</h2>
-            <p className="text-white/40 text-xs mb-5">This helps us understand your needs</p>
-            <div className="flex-1 overflow-y-auto space-y-4 -mx-1 px-1">
-              {selectedAreas.map(area => {
-                const q = CONDITION_QUESTIONS[area];
-                if (!q) return null;
-                const selected = areaConditions[area]?.key;
-                const areaInfo = AREAS.find(a => a.key === area);
-                const simplified = [
-                  { label: 'Good', matchKey: q.options[0]?.key },
-                  { label: 'Some issues', matchKey: q.options[1]?.key },
-                  { label: 'Needs work', matchKey: q.options[2]?.key },
-                  { label: 'Not sure', matchKey: q.options[3]?.key },
-                ];
+            <h2 className="text-xl font-light text-white mb-2">What services do you need?</h2>
+            <p className="text-white/40 text-xs mb-5">Select all that apply</p>
+            <div className="flex-1 overflow-y-auto grid grid-cols-2 gap-2 content-start">
+              {SERVICE_OPTIONS.map(svc => {
+                const sel = selectedServices.includes(svc.key);
                 return (
-                  <div key={area} className="bg-white/[0.03] border border-white/10 rounded-lg p-4">
-                    <p className="text-white text-sm font-medium mb-2">{areaInfo?.label}</p>
-                    <div className="grid grid-cols-4 gap-1.5">
-                      {simplified.map((btn, idx) => {
-                        const opt = q.options[idx];
-                        if (!opt) return null;
-                        const isSelected = selected === opt.key;
-                        return (
-                          <button key={btn.matchKey} onClick={() => setAreaConditions(prev => ({ ...prev, [area]: opt }))}
-                            className={`py-2.5 px-1 rounded text-[11px] font-medium text-center transition-all leading-tight ${
-                              isSelected ? 'bg-[#007CB1] text-white' : 'bg-white/5 text-white/60 hover:bg-white/10'
-                            }`}>
-                            {btn.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+                  <button key={svc.key} onClick={() => setSelectedServices(prev => sel ? prev.filter(k => k !== svc.key) : [...prev, svc.key])}
+                    className={`p-3 rounded-lg border text-left text-xs transition-all ${
+                      sel ? 'border-[#007CB1] bg-[#007CB1]/15 text-white' : 'border-white/15 bg-white/5 text-white/60 hover:border-white/30'
+                    }`}>
+                    {svc.label}
+                  </button>
                 );
               })}
             </div>
             <div className="pt-5">
               <Btn onClick={() => {
-                // Check if seats needs follow-up
-                const seatCond = areaConditions.seats;
-                if (selectedAreas.includes('seats') && seatCond?.needsSeatType && !seatType) {
-                  setAskingSeatType(true);
-                  return;
+                // If any exterior/paint service selected, ask paint goal
+                const hasExterior = selectedServices.some(k => ['ext_wash', 'polish', 'ceramic', 'spray_ceramic', 'wax', 'decon'].includes(k));
+                if (hasExterior) {
+                  // Show paint goal screen (stays on step 4 with paintGoal state)
+                  setPaintGoal('pending');
+                } else {
+                  const labels = selectedServices.map(k => SERVICE_OPTIONS.find(s => s.key === k)?.label).filter(Boolean);
+                  set('service_text', labels.join(', '));
+                  setStep(5);
                 }
-                setStep(5);
-              }} disabled={selectedAreas.some(a => !areaConditions[a])}>
-                Next
+              }} disabled={selectedServices.length === 0}>
+                Next ({selectedServices.length} selected)
               </Btn>
             </div>
           </div>
         )}
 
-        {/* Seat type question (conditional follow-up) */}
-        {step === 4 && askingSeatType && (
+        {/* Detailing — paint goal (only if exterior services selected) */}
+        {step === 4 && quickSelect === 'detail' && selectedServices.length > 0 && paintGoal === 'pending' && (
           <div className="flex-1 flex flex-col">
-            <h2 className="text-xl font-light text-white mb-2">Are your seats leather or fabric?</h2>
-            <p className="text-white/40 text-xs mb-6">This determines the right cleaning method</p>
+            <h2 className="text-xl font-light text-white mb-2">What&apos;s your goal for the paint?</h2>
+            <p className="text-white/40 text-xs mb-6">This helps us recommend the right approach</p>
             <div className="space-y-3">
-              {['leather', 'fabric', 'mixed'].map(type => (
-                <button key={type} onClick={() => {
-                  setSeatType(type);
-                  setAskingSeatType(false);
+              {PAINT_GOALS.map(goal => (
+                <button key={goal.key} onClick={() => {
+                  setPaintGoal(goal.key);
+                  const labels = selectedServices.map(k => SERVICE_OPTIONS.find(s => s.key === k)?.label).filter(Boolean);
+                  set('service_text', [...labels, `Paint goal: ${goal.label}`].join(', '));
                   setStep(5);
                 }}
-                  className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-white/30 transition-all active:bg-white/10">
-                  <p className="text-white font-medium text-sm capitalize">{type === 'mixed' ? 'Mix of both' : type}</p>
+                  className="w-full p-5 rounded-lg border border-white/15 bg-white/5 text-left hover:border-[#007CB1] transition-all active:bg-[#007CB1]/10">
+                  <p className="text-white font-medium text-sm">{goal.label}</p>
                 </button>
               ))}
             </div>
@@ -592,10 +505,11 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         {/* STEP 6: Contact Info */}
         {step === 6 && (
           <ContactStep
-            onSubmit={(name, email, phone) => {
+            onSubmit={(name, email, phone, company) => {
               set('name', name);
               set('email', email);
               set('phone', phone);
+              if (company) set('company', company);
               setStep(7);
               handleSubmitWithContact(name, email, phone);
             }}
@@ -614,44 +528,12 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   );
 }
 
-function AreaSelector({ selectedAreas, onToggle, onSelectAll, onContinue }) {
-  const allSelected = AREAS.every(a => selectedAreas.includes(a.key));
-  return (
-    <div className="space-y-3">
-      {AREAS.map(area => (
-        <button key={area.key} onClick={() => onToggle(area.key)}
-          className={`w-full p-4 rounded-lg border text-left transition-all active:scale-[0.98] ${
-            selectedAreas.includes(area.key)
-              ? 'border-[#007CB1] bg-[#007CB1]/15 text-white'
-              : 'border-white/15 bg-white/5 text-white/70 hover:border-white/30'
-          }`}>
-          <span className="text-sm font-medium">{area.label}</span>
-        </button>
-      ))}
-      <button onClick={onSelectAll}
-        className={`w-full p-4 rounded-lg border text-sm font-medium transition-all ${
-          allSelected
-            ? 'border-[#007CB1] bg-[#007CB1]/15 text-white'
-            : 'border-white/15 bg-white/5 text-[#007CB1] hover:border-[#007CB1]/50'
-        }`}>
-        All of the above
-      </button>
-      {selectedAreas.length > 0 && (
-        <div className="pt-4">
-          <button onClick={onContinue}
-            className="w-full py-4 rounded-lg text-sm font-semibold uppercase tracking-wider bg-[#007CB1] text-white hover:bg-[#006a9e] min-h-[48px] transition-all">
-            Continue with {selectedAreas.length} area{selectedAreas.length !== 1 ? 's' : ''}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 // Separate component to prevent parent re-renders from stealing focus
 // Uncontrolled inputs — bypasses React re-render focus issues on iOS Safari
 function ContactStep({ onSubmit }) {
   const nameRef = useRef(null);
+  const companyRef = useRef(null);
   const emailRef = useRef(null);
   const phoneRef = useRef(null);
   const termsRef = useRef(null);
@@ -666,9 +548,10 @@ function ContactStep({ onSubmit }) {
 
   const handleSubmit = () => {
     const name = nameRef.current?.value?.trim() || '';
+    const company = companyRef.current?.value?.trim() || '';
     const email = emailRef.current?.value?.trim() || '';
     const phone = phoneRef.current?.value?.trim() || '';
-    if (name && email && termsRef.current?.checked) onSubmit(name, email, phone);
+    if (name && email && termsRef.current?.checked) onSubmit(name, email, phone, company);
   };
 
   const inputClass = 'w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-4 placeholder-white/40 outline-none focus:border-[#007CB1] transition-colors';
@@ -680,6 +563,8 @@ function ContactStep({ onSubmit }) {
       <div className="space-y-4">
         <input ref={nameRef} type="text" defaultValue="" autoComplete="name" placeholder="Full Name"
           onInput={checkValid} onBlur={checkValid}
+          style={{ fontSize: '16px' }} className={inputClass} />
+        <input ref={companyRef} type="text" defaultValue="" autoComplete="organization" placeholder="Company Name (optional)"
           style={{ fontSize: '16px' }} className={inputClass} />
         <input ref={emailRef} type="email" defaultValue="" autoComplete="email" placeholder="Email Address"
           onInput={checkValid} onBlur={checkValid}
