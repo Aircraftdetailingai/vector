@@ -275,157 +275,140 @@ function DashboardContent() {
           </button>
         </div>
 
-        {/* Section Divider */}
-        <div className="mt-12 mb-8 border-t border-v-border-subtle" />
-
-        {/* Expiring Quotes */}
-        {(quickStats?.expiringQuotes?.length > 0 || quickStats?.recentlyExpired?.length > 0) && (
-          <>
-            <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary mb-4">Attention Required</p>
-            <ExpiringQuotesWidget expiring={quickStats?.expiringQuotes} expired={quickStats?.recentlyExpired} />
-            <div className="mt-8 mb-8 border-t border-v-border-subtle" />
-          </>
-        )}
-
-        {/* Inventory Reorder Alerts */}
-        {inventoryAlerts.length > 0 && (
-          <>
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Inventory Alerts</p>
-              <a href="/calendar" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">View Forecast</a>
-            </div>
-            <div className="space-y-0">
-              {inventoryAlerts.slice(0, 5).map((alert) => (
-                <div key={alert.product_id} className="flex items-center justify-between h-14 border-b border-v-border-subtle">
-                  <div className="flex items-center gap-3 min-w-0">
-                    <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${alert.status === 'out_of_stock' ? 'bg-v-danger' : 'bg-v-gold'}`} />
-                    <div className="min-w-0">
-                      <span className="text-sm text-v-text-primary truncate block">{alert.product_name}</span>
-                      {alert.first_job_client && (
-                        <span className="text-[10px] text-v-text-secondary/60">
-                          Needed for {alert.first_job_client} {alert.first_job_date ? `on ${new Date(alert.first_job_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3 flex-shrink-0 ml-3">
-                    <span className={`text-xs font-data ${alert.status === 'out_of_stock' ? 'text-v-danger' : 'text-v-gold'}`}>
-                      {alert.status === 'out_of_stock' ? 'OUT OF STOCK' : `ORDER ${alert.deficit}${alert.unit}`}
-                    </span>
-                    {alert.product_url && (
-                      <a href={alert.product_url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-v-gold hover:text-v-gold-dim uppercase tracking-wider">
-                        Buy
-                      </a>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="mt-8 mb-8 border-t border-v-border-subtle" />
-          </>
-        )}
-
-        {/* New Quote Requests */}
-        {quoteRequests.length > 0 && (
+        {/* ━━━ 1. NEEDS ATTENTION ━━━ */}
+        {(quoteRequests.length > 0 || (quickStats?.expiringQuotes?.length > 0) || upcomingJobs.some(j => new Date(j.scheduled_date).toDateString() === new Date().toDateString())) && (
           <div className="mt-10">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">New Requests</p>
-                <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full">{quoteRequests.length}</span>
-              </div>
-              <a href="/requests" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">View All</a>
-            </div>
-            <div className="space-y-2">
-              {quoteRequests.slice(0, 5).map((req) => (
-                <a key={req.id} href={`/requests/${req.id}`}
-                  className="block bg-white/[0.02] border border-v-border-subtle rounded-lg px-4 py-3 hover:bg-white/[0.04] transition-colors">
-                  <div className="flex items-center justify-between">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-v-gold mb-4 pb-2 border-b border-v-gold/20">Needs Attention</p>
+
+            {/* Incoming Requests */}
+            {quoteRequests.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1.5 h-1.5 rounded-full bg-green-500" />
+                    <p className="text-v-text-secondary text-xs">{quoteRequests.length} new request{quoteRequests.length !== 1 ? 's' : ''}</p>
+                  </div>
+                  <a href="/requests" className="text-[10px] text-v-gold hover:text-v-gold-dim uppercase tracking-wider">View All</a>
+                </div>
+                {quoteRequests.slice(0, 3).map(req => (
+                  <a key={req.id} href={`/requests/${req.id}`}
+                    className="flex items-center justify-between py-2.5 border-b border-v-border-subtle/50 hover:bg-white/[0.02] transition-colors">
                     <div className="min-w-0">
-                      <p className="text-white text-sm truncate">{req.name || req.customer_name || 'Customer'}</p>
-                      <p className="text-v-text-secondary text-xs truncate">
-                        {req.aircraft_model || 'Aircraft'}{req.airport ? ` \u00B7 ${req.airport}` : ''}{req.services_requested ? ` \u00B7 ${req.services_requested}` : ''}
-                      </p>
+                      <p className="text-white text-sm truncate">{req.name || 'Customer'}</p>
+                      <p className="text-v-text-secondary text-xs truncate">{req.aircraft_model || ''}{req.airport ? ` \u00B7 ${req.airport}` : ''}</p>
                     </div>
                     <span className="text-v-text-secondary text-[10px] ml-3 shrink-0">{req.created_at ? new Date(req.created_at).toLocaleDateString() : ''}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            {/* Expiring Quotes */}
+            {(quickStats?.expiringQuotes?.length > 0 || quickStats?.recentlyExpired?.length > 0) && (
+              <div className="mb-4">
+                <ExpiringQuotesWidget expiring={quickStats?.expiringQuotes} expired={quickStats?.recentlyExpired} />
+              </div>
+            )}
+
+            {/* Today's Jobs */}
+            {upcomingJobs.filter(j => new Date(j.scheduled_date).toDateString() === new Date().toDateString()).length > 0 && (
+              <div className="mb-2">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-v-gold animate-pulse" />
+                  <p className="text-v-text-secondary text-xs">Today&apos;s jobs</p>
+                </div>
+                {upcomingJobs.filter(j => new Date(j.scheduled_date).toDateString() === new Date().toDateString()).map(job => (
+                  <a key={job.id} href={job.share_link ? `/q/${job.share_link}` : '/jobs'}
+                    className="flex items-center justify-between py-2.5 border-b border-v-border-subtle/50 hover:bg-white/[0.02] transition-colors">
+                    <div className="min-w-0">
+                      <p className="text-white text-sm truncate">{job.aircraft_name || job.aircraft_model || 'Aircraft'}</p>
+                      <p className="text-v-text-secondary text-xs truncate">{job.customer_name || job.client_name || ''}</p>
+                    </div>
+                    <span className="text-v-gold text-sm font-data ml-3 shrink-0">{currencySymbol()}{formatPriceWhole(job.total_price)}</span>
+                  </a>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ━━━ 2. UPCOMING JOBS (next 7 days) ━━━ */}
+        {upcomingJobs.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Upcoming Jobs</p>
+              <a href="/calendar" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">Calendar</a>
+            </div>
+            <div className="space-y-2">
+              {upcomingJobs.filter(j => new Date(j.scheduled_date).toDateString() !== new Date().toDateString()).slice(0, 5).map(job => {
+                const d = new Date(job.scheduled_date);
+                return (
+                  <a key={job.id} href={job.share_link ? `/q/${job.share_link}` : '/jobs'}
+                    className="block bg-white/[0.02] border border-v-border-subtle rounded-lg px-4 py-3 hover:bg-white/[0.04] transition-colors">
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <p className="text-white text-sm truncate">{job.aircraft_name || job.aircraft_model || 'Aircraft'}</p>
+                        <p className="text-v-text-secondary text-xs truncate">{job.customer_name || job.client_name || ''}{job.airport ? ` \u00B7 ${job.airport}` : ''}</p>
+                      </div>
+                      <div className="text-right ml-3 shrink-0">
+                        <p className="text-v-text-secondary text-[10px]">{d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</p>
+                        <p className="text-v-gold text-sm font-data">{currencySymbol()}{formatPriceWhole(job.total_price)}</p>
+                      </div>
+                    </div>
+                  </a>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* ━━━ 3. RECENT QUOTES ━━━ */}
+        <div className="mt-10">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Recent Quotes</p>
+            <a href="/quotes" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">View All</a>
+          </div>
+          {recentQuotes.length > 0 ? (
+            <div>
+              {recentQuotes.slice(0, 5).map(q => (
+                <a key={q.id} href={q.share_link ? `/q/${q.share_link}` : '/quotes'}
+                  className="flex items-center justify-between h-14 border-b border-v-border-subtle hover:bg-white/[0.02] transition-colors -mx-2 px-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm text-v-text-primary truncate">{q.aircraft_name || q.aircraft_model || 'Aircraft'}</p>
+                    <p className="text-xs text-v-text-secondary/60 truncate">{q.customer_name || q.customer_email || ''}</p>
+                  </div>
+                  <div className="flex items-center gap-4 ml-3 flex-shrink-0">
+                    <span className={`text-[10px] uppercase tracking-wider ${STATUS_COLORS[q.status] || 'text-v-text-secondary'}`}>{q.status}</span>
+                    <span className="text-sm text-v-text-primary font-data min-w-[60px] text-right">{currencySymbol()}{formatPriceWhole(q.total_price)}</span>
                   </div>
                 </a>
               ))}
             </div>
+          ) : (
+            <p className="text-sm text-v-text-secondary/60 py-8">No quotes yet</p>
+          )}
+        </div>
+
+        {/* ━━━ 4. INVENTORY ALERTS ━━━ */}
+        {inventoryAlerts.length > 0 && (
+          <div className="mt-10">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Inventory Alerts</p>
+              <a href="/calendar" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">Forecast</a>
+            </div>
+            {inventoryAlerts.slice(0, 5).map(alert => (
+              <div key={alert.product_id} className="flex items-center justify-between h-12 border-b border-v-border-subtle/50">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${alert.status === 'out_of_stock' ? 'bg-v-danger' : 'bg-v-gold'}`} />
+                  <span className="text-sm text-v-text-primary truncate">{alert.product_name}</span>
+                </div>
+                <span className={`text-xs font-data shrink-0 ml-3 ${alert.status === 'out_of_stock' ? 'text-v-danger' : 'text-v-gold'}`}>
+                  {alert.status === 'out_of_stock' ? 'OUT' : `Order ${alert.deficit}${alert.unit}`}
+                </span>
+              </div>
+            ))}
           </div>
         )}
-
-        {/* Recent Quotes & Upcoming Jobs */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
-          {/* Recent Quotes */}
-          <div>
-            <div className="flex items-center justify-between mb-5">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Recent Quotes</p>
-              <a href="/quotes" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">View All</a>
-            </div>
-            {recentQuotes.length > 0 ? (
-              <div>
-                {recentQuotes.slice(0, 5).map((q) => (
-                  <a
-                    key={q.id}
-                    href={q.share_link ? `/q/${q.share_link}` : `/quotes`}
-                    className="flex items-center justify-between h-14 border-b border-v-border-subtle hover:bg-white/[0.02] transition-colors -mx-2 px-2"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm text-v-text-primary truncate">{q.aircraft_name || q.aircraft_model || 'Unknown Aircraft'}</p>
-                      <p className="text-xs text-v-text-secondary/60 truncate">{q.customer_name || q.customer_email || ''}</p>
-                    </div>
-                    <div className="flex items-center gap-4 ml-3 flex-shrink-0">
-                      <span className={`text-[10px] uppercase tracking-wider ${STATUS_COLORS[q.status] || 'text-v-text-secondary'}`}>{q.status}</span>
-                      <span className="text-sm text-v-text-primary font-data min-w-[60px] text-right">{currencySymbol()}{formatPriceWhole(q.total_price)}</span>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            ) : (
-              <p className="text-sm text-v-text-secondary/60 py-8">No quotes yet</p>
-            )}
-          </div>
-
-          {/* Upcoming Jobs */}
-          <div>
-            <div className="flex items-center justify-between mb-5">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Upcoming Jobs</p>
-              <a href="/calendar" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">Calendar</a>
-            </div>
-            {upcomingJobs.length > 0 ? (
-              <div>
-                {upcomingJobs.map((job) => {
-                  const d = new Date(job.scheduled_date);
-                  const isToday = d.toDateString() === new Date().toDateString();
-                  return (
-                    <div
-                      key={job.id}
-                      className="flex items-center justify-between h-14 border-b border-v-border-subtle hover:bg-white/[0.02] transition-colors -mx-2 px-2"
-                    >
-                      <div className="min-w-0 flex-1">
-                        <p className="text-sm text-v-text-primary truncate">{job.aircraft_name || job.aircraft_model || 'Unknown Aircraft'}</p>
-                        <p className="text-xs text-v-text-secondary/60 truncate">{job.customer_name || job.client_name || ''}</p>
-                      </div>
-                      <div className="flex items-center gap-4 ml-3 flex-shrink-0">
-                        <span className={`text-[10px] uppercase tracking-wider ${isToday ? 'text-v-gold' : 'text-v-text-secondary'}`}>
-                          {isToday ? 'Today' : d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
-                        </span>
-                        {['in_progress', 'completed', 'scheduled'].includes(job.status) && (
-                          <a href={`/jobs/${job.id}/log-products`} className="text-[10px] text-v-text-secondary hover:text-v-gold uppercase tracking-wider transition-colors">
-                            Log
-                          </a>
-                        )}
-                        <span className="text-sm text-v-text-primary font-data min-w-[60px] text-right">{currencySymbol()}{formatPriceWhole(job.total_price)}</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            ) : (
-              <p className="text-sm text-v-text-secondary/60 py-8">No upcoming jobs</p>
-            )}
-          </div>
-        </div>
 
         {/* Terms Modal */}
         <TermsConsentModal
