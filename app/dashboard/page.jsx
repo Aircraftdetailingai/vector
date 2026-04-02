@@ -276,7 +276,7 @@ function DashboardContent() {
 
         {/* ━━━ 1. NEEDS ATTENTION ━━━ */}
         {(quoteRequests.length > 0 || (quickStats?.expiringQuotes?.length > 0) || upcomingJobs.some(j => new Date(j.scheduled_date).toDateString() === new Date().toDateString())) && (
-          <div className="mt-10">
+          <div id="attention" className="mt-10">
             <p className="text-[10px] uppercase tracking-[0.2em] text-v-gold mb-4 pb-2 border-b border-v-gold/20">Needs Attention</p>
 
             {/* Incoming Requests */}
@@ -333,7 +333,7 @@ function DashboardContent() {
 
         {/* ━━━ 2. UPCOMING JOBS (next 7 days) ━━━ */}
         {upcomingJobs.length > 0 && (
-          <div className="mt-10">
+          <div id="upcoming" className="mt-10">
             <div className="flex items-center justify-between mb-4">
               <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Upcoming Jobs</p>
               <a href="/calendar" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">Calendar</a>
@@ -362,7 +362,7 @@ function DashboardContent() {
         )}
 
         {/* ━━━ 3. RECENT QUOTES ━━━ */}
-        <div className="mt-10">
+        <div id="quotes" className="mt-10">
           <div className="flex items-center justify-between mb-4">
             <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Recent Quotes</p>
             <a href="/quotes" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">View All</a>
@@ -391,7 +391,7 @@ function DashboardContent() {
 
         {/* ━━━ 5. FOLLOW-UPS DUE ━━━ */}
         {followUps.needsReview.length > 0 && (
-          <div className="mt-10">
+          <div id="followups" className="mt-10">
             <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary mb-4">Follow-ups Due</p>
             <div className="space-y-2">
               {followUps.needsReview.slice(0, 5).map(job => {
@@ -419,7 +419,7 @@ function DashboardContent() {
 
         {/* ━━━ 6. RECURRING SERVICES DUE ━━━ */}
         {followUps.recurring.length > 0 && (
-          <div className="mt-10">
+          <div id="recurring" className="mt-10">
             <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary mb-4">Recurring Services Due</p>
             <div className="space-y-2">
               {followUps.recurring.slice(0, 5).map(rec => {
@@ -446,7 +446,7 @@ function DashboardContent() {
 
         {/* ━━━ 7. RECENT COMPLETIONS ━━━ */}
         {followUps.recentCompleted.length > 0 && (
-          <div className="mt-10">
+          <div id="completions" className="mt-10">
             <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary mb-4">Recent Completions</p>
             {followUps.recentCompleted.slice(0, 5).map(job => {
               const daysAgo = Math.floor((Date.now() - new Date(job.completed_at).getTime()) / (1000 * 60 * 60 * 24));
