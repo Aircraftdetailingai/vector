@@ -48,7 +48,7 @@ export async function GET(request) {
     return Response.json({ error: 'Failed to fetch directory' }, { status: 500 });
   }
 
-  // Attach public review stats (Vector + Google)
+  // Attach public review stats (platform + Google)
   const detailerIds = (data || []).map(d => d.id);
   let enriched = data || [];
 

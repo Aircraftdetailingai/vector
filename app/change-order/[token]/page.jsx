@@ -158,7 +158,7 @@ export default function ChangeOrderPage() {
         {/* Header */}
         <div className="text-center text-white mb-8 pt-8">
           <h1 className="text-3xl font-bold flex items-center justify-center gap-2">
-            <span><span>&#9992;</span> Vector#9992;</span> Shiny Jets CRM
+            <span><span>&#9992;</span> Shiny Jets CRM
           </h1>
           <p className="text-blue-200 mt-2">Additional Services Request</p>
         </div>

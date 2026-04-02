@@ -18,7 +18,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">1. Acceptance of Terms</h2>
             <p>
-              By accessing or using Vector Aviation Software (&ldquo;Vector,&rdquo; &ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;the Platform&rdquo;),
+              By accessing or using Shiny Jets CRM (&ldquo;Shiny Jets CRM,&rdquo; &ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;the Platform&rdquo;),
               operated by Vector Aviation Artificial Intelligence, you agree to be bound by these Terms of Service.
               If you do not agree to these terms, do not use the Platform.
             </p>
@@ -27,15 +27,15 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">2. Description of Service</h2>
             <p>
-              Vector is a software-as-a-service (SaaS) platform designed for aircraft detailing
+              Shiny Jets CRM is a software-as-a-service (SaaS) platform designed for aircraft detailing
               businesses. The Platform provides tools for quoting, invoicing, scheduling, customer
               management, payment processing, team management, and business analytics.
             </p>
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-3">
               <p className="font-medium text-blue-900 mb-2">Important:</p>
               <p className="text-blue-800">
-                Vector is solely a software platform. Vector does not perform, supervise, or control
-                any aircraft detailing services. Vector is not an aircraft detailing company and does
+                Shiny Jets CRM is solely a software platform. Shiny Jets CRM does not perform, supervise, or control
+                any aircraft detailing services. Shiny Jets CRM is not an aircraft detailing company and does
                 not employ or contract detailers to perform services.
               </p>
             </div>
@@ -43,7 +43,7 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">3. Account Registration</h2>
-            <p className="mb-2">To use Vector, you must:</p>
+            <p className="mb-2">To use Shiny Jets CRM, you must:</p>
             <ul className="list-disc ml-6 space-y-1">
               <li>Be at least 18 years of age</li>
               <li>Provide accurate and complete registration information</li>
@@ -60,7 +60,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">4. Subscription Plans and Billing</h2>
             <p className="mb-2">
-              Vector offers multiple subscription tiers (Free, Pro, Business, and Enterprise)
+              Shiny Jets CRM offers multiple subscription tiers (Free, Pro, Business, and Enterprise)
               with both monthly and annual billing options. By selecting a paid plan, you agree to
               the following:
             </p>
@@ -79,7 +79,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">5. Platform Fees</h2>
             <p className="mb-3">
-              Vector charges a platform fee on transactions processed through the Platform.
+              Shiny Jets CRM charges a platform fee on transactions processed through the Platform.
               The fee rate depends on your subscription tier (5% for Free, 2% for Pro, 1% for
               Business, and 0% for Enterprise). Platform fees are automatically deducted from
               payments processed through our integrated payment system.
@@ -89,7 +89,7 @@ export default function TermsPage() {
               <p className="text-red-800">
                 Platform fees are NON-REFUNDABLE once a service has been performed, regardless of
                 customer satisfaction, disputes between the detailer and their customer, or any other
-                circumstance. Platform fees compensate Vector for providing the software platform,
+                circumstance. Platform fees compensate Shiny Jets CRM for providing the software platform,
                 payment processing infrastructure, hosting, and support&mdash;services that have
                 already been delivered at the time of the transaction. Refunds or adjustments between
                 a detailer and their customer are the sole responsibility of the detailer and do not
@@ -103,9 +103,9 @@ export default function TermsPage() {
             <div className="bg-v-gold/5 border border-v-gold/20 rounded-lg p-4">
               <p className="font-bold text-v-gold-muted mb-2">Detailers Are Independent Businesses:</p>
               <p className="text-v-gold-muted mb-3">
-                Detailers who use Vector are independent contractors and independent business operators.
+                Detailers who use Shiny Jets CRM are independent contractors and independent business operators.
                 They are NOT employees, agents, representatives, or partners of Vector Aviation
-                Artificial Intelligence. Vector does not:
+                Artificial Intelligence. Shiny Jets CRM does not:
               </p>
               <ul className="list-disc ml-6 space-y-1 text-v-gold-muted">
                 <li>Employ, hire, or contract detailers to perform services</li>
@@ -138,7 +138,7 @@ export default function TermsPage() {
                 Detailers are solely and exclusively responsible for the quality of their work,
                 handling all customer disputes, issuing refunds to their customers when appropriate,
                 maintaining adequate insurance, and complying with all applicable laws and regulations.
-                You agree to hold Vector harmless from any and all claims related to detailing services.
+                You agree to hold Shiny Jets CRM harmless from any and all claims related to detailing services.
               </p>
             </div>
           </section>
@@ -148,10 +148,10 @@ export default function TermsPage() {
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
               <p className="font-medium text-gray-900 mb-2">Lead Attribution:</p>
               <p className="text-gray-700">
-                Customer leads generated through Vector&mdash;including but not limited to inquiries,
+                Customer leads generated through Shiny Jets CRM&mdash;including but not limited to inquiries,
                 quote requests, bookings, and any first contact facilitated by the Platform&mdash;must
                 be processed through the Platform for a period of twelve (12) months from the date of
-                first contact. Circumventing this requirement by processing Vector-generated leads
+                first contact. Circumventing this requirement by processing platform-generated leads
                 outside the Platform constitutes a material breach of these Terms and may result in
                 account termination and recovery of applicable platform fees.
               </p>
@@ -162,7 +162,7 @@ export default function TermsPage() {
             <h2 className="text-xl font-semibold text-gray-900 mb-3">9. Payment Processing</h2>
             <p>
               Payment processing is provided by Stripe, Inc. through Stripe Connect. By using
-              Vector&apos;s payment features, you also agree to Stripe&apos;s{' '}
+              Shiny Jets CRM&apos;s payment features, you also agree to Stripe&apos;s{' '}
               <a href="https://stripe.com/connect-account/legal" className="text-v-gold-dim hover:underline" target="_blank" rel="noreferrer">
                 Connected Account Agreement
               </a>{' '}
@@ -170,7 +170,7 @@ export default function TermsPage() {
               <a href="https://stripe.com/legal" className="text-v-gold-dim hover:underline" target="_blank" rel="noreferrer">
                 Terms of Service
               </a>.
-              Vector is not responsible for Stripe&apos;s service availability, processing delays,
+              Shiny Jets CRM is not responsible for Stripe&apos;s service availability, processing delays,
               or any disputes between you and Stripe.
             </p>
           </section>
@@ -223,7 +223,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">13. Aggregated Data and Non-Attribution</h2>
             <p className="mb-3">
-              Vector may aggregate and anonymize data from all users to create industry reports,
+              Shiny Jets CRM may aggregate and anonymize data from all users to create industry reports,
               benchmarks, and analytics products. This data may be shared with or sold to third parties
               for research, analytics, or commercial purposes.
             </p>
@@ -231,7 +231,7 @@ export default function TermsPage() {
               <p className="font-medium text-blue-900 mb-2">Non-Attribution Guarantee:</p>
               <p className="text-blue-800">
                 Data shared with or sold to third parties is never attributable to any individual account,
-                user, or business. Vector employs technical and organizational measures to prevent
+                user, or business. Shiny Jets CRM employs technical and organizational measures to prevent
                 re-identification of individual accounts from aggregated data sets.
               </p>
             </div>
@@ -240,7 +240,7 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">14. Communications</h2>
             <p>
-              Vector may send communications on your behalf (such as quote emails) through
+              Shiny Jets CRM may send communications on your behalf (such as quote emails) through
               third-party services. You are responsible for ensuring compliance with applicable
               laws regarding electronic communications, including the CAN-SPAM Act. You represent
               that you have obtained proper consent from recipients before sending communications
@@ -352,7 +352,7 @@ export default function TermsPage() {
             <p className="mb-3">
               <strong>Payment Processing:</strong> All payments are processed by Stripe, Inc. Vector Aviation
               Artificial Intelligence LLC acts solely as a software platform connecting aircraft detailing
-              businesses with their customers. Vector Aviation is not a party to any transaction between
+              businesses with their customers. Shiny Jets CRM is not a party to any transaction between
               detailers and their customers.
             </p>
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-3">
@@ -369,7 +369,7 @@ export default function TermsPage() {
               </ul>
             </div>
             <p className="mb-3">
-              <strong>Platform Fee Non-Refundable:</strong> Vector Aviation platform fees are non-refundable
+              <strong>Platform Fee Non-Refundable:</strong> Shiny Jets CRM platform fees are non-refundable
               regardless of chargebacks or disputes between detailers and customers.
             </p>
             <p>
@@ -383,16 +383,16 @@ export default function TermsPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">23. Points & Rewards Program</h2>
             <p>
-              Vector Aviation offers a points-based rewards program (&ldquo;Rewards Program&rdquo;) subject to
+              Shiny Jets CRM offers a points-based rewards program (&ldquo;Rewards Program&rdquo;) subject to
               the following terms:
             </p>
             <ul className="list-disc pl-6 mt-2 space-y-1">
               <li>Points are earned through eligible platform activities at a rate of 200 points per $1.00 USD in booked services, plus bonus points for qualifying actions.</li>
               <li>Points have no cash value and cannot be exchanged for currency, transferred to other users, or sold.</li>
-              <li>200 points equals $1.00 in redemption credit, redeemable exclusively toward items in the Vector Aviation reward catalog.</li>
+              <li>200 points equals $1.00 in redemption credit, redeemable exclusively toward items in the Shiny Jets CRM reward catalog.</li>
               <li>Redemption is available to users on Pro, Business, or Enterprise subscription tiers. Free-tier users accumulate points but cannot redeem until upgrading.</li>
               <li>Points multipliers are applied based on your subscription tier (Pro 1.5x, Business 2.0x, Enterprise 3.0x).</li>
-              <li>Vector Aviation reserves the right to modify the points conversion rate, reward catalog, or program terms at any time with 30 days&apos; notice.</li>
+              <li>Shiny Jets CRM reserves the right to modify the points conversion rate, reward catalog, or program terms at any time with 30 days&apos; notice.</li>
               <li>Points balances may be forfeited if an account is terminated for violation of these Terms of Service.</li>
               <li>All redemptions are final. Redeemed rewards are subject to availability and fulfillment timelines.</li>
             </ul>

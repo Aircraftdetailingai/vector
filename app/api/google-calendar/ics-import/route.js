@@ -28,7 +28,7 @@ export async function POST(request) {
   try {
     // Fetch the ICS file
     const res = await fetch(icsUrl, {
-      headers: { 'User-Agent': 'Vector-Calendar-Sync/1.0' },
+      headers: { 'User-Agent': 'ShinyjetsCalendarSync/1.0' },
     });
 
     if (!res.ok) {

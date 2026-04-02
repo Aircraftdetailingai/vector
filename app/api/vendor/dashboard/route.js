@@ -11,9 +11,9 @@ function getSupabase() {
 }
 
 const COMMISSION_RATES = {
-  basic: 0.10,   // 10% to Vector
-  pro: 0.25,     // 25% to Vector
-  partner: 0.60, // 60% to Vector
+  basic: 0.10,   // 10% platform fee
+  pro: 0.25,     // 25% platform fee
+  partner: 0.60, // 60% platform fee
 };
 
 // GET - Get vendor dashboard data

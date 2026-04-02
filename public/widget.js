@@ -390,7 +390,7 @@
         questions = defaultQuestions;
       }
     } catch (err) {
-      console.error('Vector Widget: Failed to load config', err);
+      console.error('Shiny Jets Widget: Failed to load config', err);
       questions = defaultQuestions;
     }
   }
@@ -482,7 +482,7 @@
         }),
       });
     } catch (err) {
-      console.error('Vector Widget: Failed to submit lead', err);
+      console.error('Shiny Jets Widget: Failed to submit lead', err);
     }
   }
 

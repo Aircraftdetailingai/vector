@@ -18,8 +18,8 @@ export default function PrivacyPage() {
           <section>
             <h2 className="text-xl font-semibold text-gray-900 mb-3">1. Introduction</h2>
             <p>
-              Vector Aviation Artificial Intelligence (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) operates Vector Aviation Software
-              (&ldquo;Vector&rdquo; or &ldquo;the Platform&rdquo;). This Privacy Policy explains how we collect, use,
+              Vector Aviation Artificial Intelligence (&ldquo;we,&rdquo; &ldquo;our,&rdquo; or &ldquo;us&rdquo;) operates Shiny Jets CRM
+              (&ldquo;Shiny Jets CRM&rdquo; or &ldquo;the Platform&rdquo;). This Privacy Policy explains how we collect, use,
               disclose, and safeguard your information when you use our Platform. By using Shiny Jets CRM,
               you consent to the practices described in this policy.
             </p>

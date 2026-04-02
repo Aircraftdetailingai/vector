@@ -124,7 +124,7 @@ export default function DetailerProfilePage() {
                   <span className="text-v-gold font-semibold">{combinedAvg}</span>
                   <span className="text-gray-500 text-sm">
                     across {combinedTotal} review{combinedTotal !== 1 ? 's' : ''}
-                    {vectorTotal > 0 && gTotal > 0 && ' (Vector + Google)'}
+                    {vectorTotal > 0 && gTotal > 0 && ' (Platform + Google)'}
                   </span>
                 </div>
               )}
@@ -140,7 +140,7 @@ export default function DetailerProfilePage() {
           </div>
         </div>
 
-        {/* Vector Reviews */}
+        {/* Platform Reviews */}
         {reviews.length > 0 && (
           <div className="mb-6">
             <div className="flex items-center gap-2 mb-4">
