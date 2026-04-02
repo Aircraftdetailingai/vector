@@ -102,7 +102,6 @@ function DashboardContent() {
   const [recentQuotes, setRecentQuotes] = useState([]);
   const [upcomingJobs, setUpcomingJobs] = useState([]);
   const [showTermsModal, setShowTermsModal] = useState(false);
-  const [inventoryAlerts, setInventoryAlerts] = useState([]);
   const [quoteRequests, setQuoteRequests] = useState([]);
   const [followUps, setFollowUps] = useState({ needsReview: [], recentCompleted: [], recurring: [] });
 
@@ -154,12 +153,11 @@ function DashboardContent() {
         body: JSON.stringify({ action: 'DAILY_LOGIN' }),
       }).catch(() => {});
 
-      const [servicesRes, statsRes, quotesRes, upcomingRes, forecastRes, requestsRes, followUpsRes] = await Promise.allSettled([
+      const [servicesRes, statsRes, quotesRes, upcomingRes, requestsRes, followUpsRes] = await Promise.allSettled([
         fetch('/api/services', { headers }),
         fetch('/api/dashboard/stats', { headers }),
         fetch('/api/quotes?limit=5&sort=created_at&order=desc', { headers }),
         fetch('/api/quotes?status=paid,scheduled,in_progress&has_date=true&limit=10&sort=scheduled_date&order=asc', { headers }),
-        fetch('/api/inventory/forecast?days=14', { headers }),
         fetch('/api/lead-intake/leads?status=new', { headers }),
         fetch('/api/dashboard/follow-ups', { headers }),
       ]);
@@ -183,10 +181,6 @@ function DashboardContent() {
           return d >= now && d <= in7days;
         });
         setUpcomingJobs(upcoming.slice(0, 5));
-      }
-      if (forecastRes.status === 'fulfilled' && forecastRes.value.ok) {
-        const data = await forecastRes.value.json();
-        setInventoryAlerts(data.alerts || []);
       }
       if (requestsRes.status === 'fulfilled' && requestsRes.value.ok) {
         const data = await requestsRes.value.json();
@@ -394,26 +388,6 @@ function DashboardContent() {
           )}
         </div>
 
-        {/* ━━━ 4. INVENTORY ALERTS ━━━ */}
-        {inventoryAlerts.length > 0 && (
-          <div className="mt-10">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Inventory Alerts</p>
-              <a href="/calendar" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">Forecast</a>
-            </div>
-            {inventoryAlerts.slice(0, 5).map(alert => (
-              <div key={alert.product_id} className="flex items-center justify-between h-12 border-b border-v-border-subtle/50">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className={`w-1.5 h-1.5 rounded-full flex-shrink-0 ${alert.status === 'out_of_stock' ? 'bg-v-danger' : 'bg-v-gold'}`} />
-                  <span className="text-sm text-v-text-primary truncate">{alert.product_name}</span>
-                </div>
-                <span className={`text-xs font-data shrink-0 ml-3 ${alert.status === 'out_of_stock' ? 'text-v-danger' : 'text-v-gold'}`}>
-                  {alert.status === 'out_of_stock' ? 'OUT' : `Order ${alert.deficit}${alert.unit}`}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* ━━━ 5. FOLLOW-UPS DUE ━━━ */}
         {followUps.needsReview.length > 0 && (

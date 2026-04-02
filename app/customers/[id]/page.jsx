@@ -57,6 +57,10 @@ export default function CustomerDetailPage() {
   const [editingNote, setEditingNote] = useState(null);
   const [editContent, setEditContent] = useState('');
   const [quoteStats, setQuoteStats] = useState(null);
+  const [recommendations, setRecommendations] = useState([]);
+  const [showAddRec, setShowAddRec] = useState(false);
+  const [recForm, setRecForm] = useState({ service_name: 'Wax', status: 'maintain', interval_days: 90, last_service_date: '', notes: '' });
+  const [recSaving, setRecSaving] = useState(false);
   const [loadError, setLoadError] = useState(null);
   const [aircraft, setAircraft] = useState([]);
 
@@ -72,10 +76,11 @@ export default function CustomerDetailPage() {
     setLoading(true);
     setLoadError(null);
     try {
-      const [custRes, notesRes, actRes] = await Promise.all([
+      const [custRes, notesRes, actRes, recsRes] = await Promise.all([
         fetch(`/api/customers/${customerId}`, { headers }),
         fetch(`/api/customers/${customerId}/notes`, { headers }).catch(() => null),
         fetch(`/api/customers/${customerId}/activity`, { headers }).catch(() => null),
+        fetch(`/api/customer-recommendations?customer_id=${customerId}`, { headers }).catch(() => null),
       ]);
 
       if (custRes.ok) {
@@ -95,6 +100,10 @@ export default function CustomerDetailPage() {
         setActivity(data.activity || []);
       } else if (actRes) {
         console.error('Activity API error:', actRes.status);
+      }
+      if (recsRes?.ok) {
+        const data = await recsRes.json();
+        setRecommendations(data.recommendations || []);
       }
 
       // Fetch aircraft (unique tail numbers from quotes)
@@ -435,17 +444,17 @@ export default function CustomerDetailPage() {
         <div className="lg:col-span-2">
           {/* Tabs */}
           <div className="flex gap-1 mb-4">
-            {['activity', 'notes', 'aircraft'].map(tab => (
+            {['activity', 'notes', 'aircraft', 'recommendations'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 rounded-sm text-sm font-medium transition-colors ${
+                className={`px-3 py-2 rounded-sm text-xs font-medium transition-colors ${
                   activeTab === tab
                     ? 'bg-v-surface text-v-text-primary border border-v-border'
                     : 'text-v-text-secondary hover:text-v-text-primary hover:bg-v-surface/50'
                 }`}
               >
-                {tab === 'activity' ? `Timeline (${activity.length})` : tab === 'notes' ? `Notes (${notes.length})` : 'Aircraft'}
+                {tab === 'activity' ? `Timeline (${activity.length})` : tab === 'notes' ? `Notes (${notes.length})` : tab === 'recommendations' ? `Recs (${recommendations.length})` : 'Aircraft'}
               </button>
             ))}
           </div>
@@ -663,6 +672,124 @@ export default function CustomerDetailPage() {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+
+          {/* Recommendations Tab */}
+          {activeTab === 'recommendations' && (
+            <div>
+              <div className="flex items-center justify-between mb-4">
+                <p className="text-v-text-secondary text-xs">Service intervals and maintenance recommendations</p>
+                <button onClick={() => setShowAddRec(true)}
+                  className="px-3 py-1.5 text-[10px] uppercase tracking-wider text-v-gold border border-v-gold/30 hover:bg-v-gold/5 rounded transition-colors">
+                  Add
+                </button>
+              </div>
+
+              {recommendations.length === 0 && !showAddRec && (
+                <div className="text-center py-8 text-v-text-secondary text-sm">No recommendations yet</div>
+              )}
+
+              {/* Add/Edit Form */}
+              {showAddRec && (
+                <div className="bg-v-surface border border-v-border rounded-lg p-4 mb-4">
+                  <div className="grid grid-cols-2 gap-3 mb-3">
+                    <div>
+                      <label className="block text-[10px] text-v-text-secondary uppercase tracking-wider mb-1">Service</label>
+                      <select value={recForm.service_name} onChange={e => setRecForm(p => ({ ...p, service_name: e.target.value }))}
+                        className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-2 text-sm">
+                        {['Wax', 'Ceramic Coating', 'Spray Ceramic', 'Decon Wash', 'Polish', 'Leather Clean', 'Carpet Extraction', 'De-ice Boots', 'Brightwork', 'Exterior Wash', 'Other'].map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-v-text-secondary uppercase tracking-wider mb-1">Status</label>
+                      <select value={recForm.status} onChange={e => setRecForm(p => ({ ...p, status: e.target.value }))}
+                        className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-2 text-sm">
+                        <option value="maintain">Maintain</option>
+                        <option value="restore">Needs Restoration</option>
+                        <option value="protect">Protect</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-v-text-secondary uppercase tracking-wider mb-1">Last Service</label>
+                      <input type="date" value={recForm.last_service_date} onChange={e => setRecForm(p => ({ ...p, last_service_date: e.target.value }))}
+                        className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-2 text-sm" />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] text-v-text-secondary uppercase tracking-wider mb-1">Interval</label>
+                      <select value={recForm.interval_days} onChange={e => setRecForm(p => ({ ...p, interval_days: parseInt(e.target.value) }))}
+                        className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-2 text-sm">
+                        <option value={30}>Every 30 days</option>
+                        <option value={60}>Every 60 days</option>
+                        <option value={90}>Every 90 days</option>
+                        <option value={180}>Every 6 months</option>
+                        <option value={365}>Every year</option>
+                      </select>
+                    </div>
+                  </div>
+                  <input type="text" value={recForm.notes} onChange={e => setRecForm(p => ({ ...p, notes: e.target.value }))}
+                    placeholder="Notes (optional)"
+                    className="w-full bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-2 text-sm mb-3 placeholder-v-text-secondary/50" />
+                  <div className="flex gap-2">
+                    <button onClick={async () => {
+                      setRecSaving(true);
+                      await fetch('/api/customer-recommendations', {
+                        method: 'POST', headers,
+                        body: JSON.stringify({ ...recForm, customer_id: customerId, tail_number: aircraft[0]?.tail_number || '' }),
+                      }).then(r => r.ok ? r.json() : null).then(d => {
+                        if (d?.recommendation) setRecommendations(prev => [...prev, d.recommendation]);
+                      });
+                      setRecSaving(false);
+                      setShowAddRec(false);
+                      setRecForm({ service_name: 'Wax', status: 'maintain', interval_days: 90, last_service_date: '', notes: '' });
+                    }} disabled={recSaving}
+                      className="px-4 py-2 bg-v-gold text-v-charcoal text-xs font-semibold uppercase tracking-wider rounded hover:bg-v-gold-dim disabled:opacity-50">
+                      {recSaving ? 'Saving...' : 'Save'}
+                    </button>
+                    <button onClick={() => setShowAddRec(false)}
+                      className="px-4 py-2 border border-v-border text-v-text-secondary text-xs uppercase tracking-wider rounded hover:bg-white/5">
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Recommendation Cards */}
+              <div className="space-y-2">
+                {recommendations.map(rec => {
+                  const daysUntil = rec.next_due_date ? Math.ceil((new Date(rec.next_due_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)) : null;
+                  const overdue = daysUntil !== null && daysUntil < 0;
+                  const statusColors = { maintain: 'text-green-400 bg-green-500/10', restore: 'text-yellow-400 bg-yellow-500/10', protect: 'text-blue-400 bg-blue-500/10' };
+                  const sc = statusColors[rec.status] || statusColors.maintain;
+                  return (
+                    <div key={rec.id} className="bg-v-surface border border-v-border rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-white text-sm font-medium">{rec.service_name}</span>
+                          <span className={`text-[9px] uppercase tracking-wider px-1.5 py-0.5 rounded ${sc}`}>{rec.status}</span>
+                        </div>
+                        <button onClick={async () => {
+                          await fetch(`/api/customer-recommendations?id=${rec.id}`, { method: 'DELETE', headers });
+                          setRecommendations(prev => prev.filter(r => r.id !== rec.id));
+                        }} className="text-v-text-secondary/40 hover:text-red-400 text-xs">Remove</button>
+                      </div>
+                      <div className="flex items-center gap-4 text-xs text-v-text-secondary">
+                        {rec.last_service_date && <span>Last: {new Date(rec.last_service_date).toLocaleDateString()}</span>}
+                        <span>Every {rec.interval_days}d</span>
+                        {daysUntil !== null && (
+                          <span className={overdue ? 'text-red-400 font-medium' : daysUntil <= 14 ? 'text-v-gold' : ''}>
+                            {overdue ? `Overdue by ${Math.abs(daysUntil)}d` : `Due in ${daysUntil}d`}
+                          </span>
+                        )}
+                      </div>
+                      {rec.notes && <p className="text-v-text-secondary/60 text-xs mt-1">{rec.notes}</p>}
+                      {rec.tail_number && <p className="text-v-text-secondary/40 text-[10px] mt-1">{rec.tail_number}</p>}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
         </div>
