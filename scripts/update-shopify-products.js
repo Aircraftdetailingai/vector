@@ -4,7 +4,7 @@
  * Run: SHOPIFY_ACCESS_TOKEN=shpat_xxx node scripts/update-shopify-products.js
  */
 
-const SHOPIFY_STORE = process.env.SHOPIFY_STORE_URL || 'https://619shinyjets.myshopify.com';
+const SHOPIFY_STORE = process.env.SHOPIFY_STORE_URL || 'shinyjets.myshopify.com';
 const TOKEN = process.env.SHOPIFY_ACCESS_TOKEN;
 
 if (!TOKEN) {
@@ -14,7 +14,7 @@ if (!TOKEN) {
 }
 
 const STORE_DOMAIN = SHOPIFY_STORE.replace('https://', '').replace('http://', '');
-const API_URL = `https://${STORE_DOMAIN}/admin/api/2024-01/graphql.json`;
+const API_URL = `https://${STORE_DOMAIN}/admin/api/2025-01/graphql.json`;
 
 async function shopifyGraphQL(query, variables = {}) {
   const res = await fetch(API_URL, {
