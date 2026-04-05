@@ -7,6 +7,7 @@ const navItems = [
   { href: '/settings/services', label: 'Services', icon: '🛠️' },
   { href: '/settings/locations', label: 'Locations', icon: '📍' },
   { href: '/settings/integrations', label: 'Integrations', icon: '🔗' },
+  { href: '/settings/intake-flow', label: 'Intake Flow', icon: '📋' },
   { href: '/settings/import', label: 'Import / Export', icon: '📦', section: 'Data' },
 ];
 

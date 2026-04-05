@@ -246,7 +246,7 @@ export async function POST(request) {
 
     // No action field — treat as direct quote request submission
     if (body.detailer_id && (body.name || body.email)) {
-      const { detailer_id, name, email, phone, aircraft_model, tail_number, airport, services_requested, notes, photo_urls, sms_opted_in, source } = body;
+      const { detailer_id, name, email, phone, aircraft_model, tail_number, airport, services_requested, notes, photo_urls, sms_opted_in, intake_responses, source } = body;
 
       const { data: lead, error } = await supabase
         .from('intake_leads')
@@ -261,6 +261,7 @@ export async function POST(request) {
           services_requested: services_requested || null,
           notes: notes || null,
           photo_urls: photo_urls || null,
+          intake_responses: intake_responses || null,
           sms_opted_in: sms_opted_in || false,
           source: source || 'quote_request',
           status: 'new',

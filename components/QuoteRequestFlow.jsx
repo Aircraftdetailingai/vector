@@ -37,9 +37,13 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
   const [models, setModels] = useState([]);
   const [loadingModels, setLoadingModels] = useState(false);
 
+  // Intake flow (from detailer's settings)
+  const [intakeQuestions, setIntakeQuestions] = useState(null);
+  const [intakeResponses, setIntakeResponses] = useState({});
+
   // Service selection
-  const [quickSelect, setQuickSelect] = useState(null); // null | 'quick_turn' | 'maint_wash' | 'detail'
-  const [selectedServices, setSelectedServices] = useState([]); // keys from SERVICE_OPTIONS
+  const [quickSelect, setQuickSelect] = useState(null);
+  const [selectedServices, setSelectedServices] = useState([]);
   const [paintGoal, setPaintGoal] = useState(null);
   const [freeTextNote, setFreeTextNote] = useState('');
   const [washAddons, setWashAddons] = useState([]);
@@ -68,6 +72,15 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
     }
     setStep(s => Math.max(s - 1, 1));
   };
+
+  // Fetch detailer's intake flow
+  useEffect(() => {
+    if (!detailerId) return;
+    fetch(`/api/intake-flow?detailer_id=${detailerId}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.questions) setIntakeQuestions(d.questions); })
+      .catch(() => {});
+  }, [detailerId]);
 
   useEffect(() => {
     fetch('/api/aircraft/manufacturers')
@@ -135,6 +148,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
           services_requested: data.service_text || serviceType,
           notes: areaNotes || '',
           photo_urls: photoUrls,
+          intake_responses: Object.keys(intakeResponses).length > 0 ? intakeResponses : null,
           source: embedded ? 'embed_widget' : 'quote_request_page',
         }),
       });
