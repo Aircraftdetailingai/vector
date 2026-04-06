@@ -92,7 +92,7 @@ const s = StyleSheet.create({
   paidText: { fontSize: 9, color: colors.green, fontFamily: 'Helvetica-Bold', textAlign: 'center', marginTop: 10 },
 });
 
-function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees }) {
+function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees, packageName, packageServices }) {
   const companyName = detailer?.company || detailer?.name || 'Detailer';
   const aircraftDisplay = quote.aircraft_model || quote.aircraft_type || 'Aircraft';
   const isPaid = ['paid', 'approved', 'completed'].includes(quote.status);
@@ -215,8 +215,34 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees }) {
           </View>
         )}
 
-        {/* Line Items Table - Full breakdown with hours/rate */}
-        {lineItems.length > 0 && showFullBreakdown && hasHoursData && (
+        {/* ─── PACKAGE DISPLAY ─── */}
+        {packageName && lineItems.length > 0 && (
+          <View style={{ marginBottom: 4 }}>
+            <View style={s.tableHeader}>
+              <Text style={[s.tableHeaderText, { flex: 3 }]}>Service</Text>
+              <Text style={[s.tableHeaderText, { flex: 1, textAlign: 'right' }]}>Amount</Text>
+            </View>
+            {/* Package as single line item */}
+            <View style={s.tableRow}>
+              <View style={{ flex: 3 }}>
+                <Text style={[s.tableCell, { fontFamily: 'Helvetica-Bold' }]}>{packageName}</Text>
+                {packageServices.length > 0 && (
+                  <Text style={{ fontSize: 8, color: colors.gray400, marginTop: 2 }}>
+                    Includes: {packageServices.join(', ')}
+                  </Text>
+                )}
+              </View>
+              <Text style={[s.tableCellBold, { flex: 1 }]}>{fmt(basePrice)}</Text>
+            </View>
+            <View style={s.subtotalRow}>
+              <Text style={s.subtotalLabel}>Subtotal</Text>
+              <Text style={s.subtotalValue}>{fmt(basePrice)}</Text>
+            </View>
+          </View>
+        )}
+
+        {/* ─── INDIVIDUAL SERVICES — Full breakdown with hours/rate ─── */}
+        {!packageName && lineItems.length > 0 && showFullBreakdown && hasHoursData && (
           <View style={{ marginBottom: 4 }}>
             <View style={s.tableHeader}>
               <Text style={[s.tableHeaderText, { flex: 3 }]}>Service</Text>
@@ -232,7 +258,6 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees }) {
                 <Text style={[s.tableCellBold, { flex: 1 }]}>{fmt(li.amount)}</Text>
               </View>
             ))}
-            {/* Subtotal */}
             <View style={s.subtotalRow}>
               <Text style={s.subtotalLabel}>Subtotal</Text>
               <Text style={s.subtotalValue}>{fmt(lineItemsSubtotal)}</Text>
@@ -240,8 +265,8 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees }) {
           </View>
         )}
 
-        {/* Line Items Table - Simple (no hours/rate or package display) */}
-        {lineItems.length > 0 && (!showFullBreakdown || !hasHoursData) && !showLaborProducts && (
+        {/* ─── INDIVIDUAL SERVICES — Simple (no hours/rate) ─── */}
+        {!packageName && lineItems.length > 0 && (!showFullBreakdown || !hasHoursData) && !showLaborProducts && (
           <View style={{ marginBottom: 4 }}>
             <View style={s.tableHeader}>
               <Text style={[s.tableHeaderText, { flex: 3 }]}>Service</Text>
@@ -261,7 +286,7 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees }) {
         )}
 
         {/* Labor/Products split */}
-        {showLaborProducts && (
+        {!packageName && showLaborProducts && (
           <View style={{ marginBottom: 4 }}>
             <View style={s.tableHeader}>
               <Text style={[s.tableHeaderText, { flex: 3 }]}>Description</Text>
@@ -281,6 +306,29 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees }) {
             </View>
           </View>
         )}
+
+        {/* ─── PROPOSED SCHEDULE ─── */}
+        <View style={{ marginTop: 8, marginBottom: 8, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: colors.gray50, borderRadius: 4, flexDirection: 'row', justifyContent: 'space-between' }}>
+          <View>
+            <Text style={s.dateLabel}>Proposed Date</Text>
+            <Text style={s.dateValue}>
+              {quote.proposed_date || quote.scheduled_date
+                ? fmtDate(quote.proposed_date || quote.scheduled_date)
+                : 'To be scheduled'}
+            </Text>
+            {(quote.proposed_time) && (
+              <Text style={{ fontSize: 9, color: colors.gray500, marginTop: 1 }}>{quote.proposed_time}</Text>
+            )}
+          </View>
+          <View style={{ alignItems: 'flex-end' }}>
+            <Text style={s.dateLabel}>Estimated Duration</Text>
+            <Text style={s.dateValue}>
+              {parseFloat(quote.total_hours) > 0
+                ? `${parseFloat(quote.total_hours).toFixed(1)} hours`
+                : 'TBD'}
+            </Text>
+          </View>
+        </View>
 
         {/* Addon Fees */}
         {addonFees.length > 0 && !quote.minimum_fee_applied && (
@@ -399,6 +447,12 @@ export async function GET(request, { params }) {
   // Addon fees
   const addonFees = Array.isArray(quote.addon_fees) ? quote.addon_fees.filter(f => f.name) : [];
 
+  // Package info
+  const packageName = quote.selected_package_name || null;
+  const packageServices = packageName
+    ? lineItems.map(li => li.description || li.service || li.name).filter(Boolean)
+    : [];
+
   const buffer = await renderToBuffer(
     <QuotePDF
       quote={quote}
@@ -406,6 +460,8 @@ export async function GET(request, { params }) {
       lineItems={lineItems}
       servicesList={servicesList}
       addonFees={addonFees}
+      packageName={packageName}
+      packageServices={packageServices}
     />
   );
 

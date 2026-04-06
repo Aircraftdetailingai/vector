@@ -182,6 +182,8 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
       customer_company: effectiveCompany || null,
       airport: quote?.airport || null,
       tail_number: quote?.tailNumber || null,
+      proposed_date: quote?.proposedDate || null,
+      proposed_time: quote?.proposedTime || null,
       product_estimates: quote?.productEstimates || [],
       linked_products: quote?.linkedProducts || [],
       linked_equipment: quote?.linkedEquipment || [],

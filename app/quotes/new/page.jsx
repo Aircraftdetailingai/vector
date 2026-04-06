@@ -1530,6 +1530,8 @@ function NewQuoteContent() {
             notes: quoteNotes,
             airport: airport,
             tailNumber: tailNumber,
+            proposedDate: proposedDate || null,
+            proposedTime: proposedTime || null,
             productEstimates: quoteData.productEstimates,
             linkedProducts: quoteData.linkedProducts,
             linkedEquipment: quoteData.linkedEquipment,
