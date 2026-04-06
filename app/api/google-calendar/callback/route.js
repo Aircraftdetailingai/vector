@@ -43,17 +43,17 @@ export async function GET(request) {
   }
 
   try {
-    // The redirect_uri MUST exactly match the one used in the auth request.
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL || url.origin;
-    const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URI || `${appUrl}/api/google-calendar/callback`;
+    // The redirect_uri MUST exactly match the one used in the auth request (trim whitespace from env vars)
+    const appUrl = (process.env.NEXT_PUBLIC_APP_URL || url.origin).trim();
+    const redirectUri = (process.env.GOOGLE_CALENDAR_REDIRECT_URI || `${appUrl}/api/google-calendar/callback`).trim();
 
     const tokenRes = await fetch(GOOGLE_TOKEN_URL, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: process.env.GOOGLE_CLIENT_ID,
-        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        client_id: process.env.GOOGLE_CLIENT_ID?.trim(),
+        client_secret: process.env.GOOGLE_CLIENT_SECRET?.trim(),
         redirect_uri: redirectUri,
         grant_type: 'authorization_code',
       }),

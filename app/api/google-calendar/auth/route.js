@@ -12,12 +12,12 @@ export async function POST(request) {
     return Response.json({ configured: false, error: 'Google Calendar OAuth is not configured yet' });
   }
 
-  // Derive redirect URI: env var > app URL > request origin
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin') || '';
-  const redirectUri = process.env.GOOGLE_CALENDAR_REDIRECT_URI || `${appUrl}/api/google-calendar/callback`;
+  // Derive redirect URI: env var > app URL > request origin (trim whitespace from env vars)
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || request.headers.get('origin') || '').trim();
+  const redirectUri = (process.env.GOOGLE_CALENDAR_REDIRECT_URI || `${appUrl}/api/google-calendar/callback`).trim();
 
   const params = new URLSearchParams({
-    client_id: process.env.GOOGLE_CLIENT_ID,
+    client_id: process.env.GOOGLE_CLIENT_ID?.trim(),
     redirect_uri: redirectUri,
     response_type: 'code',
     scope: 'https://www.googleapis.com/auth/calendar',
