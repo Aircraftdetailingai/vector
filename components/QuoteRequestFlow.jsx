@@ -252,10 +252,6 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
     );
   }
 
-  // Current area for the level selection sub-flow
-  const currentArea = selectedAreas[currentAreaIdx];
-  const currentAreaLabel = AREAS.find(a => a.key === currentArea)?.label || currentArea;
-
   return (
     <div className="min-h-screen bg-[#0D1B2A] flex flex-col">
       <Header />
