@@ -16,7 +16,7 @@ export async function GET(request) {
 
   const tokenData = await getValidAccessToken(user.id);
   if (!tokenData) {
-    return Response.json({ connected: false, suggested: null });
+    return Response.json({ connected: false, suggested: null, reconnect: true });
   }
 
   try {

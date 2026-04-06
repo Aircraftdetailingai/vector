@@ -115,17 +115,14 @@ function IntegrationsContent() {
   const handleConnectGCal = async () => {
     setGcalConnecting(true); setGcalError(null);
     try {
-      const { getSupabaseBrowser } = await import('@/lib/supabase-browser');
-      const supabase = getSupabaseBrowser();
-      if (!supabase) { setGcalError('Auth service unavailable'); return; }
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          scopes: 'https://www.googleapis.com/auth/calendar.readonly',
-          redirectTo: `${window.location.origin}/auth/google-calendar-callback`,
-        },
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch('/api/google-calendar/auth', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
       });
-      if (error) setGcalError(error.message);
+      const data = await res.json();
+      if (!data.configured) { setGcalError(data.error || 'Google Calendar not configured'); return; }
+      if (data.url) window.location.href = data.url;
     } catch (err) { setGcalError(`Error: ${err.message}`); }
     finally { setGcalConnecting(false); }
   };
