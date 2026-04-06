@@ -1,237 +1,417 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 
-export async function POST(request) {
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
-  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
-  const rawBody = await request.text();
-  const signature = request.headers.get('x-shopify-hmac-sha256');
-  const computedHmac = crypto
+export const dynamic = 'force-dynamic';
+
+// SKU → plan mapping (Seal Subscriptions)
+const SKU_PLAN_MAP = {
+  'SJ-CRM-FREE': 'free',
+  'SJ-CRM-PRO': 'pro',
+  'SJ-CRM-BUSINESS': 'business',
+  'SJ-CRM-ENTERPRISE': 'enterprise',
+};
+
+// Price fallback ranges (cents not used here — raw dollar floats from Shopify)
+function planFromPrice(price) {
+  const p = parseFloat(price);
+  if (p === 0) return 'free';
+  if (p >= 70 && p <= 90) return 'pro';
+  if (p >= 140 && p <= 160) return 'business';
+  if (p >= 850 && p <= 950) return 'enterprise';
+  return null;
+}
+
+// Resolve plan from a Shopify line item
+function resolvePlan(item) {
+  // 1. Exact SKU match
+  const sku = (item.sku || '').toUpperCase().trim();
+  if (SKU_PLAN_MAP[sku]) return SKU_PLAN_MAP[sku];
+
+  // 2. Partial SKU match (e.g. "SJ-CRM-PRO-MONTHLY")
+  for (const [prefix, plan] of Object.entries(SKU_PLAN_MAP)) {
+    if (sku.includes(prefix)) return plan;
+  }
+
+  // 3. Title match
+  const title = (item.title || '').toLowerCase();
+  if (title.includes('enterprise')) return 'enterprise';
+  if (title.includes('business')) return 'business';
+  if (title.includes('pro')) return 'pro';
+  if (title.includes('free')) return 'free';
+
+  // 4. Price fallback
+  return planFromPrice(item.price);
+}
+
+function getSupabase() {
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
+  );
+}
+
+function verifyHmac(rawBody, signature, secret) {
+  if (!secret || !signature) return false;
+  const computed = crypto
     .createHmac('sha256', secret)
     .update(rawBody, 'utf8')
     .digest('base64');
-  if (computedHmac !== signature) {
+  try {
+    return crypto.timingSafeEqual(Buffer.from(computed), Buffer.from(signature));
+  } catch {
+    return false;
+  }
+}
+
+async function sendEmail(to, subject, html) {
+  const key = process.env.RESEND_API_KEY;
+  if (!key) return;
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      to,
+      from: process.env.RESEND_FROM_EMAIL || 'Shiny Jets CRM <noreply@shinyjets.com>',
+      subject,
+      html,
+    }),
+  });
+}
+
+function planChangeEmail(email, oldPlan, newPlan) {
+  const labels = { free: 'Free', pro: 'Pro', business: 'Business', enterprise: 'Enterprise' };
+  const newLabel = labels[newPlan] || newPlan;
+  const oldLabel = labels[oldPlan] || oldPlan;
+
+  if (newPlan === 'free') {
+    // Downgrade / cancellation
+    return sendEmail(
+      email,
+      'Your Shiny Jets CRM subscription has been cancelled',
+      `<!DOCTYPE html><html><body style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+        <h2 style="color:#333;">Subscription Cancelled</h2>
+        <p>Your plan has been moved from <strong>${oldLabel}</strong> to the <strong>Free</strong> plan.</p>
+        <p>You still have access to your account with Free-tier features. Your data is preserved.</p>
+        <p>Ready to resubscribe? Visit <a href="https://shinyjets.com" style="color:#007CB1;">shinyjets.com</a>.</p>
+        <p style="color:#999;font-size:12px;margin-top:24px;">Shiny Jets CRM</p>
+      </body></html>`,
+    );
+  }
+
+  const isUpgrade = ['free', 'pro', 'business'].indexOf(oldPlan) < ['free', 'pro', 'business'].indexOf(newPlan);
+  const verb = isUpgrade ? 'upgraded' : 'changed';
+
+  return sendEmail(
+    email,
+    `Your Shiny Jets CRM plan has been ${verb} to ${newLabel}`,
+    `<!DOCTYPE html><html><body style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+      <h2 style="color:#333;">Plan ${isUpgrade ? 'Upgrade' : 'Change'} Confirmed</h2>
+      <p>Your Shiny Jets CRM plan has been ${verb} from <strong>${oldLabel}</strong> to <strong>${newLabel}</strong>.</p>
+      <p>Your new features are active immediately. Log in at <a href="https://crm.shinyjets.com" style="color:#007CB1;">crm.shinyjets.com</a> to get started.</p>
+      <p style="color:#999;font-size:12px;margin-top:24px;">Shiny Jets CRM</p>
+    </body></html>`,
+  );
+}
+
+async function sendSMS(to, message) {
+  const sid = process.env.TWILIO_ACCOUNT_SID;
+  const token = process.env.TWILIO_AUTH_TOKEN;
+  const from = process.env.TWILIO_PHONE_NUMBER;
+  if (!sid || !token || !from || !to) return;
+  const params = new URLSearchParams({ From: from, To: to, Body: message });
+  await fetch(`https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`, {
+    method: 'POST',
+    headers: {
+      Authorization: 'Basic ' + Buffer.from(`${sid}:${token}`).toString('base64'),
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: params,
+  });
+}
+
+function generateTempPassword() {
+  const adj = ['Swift', 'Bright', 'Shiny', 'Aero', 'Smooth', 'Rapid', 'Sleek', 'Bold'];
+  const noun = ['Jet', 'Wing', 'Sky', 'Tail', 'Eagle', 'Falcon', 'Hawk', 'Cloud'];
+  const a = adj[Math.floor(Math.random() * adj.length)];
+  const n = noun[Math.floor(Math.random() * noun.length)];
+  return `${a}${n}${Math.floor(100 + Math.random() * 900)}`;
+}
+
+// ─── Find detailer by email or Shopify customer ID ───
+async function findDetailer(supabase, payload) {
+  const email = (payload?.customer?.email || payload?.email || '').toLowerCase().trim();
+  const customerId = payload?.customer?.id || payload?.customer_id;
+
+  if (email) {
+    const { data } = await supabase.from('detailers').select('*').eq('email', email).maybeSingle();
+    if (data) return data;
+  }
+  if (customerId) {
+    const { data } = await supabase.from('detailers').select('*').eq('shopify_customer_id', String(customerId)).maybeSingle();
+    if (data) return data;
+  }
+  return null;
+}
+
+// ─── Update plan and send notifications ───
+async function updatePlan(supabase, detailer, newPlan, extra = {}) {
+  const oldPlan = detailer.plan || 'free';
+  if (oldPlan === newPlan && !extra.subscription_status) return { oldPlan, newPlan, changed: false };
+
+  await supabase.from('detailers').update({
+    plan: newPlan,
+    subscription_status: 'active',
+    subscription_source: 'shopify',
+    ...extra,
+  }).eq('id', detailer.id);
+
+  // Confirmation email
+  if (oldPlan !== newPlan) {
+    try { await planChangeEmail(detailer.email, oldPlan, newPlan); } catch {}
+  }
+
+  // Admin SMS
+  const adminPhone = process.env.ADMIN_PHONE;
+  if (adminPhone) {
+    await sendSMS(adminPhone, `Plan change: ${detailer.email} ${oldPlan}→${newPlan}`);
+  }
+
+  return { oldPlan, newPlan, changed: true };
+}
+
+// ─── Handle: orders/paid ───
+async function handleOrderPaid(supabase, payload) {
+  const items = payload?.line_items || [];
+  let plan = null;
+  for (const item of items) {
+    plan = resolvePlan(item);
+    if (plan) break;
+  }
+  if (!plan) return;
+
+  const email = (payload?.customer?.email || '').toLowerCase().trim();
+  if (!email) return;
+
+  const detailer = await findDetailer(supabase, payload);
+  const shopifyCustomerId = String(payload?.customer?.id || '');
+
+  if (detailer) {
+    // Reactivate if suspended
+    const extra = { shopify_customer_id: shopifyCustomerId };
+    if (detailer.status === 'suspended') extra.status = 'active';
+    await updatePlan(supabase, detailer, plan, extra);
+  } else {
+    // New customer — create account with temp password
+    const tempPassword = generateTempPassword();
+    const bcrypt = (await import('bcryptjs')).default;
+    const hashed = bcrypt.hashSync(tempPassword, 10);
+    const name = payload?.customer?.first_name
+      ? `${payload.customer.first_name} ${payload.customer.last_name || ''}`.trim()
+      : 'Customer';
+
+    const { data: inserted } = await supabase
+      .from('detailers')
+      .insert({
+        email,
+        name,
+        phone: payload?.customer?.phone || null,
+        password_hash: hashed,
+        must_change_password: true,
+        status: 'active',
+        plan,
+        subscription_status: 'active',
+        subscription_source: 'shopify',
+        shopify_customer_id: shopifyCustomerId,
+      })
+      .select()
+      .maybeSingle();
+
+    if (inserted) {
+      const labels = { free: 'Free', pro: 'Pro', business: 'Business', enterprise: 'Enterprise' };
+      await sendEmail(
+        email,
+        `Welcome to Shiny Jets CRM — ${labels[plan]} Plan`,
+        `<!DOCTYPE html><html><body style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+          <h2 style="color:#333;">Welcome to Shiny Jets CRM</h2>
+          <p>Hello ${name},</p>
+          <p>Your <strong>${labels[plan]}</strong> account is ready. Log in with your temporary password:</p>
+          <p style="background:#f5f5f5;padding:12px;border-radius:6px;font-family:monospace;font-size:18px;text-align:center;">${tempPassword}</p>
+          <p><a href="https://crm.shinyjets.com" style="color:#007CB1;">Log in to Shiny Jets CRM →</a></p>
+          <p style="color:#999;font-size:12px;margin-top:24px;">Shiny Jets CRM</p>
+        </body></html>`,
+      );
+
+      // Drip schedule
+      const now = new Date();
+      const dripRows = [0, 1, 3, 5, 7].map(offset => ({
+        detailer_id: inserted.id,
+        message_id: `drip-day-${offset}`,
+        scheduled_for: new Date(now.getTime() + offset * 86400000).toISOString(),
+      }));
+      await supabase.from('drip_messages').insert(dripRows);
+
+      const adminPhone = process.env.ADMIN_PHONE;
+      if (adminPhone) {
+        await sendSMS(adminPhone, `New Shopify signup: ${email} (${plan})`);
+      }
+    }
+  }
+}
+
+// ─── Handle: subscription update (upgrade/downgrade) ───
+async function handleSubscriptionUpdate(supabase, payload) {
+  const detailer = await findDetailer(supabase, payload);
+  if (!detailer) return;
+
+  const items = payload?.line_items || [];
+  let plan = null;
+  for (const item of items) {
+    plan = resolvePlan(item);
+    if (plan) break;
+  }
+  if (!plan) return;
+
+  await updatePlan(supabase, detailer, plan, {
+    shopify_customer_id: String(payload?.customer?.id || payload?.customer_id || detailer.shopify_customer_id || ''),
+  });
+}
+
+// ─── Handle: subscription cancel / expire ───
+async function handleSubscriptionCancel(supabase, payload) {
+  const detailer = await findDetailer(supabase, payload);
+  if (!detailer) return;
+
+  const oldPlan = detailer.plan || 'free';
+  await supabase.from('detailers').update({
+    plan: 'free',
+    subscription_status: 'cancelled',
+    subscription_source: 'shopify',
+  }).eq('id', detailer.id);
+
+  if (oldPlan !== 'free') {
+    try { await planChangeEmail(detailer.email, oldPlan, 'free'); } catch {}
+  }
+
+  const adminPhone = process.env.ADMIN_PHONE;
+  if (adminPhone) {
+    await sendSMS(adminPhone, `Subscription cancelled: ${detailer.email} (was ${oldPlan}→free)`);
+  }
+}
+
+// ─── Handle: billing failure ───
+async function handleBillingFailure(supabase, payload) {
+  const detailer = await findDetailer(supabase, payload);
+  if (!detailer) return;
+
+  await supabase.from('detailers').update({ status: 'suspended' }).eq('id', detailer.id);
+
+  await sendEmail(
+    detailer.email,
+    'Payment failed — Shiny Jets CRM account paused',
+    `<!DOCTYPE html><html><body style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+      <h2 style="color:#333;">Payment Failed</h2>
+      <p>We were unable to process your subscription payment. Your account has been paused.</p>
+      <p>Please update your payment method to restore access.</p>
+      <p><a href="https://shinyjets.com" style="color:#007CB1;">Update payment method →</a></p>
+      <p style="color:#999;font-size:12px;margin-top:24px;">Shiny Jets CRM</p>
+    </body></html>`,
+  );
+
+  const adminPhone = process.env.ADMIN_PHONE;
+  if (adminPhone) {
+    await sendSMS(adminPhone, `Payment failed: ${detailer.email}`);
+  }
+}
+
+// ─── Handle: billing success (reactivate suspended) ───
+async function handleBillingSuccess(supabase, payload) {
+  const detailer = await findDetailer(supabase, payload);
+  if (!detailer || detailer.status !== 'suspended') return;
+
+  await supabase.from('detailers').update({ status: 'active' }).eq('id', detailer.id);
+
+  await sendEmail(
+    detailer.email,
+    'Payment received — Shiny Jets CRM reactivated',
+    `<!DOCTYPE html><html><body style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
+      <h2 style="color:#333;">Account Reactivated</h2>
+      <p>Your payment has been processed and your Shiny Jets CRM account is active again.</p>
+      <p><a href="https://crm.shinyjets.com" style="color:#007CB1;">Log in →</a></p>
+      <p style="color:#999;font-size:12px;margin-top:24px;">Shiny Jets CRM</p>
+    </body></html>`,
+  );
+}
+
+// ─── Main webhook handler ───
+export async function POST(request) {
+  const rawBody = await request.text();
+  const signature = request.headers.get('x-shopify-hmac-sha256');
+  const secret = process.env.SHOPIFY_WEBHOOK_SECRET;
+
+  if (!verifyHmac(rawBody, signature, secret)) {
     return new Response('Invalid signature', { status: 401 });
   }
+
   const topic = request.headers.get('x-shopify-topic');
   let payload;
   try {
     payload = JSON.parse(rawBody);
+  } catch {
+    return new Response('Invalid JSON', { status: 400 });
+  }
+
+  const supabase = getSupabase();
+
+  // Log all webhooks
+  try {
+    await supabase.from('webhook_logs').insert({
+      source: 'shopify',
+      topic,
+      payload,
+      processed: false,
+    });
+  } catch {}
+
+  try {
+    switch (topic) {
+      case 'orders/paid':
+        await handleOrderPaid(supabase, payload);
+        break;
+
+      case 'subscription_contracts/update':
+      case 'subscriptions/update':
+        // Check if this is a cancellation or a plan change
+        if (payload.status === 'cancelled' || payload.status === 'expired') {
+          await handleSubscriptionCancel(supabase, payload);
+        } else {
+          await handleSubscriptionUpdate(supabase, payload);
+        }
+        break;
+
+      case 'subscription_contracts/cancel':
+      case 'app_subscriptions/update':
+        await handleSubscriptionCancel(supabase, payload);
+        break;
+
+      case 'subscription_billing_attempts/failure':
+        await handleBillingFailure(supabase, payload);
+        break;
+
+      case 'subscription_billing_attempts/success':
+        await handleBillingSuccess(supabase, payload);
+        break;
+    }
+
+    // Mark webhook processed
+    await supabase.from('webhook_logs')
+      .update({ processed: true })
+      .eq('source', 'shopify')
+      .eq('topic', topic)
+      .order('created_at', { ascending: false })
+      .limit(1);
   } catch (err) {
-    payload = {};
-  }
-  await supabase.from('webhook_logs').insert({
-    source: 'shopify',
-    topic,
-    payload,
-    processed: false,
-  });
-
-  function generateTempPassword() {
-    const adjectives = ['Swift','Bright','Shiny','Aero','Smooth','Rapid','Sleek','Bold'];
-    const nouns = ['Jet','Wing','Sky','Tail','Eagle','Falcon','Hawk','Cloud'];
-    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * nouns.length)];
-    const num = Math.floor(100 + Math.random() * 900);
-    return `${adj}${noun}${num}`;
-  }
-  async function sendSMS(to, message) {
-    const accountSid = process.env.TWILIO_ACCOUNT_SID;
-    const authToken = process.env.TWILIO_AUTH_TOKEN;
-    const from = process.env.TWILIO_PHONE_NUMBER;
-    if (!accountSid || !authToken || !from) return;
-    const url = `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`;
-    const params = new URLSearchParams();
-    params.append('From', from);
-    params.append('To', to);
-    params.append('Body', message);
-    await fetch(url, {
-      method: 'POST',
-      headers: {
-        Authorization: 'Basic ' + Buffer.from(`${accountSid}:${authToken}`).toString('base64'),
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: params,
-    });
-  }
-  async function sendEmail(to, subject, html) {
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey) return;
-    await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ to, from: 'Shiny Jets CRM <noreply@shinyjets.com>', subject, html }),
-    });
+    console.error(`Shopify webhook [${topic}] error:`, err);
   }
 
-  if (topic === 'orders/paid') {
-    const lineItems = payload?.line_items || [];
-    // Match by SKU (VECTOR- or SJ-CRM- prefix) or by product title
-    const crmItem = lineItems.find(item =>
-      (item.sku && (item.sku.startsWith('VECTOR-') || item.sku.startsWith('SJ-CRM-'))) ||
-      (item.title && item.title.toLowerCase().includes('shiny jets crm'))
-    );
-    if (!crmItem) {
-      // Also try matching by price for Seal Subscriptions recurring charges
-      const priceItem = lineItems.find(item => {
-        const p = parseFloat(item.price);
-        return (p >= 70 && p <= 90) || (p >= 140 && p <= 160) || (p >= 290 && p <= 310);
-      });
-      if (!priceItem) {
-        return new Response('OK', { status: 200 });
-      }
-      // Fall through with price-matched item
-      var matchedItem = priceItem;
-    } else {
-      var matchedItem = crmItem;
-    }
-    const planSku = matchedItem.sku || '';
-    const planTitle = (matchedItem.title || '').toLowerCase();
-    const planPrice = parseFloat(matchedItem.price);
-    let plan = 'pro'; // default to pro
-    if (planSku.includes('BUSINESS') || planTitle.includes('business') || (planPrice >= 140 && planPrice <= 160)) plan = 'business';
-    else if (planSku.includes('ENTERPRISE') || planTitle.includes('enterprise') || (planPrice >= 290 && planPrice <= 310)) plan = 'enterprise';
-    else if (planSku.includes('PRO') || planTitle.includes('pro') || (planPrice >= 70 && planPrice <= 90)) plan = 'pro';
-    const email = payload?.customer?.email;
-    const name = payload?.customer?.first_name ? `${payload.customer.first_name} ${payload.customer.last_name || ''}`.trim() : 'Customer';
-    const phone = payload?.customer?.phone || null;
-    const { data: existingDetailer } = await supabase.from('detailers').select().eq('email', email).maybeSingle();
-    if (existingDetailer) {
-      if (existingDetailer.status === 'suspended') {
-        await supabase.from('detailers').update({ status: 'active', plan }).eq('id', existingDetailer.id);
-        if (phone) {
-          await sendSMS(phone, `Your Shiny Jets CRM account has been reactivated. Login at crm.shinyjets.com`);
-        }
-      } else {
-        await supabase.from('detailers').update({ plan }).eq('id', existingDetailer.id);
-      }
-    } else {
-      const tempPassword = generateTempPassword();
-      const bcrypt = (await import('bcryptjs')).default;
-      const hashed = bcrypt.hashSync(tempPassword, 10);
-      const { data: inserted } = await supabase
-        .from('detailers')
-        .insert({
-          email,
-          name,
-          phone,
-          password_hash: hashed,
-          must_change_password: true,
-          status: 'active',
-          plan,
-        })
-        .select()
-        .maybeSingle();
-      if (inserted) {
-        if (phone) {
-          await sendSMS(phone, `Welcome to Shiny Jets CRM, ${name}! Your account is ready at crm.shinyjets.com. Temp password: ${tempPassword}`);
-        }
-        if (email) {
-          await sendEmail(
-            email,
-            'Welcome to Shiny Jets CRM',
-            `<p>Hello ${name},</p><p>Your Shiny Jets CRM account is ready. Your temporary password is <strong>${tempPassword}</strong>. Please log in at <a href="https://crm.shinyjets.com">crm.shinyjets.com</a> and complete onboarding.</p>`
-          );
-        }
-        const now = new Date();
-        const offsets = [0, 1, 3, 5, 7];
-        const dripRows = offsets.map(offset => {
-          const scheduled = new Date(now.getTime() + offset * 24 * 60 * 60 * 1000);
-          return {
-            detailer_id: inserted.id,
-            message_id: `drip-day-${offset}`,
-            scheduled_for: scheduled.toISOString(),
-          };
-        });
-        await supabase.from('drip_messages').insert(dripRows);
-      }
-    }
-    const adminPhone = process.env.ADMIN_PHONE;
-    if (adminPhone) {
-      await sendSMS(adminPhone, `Shopify order paid for ${email} plan ${plan}.`);
-    }
-  } else if (topic === 'subscription_billing_attempts/failure') {
-    const email = payload?.customer?.email;
-    const customerId = payload?.customer_id;
-    const { data: detailer } = await supabase
-      .from('detailers')
-      .select()
-      .or(`shopify_customer_id.eq.${customerId},email.eq.${email}`)
-      .maybeSingle();
-    if (detailer) {
-      await supabase.from('detailers').update({ status: 'suspended' }).eq('id', detailer.id);
-      if (detailer.phone) {
-        await sendSMS(detailer.phone, 'Your Shiny Jets CRM payment failed. Account paused. Update at crm.shinyjets.com/billing');
-      }
-    }
-    const adminPhone = process.env.ADMIN_PHONE;
-    if (adminPhone) {
-      await sendSMS(adminPhone, `Shopify payment failed for customer ${email || customerId}.`);
-    }
-  } else if (topic === 'subscription_billing_attempts/success') {
-    const email = payload?.customer?.email;
-    const customerId = payload?.customer_id;
-    const { data: detailer } = await supabase
-      .from('detailers')
-      .select()
-      .or(`shopify_customer_id.eq.${customerId},email.eq.${email}`)
-      .maybeSingle();
-    if (detailer) {
-      if (detailer.status === 'suspended') {
-        await supabase.from('detailers').update({ status: 'active' }).eq('id', detailer.id);
-        if (detailer.phone) {
-          await sendSMS(detailer.phone, 'Your Shiny Jets CRM account has been reactivated. Thank you for your payment.');
-        }
-      }
-    }
-    const adminPhone = process.env.ADMIN_PHONE;
-    if (adminPhone) {
-      await sendSMS(adminPhone, `Shopify payment succeeded for customer ${email || customerId}.`);
-    }
-  } else if (topic === 'subscription_contracts/cancel') {
-    const email = payload?.customer?.email;
-    const customerId = payload?.customer_id;
-    const { data: detailer } = await supabase
-      .from('detailers')
-      .select()
-      .or(`shopify_customer_id.eq.${customerId},email.eq.${email}`)
-      .maybeSingle();
-    if (detailer) {
-      await supabase.from('detailers').update({ status: 'cancelled' }).eq('id', detailer.id);
-    }
-    const adminPhone = process.env.ADMIN_PHONE;
-    if (adminPhone) {
-      await sendSMS(adminPhone, `Shopify subscription canceled for customer ${email || customerId}.`);
-    }
-  } else if (topic === 'subscription_contracts/update') {
-    const email = payload?.customer?.email;
-    const customerId = payload?.customer_id;
-    const contractItem = payload?.line_items?.[0] || {};
-    const newPlanSku = contractItem.sku || '';
-    const newPlanTitle = (contractItem.title || '').toLowerCase();
-    const newPlanPrice = parseFloat(contractItem.price || 0);
-    let newPlan = 'pro';
-    if (newPlanSku.includes('BUSINESS') || newPlanTitle.includes('business') || (newPlanPrice >= 140 && newPlanPrice <= 160)) newPlan = 'business';
-    else if (newPlanSku.includes('ENTERPRISE') || newPlanTitle.includes('enterprise') || (newPlanPrice >= 290 && newPlanPrice <= 310)) newPlan = 'enterprise';
-    else if (newPlanSku.includes('PRO') || newPlanTitle.includes('pro') || (newPlanPrice >= 70 && newPlanPrice <= 90)) newPlan = 'pro';
-    const { data: detailer } = await supabase
-      .from('detailers')
-      .select()
-      .or(`shopify_customer_id.eq.${customerId},email.eq.${email}`)
-      .maybeSingle();
-    if (detailer) {
-      await supabase.from('detailers').update({ plan: newPlan }).eq('id', detailer.id);
-    }
-    const adminPhone = process.env.ADMIN_PHONE;
-    if (adminPhone) {
-      await sendSMS(adminPhone, `Shopify subscription updated for customer ${email || customerId} to plan ${newPlan}.`);
-    }
-  }
   return new Response('OK', { status: 200 });
 }
-
-
-              

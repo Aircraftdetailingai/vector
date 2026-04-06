@@ -45,7 +45,7 @@ export async function POST(request) {
     return Response.json({ error: 'Email is required' }, { status: 400 });
   }
 
-  const priceMap = { pro: '79.00', business: '149.00', enterprise: '299.00' };
+  const priceMap = { free: '0.00', pro: '79.00', business: '149.00', enterprise: '899.00' };
   const price = priceMap[plan] || '79.00';
 
   const supabase = getSupabase();
@@ -117,9 +117,10 @@ export async function POST(request) {
   const titleMatch = testPayload.line_items[0].title.toLowerCase().includes(`shiny jets crm ${plan}`);
   // Test price matching
   const p = parseFloat(price);
-  const priceMatch = (plan === 'pro' && p >= 70 && p <= 90) ||
+  const priceMatch = (plan === 'free' && p === 0) ||
+    (plan === 'pro' && p >= 70 && p <= 90) ||
     (plan === 'business' && p >= 140 && p <= 160) ||
-    (plan === 'enterprise' && p >= 290 && p <= 310);
+    (plan === 'enterprise' && p >= 850 && p <= 950);
 
   results.steps.push({
     step: 'payload_validation',
