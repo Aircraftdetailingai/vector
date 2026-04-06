@@ -427,7 +427,7 @@ export default function QuoteRequestFlow({ detailerId, detailerName, detailerLog
         )}
 
         {/* Detailing — service picker grid */}
-        {step === 4 && quickSelect === 'detail' && selectedServices.length === 0 && paintGoal === null && (
+        {step === 4 && quickSelect === 'detail' && paintGoal === null && (
           <div className="flex-1 flex flex-col">
             <h2 className="text-xl font-light text-white mb-2">What services do you need?</h2>
             <p className="text-white/40 text-xs mb-5">Select all that apply</p>
