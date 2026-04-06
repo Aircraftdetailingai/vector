@@ -34,44 +34,31 @@ const defaultEdgeOptions = {
   markerEnd: { type: MarkerType.ArrowClosed, color: '#4a5568' },
 };
 
-// ─── Build default flow — two-path branching ───
-function buildDefaultFlow(services) {
-  const svcNames = services.map(s => s.name);
-  const branchStyle = { type: 'smoothstep', animated: true, style: { stroke: '#60a5fa', strokeWidth: 2 }, markerEnd: { type: MarkerType.ArrowClosed, color: '#60a5fa' } };
-
+// ─── Standard default flow — linear, clean ───
+// Service Select fetches live from the detailer's services at render time
+function buildDefaultFlow() {
   const nodes = [
-    { id: 'start-1', type: 'start', position: { x: 400, y: 0 }, data: { label: 'Customer starts here' }, deletable: false, draggable: false },
-    { id: 'aircraft-info', type: 'aircraftInfo', position: { x: 370, y: 160 }, data: { label: 'Aircraft Info (always first)' }, deletable: false, draggable: false },
-    { id: 'q-situation', type: 'question', position: { x: 350, y: 360 }, data: { label: 'What best describes your situation?', answerType: 'single_select', allowBranching: true, required: true, options: ['I know what I want', 'Help me figure it out'] } },
-    // Path A: I know what I want
-    { id: 'svc-1', type: 'serviceSelect', position: { x: 100, y: 360 }, data: { label: 'What services do you need?', required: true, serviceNames: svcNames } },
-    { id: 'q-notes-a', type: 'question', position: { x: 100, y: 540 }, data: { label: 'Any specific instructions?', answerType: 'long_text', required: false, placeholder: 'Special requests, access details, timing...' } },
-    { id: 'q-photos-a', type: 'question', position: { x: 100, y: 720 }, data: { label: 'Upload photos of your aircraft', answerType: 'photo_upload', required: false } },
-    { id: 'end-a', type: 'end', position: { x: 130, y: 900 }, data: { label: 'Submit request' } },
-    // Path B: Help me figure it out
-    { id: 'q-surfaces', type: 'question', position: { x: 600, y: 360 }, data: { label: 'What surfaces need attention?', answerType: 'multi_select', required: true, options: ['Exterior', 'Interior', 'Both'] } },
-    { id: 'q-paint-goal', type: 'question', position: { x: 600, y: 540 }, data: { label: 'What is your goal for the paint?', answerType: 'single_select', required: true, options: ['Maximum gloss & protection', 'Clean and protected', 'Just clean'] } },
-    { id: 'q-notes-b', type: 'question', position: { x: 600, y: 720 }, data: { label: 'Any specific instructions?', answerType: 'long_text', required: false, placeholder: 'Special requests, access details, timing...' } },
-    { id: 'q-photos-b', type: 'question', position: { x: 600, y: 900 }, data: { label: 'Upload photos of your aircraft', answerType: 'photo_upload', required: false } },
-    { id: 'end-b', type: 'end', position: { x: 630, y: 1080 }, data: { label: 'Submit request' } },
+    { id: 'start-1', type: 'start', position: { x: 300, y: 0 }, data: { label: 'Customer starts here' }, deletable: false },
+    { id: 'aircraft-info', type: 'aircraftInfo', position: { x: 270, y: 160 }, data: { label: 'Aircraft Info' }, deletable: false },
+    { id: 'svc-1', type: 'serviceSelect', position: { x: 270, y: 340 }, data: { label: 'What services do you need?', required: true } },
+    { id: 'q-notes', type: 'question', position: { x: 270, y: 520 }, data: { label: 'Any specific instructions?', answerType: 'long_text', required: false, placeholder: 'Special requests, access details, timing...' } },
+    { id: 'q-photos', type: 'question', position: { x: 270, y: 700 }, data: { label: 'Upload photos of your aircraft', answerType: 'photo_upload', required: false } },
+    { id: 'end-1', type: 'end', position: { x: 300, y: 880 }, data: { label: 'Submit request' } },
   ];
 
   const edges = [
     { id: 'e-start-aircraft', source: 'start-1', target: 'aircraft-info', ...defaultEdgeOptions },
-    { id: 'e-aircraft-situation', source: 'aircraft-info', target: 'q-situation', ...defaultEdgeOptions },
-    { id: 'e-situation-svc', source: 'q-situation', sourceHandle: 'opt-0', target: 'svc-1', ...branchStyle, label: 'I know what I want', labelStyle: { fill: '#60a5fa', fontSize: 10 } },
-    { id: 'e-svc-notes-a', source: 'svc-1', target: 'q-notes-a', ...defaultEdgeOptions },
-    { id: 'e-notes-a-photos-a', source: 'q-notes-a', target: 'q-photos-a', ...defaultEdgeOptions },
-    { id: 'e-photos-a-end-a', source: 'q-photos-a', target: 'end-a', ...defaultEdgeOptions },
-    { id: 'e-situation-surfaces', source: 'q-situation', sourceHandle: 'opt-1', target: 'q-surfaces', ...branchStyle, label: 'Help me figure it out', labelStyle: { fill: '#60a5fa', fontSize: 10 } },
-    { id: 'e-surfaces-paint', source: 'q-surfaces', target: 'q-paint-goal', ...defaultEdgeOptions },
-    { id: 'e-paint-notes-b', source: 'q-paint-goal', target: 'q-notes-b', ...defaultEdgeOptions },
-    { id: 'e-notes-b-photos-b', source: 'q-notes-b', target: 'q-photos-b', ...defaultEdgeOptions },
-    { id: 'e-photos-b-end-b', source: 'q-photos-b', target: 'end-b', ...defaultEdgeOptions },
+    { id: 'e-aircraft-svc', source: 'aircraft-info', target: 'svc-1', ...defaultEdgeOptions },
+    { id: 'e-svc-notes', source: 'svc-1', target: 'q-notes', ...defaultEdgeOptions },
+    { id: 'e-notes-photos', source: 'q-notes', target: 'q-photos', ...defaultEdgeOptions },
+    { id: 'e-photos-end', source: 'q-photos', target: 'end-1', ...defaultEdgeOptions },
   ];
 
   return { nodes, edges };
 }
+
+// Exportable for use in signup route
+export { buildDefaultFlow };
 
 // ─── Dagre auto-layout ───
 function autoLayout(nodes, edges) {
@@ -151,12 +138,12 @@ function FlowBuilderInner() {
           setNodes(loadedNodes);
           setEdges(loadedEdges);
         } else {
-          const def = buildDefaultFlow(svcList);
+          const def = buildDefaultFlow();
           setNodes(def.nodes);
           setEdges(def.edges);
         }
       } catch {
-        const def = buildDefaultFlow([]);
+        const def = buildDefaultFlow();
         setNodes(def.nodes);
         setEdges(def.edges);
       } finally {
@@ -257,7 +244,7 @@ function FlowBuilderInner() {
   // ─── Reset ───
   const handleReset = async () => {
     await fetch('/api/intake-flow', { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-    const def = buildDefaultFlow(services);
+    const def = buildDefaultFlow();
     setNodes(def.nodes);
     setEdges(def.edges);
     setEditingNode(null);

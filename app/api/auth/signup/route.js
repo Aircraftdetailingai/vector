@@ -176,6 +176,20 @@ export async function POST(request) {
       await supabase.from('prospects').update({ status: 'signed_up' }).eq('email', normalizedEmail);
     } catch {}
 
+    // Create default intake flow for new detailer
+    try {
+      const { buildDefaultFlowData } = await import('@/lib/default-flow');
+      const defaultFlow = buildDefaultFlowData();
+      await supabase.from('intake_flows').upsert({
+        detailer_id: detailer.id,
+        flow_nodes: defaultFlow.flow_nodes,
+        flow_edges: defaultFlow.flow_edges,
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'detailer_id' });
+    } catch (flowErr) {
+      console.log('[signup] Default flow creation failed (non-critical):', flowErr.message);
+    }
+
     // Process referral code if provided
     if (referral_code) {
       try {

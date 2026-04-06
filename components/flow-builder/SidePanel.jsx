@@ -123,13 +123,27 @@ export default function SidePanel({ node, nodes, services = [], onUpdate, onClos
           </div>
         )}
 
-        {/* Options list (for select types) */}
+        {/* Options list (for select types) — drag to reorder */}
         {nodeType === 'question' && isSelect && (
           <div>
             <label className="block text-[10px] text-v-text-secondary uppercase tracking-wider mb-1.5">Options</label>
             <div className="space-y-1.5">
               {(localData.options || []).map((opt, i) => (
-                <div key={i} className="flex gap-2">
+                <div key={i} className="flex items-center gap-1.5"
+                  draggable
+                  onDragStart={e => { e.dataTransfer.setData('text/plain', String(i)); e.dataTransfer.effectAllowed = 'move'; }}
+                  onDragOver={e => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; }}
+                  onDrop={e => {
+                    e.preventDefault();
+                    const from = parseInt(e.dataTransfer.getData('text/plain'));
+                    if (isNaN(from) || from === i) return;
+                    const opts = [...(localData.options || [])];
+                    const [moved] = opts.splice(from, 1);
+                    opts.splice(i, 0, moved);
+                    update({ options: opts });
+                  }}
+                >
+                  <span className="cursor-grab active:cursor-grabbing text-v-text-secondary/40 hover:text-v-text-secondary text-xs select-none px-0.5">&#9776;</span>
                   <input
                     type="text"
                     value={opt}
