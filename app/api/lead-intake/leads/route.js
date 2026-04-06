@@ -274,38 +274,38 @@ export async function POST(request) {
         return Response.json({ error: error.message }, { status: 500 });
       }
 
-      // Notify detailer via email
-      try {
-        const { data: detailer } = await supabase.from('detailers').select('email, company').eq('id', detailer_id).single();
-        if (detailer?.email && process.env.RESEND_API_KEY) {
-          const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
-          await getResend().emails.send({
-            from: process.env.RESEND_FROM_EMAIL || 'Shiny Jets CRM <noreply@shinyjets.com>',
-            to: detailer.email,
-            subject: `New Quote Request: ${name || 'Customer'} - ${aircraft_model || 'Aircraft'}`,
-            html: `
-              <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
-                <h2 style="color: #007CB1;">New Quote Request</h2>
-                <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">
-                  <p><strong>Customer:</strong> ${name || 'Not provided'}</p>
-                  <p><strong>Email:</strong> ${email || 'Not provided'}</p>
-                  <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
-                  <p><strong>Aircraft:</strong> ${aircraft_model || 'Not specified'}</p>
-                  ${tail_number ? `<p><strong>Tail:</strong> ${tail_number}</p>` : ''}
-                  ${airport ? `<p><strong>Airport:</strong> ${airport}</p>` : ''}
-                  <p><strong>Service:</strong> ${services_requested || 'Not specified'}</p>
-                  ${notes ? `<p><strong>Notes:</strong><br/>${notes.replace(/\n/g, '<br/>')}</p>` : ''}
-                  ${photo_urls?.length ? `<p><strong>Photos:</strong> ${photo_urls.length} uploaded</p>` : ''}
+      // Notify detailer via email (non-blocking — don't hold up the response)
+      if (process.env.RESEND_API_KEY) {
+        supabase.from('detailers').select('email, company').eq('id', detailer_id).single()
+          .then(({ data: detailer }) => {
+            if (!detailer?.email) return;
+            const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://vectorav.ai';
+            return getResend().emails.send({
+              from: process.env.RESEND_FROM_EMAIL || 'Vector Aviation <noreply@vectorav.ai>',
+              to: detailer.email,
+              subject: `New Quote Request: ${name || 'Customer'} - ${aircraft_model || 'Aircraft'}`,
+              html: `
+                <div style="font-family: Arial, sans-serif; max-width: 500px; margin: 0 auto; padding: 20px;">
+                  <h2 style="color: #007CB1;">New Quote Request</h2>
+                  <div style="background: #f5f5f5; padding: 15px; border-radius: 8px; margin: 15px 0;">
+                    <p><strong>Customer:</strong> ${name || 'Not provided'}</p>
+                    <p><strong>Email:</strong> ${email || 'Not provided'}</p>
+                    <p><strong>Phone:</strong> ${phone || 'Not provided'}</p>
+                    <p><strong>Aircraft:</strong> ${aircraft_model || 'Not specified'}</p>
+                    ${tail_number ? `<p><strong>Tail:</strong> ${tail_number}</p>` : ''}
+                    ${airport ? `<p><strong>Airport:</strong> ${airport}</p>` : ''}
+                    <p><strong>Service:</strong> ${services_requested || 'Not specified'}</p>
+                    ${notes ? `<p><strong>Notes:</strong><br/>${notes.replace(/\n/g, '<br/>')}</p>` : ''}
+                    ${photo_urls?.length ? `<p><strong>Photos:</strong> ${photo_urls.length} uploaded</p>` : ''}
+                  </div>
+                  <a href="${appUrl}/dashboard?tab=leads" style="display: inline-block; padding: 12px 24px; background: #007CB1; color: white; text-decoration: none; border-radius: 8px; margin-top: 15px;">
+                    View Lead & Create Quote
+                  </a>
                 </div>
-                <a href="${appUrl}/dashboard?tab=leads" style="display: inline-block; padding: 12px 24px; background: #007CB1; color: white; text-decoration: none; border-radius: 8px; margin-top: 15px;">
-                  View Lead & Create Quote
-                </a>
-              </div>
-            `,
-          });
-        }
-      } catch (emailErr) {
-        console.error('Lead notification email failed:', emailErr);
+              `,
+            });
+          })
+          .catch(err => console.error('Lead notification email failed:', err));
       }
 
       return Response.json({ success: true, lead });
