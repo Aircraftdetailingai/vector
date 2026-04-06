@@ -317,14 +317,16 @@ function DashboardContent() {
                   <p className="text-v-text-secondary text-xs">Today&apos;s jobs</p>
                 </div>
                 {upcomingJobs.filter(j => new Date(j.scheduled_date).toDateString() === new Date().toDateString()).map(job => (
-                  <a key={job.id} href={job.share_link ? `/q/${job.share_link}` : '/jobs'}
-                    className="flex items-center justify-between py-2.5 border-b border-v-border-subtle/50 hover:bg-white/[0.02] transition-colors">
-                    <div className="min-w-0">
+                  <div key={job.id} className="flex items-center justify-between py-2.5 border-b border-v-border-subtle/50">
+                    <a href={job.share_link ? `/q/${job.share_link}` : '/jobs'} className="min-w-0 hover:opacity-80 transition-opacity">
                       <p className="text-white text-sm truncate">{job.aircraft_name || job.aircraft_model || 'Aircraft'}</p>
                       <p className="text-v-text-secondary text-xs truncate">{job.customer_name || job.client_name || ''}</p>
+                    </a>
+                    <div className="flex items-center gap-3 ml-3 shrink-0">
+                      <span className="text-v-gold text-sm font-data">{currencySymbol()}{formatPriceWhole(job.total_price)}</span>
+                      <a href={`/jobs/${job.id}/complete`} className="text-[10px] px-2 py-1 bg-green-600/20 text-green-400 border border-green-500/30 rounded hover:bg-green-600/30 transition-colors">Complete</a>
                     </div>
-                    <span className="text-v-gold text-sm font-data ml-3 shrink-0">{currencySymbol()}{formatPriceWhole(job.total_price)}</span>
-                  </a>
+                  </div>
                 ))}
               </div>
             )}

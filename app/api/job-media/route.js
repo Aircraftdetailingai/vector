@@ -102,7 +102,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const { quote_id, media_type, url, notes } = body;
+    const { quote_id, media_type, url, notes, surface_tag } = body;
 
     if (!quote_id || !media_type || !url) {
       return Response.json({ error: 'quote_id, media_type, and url required' }, { status: 400 });
@@ -133,6 +133,7 @@ export async function POST(request) {
         media_type,
         url,
         notes: notes || null,
+        surface_tag: surface_tag || null,
         detailer_id: user.id,
       })
       .select()

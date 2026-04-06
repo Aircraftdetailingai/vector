@@ -216,16 +216,52 @@ export async function POST(request) {
     }
 
     // Update quote status to completed
+    const completedAt = new Date().toISOString();
     await supabase
       .from('quotes')
       .update({
         status: 'completed',
-        completed_at: new Date().toISOString(),
+        completed_at: completedAt,
         actual_hours: parseFloat(actual_hours) || quote.total_hours,
         product_cost: parseFloat(product_cost) || 0,
         completion_notes: notes,
       })
       .eq('id', quote_id);
+
+    // Create/update jobs table record
+    try {
+      const { data: existingJob } = await supabase
+        .from('jobs')
+        .select('id')
+        .eq('quote_id', quote_id)
+        .maybeSingle();
+
+      if (existingJob) {
+        await supabase.from('jobs').update({
+          status: 'complete',
+          completed_at: completedAt,
+          completion_notes: notes,
+          updated_at: completedAt,
+        }).eq('id', existingJob.id);
+      } else {
+        await supabase.from('jobs').insert({
+          quote_id,
+          detailer_id: user.id,
+          customer_name: quote.client_name || quote.customer_name,
+          customer_email: quote.client_email || quote.customer_email,
+          tail_number: quote.tail_number,
+          aircraft_make: quote.aircraft_type,
+          aircraft_model: quote.aircraft_model,
+          services: typeof quote.services === 'object' ? JSON.stringify(quote.services) : quote.services,
+          status: 'complete',
+          total_price: quote.total_price,
+          completed_at: completedAt,
+          completion_notes: notes,
+        });
+      }
+    } catch (jobErr) {
+      console.error('Failed to create/update jobs record:', jobErr);
+    }
 
     // Log activity
     const clientEmail = quote.customer_email || quote.client_email;
