@@ -44,6 +44,7 @@ export default function ImportExportPage() {
   const [toast, setToast] = useState('');
 
   // Import state
+  const [selectedFormat, setSelectedFormat] = useState(null);
   const [fileName, setFileName] = useState('');
   const [parseResult, setParseResult] = useState(null);
   const [mapping, setMapping] = useState({});
@@ -275,22 +276,19 @@ export default function ImportExportPage() {
             <h2 className="text-xl font-bold text-white mb-1">Import Data</h2>
             <p className="text-white/50 text-sm mb-6">Migrate your customers, jobs, and revenue from another CRM</p>
 
-            <div className="grid grid-cols-2 md:grid-cols-3 gap-3 mb-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
               {SUPPORTED_FORMATS.map((fmt) => (
-                <div key={fmt.name} className="bg-white/5 border border-white/10 rounded-lg p-3">
-                  <div className="text-white font-medium text-sm">{fmt.name}</div>
+                <button
+                  key={fmt.name}
+                  onClick={() => { setSelectedFormat(fmt.name); setStep(1); setTimeout(() => fileRef.current?.click(), 100); }}
+                  className="bg-white/5 border border-white/10 rounded-lg p-4 text-left hover:border-v-gold/50 hover:bg-white/[0.08] transition-all cursor-pointer group"
+                >
+                  <div className="text-white font-medium text-sm group-hover:text-v-gold transition-colors">{fmt.name}</div>
                   <div className="text-white/40 text-xs mt-1">{fmt.desc}</div>
-                  <div className="text-white/30 text-[10px] mt-1">{fmt.ext}</div>
-                </div>
+                  <div className="text-white/30 text-[10px] mt-2">{fmt.ext}</div>
+                </button>
               ))}
             </div>
-
-            <button
-              onClick={() => setStep(1)}
-              className="bg-gradient-to-r from-v-gold to-v-gold-dim text-white font-semibold px-6 py-3 rounded-lg hover:opacity-90 transition"
-            >
-              Start Import
-            </button>
           </div>
 
           {/* Export Section */}
