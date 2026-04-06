@@ -5,9 +5,10 @@ import AppShell from '@/components/AppShell';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 const STATUS_STYLES = {
-  new:       { label: 'New', bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
-  viewed:    { label: 'Viewed', bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
-  quoted:    { label: 'Quoted', bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+  new:       { label: 'New', bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
+  opened:    { label: 'Opened', bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+  viewed:    { label: 'Opened', bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+  quoted:    { label: 'Quoted', bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
   converted: { label: 'Converted', bg: 'bg-v-gold/20', text: 'text-v-gold', border: 'border-v-gold/30' },
   closed:    { label: 'Closed', bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' },
 };
@@ -31,8 +32,11 @@ export default function RequestsPage() {
 
   if (loading) return <LoadingSpinner message="Loading requests..." />;
 
-  const filtered = filter === 'all' ? leads : leads.filter(l => l.status === filter);
-  const newCount = leads.filter(l => l.status === 'new').length;
+  // Hide quoted/converted requests — they move to the quotes dashboard
+  const activeLeads = leads.filter(l => !['quoted', 'converted'].includes(l.status));
+  const filtered = filter === 'all' ? activeLeads : activeLeads.filter(l => l.status === filter || (filter === 'opened' && l.status === 'viewed'));
+  const newCount = activeLeads.filter(l => l.status === 'new').length;
+  const openedCount = activeLeads.filter(l => l.status === 'opened' || l.status === 'viewed').length;
 
   return (
     <AppShell title="Requests">
@@ -44,11 +48,9 @@ export default function RequestsPage() {
         {/* Filter tabs */}
         <div className="flex items-center gap-5 mb-6 overflow-x-auto">
           {[
-            { key: 'all', label: `All (${leads.length})` },
+            { key: 'all', label: `All (${activeLeads.length})` },
             { key: 'new', label: `New (${newCount})` },
-            { key: 'viewed', label: 'Viewed' },
-            { key: 'quoted', label: 'Quoted' },
-            { key: 'converted', label: 'Converted' },
+            { key: 'opened', label: `Opened (${openedCount})` },
           ].map(f => (
             <button key={f.key} onClick={() => setFilter(f.key)}
               className={`text-xs uppercase tracking-[0.15em] pb-2 transition-colors whitespace-nowrap ${

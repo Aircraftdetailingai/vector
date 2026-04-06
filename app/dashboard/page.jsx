@@ -104,6 +104,7 @@ function DashboardContent() {
   const [showTermsModal, setShowTermsModal] = useState(false);
   const [quoteRequests, setQuoteRequests] = useState([]);
   const [followUps, setFollowUps] = useState({ needsReview: [], recentCompleted: [], recurring: [] });
+  const [pendingQuotes, setPendingQuotes] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -153,13 +154,14 @@ function DashboardContent() {
         body: JSON.stringify({ action: 'DAILY_LOGIN' }),
       }).catch(() => {});
 
-      const [servicesRes, statsRes, quotesRes, upcomingRes, requestsRes, followUpsRes] = await Promise.allSettled([
+      const [servicesRes, statsRes, quotesRes, upcomingRes, requestsRes, followUpsRes, staleRes] = await Promise.allSettled([
         fetch('/api/services', { headers }),
         fetch('/api/dashboard/stats', { headers }),
         fetch('/api/quotes?limit=5&sort=created_at&order=desc', { headers }),
         fetch('/api/quotes?status=paid,scheduled,in_progress&has_date=true&limit=10&sort=scheduled_date&order=asc', { headers }),
         fetch('/api/lead-intake/leads?status=new', { headers }),
         fetch('/api/dashboard/follow-ups', { headers }),
+        fetch('/api/quotes?status=sent,viewed&limit=20&sort=created_at&order=desc', { headers }),
       ]);
 
       if (servicesRes.status === 'fulfilled' && servicesRes.value.ok) {
@@ -189,6 +191,9 @@ function DashboardContent() {
       if (followUpsRes.status === 'fulfilled' && followUpsRes.value.ok) {
         setFollowUps(await followUpsRes.value.json());
       }
+      if (staleRes.status === 'fulfilled' && staleRes.value.ok) {
+        setPendingQuotes((await staleRes.value.json()).quotes || []);
+      }
     };
 
     checkOnboarding().then(redirected => {
@@ -199,14 +204,33 @@ function DashboardContent() {
   if (loading) return <LoadingSpinner message="Loading..." />;
 
   const STATUS_COLORS = {
-    sent: 'text-v-gold',
-    viewed: 'text-purple-400',
-    accepted: 'text-v-success',
-    completed: 'text-v-success',
-    paid: 'text-v-success',
-    declined: 'text-v-danger',
+    draft: 'text-v-text-secondary',
+    sent: 'text-gray-400',
+    viewed: 'text-yellow-400',
+    accepted: 'text-teal-400',
+    paid: 'text-green-400',
+    approved: 'text-green-400',
+    declined: 'text-red-400',
+    completed: 'text-green-400',
     expired: 'text-v-text-secondary',
+    scheduled: 'text-blue-400',
+    in_progress: 'text-yellow-400',
+    cancelled: 'text-red-400',
   };
+
+  // Stale quotes needing follow-up
+  const staleViewedQuotes = pendingQuotes.filter(q => {
+    if (q.status !== 'viewed') return false;
+    const viewedAt = q.last_viewed_at || q.viewed_at;
+    if (!viewedAt) return false;
+    return Date.now() - new Date(viewedAt).getTime() > 48 * 60 * 60 * 1000;
+  });
+  const staleUnviewedQuotes = pendingQuotes.filter(q => {
+    if (q.status !== 'sent') return false;
+    const sentAt = q.sent_at || q.created_at;
+    if (!sentAt) return false;
+    return Date.now() - new Date(sentAt).getTime() > 24 * 60 * 60 * 1000;
+  });
 
   const conversionRate = quickStats?.allTime && (quickStats.allTime.quotes || 0) > 0
     ? `${Math.round(((quickStats.allTime.booked || 0) / quickStats.allTime.quotes) * 100)}%`
@@ -275,7 +299,7 @@ function DashboardContent() {
         </div>
 
         {/* ━━━ 1. NEEDS ATTENTION ━━━ */}
-        {(quoteRequests.length > 0 || (quickStats?.expiringQuotes?.length > 0) || upcomingJobs.some(j => new Date(j.scheduled_date).toDateString() === new Date().toDateString())) && (
+        {(quoteRequests.length > 0 || (quickStats?.expiringQuotes?.length > 0) || staleViewedQuotes.length > 0 || staleUnviewedQuotes.length > 0 || upcomingJobs.some(j => new Date(j.scheduled_date).toDateString() === new Date().toDateString())) && (
           <div id="attention" className="mt-10">
             <p className="text-[10px] uppercase tracking-[0.2em] text-v-gold mb-4 pb-2 border-b border-v-gold/20">Needs Attention</p>
 
@@ -306,6 +330,46 @@ function DashboardContent() {
             {(quickStats?.expiringQuotes?.length > 0 || quickStats?.recentlyExpired?.length > 0) && (
               <div className="mb-4">
                 <ExpiringQuotesWidget expiring={quickStats?.expiringQuotes} expired={quickStats?.recentlyExpired} />
+              </div>
+            )}
+
+            {/* Quotes viewed but not paid (48+ hours) */}
+            {staleViewedQuotes.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-500" />
+                  <p className="text-v-text-secondary text-xs">{staleViewedQuotes.length} viewed but unpaid (48h+)</p>
+                </div>
+                {staleViewedQuotes.slice(0, 3).map(q => (
+                  <a key={q.id} href={`/quotes`}
+                    className="flex items-center justify-between py-2.5 border-b border-v-border-subtle/50 hover:bg-white/[0.02] transition-colors">
+                    <div className="min-w-0">
+                      <p className="text-white text-sm truncate">{q.client_name || q.customer_name || 'Customer'}</p>
+                      <p className="text-v-text-secondary text-xs truncate">{q.aircraft_model || ''} — {currencySymbol()}{formatPriceWhole(q.total_price)}</p>
+                    </div>
+                    <span className="text-yellow-400 text-[10px] uppercase tracking-wider ml-3 shrink-0">Follow Up</span>
+                  </a>
+                ))}
+              </div>
+            )}
+
+            {/* Quotes sent but not viewed (24+ hours) */}
+            {staleUnviewedQuotes.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-gray-400" />
+                  <p className="text-v-text-secondary text-xs">{staleUnviewedQuotes.length} sent but unopened (24h+)</p>
+                </div>
+                {staleUnviewedQuotes.slice(0, 3).map(q => (
+                  <a key={q.id} href={`/quotes`}
+                    className="flex items-center justify-between py-2.5 border-b border-v-border-subtle/50 hover:bg-white/[0.02] transition-colors">
+                    <div className="min-w-0">
+                      <p className="text-white text-sm truncate">{q.client_name || q.customer_name || 'Customer'}</p>
+                      <p className="text-v-text-secondary text-xs truncate">{q.aircraft_model || ''} — {currencySymbol()}{formatPriceWhole(q.total_price)}</p>
+                    </div>
+                    <span className="text-gray-400 text-[10px] uppercase tracking-wider ml-3 shrink-0">Resend</span>
+                  </a>
+                ))}
               </div>
             )}
 

@@ -9,14 +9,16 @@ import AppShell from '@/components/AppShell';
 
 const statusColors = {
   draft: 'border border-v-border text-v-text-secondary',
-  sent: 'border border-white/30 text-white',
-  viewed: 'border border-v-gold/50 text-v-gold',
+  sent: 'border border-gray-400/40 text-gray-400',
+  viewed: 'border border-yellow-500/40 text-yellow-400',
+  accepted: 'border border-teal-500/40 text-teal-400',
   paid: 'border border-green-500/40 text-green-400',
   approved: 'border border-green-500/40 text-green-400',
-  completed: 'border border-purple-400/40 text-purple-300',
+  declined: 'border border-red-500/40 text-red-400',
+  completed: 'border border-green-500/40 text-green-400',
   expired: 'border border-red-500/30 text-red-400/70',
-  scheduled: 'border border-indigo-400/40 text-indigo-300',
-  in_progress: 'border border-cyan-400/40 text-cyan-300',
+  scheduled: 'border border-blue-500/40 text-blue-400',
+  in_progress: 'border border-yellow-500/40 text-yellow-400',
 };
 
 export default function QuotesPage() {
@@ -68,12 +70,15 @@ export default function QuotesPage() {
     draft: 'Draft',
     sent: 'Sent',
     viewed: 'Viewed',
+    accepted: 'Accepted',
     paid: 'Paid',
     approved: 'Approved',
+    declined: 'Declined',
     completed: 'Completed',
     expired: 'Expired',
     scheduled: 'Scheduled',
     in_progress: 'In Progress',
+    cancelled: 'Cancelled',
   };
 
   useEffect(() => {

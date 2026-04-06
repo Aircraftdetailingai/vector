@@ -5,9 +5,10 @@ import AppShell from '@/components/AppShell';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
 const STATUS_STYLES = {
-  new:       { label: 'New', bg: 'bg-green-500/20', text: 'text-green-400', border: 'border-green-500/30' },
-  viewed:    { label: 'Viewed', bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
-  quoted:    { label: 'Quoted', bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+  new:       { label: 'New', bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
+  opened:    { label: 'Opened', bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+  viewed:    { label: 'Opened', bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
+  quoted:    { label: 'Quoted', bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
   converted: { label: 'Converted', bg: 'bg-v-gold/20', text: 'text-v-gold', border: 'border-v-gold/30' },
   closed:    { label: 'Closed', bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' },
 };
@@ -36,12 +37,12 @@ export default function RequestDetailPage() {
         const found = (data.leads || []).find(l => l.id === id);
         if (found) {
           setLead(found);
-          // Mark as viewed if currently new
+          // Mark as opened if currently new
           if (found.status === 'new') {
             fetch('/api/lead-intake/leads', {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'update_status', lead_id: id, status: 'viewed' }),
+              body: JSON.stringify({ action: 'update_status', lead_id: id, status: 'opened' }),
             }).catch(() => {});
           }
         }
