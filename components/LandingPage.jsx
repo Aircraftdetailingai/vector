@@ -374,7 +374,7 @@ export default function LandingPage({ t, lang = 'en' }) {
             <div className="flex gap-6 text-sm text-gray-500">
               <a href="/terms" className="hover:text-gray-300 transition-colors">{t.footer.terms}</a>
               <a href="/privacy" className="hover:text-gray-300 transition-colors">{t.footer.privacy}</a>
-              <a href="mailto:support@vectorav.ai" className="hover:text-gray-300 transition-colors">{t.footer.contact}</a>
+              <a href="mailto:support@shinyjets.com" className="hover:text-gray-300 transition-colors">{t.footer.contact}</a>
             </div>
           </div>
         </div>

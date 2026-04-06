@@ -165,7 +165,7 @@ export async function POST(request) {
       },
       body: JSON.stringify({
         from: 'Shiny Jets CRM <noreply@shinyjets.com>',
-        to: 'brett@vectorav.ai',
+        to: 'brett@shinyjets.com',
         subject: 'Fleet Service Request — No Detailer Match',
         text: `A fleet service request came in but no detailer is registered at the aircraft's home airport.\n\nCustomer: ${customerName} (${resolved.customer.email})\nAircraft: ${aircraftLabel}\nHome Airport: ${location || 'Not specified'}\nServices: ${servicesList}\n${preferred_date ? `Preferred Date: ${preferred_date}\n` : ''}${notes ? `Notes: ${notes}\n` : ''}\nPlease route this request manually.`,
       }),

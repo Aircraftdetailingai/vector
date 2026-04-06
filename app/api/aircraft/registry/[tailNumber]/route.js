@@ -110,33 +110,38 @@ function parseRegistration(html, nNumber) {
 
   result.found = true;
 
-  // Extract fields using regex patterns from FAA's HTML
+  // FAA HTML uses paired <td> elements:
+  //   <td data-label="">Label Text</td>
+  //   <td data-label="Label Text">Value</td>
+  // Match the value td by its data-label attribute
   const extract = (label) => {
-    const patterns = [
-      new RegExp(`${label}[\\s\\S]*?<td[^>]*>\\s*([^<]+)`, 'i'),
-      new RegExp(`${label}[^:]*:\\s*</td>\\s*<td[^>]*>\\s*([^<]+)`, 'i'),
-    ];
-    for (const p of patterns) {
-      const m = html.match(p);
-      if (m?.[1]) return m[1].trim();
-    }
-    return null;
+    // Match data-label="Label" (case-insensitive) and capture the td content
+    const pattern = new RegExp(
+      `data-label="${label}"[^>]*>\\s*([^<]+)`,
+      'i'
+    );
+    const m = html.match(pattern);
+    const val = m?.[1]?.trim();
+    return val && val !== 'None' ? val : null;
   };
 
-  result.registrant_name = extract('Registrant Name') || extract('Name');
+  // Registered Owner is in a separate section — use data-label="Name" after "Registered Owner"
+  const ownerSection = html.split(/Registered Owner/i)[1] || '';
+  const ownerMatch = ownerSection.match(/data-label="Name"[^>]*>\s*([^<]+)/i);
+  result.registrant_name = ownerMatch?.[1]?.trim() || null;
+
   const rawManufacturer = extract('Manufacturer Name');
   const rawModel = extract('Model');
   result.manufacturer = cleanManufacturer(rawManufacturer);
   let model = cleanModel(rawModel);
-  // Reject garbage models (FAA sometimes returns column headers or serial numbers)
   if (model && (/^serial/i.test(model) || /^[0-9]+$/.test(model) || model.length < 2)) model = null;
   result.model = model;
   result.raw_manufacturer = rawManufacturer;
   result.raw_model = rawModel;
   result.serial_number = extract('Serial Number');
-  result.year = extract('Year Manufacturer') || extract('Year Mfr');
-  result.engine_type = extract('Engine Type') || extract('Type Engine');
-  result.aircraft_type = extract('Type Aircraft');
+  result.year = extract('Mfr Year') || extract('Year Manufacturer');
+  result.engine_type = extract('Engine Type');
+  result.aircraft_type = extract('Aircraft Type');
   result.status = extract('Status');
   result.certificate_issue_date = extract('Certificate Issue Date');
   result.expiration_date = extract('Expiration Date');

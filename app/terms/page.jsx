@@ -295,8 +295,8 @@ export default function TermsPage() {
             <p className="mb-2">
               Upon termination, your right to use the Platform ceases immediately. You may request
               an export of your data within 30 days of termination by contacting{' '}
-              <a href="mailto:support@vectorav.ai" className="text-v-gold-dim hover:underline">
-                support@vectorav.ai
+              <a href="mailto:support@shinyjets.com" className="text-v-gold-dim hover:underline">
+                support@shinyjets.com
               </a>.
               After 30 days, your data may be permanently deleted.
             </p>
@@ -339,8 +339,8 @@ export default function TermsPage() {
             <p className="mt-2">
               We endeavor to conform to Web Content Accessibility Guidelines (WCAG) 2.1 Level AA. If you
               experience any difficulty accessing any part of the Platform, please contact us at{' '}
-              <a href="mailto:support@vectorav.ai" className="text-v-gold-dim hover:underline">
-                support@vectorav.ai
+              <a href="mailto:support@shinyjets.com" className="text-v-gold-dim hover:underline">
+                support@shinyjets.com
               </a>{' '}
               and we will work with you to provide the information or service you need through an
               alternative communication method that is accessible to you.
@@ -406,8 +406,8 @@ export default function TermsPage() {
             <p className="mt-2">
               Vector Aviation Artificial Intelligence LLC<br />
               Email:{' '}
-              <a href="mailto:support@vectorav.ai" className="text-v-gold-dim hover:underline">
-                support@vectorav.ai
+              <a href="mailto:support@shinyjets.com" className="text-v-gold-dim hover:underline">
+                support@shinyjets.com
               </a>
             </p>
           </section>

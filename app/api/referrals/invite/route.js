@@ -45,9 +45,9 @@ export async function POST(request) {
       from: process.env.RESEND_FROM_EMAIL || 'Shiny Jets CRM <noreply@shinyjets.com>',
       to: email,
       subject: `${senderName} invited you to join Shiny Jets CRM`,
-      reply_to: 'support@vectorav.ai',
+      reply_to: 'support@shinyjets.com',
       headers: {
-        'List-Unsubscribe': '<mailto:unsubscribe@vectorav.ai?subject=Unsubscribe>',
+        'List-Unsubscribe': '<mailto:unsubscribe@shinyjets.com?subject=Unsubscribe>',
         'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
       },
       html: `<!DOCTYPE html>

@@ -185,8 +185,8 @@ export default function PrivacyPage() {
             </ul>
             <p className="mt-2">
               To exercise any of these rights, contact us at{' '}
-              <a href="mailto:support@vectorav.ai" className="text-v-gold-dim hover:underline">
-                support@vectorav.ai
+              <a href="mailto:support@shinyjets.com" className="text-v-gold-dim hover:underline">
+                support@shinyjets.com
               </a>.
               We will respond within 30 days.
             </p>
@@ -223,8 +223,8 @@ export default function PrivacyPage() {
               We do not sell personal information as defined under the CCPA. We may share aggregated,
               anonymized data that does not constitute &ldquo;personal information&rdquo; under the CCPA.
               To exercise your California privacy rights, contact us at{' '}
-              <a href="mailto:support@vectorav.ai" className="text-v-gold-dim hover:underline">
-                support@vectorav.ai
+              <a href="mailto:support@shinyjets.com" className="text-v-gold-dim hover:underline">
+                support@shinyjets.com
               </a>.
             </p>
           </section>
@@ -257,8 +257,8 @@ export default function PrivacyPage() {
             <p className="mt-2">
               Vector Aviation Artificial Intelligence<br />
               Email:{' '}
-              <a href="mailto:support@vectorav.ai" className="text-v-gold-dim hover:underline">
-                support@vectorav.ai
+              <a href="mailto:support@shinyjets.com" className="text-v-gold-dim hover:underline">
+                support@shinyjets.com
               </a>
             </p>
           </section>

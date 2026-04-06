@@ -350,7 +350,7 @@ export default function HelpPage() {
                 <div className="flex items-center justify-between">
                   <p className="text-xs text-gray-500">
                     Or email us at{' '}
-                    <a href="mailto:support@vectorav.ai" className="text-v-gold hover:underline">support@vectorav.ai</a>
+                    <a href="mailto:support@shinyjets.com" className="text-v-gold hover:underline">support@shinyjets.com</a>
                   </p>
                   <button
                     type="submit"
@@ -369,7 +369,7 @@ export default function HelpPage() {
         <div className="mt-8 pt-6 border-t border-white/10 text-center">
           <p className="text-gray-500 text-xs">
             Need immediate help? Email{' '}
-            <a href="mailto:support@vectorav.ai" className="text-v-gold hover:underline">support@vectorav.ai</a>
+            <a href="mailto:support@shinyjets.com" className="text-v-gold hover:underline">support@shinyjets.com</a>
           </p>
         </div>
       </div>
