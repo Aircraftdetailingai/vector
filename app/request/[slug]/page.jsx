@@ -682,6 +682,7 @@ function ContactStep({ onSubmit }) {
   const lastNameRef = useRef(null);
   const emailRef = useRef(null);
   const phoneRef = useRef(null);
+  const countryCodeRef = useRef(null);
   const companyRef = useRef(null);
   const termsRef = useRef(null);
   const [canSubmit, setCanSubmit] = useState(false);
@@ -699,9 +700,11 @@ function ContactStep({ onSubmit }) {
     const fn = firstNameRef.current?.value?.trim() || '';
     const ln = lastNameRef.current?.value?.trim() || '';
     const e = emailRef.current?.value?.trim() || '';
-    const p = phoneRef.current?.value?.trim() || '';
+    const code = countryCodeRef.current?.value || '+1';
+    const raw = phoneRef.current?.value?.trim() || '';
+    const p = raw.startsWith('+') ? raw : `${code}${raw}`;
     const c = companyRef.current?.value?.trim() || '';
-    if (fn && ln && e && p && termsRef.current?.checked) onSubmit(fn, ln, e, p, c);
+    if (fn && ln && e && raw && termsRef.current?.checked) onSubmit(fn, ln, e, p, c);
   };
 
   const cls = 'w-full bg-white/10 border border-white/20 text-white rounded-lg px-4 py-4 placeholder-white/40 outline-none focus:border-[#007CB1] transition-colors';
@@ -716,7 +719,29 @@ function ContactStep({ onSubmit }) {
           <input ref={lastNameRef} type="text" autoComplete="family-name" placeholder="Last Name *" onInput={checkValid} onBlur={checkValid} style={{ fontSize: '16px' }} className={cls} />
         </div>
         <input ref={emailRef} type="email" autoComplete="email" placeholder="Email Address *" onInput={checkValid} onBlur={checkValid} style={{ fontSize: '16px' }} className={cls} />
-        <input ref={phoneRef} type="tel" autoComplete="tel" placeholder="Phone Number *" onInput={checkValid} onBlur={checkValid} style={{ fontSize: '16px' }} className={cls} />
+        <div className="flex gap-2">
+          <select ref={countryCodeRef} defaultValue="+1"
+            className="bg-white/10 border border-white/20 text-white rounded-lg px-2 py-4 text-sm outline-none focus:border-[#007CB1] transition-colors flex-shrink-0 w-[88px]"
+            style={{ fontSize: '16px' }}>
+            <option value="+1">US +1</option>
+            <option value="+44">UK +44</option>
+            <option value="+33">FR +33</option>
+            <option value="+49">DE +49</option>
+            <option value="+39">IT +39</option>
+            <option value="+34">ES +34</option>
+            <option value="+55">BR +55</option>
+            <option value="+52">MX +52</option>
+            <option value="+61">AU +61</option>
+            <option value="+81">JP +81</option>
+            <option value="+86">CN +86</option>
+            <option value="+971">AE +971</option>
+            <option value="+966">SA +966</option>
+            <option value="+41">CH +41</option>
+            <option value="+31">NL +31</option>
+            <option value="+351">PT +351</option>
+          </select>
+          <input ref={phoneRef} type="tel" autoComplete="tel-national" placeholder="Phone Number *" onInput={checkValid} onBlur={checkValid} style={{ fontSize: '16px' }} className={cls} />
+        </div>
         <input ref={companyRef} type="text" autoComplete="organization" placeholder="Company Name (optional)" style={{ fontSize: '16px' }} className={cls} />
       </div>
       <label className="flex items-start gap-3 mt-5 cursor-pointer">
