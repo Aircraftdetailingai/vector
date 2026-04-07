@@ -273,7 +273,13 @@ export default function FlowRequestPage() {
           services_requested: serviceAnswers.join(', ') || null,
           notes: noteAnswers.join('\n') || null,
           photo_urls: photoUrls.length > 0 ? photoUrls : null,
-          intake_responses: answers,
+          intake_responses: Object.fromEntries(
+            Object.entries(answers).map(([nodeId, value]) => {
+              const node = flowNodes.find(n => n.id === nodeId);
+              const label = node?.data?.label || (node?.type === 'serviceSelect' ? 'Selected services' : nodeId);
+              return [label, value];
+            })
+          ),
           source: 'flow_request_page',
         }),
       });

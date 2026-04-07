@@ -193,12 +193,23 @@ export default function RequestDetailPage() {
           <div className="bg-white/[0.03] border border-v-border-subtle rounded-lg p-5 mb-4">
             <p className="text-[10px] uppercase tracking-wider text-v-text-secondary/60 mb-3">Intake Responses</p>
             <div className="space-y-2">
-              {Object.entries(lead.intake_responses).map(([key, val]) => (
-                <div key={key} className="flex gap-3">
-                  <span className="text-v-text-secondary text-xs w-32 flex-shrink-0">{key.replace(/^q_/, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}</span>
-                  <span className="text-white text-sm">{Array.isArray(val) ? val.join(', ') : String(val)}</span>
-                </div>
-              ))}
+              {Object.entries(lead.intake_responses).map(([key, val]) => {
+                let label = key;
+                if (/^(question|serviceSelect|condition|svc|q)-/i.test(key)) {
+                  if (/^serviceSelect/i.test(key)) label = 'Selected services';
+                  else if (/^svc/i.test(key)) label = 'Selected services';
+                  else if (/^(q-situation|question)/i.test(key)) label = 'Selection';
+                  else label = 'Response';
+                } else {
+                  label = key.replace(/^q_/, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                }
+                return (
+                  <div key={key} className="flex gap-3">
+                    <span className="text-v-text-secondary text-xs w-32 flex-shrink-0">{label}</span>
+                    <span className="text-white text-sm">{Array.isArray(val) ? val.join(', ') : String(val)}</span>
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}

@@ -828,12 +828,26 @@ function NewQuoteContent() {
             {leadContext.intakeResponses && Object.keys(leadContext.intakeResponses).length > 0 && (
               <div className="mt-2 pt-2 border-t border-white/10">
                 <p className="text-v-text-secondary/60 text-[10px] uppercase tracking-wider mb-1">Intake Answers</p>
-                {Object.entries(leadContext.intakeResponses).map(([key, val]) => (
-                  <p key={key} className="text-sm text-gray-300">
-                    <span className="text-v-text-secondary/60">{key.replace(/^q_/, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}:</span>{' '}
-                    {Array.isArray(val) ? val.join(', ') : String(val)}
-                  </p>
-                ))}
+                {Object.entries(leadContext.intakeResponses).map(([key, val]) => {
+                  // Clean up key: if it looks like a node ID (contains - followed by digits), show a generic label
+                  let label = key;
+                  if (/^(question|serviceSelect|condition|svc|q)-/i.test(key)) {
+                    // Legacy node-ID key — derive label from type prefix
+                    if (/^serviceSelect/i.test(key)) label = 'Selected services';
+                    else if (/^(svc)/i.test(key)) label = 'Selected services';
+                    else if (/^(q-situation|question)/i.test(key)) label = 'Selection';
+                    else label = 'Response';
+                  } else {
+                    // Human-readable label (new format) — just clean up
+                    label = key.replace(/^q_/, '').replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+                  }
+                  return (
+                    <p key={key} className="text-sm text-gray-300">
+                      <span className="text-v-text-secondary/60">{label}:</span>{' '}
+                      {Array.isArray(val) ? val.join(', ') : String(val)}
+                    </p>
+                  );
+                })}
               </div>
             )}
           </div>
