@@ -247,6 +247,8 @@ function FlowBuilderInner() {
   }, [reactFlowInstance, services]);
 
   // ─── Attach callbacks to nodes ───
+  // Do NOT include editingNode in deps — changing editingNode must not re-create node objects
+  // (that causes React Flow to re-measure/reposition nodes)
   const LOCKED_TYPES = ['start', 'aircraftInfo'];
   const nodesWithCallbacks = useMemo(() =>
     nodes.map(node => ({
@@ -257,11 +259,11 @@ function FlowBuilderInner() {
         onDelete: !LOCKED_TYPES.includes(node.type) ? () => {
           setNodes(nds => nds.filter(n => n.id !== node.id));
           setEdges(eds => eds.filter(e => e.source !== node.id && e.target !== node.id));
-          if (editingNode?.id === node.id) setEditingNode(null);
+          setEditingNode(prev => prev?.id === node.id ? null : prev);
         } : undefined,
       },
     })),
-  [nodes, editingNode]);
+  [nodes]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ─── Attach delete callback to edges ───
   const deleteEdge = useCallback((edgeId) => {
