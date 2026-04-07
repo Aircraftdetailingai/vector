@@ -139,22 +139,33 @@ export const ServiceSelectNode = memo(({ data, selected }) => (
     <FlowHandle type="target" position={Position.Top} color="#2dd4bf" />
     <div className="px-4 py-3">
       <p className="text-white text-xs leading-relaxed">{data.label || 'Select services'}</p>
-      {data.serviceNames?.length > 0 ? (
+      {/* Show selected packages */}
+      {data.packageNames?.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1">
+          {data.packageNames.map((p, i) => (
+            <span key={`p-${i}`} className="text-[9px] bg-purple-500/10 text-purple-300/60 px-1.5 py-0.5 rounded">{p}</span>
+          ))}
+        </div>
+      )}
+      {/* Show selected services */}
+      {data.serviceNames?.length > 0 ? (
+        <div className="mt-1.5 flex flex-wrap gap-1">
           {data.serviceNames.slice(0, 4).map((s, i) => (
-            <span key={i} className="text-[9px] bg-teal-500/10 text-teal-300/60 px-1.5 py-0.5 rounded">{s}</span>
+            <span key={`s-${i}`} className="text-[9px] bg-teal-500/10 text-teal-300/60 px-1.5 py-0.5 rounded">{s}</span>
           ))}
           {data.serviceNames.length > 4 && <span className="text-[9px] text-teal-300/40">+{data.serviceNames.length - 4}</span>}
         </div>
-      ) : (
+      ) : !data.packageNames?.length ? (
         <span className="text-teal-300/50 text-[10px] mt-1 block">From your services</span>
-      )}
-      {data.warnings?.length > 0 && (
-        <div className="mt-2">
-          {data.warnings.map((w, i) => (
-            <p key={i} className="text-[9px] text-red-400 bg-red-500/10 px-2 py-1 rounded mt-1">{w}</p>
-          ))}
-        </div>
+      ) : null}
+      {/* Summary count */}
+      {(data.serviceNames?.length > 0 || data.packageNames?.length > 0) && (
+        <p className="text-teal-300/40 text-[9px] mt-1.5">
+          {[
+            data.packageNames?.length ? `${data.packageNames.length} package${data.packageNames.length !== 1 ? 's' : ''}` : '',
+            data.serviceNames?.length ? `${data.serviceNames.length} service${data.serviceNames.length !== 1 ? 's' : ''}` : '',
+          ].filter(Boolean).join(', ')} selected
+        </p>
       )}
     </div>
     <FlowHandle type="source" position={Position.Bottom} color="#2dd4bf" />
