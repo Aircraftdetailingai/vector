@@ -17,11 +17,17 @@ export default function FlowRequestPage() {
   const [currentNodeId, setCurrentNodeId] = useState(null);
   const [history, setHistory] = useState([]);          // stack of previous nodeIds
   const [answers, setAnswers] = useState({});           // nodeId → answer
-  const [phase, setPhase] = useState('aircraft');       // aircraft | flow | contact | submitting | done
+  const [phase, setPhase] = useState('manufacturer');   // manufacturer | model | tailAirport | flow | contact | submitting | done
   const [error, setError] = useState('');
 
-  // Aircraft info (always first)
+  // Aircraft info — steps 1-3
+  const [manufacturers, setManufacturers] = useState([]);
+  const [selectedMfr, setSelectedMfr] = useState('');
+  const [models, setModels] = useState([]);
+  const [selectedModel, setSelectedModel] = useState('');
+  const [loadingModels, setLoadingModels] = useState(false);
   const [tailNumber, setTailNumber] = useState('');
+  const [airport, setAirport] = useState('');
   const [faaResult, setFaaResult] = useState(null);
   const [faaError, setFaaError] = useState('');
   const [faaLooking, setFaaLooking] = useState(false);
@@ -34,25 +40,28 @@ export default function FlowRequestPage() {
   // Submit state
   const [submitting, setSubmitting] = useState(false);
 
-  // ─── Load detailer + flow + services ───
+  // ─── Load detailer + flow + services + manufacturers ───
   useEffect(() => {
     if (!slug) return;
     (async () => {
       try {
-        const detRes = await fetch(`/api/detailers/resolve?id=${encodeURIComponent(slug)}`);
+        const detRes = await fetch(`/api/detailers/resolve?slug=${encodeURIComponent(slug)}`);
         const detData = await detRes.json();
         if (!detRes.ok || !detData.detailer) { setPageError('Detailer not found'); return; }
         setDetailer(detData.detailer);
         const detailerId = detData.detailer.id;
 
-        const [flowRes, svcRes] = await Promise.all([
+        const [flowRes, svcRes, mfrRes] = await Promise.all([
           fetch(`/api/intake-flow?detailer_id=${detailerId}`),
           fetch(`/api/services?detailer_id=${detailerId}`),
+          fetch('/api/aircraft/manufacturers'),
         ]);
         const flowData = flowRes.ok ? await flowRes.json() : {};
         const svcData = svcRes.ok ? await svcRes.json() : {};
+        const mfrData = mfrRes.ok ? await mfrRes.json() : {};
 
         setServices(svcData.services || []);
+        setManufacturers(mfrData.manufacturers || []);
 
         if (flowData.flow_nodes?.length > 0 && flowData.flow_edges?.length > 0) {
           setFlowNodes(flowData.flow_nodes);
@@ -67,6 +76,17 @@ export default function FlowRequestPage() {
       }
     })();
   }, [slug]);
+
+  // ─── Fetch models when manufacturer selected ───
+  useEffect(() => {
+    if (!selectedMfr) { setModels([]); return; }
+    setLoadingModels(true);
+    fetch(`/api/aircraft/models?manufacturer=${encodeURIComponent(selectedMfr)}`)
+      .then(r => r.ok ? r.json() : { models: [] })
+      .then(d => setModels(d.models || []))
+      .catch(() => {})
+      .finally(() => setLoadingModels(false));
+  }, [selectedMfr]);
 
   // ─── Find the first real flow node (after start + aircraftInfo) ───
   const getFirstFlowNode = useCallback(() => {
@@ -152,20 +172,19 @@ export default function FlowRequestPage() {
 
   // ─── Go back ───
   const goBack = () => {
-    if (phase === 'contact') {
-      setPhase('flow');
-      return;
-    }
-    if (history.length > 0) {
+    if (phase === 'contact') { setPhase('flow'); return; }
+    if (phase === 'flow' && history.length > 0) {
       const prev = history[history.length - 1];
       setHistory(h => h.slice(0, -1));
       setCurrentNodeId(prev);
-    } else {
-      setPhase('aircraft');
+      return;
     }
+    if (phase === 'flow') { setPhase('tailAirport'); return; }
+    if (phase === 'tailAirport') { setPhase('model'); return; }
+    if (phase === 'model') { setSelectedMfr(''); setPhase('manufacturer'); return; }
   };
 
-  // Start the flow after aircraft info
+  // Start the flow after aircraft steps
   const startFlow = () => {
     const firstId = getFirstFlowNode();
     if (firstId) {
@@ -251,6 +270,7 @@ export default function FlowRequestPage() {
           company: company || null,
           aircraft_model: aircraftDisplay || null,
           tail_number: tailNumber || null,
+          airport: airport || null,
           services_requested: serviceAnswers.join(', ') || null,
           notes: noteAnswers.join('\n') || null,
           photo_urls: photoUrls.length > 0 ? photoUrls : null,
@@ -275,7 +295,7 @@ export default function FlowRequestPage() {
   const Header = () => (
     <div className="px-4 pt-4">
       <div className="flex items-center justify-between">
-        {(phase !== 'aircraft' && phase !== 'done' && phase !== 'submitting') ? (
+        {(phase !== 'manufacturer' && phase !== 'done' && phase !== 'submitting') ? (
           <button onClick={goBack} className="w-10 h-10 flex items-center justify-center text-white/60 hover:text-white">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
           </button>
@@ -339,33 +359,102 @@ export default function FlowRequestPage() {
       <div className="flex-1 flex flex-col px-6 pb-8 pt-4">
         {error && <div className="bg-red-500/20 border border-red-500/40 text-red-300 px-4 py-2 rounded-lg mb-4 text-sm">{error}</div>}
 
-        {/* ━━━ AIRCRAFT INFO (always first) ━━━ */}
-        {phase === 'aircraft' && (
+        {/* ━━━ STEP 1: Manufacturer ━━━ */}
+        {phase === 'manufacturer' && (
           <div className="flex-1 flex flex-col">
-            <h2 className="text-xl font-light text-white mb-2">What&apos;s your tail number?</h2>
-            <p className="text-white/40 text-xs mb-6">Optional — we&apos;ll look up your aircraft automatically</p>
-            <input type="text" value={tailNumber} onChange={e => handleTailChange(e.target.value)}
-              placeholder="N12345" autoCapitalize="characters" autoFocus style={{ fontSize: '16px' }} className={inputCls} />
-            {faaLooking && (
-              <div className="flex items-center gap-2 mt-3">
-                <div className="w-4 h-4 border-2 border-[#007CB1] border-t-transparent rounded-full animate-spin" />
-                <p className="text-white/40 text-xs">Looking up registration...</p>
-              </div>
-            )}
-            {faaError && <div className="mt-3 bg-red-500/10 border border-red-500/30 rounded-lg p-4"><p className="text-red-300 text-xs">{faaError}</p></div>}
-            {faaResult && (
-              <div className="mt-3 bg-[#007CB1]/10 border border-[#007CB1]/30 rounded-lg p-4">
-                <p className="text-white text-sm font-medium">{faaResult.manufacturer} {faaResult.model}</p>
-                {faaResult.year && <p className="text-white/50 text-xs mt-0.5">{faaResult.year}{faaResult.registrant_name ? ` — ${faaResult.registrant_name}` : ''}</p>}
-                <button onClick={() => { setAircraftDisplay(`${faaResult.manufacturer} ${faaResult.model}`); startFlow(); }}
-                  className="mt-3 w-full py-3 rounded-lg bg-[#007CB1] text-white text-sm font-semibold hover:bg-[#006a9e] transition-colors">
-                  Yes, this is my aircraft
+            <h2 className="text-xl font-light text-white mb-6">What aircraft do you fly?</h2>
+            <p className="text-white/50 text-xs uppercase tracking-wider mb-2">Manufacturer</p>
+            <div className="flex-1 max-h-[65vh] overflow-y-auto rounded-lg border border-white/10">
+              {manufacturers.length > 0 ? manufacturers.map(m => (
+                <button key={m} onClick={() => { setSelectedMfr(m); setPhase('model'); }}
+                  className="w-full text-left px-4 py-3.5 text-sm text-white/80 hover:bg-[#007CB1]/20 border-b border-white/5 last:border-0 active:bg-[#007CB1]/30 transition-colors">
+                  {m}
                 </button>
+              )) : (
+                <p className="text-white/30 text-sm text-center py-8">Loading manufacturers...</p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ━━━ STEP 2: Model ━━━ */}
+        {phase === 'model' && (
+          <div className="flex-1 flex flex-col">
+            <h2 className="text-xl font-light text-white mb-6">What aircraft do you fly?</h2>
+            <p className="text-white/50 text-xs uppercase tracking-wider mb-2">Manufacturer</p>
+            <button onClick={() => { setSelectedMfr(''); setSelectedModel(''); setPhase('manufacturer'); }}
+              className="w-full flex items-center justify-between px-4 py-3.5 rounded-lg border border-[#007CB1] bg-[#007CB1]/10 text-white text-sm mb-4">
+              <span>{selectedMfr}</span>
+              <span className="text-white/40 text-xs">Change</span>
+            </button>
+            <p className="text-white/50 text-xs uppercase tracking-wider mb-2">Model</p>
+            {loadingModels ? (
+              <div className="flex items-center justify-center py-8">
+                <div className="w-6 h-6 border-2 border-[#007CB1] border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : (
+              <div className="flex-1 max-h-[45vh] overflow-y-auto rounded-lg border border-white/10">
+                {models.map(m => (
+                  <button key={m.id} onClick={() => {
+                    setSelectedModel(m.model);
+                    setAircraftDisplay(`${selectedMfr} ${m.model}`);
+                    setPhase('tailAirport');
+                  }}
+                    className={`w-full text-left px-4 py-3.5 text-sm border-b border-white/5 last:border-0 active:bg-[#007CB1]/30 transition-colors ${
+                      selectedModel === m.model ? 'bg-[#007CB1]/20 text-white' : 'text-white/80 hover:bg-[#007CB1]/10'
+                    }`}>
+                    {m.model}
+                    {m.category && <span className="text-white/30 text-xs ml-2">{m.category}</span>}
+                  </button>
+                ))}
+                {models.length === 0 && <p className="text-white/30 text-sm text-center py-6">No models found</p>}
               </div>
             )}
-            <div className="mt-auto pt-6 space-y-3">
-              {!faaResult && <Btn onClick={startFlow}>Next</Btn>}
-              {!tailNumber && <Btn onClick={startFlow} secondary>Skip</Btn>}
+          </div>
+        )}
+
+        {/* ━━━ STEP 3: Tail Number + Airport ━━━ */}
+        {phase === 'tailAirport' && (
+          <div className="flex-1 flex flex-col">
+            {/* Show selected aircraft */}
+            {aircraftDisplay && (
+              <div className="bg-[#007CB1]/10 border border-[#007CB1]/30 rounded-lg p-3 mb-4">
+                <p className="text-white text-sm font-medium">{aircraftDisplay}</p>
+              </div>
+            )}
+
+            <h2 className="text-xl font-light text-white mb-2">Tail number &amp; home base</h2>
+            <p className="text-white/40 text-xs mb-5">Optional — helps us look up your aircraft</p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-white/50 text-xs uppercase tracking-wider mb-1.5 block">Tail Number</label>
+                <input type="text" value={tailNumber} onChange={e => handleTailChange(e.target.value)}
+                  placeholder="N12345" autoCapitalize="characters" style={{ fontSize: '16px' }} className={inputCls} />
+              </div>
+              {faaLooking && (
+                <div className="flex items-center gap-2">
+                  <div className="w-4 h-4 border-2 border-[#007CB1] border-t-transparent rounded-full animate-spin" />
+                  <p className="text-white/40 text-xs">Looking up registration...</p>
+                </div>
+              )}
+              {faaError && <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3"><p className="text-red-300 text-xs">{faaError}</p></div>}
+              {faaResult && !aircraftDisplay.includes(faaResult.model) && (
+                <div className="bg-[#007CB1]/10 border border-[#007CB1]/30 rounded-lg p-3">
+                  <p className="text-white text-sm font-medium">{faaResult.manufacturer} {faaResult.model}</p>
+                  <button onClick={() => { setSelectedMfr(faaResult.manufacturer); setSelectedModel(faaResult.model); setAircraftDisplay(`${faaResult.manufacturer} ${faaResult.model}`); }}
+                    className="text-[#007CB1] text-xs mt-1 underline">Use this aircraft instead</button>
+                </div>
+              )}
+              <div>
+                <label className="text-white/50 text-xs uppercase tracking-wider mb-1.5 block">Airport / Home Base</label>
+                <input type="text" value={airport} onChange={e => setAirport(e.target.value.toUpperCase())}
+                  placeholder="KTEB or Teterboro" autoCapitalize="characters" style={{ fontSize: '16px' }} className={inputCls} />
+              </div>
+            </div>
+
+            <div className="mt-auto pt-6">
+              <Btn onClick={startFlow}>Next</Btn>
             </div>
           </div>
         )}
