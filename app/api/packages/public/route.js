@@ -33,5 +33,21 @@ export async function GET(request) {
     return Response.json({ error: error.message }, { status: 500 });
   }
 
-  return Response.json({ packages: data || [] });
+  // Resolve service_ids to names for fallback descriptions
+  const allServiceIds = (data || []).flatMap(p => p.service_ids || []);
+  let serviceMap = {};
+  if (allServiceIds.length > 0) {
+    const { data: svcs } = await supabase
+      .from('services')
+      .select('id, name')
+      .in('id', allServiceIds);
+    if (svcs) serviceMap = Object.fromEntries(svcs.map(s => [s.id, s.name]));
+  }
+
+  const packages = (data || []).map(p => ({
+    ...p,
+    included_services: (p.service_ids || []).map(id => serviceMap[id]).filter(Boolean),
+  }));
+
+  return Response.json({ packages });
 }

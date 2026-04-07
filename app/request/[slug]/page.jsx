@@ -493,7 +493,8 @@ function ServiceSelectStep({ node, services, packages = [], value, onChange, onN
   const items = hasPackages
     ? node.data.packageNames.map(name => {
         const pkg = packages.find(p => p.name === name);
-        return { name, id: pkg?.id || name, description: pkg?.description || '' };
+        const desc = pkg?.description || (pkg?.included_services?.length > 0 ? `Includes: ${pkg.included_services.join(', ')}` : '');
+        return { name, id: pkg?.id || name, description: desc };
       })
     : services;
 
