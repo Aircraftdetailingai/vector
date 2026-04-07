@@ -188,15 +188,18 @@ export default function TeamPage() {
                   <td className="px-4 py-3 hidden sm:table-cell">
                     {member.email ? (
                       member.invite_status === 'accepted' ? (
-                        <span className="text-xs text-green-400">Accepted</span>
+                        <span className="text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded-full">Accepted</span>
                       ) : (
-                        <button
-                          onClick={(e) => resendInvite(member.id, e)}
-                          disabled={resending === member.id}
-                          className="text-xs px-3 py-1 bg-v-gold/20 text-v-gold border border-v-gold/30 rounded hover:bg-v-gold/30 transition-colors disabled:opacity-50"
-                        >
-                          {resending === member.id ? 'Sending...' : member.invite_sent_at ? 'Resend' : 'Send Invite'}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-amber-400 bg-amber-900/20 px-2 py-1 rounded-full">Pending</span>
+                          <button
+                            onClick={(e) => resendInvite(member.id, e)}
+                            disabled={resending === member.id}
+                            className="text-xs px-3 py-1 bg-v-gold/20 text-v-gold border border-v-gold/30 rounded hover:bg-v-gold/30 transition-colors disabled:opacity-50"
+                          >
+                            {resending === member.id ? 'Sending...' : member.invite_sent_at ? 'Resend Invite' : 'Send Invite'}
+                          </button>
+                        </div>
                       )
                     ) : (
                       <span className="text-xs text-v-text-secondary">No email</span>

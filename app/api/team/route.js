@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
-import { sendTeamInviteEmail } from '@/lib/email';
+import { sendTeamInviteEmail, sendTeamAddedEmail } from '@/lib/email';
 import crypto from 'crypto';
 
 export const dynamic = 'force-dynamic';
@@ -131,14 +131,44 @@ export async function POST(request) {
         .eq('id', user.id)
         .single();
 
+      // Check if this email already has an account
+      const { data: existingAccount } = await supabase
+        .from('detailers')
+        .select('id')
+        .eq('email', body.email)
+        .single();
+
+      if (existingAccount) {
+        // Existing account — auto-accept and send notification instead of invite
+        await supabase.from('team_members').update({
+          invite_status: 'accepted',
+          invite_token: null,
+          invite_sent_at: new Date().toISOString(),
+        }).eq('id', data.id);
+
+        try {
+          await sendTeamAddedEmail({
+            to: body.email,
+            memberName: body.name,
+            company: detailer?.company || detailer?.name || 'the team',
+          });
+          console.log('[team/invite] Team-added notification sent to existing account:', body.email);
+        } catch (emailErr) {
+          console.error('[team/invite] Team-added email error:', emailErr.message);
+        }
+
+        return Response.json(data, { status: 201 });
+      }
+
       const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
-      const inviteUrl = `${appUrl}/team/join/${inviteToken}`;
+      const inviteUrl = `${appUrl}/invite/${inviteToken}`;
 
       console.log('[team/invite] Sending invite email to:', body.email, 'invite URL:', inviteUrl);
 
       try {
         const result = await sendTeamInviteEmail({
           to: body.email,
+          memberName: body.name,
           inviterName: detailer?.name || detailer?.company || 'Your team leader',
           company: detailer?.company || detailer?.name || 'the team',
           role,
@@ -215,10 +245,11 @@ export async function PATCH(request) {
       .single();
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
-    const inviteUrl = `${appUrl}/team/join/${token}`;
+    const inviteUrl = `${appUrl}/invite/${token}`;
 
     const result = await sendTeamInviteEmail({
       to: member.email,
+      memberName: member.name,
       inviterName: detailer?.name || detailer?.company || 'Your team leader',
       company: detailer?.company || detailer?.name || 'the team',
       role: member.role,
