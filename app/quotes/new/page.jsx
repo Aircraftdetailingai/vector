@@ -801,23 +801,9 @@ function NewQuoteContent() {
                 <span className="text-v-text-secondary/60">Service Type:</span> {leadContext.service}
               </p>
             )}
-            {leadContext.notes && (() => {
-              const lines = leadContext.notes.split('\n').filter(Boolean);
-              if (lines.length === 0) return null;
-              return (
-                <div className="mt-2">
-                  <p className="text-v-text-secondary/60 text-[10px] uppercase tracking-wider mb-1.5">Surface Conditions (as reported by customer)</p>
-                  {lines.map((line, i) => {
-                    // Show full condition: "Paint — Some dullness or light scratches" → "Paint: Some dullness or light scratches"
-                    const parts = line.split(/\s*[\u2014—]\s*/);
-                    if (parts.length >= 2) {
-                      return <p key={i} className="text-v-text-primary text-xs">{parts[0].trim()}: {parts[1].trim()}</p>;
-                    }
-                    return <p key={i} className="text-v-text-primary text-xs">{line}</p>;
-                  })}
-                </div>
-              );
-            })()}
+            {leadContext.notes && !leadContext.intakeResponses && (
+              <p className="text-v-text-secondary text-xs whitespace-pre-line">{leadContext.notes}</p>
+            )}
             {leadContext.photos?.length > 0 && (
               <div className="flex gap-2 mt-2 overflow-x-auto">
                 {leadContext.photos.slice(0, 6).map((p, i) => (
