@@ -61,7 +61,16 @@ export async function POST(request) {
   // Support both old format (questions array) and new format (flow_nodes + flow_edges)
   if (body.flow_nodes && body.flow_edges) {
     upsertData.flow_nodes = body.flow_nodes;
-    upsertData.flow_edges = body.flow_edges;
+    // Stamp branching edges with optionLabel so routing survives option reordering
+    upsertData.flow_edges = body.flow_edges.map(e => {
+      const match = e.sourceHandle?.match(/^opt-(\d+)$/);
+      if (!match) return e;
+      const sourceNode = body.flow_nodes.find(n => n.id === e.source);
+      if (!sourceNode?.data?.allowBranching || !sourceNode.data.options) return e;
+      const optionLabel = sourceNode.data.options[parseInt(match[1])];
+      if (!optionLabel) return e;
+      return { ...e, data: { ...e.data, optionLabel } };
+    });
     // Also generate a flat questions array from the flow for backward compatibility
     upsertData.questions = flowToQuestions(body.flow_nodes, body.flow_edges);
   } else if (body.questions) {

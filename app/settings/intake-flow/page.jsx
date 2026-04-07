@@ -324,10 +324,25 @@ function FlowBuilderInner() {
       const { onEdit, onDelete, ...cleanData } = data;
       return { ...rest, data: cleanData };
     });
+
+    // Stamp branching edges with the option label they correspond to.
+    // This makes routing resilient to option reordering — the consumer
+    // matches by optionLabel instead of positional opt-N index.
+    const stampedEdges = edges.map(e => {
+      const match = e.sourceHandle?.match(/^opt-(\d+)$/);
+      if (!match) return e;
+      const sourceNode = cleanNodes.find(n => n.id === e.source);
+      if (!sourceNode?.data?.allowBranching || !sourceNode.data.options) return e;
+      const idx = parseInt(match[1]);
+      const optionLabel = sourceNode.data.options[idx];
+      if (!optionLabel) return e;
+      return { ...e, data: { ...e.data, optionLabel } };
+    });
+
     const res = await fetch('/api/intake-flow', {
       method: 'POST',
       headers,
-      body: JSON.stringify({ flow_nodes: cleanNodes, flow_edges: edges }),
+      body: JSON.stringify({ flow_nodes: cleanNodes, flow_edges: stampedEdges }),
     });
     if (res.ok) showToast('Flow saved — your quote request page has been updated');
     else {
