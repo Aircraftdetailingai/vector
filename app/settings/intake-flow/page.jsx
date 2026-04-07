@@ -140,6 +140,7 @@ function FlowBuilderInner() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [services, setServices] = useState([]);
+  const [packages, setPackages] = useState([]);
   const [editingNode, setEditingNode] = useState(null);
   const [showPreview, setShowPreview] = useState(false);
   const [toast, setToast] = useState('');
@@ -152,10 +153,17 @@ function FlowBuilderInner() {
     if (!token) { router.push('/login'); return; }
     const loadData = async () => {
       try {
-        const svcRes = await fetch('/api/services', { headers: { Authorization: `Bearer ${token}` } });
+        const [svcRes, pkgRes] = await Promise.all([
+          fetch('/api/services', { headers: { Authorization: `Bearer ${token}` } }),
+          fetch('/api/packages', { headers: { Authorization: `Bearer ${token}` } }),
+        ]);
         const svcData = svcRes.ok ? await svcRes.json() : { services: [] };
         const svcList = Array.isArray(svcData.services || svcData) ? (svcData.services || svcData) : [];
         setServices(svcList);
+        if (pkgRes.ok) {
+          const pkgData = await pkgRes.json();
+          setPackages(pkgData.packages || []);
+        }
 
         const flowRes = await fetch('/api/intake-flow', { headers: { Authorization: `Bearer ${token}` } });
         const flowData = flowRes.ok ? await flowRes.json() : {};
@@ -459,6 +467,7 @@ function FlowBuilderInner() {
             node={editingNode}
             nodes={nodes}
             services={services}
+            packages={packages}
             onUpdate={updateNodeData}
             onClose={() => setEditingNode(null)}
           />
