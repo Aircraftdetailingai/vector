@@ -98,6 +98,10 @@ export default function JobsPage() {
             </h1>
             <p className="text-v-text-secondary text-xs mt-1">Scheduled and completed work</p>
           </div>
+          <a href="/jobs/new"
+            className="px-5 py-2.5 text-xs uppercase tracking-widest bg-v-gold text-v-charcoal font-semibold hover:bg-v-gold-dim transition-colors">
+            Create Job
+          </a>
         </div>
 
         {/* Stats Bar */}
