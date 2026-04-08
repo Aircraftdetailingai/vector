@@ -13,6 +13,7 @@ export default function NewJobPage() {
   const [customers, setCustomers] = useState([]);
   const [manufacturers, setManufacturers] = useState([]);
   const [models, setModels] = useState([]);
+  const [selectedAircraft, setSelectedAircraft] = useState(null); // full aircraft record with hours
   const [services, setServices] = useState([]);
   const [teamMembers, setTeamMembers] = useState([]);
 
@@ -51,15 +52,43 @@ export default function NewJobPage() {
   }, []);
 
   useEffect(() => {
-    if (!manufacturer) { setModels([]); return; }
+    if (!manufacturer) { setModels([]); setSelectedAircraft(null); return; }
     fetch(`/api/aircraft/models?make=${encodeURIComponent(manufacturer)}`)
       .then(r => r.ok ? r.json() : { models: [] })
       .then(d => setModels(d.models || []));
   }, [manufacturer]);
 
+  // Fetch aircraft hours when model selected
+  useEffect(() => {
+    if (!model || !models.length) { setSelectedAircraft(null); return; }
+    const match = models.find(m => m.model === model);
+    if (match?.id) {
+      fetch(`/api/aircraft/${match.id}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.aircraft) setSelectedAircraft(d.aircraft); })
+        .catch(() => {});
+    }
+  }, [model, models]);
+
+  const getHours = (svc) => {
+    if (!svc || !selectedAircraft) return 0;
+    if (svc.hours_field && selectedAircraft[svc.hours_field] !== undefined) {
+      return parseFloat(selectedAircraft[svc.hours_field]) || 0;
+    }
+    return parseFloat(svc.default_hours) || 0;
+  };
+
+  const getRate = (svc) => parseFloat(svc?.hourly_rate) || 0;
+
+  const getServiceTotal = (svc) => {
+    const hours = getHours(svc);
+    const rate = getRate(svc);
+    return hours > 0 && rate > 0 ? hours * rate : (parseFloat(svc?.price) || rate);
+  };
+
   const calculatedTotal = selectedServices.reduce((sum, id) => {
     const svc = services.find(s => s.id === id);
-    return sum + (parseFloat(svc?.price) || parseFloat(svc?.hourly_rate) || 0);
+    return sum + getServiceTotal(svc);
   }, 0);
   const total = totalOverride ? parseFloat(totalOverride) : calculatedTotal;
 
@@ -94,7 +123,9 @@ export default function NewJobPage() {
           airport,
           services: selectedServices.map(id => {
             const svc = services.find(s => s.id === id);
-            return { id, name: svc?.name, hours: parseFloat(svc?.default_hours) || 0, price: parseFloat(svc?.price || svc?.hourly_rate) || 0 };
+            const h = getHours(svc);
+            const r = getRate(svc);
+            return { id, name: svc?.name, hours: h, rate: r, price: getServiceTotal(svc) };
           }),
           scheduled_date: scheduledDate || null,
           scheduled_time: scheduledTime || null,
@@ -172,13 +203,23 @@ export default function NewJobPage() {
             <div className="space-y-1">
               {services.map(svc => {
                 const sel = selectedServices.includes(svc.id);
+                const hours = getHours(svc);
+                const rate = getRate(svc);
+                const svcTotal = getServiceTotal(svc);
                 return (
                   <label key={svc.id} className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition-colors ${sel ? 'border-v-gold/50 bg-v-gold/5' : 'border-v-border bg-v-surface'}`}>
                     <input type="checkbox" checked={sel}
                       onChange={() => setSelectedServices(prev => sel ? prev.filter(id => id !== svc.id) : [...prev, svc.id])}
                       className="w-4 h-4 rounded accent-v-gold" />
-                    <span className="flex-1 text-sm text-v-text-primary">{svc.name}</span>
-                    {(svc.price || svc.hourly_rate) && <span className="text-xs text-v-text-secondary">${parseFloat(svc.price || svc.hourly_rate).toFixed(0)}</span>}
+                    <div className="flex-1 min-w-0">
+                      <span className="text-sm text-v-text-primary">{svc.name}</span>
+                      {hours > 0 && <span className="text-xs text-v-text-secondary ml-2">{hours.toFixed(1)}h</span>}
+                      {!selectedAircraft && <span className="text-[10px] text-v-text-secondary/50 ml-2 italic">Select aircraft for hours</span>}
+                    </div>
+                    <div className="text-right shrink-0">
+                      {svcTotal > 0 && <span className="text-sm text-v-text-primary font-medium">${svcTotal.toFixed(0)}</span>}
+                      {rate > 0 && hours > 0 && <span className="text-[10px] text-v-text-secondary block">@ ${rate}/hr</span>}
+                    </div>
                   </label>
                 );
               })}
