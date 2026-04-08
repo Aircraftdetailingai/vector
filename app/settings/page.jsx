@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { DEFAULT_PRODUCT_RATIOS, SERVICE_TYPE_LABELS } from '../../lib/product-calculator';
 import { setUserCurrency, STRIPE_COUNTRIES } from '@/lib/currency';
@@ -185,6 +185,7 @@ function SettingsContent() {
   const [pendingChanges, setPendingChanges] = useState(new Set());
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
+  const savedUserRef = useRef(null); // snapshot of user data for cancel/revert
 
   const markDirty = (field) => {
     setPendingChanges(prev => new Set(prev).add(field));
@@ -249,12 +250,14 @@ function SettingsContent() {
     let u;
     try { u = JSON.parse(stored); } catch { localStorage.removeItem('vector_user'); router.push('/login'); return; }
     hydrateFromUser(u);
+    savedUserRef.current = { ...u };
     // Refresh user data from server to get latest plan/permissions
     fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
       .then(data => {
         if (data?.user) {
           hydrateFromUser(data.user);
+          savedUserRef.current = { ...data.user };
           localStorage.setItem('vector_user', JSON.stringify(data.user));
         }
       })
@@ -1331,8 +1334,10 @@ function SettingsContent() {
         } catch {}
       }
       setPendingChanges(new Set());
-      setSaveSuccess(hadBrandingOnly ? 'branding' : true);
-      setTimeout(() => setSaveSuccess(false), 3000);
+      setSaveSuccess(true);
+      // Update the saved snapshot so cancel reverts to the just-saved state
+      try { savedUserRef.current = JSON.parse(localStorage.getItem('vector_user') || '{}'); } catch {}
+      setTimeout(() => setSaveSuccess(false), 1500);
     } catch (err) {
       console.error('Failed to save:', err);
     } finally {
@@ -1345,49 +1350,42 @@ function SettingsContent() {
 
   return (
     <div className="space-y-4">
-        {/* Fixed Save Bar — always at top when changes pending */}
-        {(pendingChanges.size > 0 || saveSuccess) && (
-          <>
-            {/* Spacer to prevent content from hiding behind fixed bar */}
-            <div className="h-14" />
-            <div className={`fixed top-0 left-0 right-0 z-50 px-4 py-3 border-b border-v-border animate-[slideDown_0.3s_ease] ${
-              saveSuccess ? 'bg-green-900/30 border-green-600/30 text-green-400' : 'bg-v-surface border-v-border text-v-gold'
-            }`}>
-              <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
-                {saveSuccess ? (
-                  <div className="flex items-center gap-2 w-full justify-center">
-                    <span className="text-lg">&#10003;</span>
-                    <span className="font-medium">{saveSuccess === 'branding' ? 'Branding saved' : 'Settings saved'}</span>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-center gap-2">
-                      <span className="text-v-gold text-lg">&#9888;</span>
-                      <span className="text-sm font-medium">
-                        You have unsaved changes
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => window.location.reload()}
-                        className="px-4 py-1.5 text-sm border border-v-border rounded text-v-text-secondary hover:bg-white/5 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={saveAllChanges}
-                        disabled={saving}
-                        className="px-6 py-1.5 text-xs uppercase tracking-widest bg-v-gold text-v-charcoal font-semibold hover:bg-v-gold-dim disabled:opacity-50 transition-colors"
-                      >
-                        {saving ? 'Saving...' : 'Save Changes'}
-                      </button>
-                    </div>
-                  </>
-                )}
-              </div>
+        {/* Fixed bottom save bar */}
+        <div
+          className={`fixed bottom-0 left-0 right-0 z-50 px-4 py-3 border-t border-v-border bg-v-surface/95 backdrop-blur-sm transition-transform duration-300 ease-out ${
+            pendingChanges.size > 0 || saveSuccess ? 'translate-y-0' : 'translate-y-full'
+          }`}
+        >
+          <div className="max-w-3xl mx-auto w-full flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-v-gold text-sm">&#9679;</span>
+              <span className="text-sm text-v-text-secondary">You have unsaved changes</span>
             </div>
-          </>
-        )}
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => {
+                  if (savedUserRef.current) hydrateFromUser(savedUserRef.current);
+                  setPendingChanges(new Set());
+                }}
+                className="px-4 py-1.5 text-sm border border-v-border rounded text-v-text-secondary hover:bg-white/5 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveAllChanges}
+                disabled={saving || saveSuccess}
+                className={`px-6 py-2 text-xs uppercase tracking-widest font-semibold rounded transition-all min-w-[140px] ${
+                  saveSuccess
+                    ? 'bg-green-600 text-white'
+                    : 'bg-[#007CB1] hover:bg-[#006a9e] text-white disabled:opacity-50'
+                }`}
+              >
+                {saving ? 'Saving...' : saveSuccess ? 'Saved \u2713' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+        {/* Bottom spacer rendered at end of page content to prevent overlap */}
 
 
         {/* Profile */}
@@ -3036,6 +3034,8 @@ function SettingsContent() {
 
         {/* Calendly moved to Integrations tab */}
 
+        {/* Spacer for fixed bottom save bar */}
+        {(pendingChanges.size > 0 || saveSuccess) && <div className="h-16" />}
       </div>
   );
 }
