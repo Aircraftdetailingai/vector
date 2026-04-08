@@ -497,10 +497,10 @@ function IntegrationsContent() {
                         onClick={async () => {
                           const pkVal = stripePk.trim();
                           const skVal = stripeSk.trim();
-                          const pkValid = pkVal.startsWith('pk_live_') || pkVal.startsWith('pk_test_');
-                          const skValid = skVal.startsWith('sk_live_') || skVal.startsWith('sk_test_') || skVal.startsWith('rk_live_') || skVal.startsWith('rk_test_') || skVal.startsWith('mk_live_') || skVal.startsWith('mk_test_');
-                          if (!pkValid || !skValid) {
-                            setStripeKeyMsg({ type: 'error', text: `Invalid key format. PK starts with "${pkVal.slice(0, 8)}...", SK starts with "${skVal.slice(0, 8)}...". Expected pk_live_/pk_test_ and sk_live_/sk_test_.` });
+                          const validPK = pkVal.startsWith('pk_live_') || pkVal.startsWith('pk_test_');
+                          const validSK = skVal.startsWith('sk_live_') || skVal.startsWith('sk_test_') || skVal.startsWith('rk_live_') || skVal.startsWith('rk_test_') || skVal.startsWith('mk_live_') || skVal.startsWith('mk_test_') || skVal.startsWith('mk_');
+                          if (!validPK || !validSK) {
+                            setStripeKeyMsg({ type: 'error', text: `Invalid key format. PK starts with "${pkVal.slice(0, 10)}...", SK starts with "${skVal.slice(0, 10)}...". Expected pk_live_/pk_test_ and sk_live_/sk_test_/mk_.` });
                             return;
                           }
                           setStripePk(pkVal);
@@ -558,10 +558,16 @@ function IntegrationsContent() {
                   />
                   <button
                     onClick={async () => {
-                      if (!stripePk.startsWith('pk_') || !stripeSk.startsWith('sk_')) {
-                        setStripeKeyMsg({ type: 'error', text: 'Keys must start with pk_ and sk_' });
+                      const pkTrimmed = stripePk.trim();
+                      const skTrimmed = stripeSk.trim();
+                      const pkOk = pkTrimmed.startsWith('pk_live_') || pkTrimmed.startsWith('pk_test_');
+                      const skOk = skTrimmed.startsWith('sk_live_') || skTrimmed.startsWith('sk_test_') || skTrimmed.startsWith('rk_live_') || skTrimmed.startsWith('rk_test_') || skTrimmed.startsWith('mk_live_') || skTrimmed.startsWith('mk_test_') || skTrimmed.startsWith('mk_');
+                      if (!pkOk || !skOk) {
+                        setStripeKeyMsg({ type: 'error', text: `Invalid key format. PK starts with "${pkTrimmed.slice(0, 10)}...", SK starts with "${skTrimmed.slice(0, 10)}...". Expected pk_live_/pk_test_ and sk_live_/sk_test_/mk_.` });
                         return;
                       }
+                      setStripePk(pkTrimmed);
+                      setStripeSk(skTrimmed);
                       setStripeKeySaving(true); setStripeKeyMsg(null);
                       try {
                         const res = await fetch('/api/user/settings', {
