@@ -328,7 +328,7 @@ export default function CrewDashboard() {
 
   const tabs = [
     { id: 'jobs', label: 'Jobs', icon: '📋' },
-    { id: 'clock', label: 'Time Clock', icon: '⏱️' },
+    ...(user.can_clock !== false ? [{ id: 'clock', label: 'Time Clock', icon: '⏱️' }] : []),
     ...(user.type === 'contractor' ? [{ id: 'earnings', label: 'Earnings', icon: '💰' }] : []),
     ...(user.can_see_inventory ? [{ id: 'products', label: 'Products', icon: '🧴' }] : []),
     ...(user.can_see_equipment ? [{ id: 'equipment', label: 'Equipment', icon: '🔧' }] : []),

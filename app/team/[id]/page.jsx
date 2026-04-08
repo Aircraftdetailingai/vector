@@ -354,6 +354,42 @@ export default function TeamMemberPage() {
                 <option value="inactive">{'Inactive'}</option>
               </select>
             </div>
+
+            {/* Permissions */}
+            <div className="col-span-full border-t border-v-border pt-4 mt-2">
+              <p className="text-sm font-medium text-v-text-secondary mb-3">Visibility Permissions</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+                {[
+                  { key: 'can_see_pricing', label: 'Can see job pricing / quote amounts', def: false },
+                  { key: 'can_see_customer_contact', label: 'Can see customer contact info', def: true },
+                  { key: 'can_see_other_jobs', label: 'Can see other crew members\' jobs', def: false },
+                  { key: 'can_see_inventory', label: 'Can see inventory', def: false },
+                ].map(p => (
+                  <label key={p.key} className="flex items-center gap-2 p-2 bg-v-charcoal border border-v-border rounded-lg cursor-pointer">
+                    <input type="checkbox" checked={editForm[p.key] ?? p.def}
+                      onChange={e => setEditForm({ ...editForm, [p.key]: e.target.checked })}
+                      className="w-3.5 h-3.5 rounded accent-v-gold" />
+                    <span className="text-xs text-v-text-primary">{p.label}</span>
+                  </label>
+                ))}
+              </div>
+              <p className="text-sm font-medium text-v-text-secondary mb-3">Action Permissions</p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  { key: 'can_upload_photos', label: 'Can upload photos', def: true },
+                  { key: 'can_log_products', label: 'Can log products used', def: true },
+                  { key: 'can_mark_complete', label: 'Can mark job complete', def: true },
+                  { key: 'can_clock', label: 'Can clock in/out', def: true },
+                ].map(p => (
+                  <label key={p.key} className="flex items-center gap-2 p-2 bg-v-charcoal border border-v-border rounded-lg cursor-pointer">
+                    <input type="checkbox" checked={editForm[p.key] ?? p.def}
+                      onChange={e => setEditForm({ ...editForm, [p.key]: e.target.checked })}
+                      className="w-3.5 h-3.5 rounded accent-v-gold" />
+                    <span className="text-xs text-v-text-primary">{p.label}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

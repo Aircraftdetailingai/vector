@@ -18,7 +18,7 @@ export async function POST(request) {
       // Email + password login (from invite acceptance)
       const { data, error } = await supabase
         .from('team_members')
-        .select('id, detailer_id, name, email, type, hourly_pay, status, is_lead_tech, can_see_inventory, can_see_equipment, password_hash')
+        .select('id, detailer_id, name, email, type, hourly_pay, status, is_lead_tech, can_see_inventory, can_see_equipment, can_see_pricing, can_see_customer_contact, can_see_other_jobs, can_upload_photos, can_log_products, can_mark_complete, can_clock, password_hash')
         .eq('email', email.toLowerCase().trim())
         .eq('status', 'active')
         .single();
@@ -42,7 +42,7 @@ export async function POST(request) {
       }
       const { data, error } = await supabase
         .from('team_members')
-        .select('id, detailer_id, name, email, type, hourly_pay, status, is_lead_tech, can_see_inventory, can_see_equipment')
+        .select('id, detailer_id, name, email, type, hourly_pay, status, is_lead_tech, can_see_inventory, can_see_equipment, can_see_pricing, can_see_customer_contact, can_see_other_jobs, can_upload_photos, can_log_products, can_mark_complete, can_clock')
         .eq('pin_code', pinTrimmed)
         .eq('status', 'active')
         .order('created_at', { ascending: true })
@@ -91,6 +91,13 @@ export async function POST(request) {
         is_lead_tech: member.is_lead_tech || false,
         can_see_inventory: member.can_see_inventory || false,
         can_see_equipment: member.can_see_equipment || false,
+        can_see_pricing: member.can_see_pricing || false,
+        can_see_customer_contact: member.can_see_customer_contact !== false,
+        can_see_other_jobs: member.can_see_other_jobs || false,
+        can_upload_photos: member.can_upload_photos !== false,
+        can_log_products: member.can_log_products !== false,
+        can_mark_complete: member.can_mark_complete !== false,
+        can_clock: member.can_clock !== false,
         company: detailer?.company || detailer?.name || '',
       },
     });
