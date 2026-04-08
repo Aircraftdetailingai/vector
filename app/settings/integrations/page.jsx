@@ -498,7 +498,7 @@ function IntegrationsContent() {
                           const pkVal = stripePk.trim();
                           const skVal = stripeSk.trim();
                           const pkValid = pkVal.startsWith('pk_live_') || pkVal.startsWith('pk_test_');
-                          const skValid = skVal.startsWith('sk_live_') || skVal.startsWith('sk_test_') || skVal.startsWith('rk_live_') || skVal.startsWith('rk_test_');
+                          const skValid = skVal.startsWith('sk_live_') || skVal.startsWith('sk_test_') || skVal.startsWith('rk_live_') || skVal.startsWith('rk_test_') || skVal.startsWith('mk_live_') || skVal.startsWith('mk_test_');
                           if (!pkValid || !skValid) {
                             setStripeKeyMsg({ type: 'error', text: `Invalid key format. PK starts with "${pkVal.slice(0, 8)}...", SK starts with "${skVal.slice(0, 8)}...". Expected pk_live_/pk_test_ and sk_live_/sk_test_.` });
                             return;

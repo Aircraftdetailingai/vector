@@ -75,8 +75,8 @@ export async function POST(request) {
       return Response.json({ error: 'Stripe key not configured for ' + mode + ' mode' }, { status: 500 });
     }
 
-    if (!stripeKey.startsWith('sk_')) {
-      return Response.json({ error: 'Invalid key format - must start with sk_' }, { status: 500 });
+    if (!stripeKey.startsWith('sk_') && !stripeKey.startsWith('mk_') && !stripeKey.startsWith('rk_')) {
+      return Response.json({ error: 'Invalid key format - must start with sk_, mk_, or rk_' }, { status: 500 });
     }
 
     const stripe = createStripeClient(mode);
