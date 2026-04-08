@@ -60,6 +60,9 @@ export default function QuotesPage() {
   const [scheduleModal, setScheduleModal] = useState(null);
   const [scheduleDate, setScheduleDate] = useState('');
   const [scheduling, setScheduling] = useState(false);
+  const [markPaidModal, setMarkPaidModal] = useState(null);
+  const [markPaidData, setMarkPaidData] = useState({ payment_method: 'cash', amount: '', note: '' });
+  const [markingPaid, setMarkingPaid] = useState(false);
 
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -554,6 +557,12 @@ export default function QuotesPage() {
                         Complete
                       </button>
                     )}
+                    {(status === 'sent' || status === 'viewed' || status === 'accepted') && (
+                      <button onClick={() => { setMarkPaidModal(q); setMarkPaidData({ payment_method: 'cash', amount: String(q.total_price || ''), note: '' }); }}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity px-2 py-1 text-[10px] uppercase tracking-wider text-green-300 border border-green-400/30 rounded hover:bg-green-400/10">
+                        Mark Paid
+                      </button>
+                    )}
                   </div>
                 </div>
               );
@@ -662,6 +671,65 @@ export default function QuotesPage() {
               <div className="flex justify-end space-x-3 mt-6">
                 <button onClick={() => setCompleteModal(null)} className="px-4 py-2 border border-v-border text-v-text-secondary hover:text-white hover:border-white/20 transition-colors">Cancel</button>
                 <button onClick={completeJob} disabled={!completionData.actual_hours || completing} className="px-4 py-2 bg-purple-600 text-white hover:bg-purple-700 disabled:opacity-50">{completing ? 'Saving...' : 'Complete Job'}</button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Mark Paid Modal */}
+        {markPaidModal && (
+          <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+            <div className="bg-v-surface border border-v-border rounded-lg w-full max-w-sm p-5">
+              <h3 className="text-white font-semibold mb-1">Mark as Paid</h3>
+              <p className="text-v-text-secondary text-xs mb-4">{markPaidModal.aircraft_model || markPaidModal.aircraft_type} — {markPaidModal.client_name}</p>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-xs text-v-text-secondary mb-1">Payment Method</label>
+                  <select value={markPaidData.payment_method} onChange={e => setMarkPaidData(d => ({ ...d, payment_method: e.target.value }))}
+                    className="w-full bg-v-charcoal border border-v-border text-white rounded px-3 py-2 text-sm outline-none focus:border-v-gold">
+                    <option value="cash">Cash</option>
+                    <option value="check">Check</option>
+                    <option value="card_external">Card (External)</option>
+                    <option value="wire">Wire Transfer</option>
+                    <option value="zelle">Zelle</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs text-v-text-secondary mb-1">Amount</label>
+                  <input type="number" step="0.01" value={markPaidData.amount} onChange={e => setMarkPaidData(d => ({ ...d, amount: e.target.value }))}
+                    className="w-full bg-v-charcoal border border-v-border text-white rounded px-3 py-2 text-sm outline-none focus:border-v-gold" />
+                </div>
+                <div>
+                  <label className="block text-xs text-v-text-secondary mb-1">Note (optional)</label>
+                  <input type="text" value={markPaidData.note} onChange={e => setMarkPaidData(d => ({ ...d, note: e.target.value }))}
+                    placeholder="Check #1234, etc."
+                    className="w-full bg-v-charcoal border border-v-border text-white rounded px-3 py-2 text-sm outline-none focus:border-v-gold" />
+                </div>
+              </div>
+              <div className="flex justify-end gap-3 mt-5">
+                <button onClick={() => setMarkPaidModal(null)} className="px-4 py-2 text-sm text-v-text-secondary hover:text-white border border-v-border rounded">Cancel</button>
+                <button disabled={markingPaid || !markPaidData.amount} onClick={async () => {
+                  setMarkingPaid(true);
+                  try {
+                    const token = localStorage.getItem('vector_token');
+                    const res = await fetch(`/api/quotes/${markPaidModal.id}/mark-paid`, {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                      body: JSON.stringify(markPaidData),
+                    });
+                    if (res.ok) {
+                      setQuotes(qs => qs.map(q => q.id === markPaidModal.id ? { ...q, status: 'paid' } : q));
+                      setMarkPaidModal(null);
+                    } else {
+                      const d = await res.json().catch(() => ({}));
+                      alert(d.error || 'Failed');
+                    }
+                  } catch {} finally { setMarkingPaid(false); }
+                }}
+                  className="px-5 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50">
+                  {markingPaid ? 'Saving...' : 'Confirm Payment'}
+                </button>
               </div>
             </div>
           </div>
