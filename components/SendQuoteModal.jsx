@@ -71,9 +71,19 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
     }
   }, [isOpen, preselectedCustomer]);
 
+  // Auto-advance: when initialStep >= 2 and customer is ready, create quote immediately
+  const [autoAdvanced, setAutoAdvanced] = useState(false);
+  useEffect(() => {
+    if (isOpen && startStep >= 2 && !autoAdvanced && !createdQuote && (selectedCustomer || clientEmail)) {
+      setAutoAdvanced(true);
+      // Defer to next tick so effectiveName/effectiveEmail are resolved
+      setTimeout(() => handleSaveAndReview(), 0);
+    }
+  }, [isOpen, startStep, selectedCustomer, clientEmail, autoAdvanced, createdQuote]);
+
   // Reset step when modal closes
   useEffect(() => {
-    if (!isOpen) { setStep(startStep); setCreatedQuote(null); setError(""); }
+    if (!isOpen) { setStep(startStep); setCreatedQuote(null); setError(""); setAutoAdvanced(false); }
   }, [isOpen]);
 
   if (!isOpen) return null;
