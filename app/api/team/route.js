@@ -106,6 +106,7 @@ export async function POST(request) {
       role,
       hourly_pay: parseFloat(body.hourly_pay) || 0,
       pin_code: body.pin_code || null,
+      specialties: Array.isArray(body.specialties) ? body.specialties : [],
       status: 'active',
       invite_token: inviteToken,
       invite_status: body.email ? 'pending' : 'not_invited',

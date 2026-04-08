@@ -15,7 +15,14 @@ export default function AddTeamMemberPage() {
     role: 'employee',
     hourly_pay: '',
     pin_code: '',
+    specialties: [],
+    send_invite: false,
   });
+
+  const SPECIALTY_OPTIONS = [
+    'Exterior Wash', 'Interior Detail', 'Paint Correction', 'Ceramic Coating',
+    'Brightwork', 'Leather Care', 'Carpet Extraction', 'Engine Detail',
+  ];
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -168,6 +175,34 @@ export default function AddTeamMemberPage() {
             />
             <p className="text-xs text-v-text-secondary mt-1">{'Workers use this PIN to log their hours at /time-log'}</p>
           </div>
+
+          {/* Specialties */}
+          <div>
+            <label className="block text-sm font-medium text-v-text-secondary mb-2">Specialties</label>
+            <div className="grid grid-cols-2 gap-2">
+              {SPECIALTY_OPTIONS.map(s => (
+                <label key={s} className="flex items-center gap-2 p-2 bg-v-surface-light border border-v-border rounded-lg cursor-pointer hover:border-v-gold/30">
+                  <input type="checkbox" checked={form.specialties.includes(s)}
+                    onChange={() => setForm(f => ({ ...f, specialties: f.specialties.includes(s) ? f.specialties.filter(x => x !== s) : [...f.specialties, s] }))}
+                    className="w-3.5 h-3.5 rounded accent-v-gold" />
+                  <span className="text-xs text-v-text-primary">{s}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+
+          {/* Send Invite Email */}
+          {form.email && (
+            <label className="flex items-center gap-3 p-3 bg-v-surface-light border border-v-border rounded-lg cursor-pointer">
+              <input type="checkbox" checked={form.send_invite}
+                onChange={e => setForm(f => ({ ...f, send_invite: e.target.checked }))}
+                className="w-4 h-4 rounded accent-v-gold" />
+              <div>
+                <span className="text-sm text-v-text-primary">Send invite email</span>
+                <p className="text-xs text-v-text-secondary mt-0.5">They&apos;ll set their password and access their crew dashboard</p>
+              </div>
+            </label>
+          )}
 
           <div className="flex space-x-3 pt-2">
             <button

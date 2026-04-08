@@ -329,6 +329,7 @@ export default function CrewDashboard() {
   const tabs = [
     { id: 'jobs', label: 'Jobs', icon: '📋' },
     { id: 'clock', label: 'Time Clock', icon: '⏱️' },
+    ...(user.type === 'contractor' ? [{ id: 'earnings', label: 'Earnings', icon: '💰' }] : []),
     ...(user.can_see_inventory ? [{ id: 'products', label: 'Products', icon: '🧴' }] : []),
     ...(user.can_see_equipment ? [{ id: 'equipment', label: 'Equipment', icon: '🔧' }] : []),
   ];
@@ -838,6 +839,55 @@ export default function CrewDashboard() {
                 </button>
               </div>
             </div>
+          </div>
+        )}
+        {/* ===== EARNINGS TAB (Contractors) ===== */}
+        {tab === 'earnings' && (
+          <div className="space-y-4">
+            <h2 className="text-white font-semibold text-lg">Earnings</h2>
+            {(() => {
+              const completedJobs = jobs.filter(j => j.status === 'completed' || j.status === 'paid');
+              const thisWeek = completedJobs.filter(j => {
+                const d = new Date(j.completed_at || j.scheduled_date || j.created_at);
+                const now = new Date();
+                const weekAgo = new Date(now.getTime() - 7 * 86400000);
+                return d >= weekAgo;
+              });
+              const rate = parseFloat(user.hourly_pay) || 0;
+              const weekHours = thisWeek.reduce((s, j) => s + (parseFloat(j.actual_hours || j.total_hours) || 0), 0);
+              const weekEarnings = weekHours * rate;
+              return (
+                <>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                      <p className="text-white/50 text-xs uppercase tracking-wider mb-1">This Week</p>
+                      <p className="text-2xl font-bold text-green-400">${weekEarnings.toFixed(0)}</p>
+                      <p className="text-white/40 text-xs mt-1">{weekHours.toFixed(1)}h at ${rate}/hr</p>
+                    </div>
+                    <div className="bg-white/10 backdrop-blur rounded-xl p-4 text-center">
+                      <p className="text-white/50 text-xs uppercase tracking-wider mb-1">Jobs This Week</p>
+                      <p className="text-2xl font-bold text-white">{thisWeek.length}</p>
+                    </div>
+                  </div>
+                  <div className="bg-white/10 backdrop-blur rounded-xl p-4">
+                    <p className="text-white/50 text-xs uppercase tracking-wider mb-3">Recent Jobs</p>
+                    {completedJobs.slice(0, 10).map(j => (
+                      <div key={j.id} className="flex justify-between py-2 border-b border-white/5 last:border-0">
+                        <div>
+                          <p className="text-white text-sm">{j.aircraft_model || j.aircraft_type || 'Job'}</p>
+                          <p className="text-white/40 text-xs">{new Date(j.completed_at || j.created_at).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-green-400 text-sm font-medium">${((parseFloat(j.actual_hours || j.total_hours) || 0) * rate).toFixed(0)}</p>
+                          <p className="text-white/40 text-xs">{(parseFloat(j.actual_hours || j.total_hours) || 0).toFixed(1)}h</p>
+                        </div>
+                      </div>
+                    ))}
+                    {completedJobs.length === 0 && <p className="text-white/40 text-sm text-center py-4">No completed jobs yet</p>}
+                  </div>
+                </>
+              );
+            })()}
           </div>
         )}
       </div>

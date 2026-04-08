@@ -105,6 +105,7 @@ function DashboardContent() {
   const [quoteRequests, setQuoteRequests] = useState([]);
   const [followUps, setFollowUps] = useState({ needsReview: [], recentCompleted: [], recurring: [] });
   const [pendingQuotes, setPendingQuotes] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
   const [quota, setQuota] = useState(null);
 
   useEffect(() => {
@@ -155,7 +156,7 @@ function DashboardContent() {
         body: JSON.stringify({ action: 'DAILY_LOGIN' }),
       }).catch(() => {});
 
-      const [servicesRes, statsRes, quotesRes, upcomingRes, requestsRes, followUpsRes, staleRes, quotaRes] = await Promise.allSettled([
+      const [servicesRes, statsRes, quotesRes, upcomingRes, requestsRes, followUpsRes, staleRes, quotaRes, teamRes] = await Promise.allSettled([
         fetch('/api/services', { headers }),
         fetch('/api/dashboard/stats', { headers }),
         fetch('/api/quotes?limit=5&sort=created_at&order=desc', { headers }),
@@ -164,6 +165,7 @@ function DashboardContent() {
         fetch('/api/dashboard/follow-ups', { headers }),
         fetch('/api/quotes?status=sent,viewed&limit=20&sort=created_at&order=desc', { headers }),
         fetch('/api/quotes/quota', { headers }),
+        fetch('/api/team', { headers }),
       ]);
 
       if (servicesRes.status === 'fulfilled' && servicesRes.value.ok) {
@@ -195,6 +197,10 @@ function DashboardContent() {
       }
       if (staleRes.status === 'fulfilled' && staleRes.value.ok) {
         setPendingQuotes((await staleRes.value.json()).quotes || []);
+      }
+      if (teamRes.status === 'fulfilled' && teamRes.value.ok) {
+        const td = await teamRes.value.json();
+        setTeamMembers((td.members || []).filter(m => m.status === 'active'));
       }
       if (quotaRes.status === 'fulfilled' && quotaRes.value.ok) {
         setQuota(await quotaRes.value.json());
@@ -588,6 +594,28 @@ function DashboardContent() {
             setUser(prev => ({ ...prev, terms_accepted_version: TERMS_VERSION }));
           }}
         />
+
+        {/* ━━━ 8. TEAM ACTIVITY ━━━ */}
+        {teamMembers.length > 0 && (
+          <div id="team" className="mt-10">
+            <div className="flex items-center justify-between mb-4">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-v-text-secondary">Team</p>
+              <a href="/team/dashboard" className="text-[10px] uppercase tracking-[0.15em] text-v-gold hover:text-v-gold-dim transition-colors">Manage</a>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {teamMembers.slice(0, 6).map(m => (
+                <div key={m.id} className="bg-white/[0.02] border border-v-border-subtle rounded-lg px-4 py-3 flex items-center gap-3">
+                  <div className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-white text-sm truncate">{m.name}</p>
+                    <p className="text-v-text-secondary text-xs capitalize">{m.role || m.type}</p>
+                  </div>
+                  <p className="text-v-text-secondary text-xs shrink-0">{(m.total_hours || 0).toFixed(1)}h</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Onboarding */}
         {user && !showTermsModal && <OnboardingChecklist user={user} />}
