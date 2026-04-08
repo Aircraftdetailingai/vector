@@ -271,6 +271,7 @@ export default function QuoteViewPage() {
     if (Array.isArray(items) && items.length > 0) {
       return items.map(item => ({
         name: item.service || item.description || item.name || 'Service',
+        hours: parseFloat(item.hours) || 0,
         amount: item.amount || 0,
       }));
     }
@@ -658,9 +659,12 @@ export default function QuoteViewPage() {
             <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-3">Services</p>
             <div className="divide-y divide-[var(--brand-border,#1A2236)]">
               {services.map((svc, i) => (
-                <div key={i} className="flex justify-between py-3">
-                  <span className="text-[var(--brand-text,#F5F5F5)] text-sm">{svc.name}</span>
-                  {svc.amount > 0 && <span className="text-[var(--brand-text-secondary,#8A9BB0)] text-sm">{sym}{formatPrice(svc.amount)}</span>}
+                <div key={i} className="flex justify-between items-center py-3">
+                  <div>
+                    <span className="text-[var(--brand-text,#F5F5F5)] text-sm">{svc.name}</span>
+                    {svc.hours > 0 && <span className="text-[var(--brand-text-secondary,#8A9BB0)] text-xs ml-2">{svc.hours.toFixed(1)}h</span>}
+                  </div>
+                  {svc.amount > 0 && <span className="text-[var(--brand-text,#F5F5F5)] text-sm font-medium">{sym}{formatPrice(svc.amount)}</span>}
                 </div>
               ))}
             </div>
@@ -678,7 +682,7 @@ export default function QuoteViewPage() {
               </>
             ) : (
               <>
-                <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Total Paid</p>
+                <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">{isPaid ? 'Total Paid' : 'Total'}</p>
                 <p className="text-[var(--brand-primary,#007CB1)] text-[2.5rem] font-light">{sym}{formatPrice(quote.total_price)}</p>
               </>
             )}
@@ -687,12 +691,22 @@ export default function QuoteViewPage() {
             )}
           </div>
 
+          {/* PDF Preview */}
+          <div className="mb-4 border border-[var(--brand-border,#1A2236)] rounded overflow-hidden">
+            <iframe
+              src={`/api/quotes/${quote.id}/pdf?token=${params.shareLink}`}
+              className="w-full border-0"
+              style={{ height: '600px' }}
+              title="Quote PDF"
+            />
+          </div>
+
           {/* Download PDF */}
           <a
             href={`/api/quotes/${quote.id}/pdf?token=${params.shareLink}`}
             target="_blank"
             rel="noreferrer"
-            className="block w-full py-4 border border-[var(--brand-border-strong,#2A3A50)] text-[var(--brand-text-secondary,#8A9BB0)] text-sm tracking-[0.2em] uppercase text-center hover:border-[var(--brand-primary,#007CB1)] hover:text-[var(--brand-primary,#007CB1)] transition-colors mb-4"
+            className="block w-full py-3 border border-[var(--brand-border-strong,#2A3A50)] text-[var(--brand-text-secondary,#8A9BB0)] text-xs tracking-[0.2em] uppercase text-center hover:border-[var(--brand-primary,#007CB1)] hover:text-[var(--brand-primary,#007CB1)] transition-colors mb-4"
           >
             Download PDF
           </a>

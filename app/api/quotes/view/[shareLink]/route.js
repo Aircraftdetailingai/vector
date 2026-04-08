@@ -88,6 +88,7 @@ export async function GET(request, { params }) {
       const Stripe = (await import('stripe')).default;
       const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
       const account = await stripe.accounts.retrieve(detailer.stripe_account_id);
+      console.log(`[quote-view] Stripe account ${detailer.stripe_account_id}: charges=${account.charges_enabled} payouts=${account.payouts_enabled}`);
       stripeConnected = account.charges_enabled && account.payouts_enabled;
     } catch (e) {
       console.error('Stripe account check failed:', e.message);
