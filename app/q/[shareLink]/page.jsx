@@ -881,13 +881,7 @@ export default function QuoteViewPage() {
           </div>
         )}
 
-        {/* Service fee + CC fee */}
-        {passFee && serviceFee > 0 && (
-          <div className="flex justify-between py-2 text-sm">
-            <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Service Fee ({Math.round(feeRate * 100)}%)</span>
-            <span className="text-[var(--brand-text-secondary,#8A9BB0)]">+{sym}{formatPrice(serviceFee)}</span>
-          </div>
-        )}
+        {/* CC processing fee (service/platform fee is included in total but not shown as line item) */}
         {showCcFee && ccFee > 0 && (
           <div className="flex justify-between py-2 text-sm">
             <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Processing Fee</span>

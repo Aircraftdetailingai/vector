@@ -365,13 +365,7 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees, package
           </View>
         )}
 
-        {/* Service Fee */}
-        {passFee && serviceFee > 0 && (
-          <View style={s.feeRow}>
-            <Text style={s.feeLabel}>Service Fee ({Math.round(feeRate * 100)}%)</Text>
-            <Text style={s.feeValue}>+{fmt(serviceFee)}</Text>
-          </View>
-        )}
+        {/* Service fee included in total — not shown to customer */}
 
         {/* CC Fee */}
         {ccFee > 0 && (

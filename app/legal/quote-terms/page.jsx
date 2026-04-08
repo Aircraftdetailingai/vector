@@ -51,9 +51,8 @@ export default function QuoteTermsPage() {
             between the customer and the detailing business directly.
           </Section>
 
-          <Section num="8" title="Platform Fee Disclosure">
-            A platform fee may apply to transactions processed through Shiny Jets CRM. This fee is non-refundable and disclosed at
-            time of payment.
+          <Section num="8" title="Transaction Processing">
+            Transactions are processed securely through Stripe. Standard processing fees may apply and are disclosed at time of payment.
           </Section>
 
           <Section num="9" title="Card on File">
