@@ -307,28 +307,43 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees, package
           </View>
         )}
 
-        {/* ─── PROPOSED SCHEDULE ─── */}
-        <View style={{ marginTop: 8, marginBottom: 8, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: colors.gray50, borderRadius: 4, flexDirection: 'row', justifyContent: 'space-between' }}>
-          <View>
-            <Text style={s.dateLabel}>Proposed Date</Text>
-            <Text style={s.dateValue}>
-              {quote.proposed_date || quote.scheduled_date
-                ? fmtDate(quote.proposed_date || quote.scheduled_date)
-                : 'To be scheduled'}
-            </Text>
-            {(quote.proposed_time) && (
-              <Text style={{ fontSize: 9, color: colors.gray500, marginTop: 1 }}>{quote.proposed_time}</Text>
-            )}
-          </View>
-          <View style={{ alignItems: 'flex-end' }}>
-            <Text style={s.dateLabel}>Estimated Duration</Text>
-            <Text style={s.dateValue}>
-              {parseFloat(quote.total_hours) > 0
-                ? `${parseFloat(quote.total_hours).toFixed(1)} hours`
-                : 'TBD'}
-            </Text>
-          </View>
-        </View>
+        {/* ─── PROPOSED SCHEDULE (business days) ─── */}
+        {(() => {
+          const totalHrs = parseFloat(quote.total_hours) || 0;
+          const dailyCap = 8; // TODO: wire from detailer settings (hours_per_day * staff_count)
+          const bizDays = totalHrs > 0 ? Math.max(1, Math.ceil(totalHrs / dailyCap)) : 0;
+          const startRaw = quote.proposed_date || quote.scheduled_date;
+          let start = startRaw ? new Date(startRaw) : null;
+          if (start) {
+            if (start.getDay() === 0) start.setDate(start.getDate() + 1);
+            if (start.getDay() === 6) start.setDate(start.getDate() + 2);
+          }
+          const finish = start && bizDays > 0 ? (() => {
+            const f = new Date(start);
+            let rem = bizDays - 1;
+            while (rem > 0) { f.setDate(f.getDate() + 1); if (f.getDay() !== 0 && f.getDay() !== 6) rem--; }
+            return f;
+          })() : null;
+          const fmtShort = (d) => d ? d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+          return (
+            <View style={{ marginTop: 8, marginBottom: 8, paddingVertical: 10, paddingHorizontal: 14, backgroundColor: colors.gray50, borderRadius: 4, flexDirection: 'row', justifyContent: 'space-between' }}>
+              <View>
+                <Text style={s.dateLabel}>Start Date</Text>
+                <Text style={s.dateValue}>{start ? fmtShort(start) : 'To be scheduled'}</Text>
+              </View>
+              {finish && (
+                <View style={{ alignItems: 'center' }}>
+                  <Text style={s.dateLabel}>Finish Date</Text>
+                  <Text style={s.dateValue}>{fmtShort(finish)}</Text>
+                </View>
+              )}
+              <View style={{ alignItems: 'flex-end' }}>
+                <Text style={s.dateLabel}>Duration</Text>
+                <Text style={s.dateValue}>{bizDays > 0 ? `${bizDays} Business Day${bizDays !== 1 ? 's' : ''}` : 'TBD'}</Text>
+              </View>
+            </View>
+          );
+        })()}
 
         {/* Addon Fees */}
         {addonFees.length > 0 && !quote.minimum_fee_applied && (

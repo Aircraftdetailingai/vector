@@ -1218,29 +1218,28 @@ function NewQuoteContent() {
 
           {/* 7. Scheduling */}
           {selectedAircraft && selectedServicesList.length > 0 && (() => {
-            // Auto-suggest: calculate buffer and find next available date
-            const autoBuffer = totalHours < 4 ? 30 : totalHours <= 8 ? 60 : 120;
-            const jobDurationHours = totalHours + (bufferMinutes / 60);
-            const isMultiDay = totalHours > 8;
-            const workDays = Math.ceil(totalHours / 8);
-            const endTimeStr = (() => {
-              if (isMultiDay) return null; // don't compute single end time for multi-day
-              const [h, m] = proposedTime.split(':').map(Number);
-              const endMin = h * 60 + m + Math.round(totalHours * 60);
-              return `${String(Math.floor(endMin / 60)).padStart(2, '0')}:${String(endMin % 60).padStart(2, '0')}`;
-            })();
+            // Business-day schedule calculation
+            // TODO: wire hoursPerDay and staffCount from detailer settings
+            const hoursPerDay = 8;
+            const staffCount = 1;
+            const dailyCapacity = staffCount * hoursPerDay;
+            const businessDays = Math.max(1, Math.ceil(totalHours / dailyCapacity));
 
-            // Auto-suggest next weekday if no date selected
-            if (!proposedDate) {
-              const today = new Date();
-              const lead = 2; // 2-day lead time default
-              const suggest = new Date(today);
-              suggest.setDate(suggest.getDate() + lead);
-              while (excludeWeekends && (suggest.getDay() === 0 || suggest.getDay() === 6)) {
-                suggest.setDate(suggest.getDate() + 1);
-              }
-              // Don't auto-set in render — use effect or leave for user
+            // Resolve start date
+            const startRaw = proposedDate ? new Date(proposedDate + 'T12:00') : new Date();
+            const start = new Date(startRaw);
+            if (start.getDay() === 0) start.setDate(start.getDate() + 1);
+            if (start.getDay() === 6) start.setDate(start.getDate() + 2);
+
+            // Count forward N business days for finish
+            const finish = new Date(start);
+            let remaining = businessDays - 1;
+            while (remaining > 0) {
+              finish.setDate(finish.getDate() + 1);
+              if (finish.getDay() !== 0 && finish.getDay() !== 6) remaining--;
             }
+
+            const fmtD = (d) => d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 
             return (
               <div className="bg-v-surface border border-v-border/40 p-5 mb-5">
@@ -1254,7 +1253,7 @@ function NewQuoteContent() {
 
                 <div className="grid grid-cols-2 gap-4 mb-4">
                   <div>
-                    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Date</label>
+                    <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Start Date</label>
                     <input type="date" value={proposedDate}
                       onChange={e => setProposedDate(e.target.value)}
                       min={new Date().toISOString().split('T')[0]}
@@ -1289,31 +1288,23 @@ function NewQuoteContent() {
                   </div>
                 </div>
 
-                {proposedDate && (
-                  <div className="bg-white/5 rounded p-3 text-sm text-v-text-secondary">
-                    {isMultiDay ? (
-                      <>
-                        <p>
-                          Estimated {workDays} work day{workDays !== 1 ? 's' : ''} starting{' '}
-                          {new Date(proposedDate + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                        </p>
-                        <p className="text-xs text-v-text-secondary/60 mt-1">
-                          {totalHours.toFixed(1)} hours total ({workDays} &times; 8h days) + {bufferMinutes}min buffer
-                        </p>
-                      </>
-                    ) : (
-                      <>
-                        <p>
-                          {new Date(proposedDate + 'T12:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
-                          {' '}{proposedTime} &mdash; {endTimeStr}
-                        </p>
-                        <p className="text-xs text-v-text-secondary/60 mt-1">
-                          {totalHours.toFixed(1)}h job + {bufferMinutes}min buffer
-                        </p>
-                      </>
-                    )}
+                {/* Business-day schedule summary */}
+                <div className="bg-white/5 rounded p-3">
+                  <div className="grid grid-cols-3 gap-3 text-center">
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Start Date</p>
+                      <p className="text-sm text-white font-medium">{fmtD(start)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Finish Date</p>
+                      <p className="text-sm text-white font-medium">{fmtD(finish)}</p>
+                    </div>
+                    <div>
+                      <p className="text-[10px] uppercase tracking-wider text-gray-500 mb-1">Duration</p>
+                      <p className="text-sm text-white font-medium">{businessDays} Business Day{businessDays !== 1 ? 's' : ''}</p>
+                    </div>
                   </div>
-                )}
+                </div>
               </div>
             );
           })()}
