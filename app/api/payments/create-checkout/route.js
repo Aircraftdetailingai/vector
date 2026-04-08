@@ -154,20 +154,10 @@ export async function POST(request) {
       },
     };
 
-    // Direct keys: charge goes straight to detailer's Stripe account (no Connect)
-    // Connect: charge goes to platform with application_fee + transfer to detailer
-    let stripe;
-    if (useDirectKeys) {
-      stripe = new Stripe(detailer.stripe_secret_key.trim());
-      console.log('[checkout] Using detailer direct keys');
-    } else {
-      stripe = getStripe();
-      sessionParams.payment_intent_data = {
-        application_fee_amount: applicationFee,
-        transfer_data: { destination: stripeAccountId },
-      };
-      console.log(`[checkout] Using Connect: dest=${stripeAccountId} fee=${applicationFee}`);
-    }
+    // Use platform key directly for checkout (Connect transfer disabled until onboarding complete)
+    // TODO: Re-enable Connect transfer_data once detailer Connect accounts have charges_enabled=true
+    const stripe = getStripe();
+    console.log(`[checkout] Using platform key, amount=${totalAmount}cents, quote=${quote.id}`);
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 

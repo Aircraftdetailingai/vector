@@ -173,11 +173,14 @@ export default function QuoteViewPage() {
       const data = await res.json();
       if (!res.ok) {
         const errorCode = data.code || 'default';
-        setPaymentError(PAYMENT_ERROR_MESSAGES[errorCode] || PAYMENT_ERROR_MESSAGES.default);
+        const msg = data.message || PAYMENT_ERROR_MESSAGES[errorCode] || PAYMENT_ERROR_MESSAGES.default;
+        console.error('[payment] Checkout failed:', data);
+        setPaymentError(msg);
         return;
       }
       if (data.url) window.location.href = data.url;
     } catch (err) {
+      console.error('[payment] Network error:', err);
       setPaymentError(PAYMENT_ERROR_MESSAGES.default);
     } finally {
       setPaymentLoading(false);
