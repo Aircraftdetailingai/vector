@@ -154,21 +154,14 @@ export async function POST(request) {
       },
     };
 
-    // Use detailer's own key if available, otherwise platform key
-    let stripe;
-    if (useDirectKeys) {
-      const detailerKey = detailer.stripe_secret_key.trim();
-      console.log(`[checkout] Using detailer key: ${detailerKey.slice(0, 10)}... amount=${totalAmount}cents quote=${quote.id}`);
-      stripe = new Stripe(detailerKey);
-    } else {
-      const platformKey = process.env.STRIPE_SECRET_KEY?.trim();
-      console.log(`[checkout] Using platform key: ${platformKey?.slice(0, 10)}... amount=${totalAmount}cents quote=${quote.id}`);
-      stripe = new Stripe(platformKey);
-      sessionParams.payment_intent_data = {
-        application_fee_amount: applicationFee,
-        transfer_data: { destination: stripeAccountId },
-      };
+    // Always use platform STRIPE_SECRET_KEY for checkout session creation
+    // Detailer mk_ keys are Issuing keys and cannot create checkout sessions
+    const platformKey = process.env.STRIPE_SECRET_KEY?.trim();
+    if (!platformKey) {
+      return new Response(JSON.stringify({ error: 'Stripe not configured', code: 'stripe_not_configured' }), { status: 500 });
     }
+    console.log(`[checkout] Using platform key: ${platformKey.slice(0, 12)}... amount=${totalAmount}cents quote=${quote.id}`);
+    const stripe = new Stripe(platformKey);
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
