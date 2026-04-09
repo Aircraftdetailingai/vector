@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import { formatPrice, currencySymbol } from '@/lib/formatPrice';
@@ -93,9 +93,50 @@ export default function JobDetailPage() {
   if (loading) return <AppShell title="Job"><div className="p-8 text-v-text-secondary">Loading...</div></AppShell>;
   if (!job) return <AppShell title="Job"><div className="p-8 text-red-400">Job not found</div></AppShell>;
 
+  const [progress, setProgress] = useState(job.progress_percentage || 0);
+  const progressTimer = useRef(null);
+
+  const saveProgress = (val) => {
+    setProgress(val);
+    clearTimeout(progressTimer.current);
+    progressTimer.current = setTimeout(async () => {
+      const token = localStorage.getItem('vector_token');
+      await fetch(`/api/jobs/${jobId}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ progress_percentage: val }),
+      }).catch(() => {});
+    }, 1000);
+  };
+
+  // Compute correct totals from services
+  const servicesList = Array.isArray(job.services) ? job.services.map(s => {
+    if (typeof s === 'string') return { name: s, hours: 0, rate: 0, price: 0 };
+    const h = parseFloat(s.hours) || 0;
+    const r = parseFloat(s.rate || s.hourly_rate) || 0;
+    const p = parseFloat(s.price) || (h > 0 && r > 0 ? h * r : 0);
+    return { name: s.name || s.service_name || s.description || 'Service', hours: h, rate: r, price: p };
+  }) : [];
+  const computedTotal = servicesList.reduce((sum, s) => sum + s.price, 0);
+  const displayTotal = computedTotal > 0 ? computedTotal : (parseFloat(job.total_price) || 0);
+
+  // Business-day completion estimate
+  const totalHours = servicesList.reduce((sum, s) => sum + s.hours, 0);
+  const businessDays = totalHours > 0 ? Math.max(1, Math.ceil(totalHours / 8)) : 0;
+  const finishDate = (() => {
+    if (!businessDays || !job.scheduled_date) return null;
+    const start = new Date(job.scheduled_date + 'T12:00');
+    if (start.getDay() === 0) start.setDate(start.getDate() + 1);
+    if (start.getDay() === 6) start.setDate(start.getDate() + 2);
+    const finish = new Date(start);
+    let rem = businessDays - 1;
+    while (rem > 0) { finish.setDate(finish.getDate() + 1); if (finish.getDay() !== 0 && finish.getDay() !== 6) rem--; }
+    return finish;
+  })();
+
   const isScheduled = ['paid', 'accepted', 'approved', 'scheduled'].includes(job.status);
   const isInProgress = job.status === 'in_progress';
-  const isCompleted = job.status === 'completed';
+  const isCompleted = job.status === 'completed' || job.status === 'complete';
 
   return (
     <AppShell title={`Job — ${job.tail_number || job.aircraft_model || 'Detail'}`}>
@@ -136,38 +177,76 @@ export default function JobDetailPage() {
       )}
 
       {/* Info cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3 mb-6">
         <div className="bg-v-surface border border-v-border rounded-lg p-4">
           <p className="text-xs text-v-text-secondary">Customer</p>
-          <p className="text-v-text-primary font-medium mt-1">{job.client_name || job.customer_company || '—'}</p>
+          <p className="text-v-text-primary font-medium mt-1">{job.client_name || job.customer_name || job.customer_company || '—'}</p>
         </div>
         <div className="bg-v-surface border border-v-border rounded-lg p-4">
           <p className="text-xs text-v-text-secondary">Value</p>
-          <p className="text-v-text-primary font-medium mt-1">{currencySymbol()}{formatPrice(job.total_price)}</p>
+          <p className="text-v-text-primary font-medium mt-1">{currencySymbol()}{formatPrice(displayTotal)}</p>
         </div>
         <div className="bg-v-surface border border-v-border rounded-lg p-4">
           <p className="text-xs text-v-text-secondary">Scheduled</p>
           <p className="text-v-text-primary font-medium mt-1">
-            {job.scheduled_date ? new Date(job.scheduled_date).toLocaleDateString() : '—'}
+            {job.scheduled_date ? new Date(job.scheduled_date + 'T12:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
           </p>
         </div>
         <div className="bg-v-surface border border-v-border rounded-lg p-4">
           <p className="text-xs text-v-text-secondary">Location</p>
-          <p className="text-v-text-primary font-medium mt-1">{job.job_location || '—'}</p>
+          <p className="text-v-text-primary font-medium mt-1">{job.airport || job.job_location || 'Not set'}</p>
+        </div>
+        <div className="bg-v-surface border border-v-border rounded-lg p-4">
+          <p className="text-xs text-v-text-secondary">Est. Completion</p>
+          <p className="text-v-text-primary font-medium mt-1">
+            {finishDate ? finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+            {businessDays > 0 && <span className="text-v-text-secondary text-xs ml-1">({businessDays}d)</span>}
+          </p>
+        </div>
+      </div>
+
+      {/* Progress Slider */}
+      <div className="bg-v-surface border border-v-border rounded-lg p-4 mb-6">
+        <div className="flex items-center justify-between mb-2">
+          <h3 className="text-sm font-medium text-v-text-secondary">Job Progress</h3>
+          <span className="text-sm font-semibold text-v-text-primary">{progress}% Complete</span>
+        </div>
+        <input
+          type="range" min="0" max="100" step="5"
+          value={progress}
+          onChange={e => saveProgress(parseInt(e.target.value))}
+          className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+          style={{ background: `linear-gradient(to right, #0081b8 ${progress}%, rgba(255,255,255,0.1) ${progress}%)` }}
+        />
+        <div className="flex justify-between text-[10px] text-v-text-secondary/50 mt-1">
+          <span>Not Started</span>
+          <span>Complete</span>
         </div>
       </div>
 
       {/* Services */}
-      {job.services && job.services.length > 0 && (
+      {servicesList.length > 0 && (
         <div className="bg-v-surface border border-v-border rounded-lg p-4 mb-6">
           <h3 className="text-sm font-medium text-v-text-secondary mb-3">Services</h3>
           <div className="space-y-2">
-            {job.services.map((svc, i) => (
-              <div key={i} className="flex justify-between text-sm">
-                <span className="text-v-text-primary">{svc.name || svc.service_name}</span>
-                <span className="text-v-text-secondary">{currencySymbol()}{formatPrice(svc.price || svc.total)}</span>
+            {servicesList.map((svc, i) => (
+              <div key={i} className="flex justify-between items-center text-sm">
+                <div>
+                  <span className="text-v-text-primary">{svc.name}</span>
+                  {svc.hours > 0 && <span className="text-v-text-secondary text-xs ml-2">{svc.hours.toFixed(1)}h</span>}
+                </div>
+                <div className="text-right">
+                  {svc.price > 0 && <span className="text-v-text-primary font-medium">{currencySymbol()}{formatPrice(svc.price)}</span>}
+                  {svc.rate > 0 && svc.hours > 0 && <span className="text-v-text-secondary text-[10px] block">@ {currencySymbol()}{svc.rate}/hr</span>}
+                </div>
               </div>
             ))}
+            {servicesList.length > 1 && computedTotal > 0 && (
+              <div className="flex justify-between text-sm border-t border-v-border pt-2 mt-2">
+                <span className="text-v-text-secondary font-medium">Total</span>
+                <span className="text-v-text-primary font-semibold">{currencySymbol()}{formatPrice(computedTotal)}</span>
+              </div>
+            )}
           </div>
         </div>
       )}
