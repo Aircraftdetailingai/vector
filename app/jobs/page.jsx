@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { formatPrice, currencySymbol } from '@/lib/formatPrice';
 import AppShell from '@/components/AppShell';
 
@@ -168,8 +169,8 @@ export default function JobsPage() {
           {/* Mobile Card Layout */}
           <div className="sm:hidden space-y-2">
             {filteredJobs.map((job) => (
-              <div key={job.id} onClick={() => router.push(`/jobs/${job.id}`)}
-                className="bg-v-surface border border-v-border p-4 cursor-pointer active:bg-white/[0.04] hover:bg-white/[0.02] transition-colors">
+              <Link key={job.id} href={`/jobs/${job.id}`}
+                className="block bg-v-surface border border-v-border p-4 active:bg-white/[0.04] hover:bg-white/[0.02] transition-colors">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white text-sm font-medium truncate mr-2">{job.customer_company || job.client_name || '—'}</span>
                   <span className={`shrink-0 px-2 py-0.5 text-[10px] uppercase tracking-wider ${statusColors[job.status] || 'border border-gray-500/30 text-gray-400'}`}>
@@ -181,7 +182,7 @@ export default function JobsPage() {
                   <span className="text-v-gold text-sm font-data">{currencySymbol()}{formatPrice(job.total_price)}</span>
                   <span className="text-v-text-secondary text-xs">{formatDate(job.scheduled_date)}</span>
                 </div>
-              </div>
+              </Link>
             ))}
           </div>
 
@@ -201,10 +202,10 @@ export default function JobsPage() {
 
             {/* Table Rows */}
             {filteredJobs.map((job) => (
-              <div
+              <Link
                 key={job.id}
-                onClick={() => router.push(`/jobs/${job.id}`)}
-                className="group grid grid-cols-[1fr_1fr_1.2fr_120px_100px_120px] min-w-[800px] px-6 items-center border-b border-[#1A2236] transition-colors cursor-pointer hover:bg-white/[0.02]"
+                href={`/jobs/${job.id}`}
+                className="group grid grid-cols-[1fr_1fr_1.2fr_120px_100px_120px] min-w-[800px] px-6 items-center border-b border-[#1A2236] transition-colors hover:bg-white/[0.02]"
                 style={{ height: '56px' }}
               >
                 <div className="truncate pr-4">
@@ -231,7 +232,7 @@ export default function JobsPage() {
                 <div className="text-right">
                   <span className="text-v-gold text-sm font-data">{currencySymbol()}{formatPrice(job.total_price)}</span>
                 </div>
-              </div>
+              </Link>
             ))}
 
             <div className="px-6 py-3 border-t border-[#1A2236] text-[#8A9BB0] text-xs">
