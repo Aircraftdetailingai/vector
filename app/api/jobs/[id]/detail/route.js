@@ -22,22 +22,74 @@ export async function GET(request, { params }) {
 
   if (error || !job) return Response.json({ error: 'Job not found' }, { status: 404 });
 
-  // Parse services JSON if needed
-  let services = [];
+  // Get detailer info for rate and minimum fee
+  const { data: detailer } = await supabase
+    .from('detailers')
+    .select('default_labor_rate, minimum_callout_fee')
+    .eq('id', user.id)
+    .single();
+
+  const hourlyRate = parseFloat(detailer?.default_labor_rate) || 130;
+  const minimumFee = parseFloat(detailer?.minimum_callout_fee) || 0;
+
+  // Parse services
+  let rawServices = [];
   if (job.services) {
-    try { services = typeof job.services === 'string' ? JSON.parse(job.services) : job.services; } catch {}
+    try { rawServices = typeof job.services === 'string' ? JSON.parse(job.services) : job.services; } catch {}
   }
 
-  // Get assignments
+  // Look up aircraft to get hours per service
+  let aircraft = null;
+  if (job.aircraft_model && job.aircraft_make) {
+    const { data: ac } = await supabase
+      .from('aircraft')
+      .select('*')
+      .ilike('manufacturer', job.aircraft_make)
+      .ilike('model', job.aircraft_model)
+      .limit(1)
+      .maybeSingle();
+    aircraft = ac;
+  }
+
+  // Look up detailer's services to get hours_field mapping
+  const { data: detailerServices } = await supabase
+    .from('services')
+    .select('name, hours_field, hourly_rate')
+    .eq('detailer_id', user.id);
+  const svcMap = {};
+  for (const ds of (detailerServices || [])) {
+    svcMap[ds.name?.toLowerCase()] = ds;
+  }
+
+  // Enrich services with hours and price
+  const services = (Array.isArray(rawServices) ? rawServices : []).map(s => {
+    const name = typeof s === 'string' ? s : (s.name || s.service_name || s.description || 'Service');
+    // If service already has hours/rate from creation, use them
+    if (s.hours > 0 && s.rate > 0) {
+      return { name, hours: parseFloat(s.hours), rate: parseFloat(s.rate), price: parseFloat(s.price) || (s.hours * s.rate) };
+    }
+    // Otherwise look up from aircraft + service config
+    const svcConfig = svcMap[name.toLowerCase()];
+    let hours = 0;
+    if (aircraft && svcConfig?.hours_field) {
+      hours = parseFloat(aircraft[svcConfig.hours_field]) || 0;
+    }
+    const rate = parseFloat(svcConfig?.hourly_rate) || hourlyRate;
+    const price = hours > 0 ? hours * rate : 0;
+    return { name, hours, rate, price };
+  });
+
+  const computedTotal = services.reduce((sum, s) => sum + s.price, 0);
+  const totalPrice = Math.max(computedTotal, minimumFee) || parseFloat(job.total_price) || 0;
+  const totalHours = services.reduce((sum, s) => sum + s.hours, 0);
+
+  // Get crew assignments
   let crew = [];
   try {
-    const { data: assignments } = await supabase
-      .from('job_assignments')
-      .select('team_member_id')
-      .eq('job_id', id);
+    const { data: assignments } = await supabase.from('job_assignments').select('team_member_id').eq('job_id', id);
     if (assignments?.length) {
       const ids = assignments.map(a => a.team_member_id);
-      const { data: members } = await supabase.from('team_members').select('id, name, role').in('id', ids);
+      const { data: members } = await supabase.from('team_members').select('id, name, role, title').in('id', ids);
       crew = members || [];
     }
   } catch {}
@@ -48,8 +100,12 @@ export async function GET(request, { params }) {
     client_email: job.customer_email,
     aircraft_model: job.aircraft_model,
     aircraft_type: job.aircraft_make,
-    services: Array.isArray(services) ? services.map(s => typeof s === 'string' ? { name: s } : s) : [],
+    total_price: totalPrice,
+    total_hours: totalHours,
+    services,
     assigned_crew: crew,
+    hourly_rate: hourlyRate,
+    minimum_fee: minimumFee,
     _source: 'jobs_table',
   });
 }

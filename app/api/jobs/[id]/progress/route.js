@@ -11,13 +11,21 @@ export async function POST(request, { params }) {
   const user = await getAuthUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   const { id } = await params;
-  const { progress_percentage } = await request.json();
-
+  const body = await request.json();
   const supabase = getSupabase();
-  const val = Math.min(100, Math.max(0, parseInt(progress_percentage) || 0));
+
+  const updates = {};
+  if (body.progress_percentage !== undefined) {
+    updates.progress_percentage = Math.min(100, Math.max(0, parseInt(body.progress_percentage) || 0));
+  }
+  if (body.share_progress_with_customer !== undefined) {
+    updates.share_progress_with_customer = !!body.share_progress_with_customer;
+  }
+
+  if (Object.keys(updates).length === 0) return Response.json({ error: 'Nothing to update' }, { status: 400 });
 
   // Try jobs table first
-  const { error } = await supabase.from('jobs').update({ progress_percentage: val }).eq('id', id).eq('detailer_id', user.id);
+  const { error } = await supabase.from('jobs').update(updates).eq('id', id).eq('detailer_id', user.id);
   if (error) {
     // Try quotes table (legacy jobs)
     await supabase.from('quotes').update({ progress_percentage: val }).eq('id', id).eq('detailer_id', user.id);

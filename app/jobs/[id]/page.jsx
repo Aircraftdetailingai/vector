@@ -112,30 +112,29 @@ export default function JobDetailPage() {
     }, 1000);
   };
 
-  // Compute correct totals from services
+  // Services come enriched from the API with hours, rate, price
   const servicesList = Array.isArray(job.services) ? job.services.map(s => {
     if (typeof s === 'string') return { name: s, hours: 0, rate: 0, price: 0 };
-    const h = parseFloat(s.hours) || 0;
-    const r = parseFloat(s.rate || s.hourly_rate) || 0;
-    const p = parseFloat(s.price) || (h > 0 && r > 0 ? h * r : 0);
-    return { name: s.name || s.service_name || s.description || 'Service', hours: h, rate: r, price: p };
+    return { name: s.name || s.service_name || s.description || 'Service', hours: parseFloat(s.hours) || 0, rate: parseFloat(s.rate) || 0, price: parseFloat(s.price) || 0 };
   }) : [];
-  const computedTotal = servicesList.reduce((sum, s) => sum + s.price, 0);
-  const displayTotal = computedTotal > 0 ? computedTotal : (parseFloat(job.total_price) || 0);
+  const displayTotal = parseFloat(job.total_price) || servicesList.reduce((sum, s) => sum + s.price, 0);
 
-  // Business-day completion estimate
-  const totalHours = servicesList.reduce((sum, s) => sum + s.hours, 0);
-  const businessDays = totalHours > 0 ? Math.max(1, Math.ceil(totalHours / 8)) : 0;
+  // Business-day completion estimate — adjusts with progress
+  const totalHours = parseFloat(job.total_hours) || servicesList.reduce((sum, s) => sum + s.hours, 0);
+  const remainingHours = totalHours * (1 - progress / 100);
+  const remainingDays = remainingHours > 0 ? Math.max(1, Math.ceil(remainingHours / 8)) : 0;
   const finishDate = (() => {
-    if (!businessDays || !job.scheduled_date) return null;
-    const start = new Date(job.scheduled_date + 'T12:00');
+    if (!remainingDays) return null;
+    const baseDate = progress > 0 ? new Date() : (job.scheduled_date ? new Date(job.scheduled_date + 'T12:00') : new Date());
+    const start = new Date(baseDate);
     if (start.getDay() === 0) start.setDate(start.getDate() + 1);
     if (start.getDay() === 6) start.setDate(start.getDate() + 2);
     const finish = new Date(start);
-    let rem = businessDays - 1;
+    let rem = remainingDays - 1;
     while (rem > 0) { finish.setDate(finish.getDate() + 1); if (finish.getDay() !== 0 && finish.getDay() !== 6) rem--; }
     return finish;
   })();
+  const totalBusinessDays = totalHours > 0 ? Math.max(1, Math.ceil(totalHours / 8)) : 0;
 
   const isScheduled = ['paid', 'accepted', 'approved', 'scheduled'].includes(job.status);
   const isInProgress = job.status === 'in_progress';
@@ -202,8 +201,8 @@ export default function JobDetailPage() {
         <div className="bg-v-surface border border-v-border rounded-lg p-4">
           <p className="text-xs text-v-text-secondary">Est. Completion</p>
           <p className="text-v-text-primary font-medium mt-1">
-            {finishDate ? finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
-            {businessDays > 0 && <span className="text-v-text-secondary text-xs ml-1">({businessDays}d)</span>}
+            {progress >= 100 ? 'Complete' : finishDate ? finishDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
+            {progress < 100 && remainingDays > 0 && <span className="text-v-text-secondary text-xs ml-1">({remainingDays}d left)</span>}
           </p>
         </div>
       </div>
@@ -225,6 +224,24 @@ export default function JobDetailPage() {
           <span>Not Started</span>
           <span>Complete</span>
         </div>
+        {/* Share with customer toggle */}
+        <label className="flex items-center justify-between mt-3 pt-3 border-t border-v-border cursor-pointer">
+          <span className="text-xs text-v-text-secondary">Share progress with customer</span>
+          <div onClick={async (e) => {
+            e.preventDefault();
+            const newVal = !job.share_progress_with_customer;
+            setJob(prev => ({ ...prev, share_progress_with_customer: newVal }));
+            const token = localStorage.getItem('vector_token');
+            await fetch(`/api/jobs/${jobId}/progress`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+              body: JSON.stringify({ share_progress_with_customer: newVal }),
+            }).catch(() => {});
+          }}
+            className={`relative w-9 h-5 rounded-full transition-colors ${job.share_progress_with_customer ? 'bg-[#0081b8]' : 'bg-gray-600'}`}>
+            <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${job.share_progress_with_customer ? 'translate-x-4' : ''}`} />
+          </div>
+        </label>
       </div>
 
       {/* Services */}
