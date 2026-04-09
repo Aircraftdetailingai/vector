@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import Stripe from 'stripe';
 import { calculateCcFee } from '@/lib/cc-fee';
+import { PLATFORM_FEES } from '@/lib/pricing-tiers';
 
 export const dynamic = 'force-dynamic';
 
@@ -45,16 +46,19 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: 'Quote has expired', code: 'quote_expired' }), { status: 400 });
     }
 
-    // Fetch detailer
+    // Fetch detailer — include stripe_account_id for Connect
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('stripe_secret_key, company, email, plan, cc_fee_mode, booking_mode, deposit_percentage')
+      .select('stripe_secret_key, stripe_account_id, company, email, plan, cc_fee_mode, booking_mode, deposit_percentage')
       .eq('id', quote.detailer_id)
       .single();
 
-    const stripeKey = detailer?.stripe_secret_key?.trim();
+    // Determine payment mode: Connect (platform key) or Direct (detailer key)
+    const useConnect = !!(detailer?.stripe_account_id && process.env.STRIPE_SECRET_KEY);
+    const stripeKey = useConnect ? process.env.STRIPE_SECRET_KEY : detailer?.stripe_secret_key?.trim();
+
     if (!stripeKey) {
-      return new Response(JSON.stringify({ error: 'Stripe not configured. Go to Settings → Integrations to add your Stripe API key.', code: 'stripe_not_configured' }), { status: 400 });
+      return new Response(JSON.stringify({ error: 'Stripe not configured. Go to Settings → Integrations to connect Stripe.', code: 'stripe_not_configured' }), { status: 400 });
     }
 
     // Calculate amount in cents
@@ -86,11 +90,10 @@ export async function POST(request) {
       ? `Deposit (${depositPct}%) - ${quote.aircraft_model || quote.aircraft_type || 'Quote'}`
       : `Aircraft Detail - ${quote.aircraft_model || quote.aircraft_type || 'Quote'}`;
 
-    // Create checkout session — direct charge, no Connect
-    console.log(`[checkout] key=${stripeKey.slice(0, 12)}... amount=${totalAmount}cents quote=${quote.id}`);
     const stripe = new Stripe(stripeKey);
 
-    const session = await stripe.checkout.sessions.create({
+    // Build checkout session params
+    const sessionParams = {
       mode: 'payment',
       payment_method_types: ['card'],
       line_items: [{
@@ -109,7 +112,25 @@ export async function POST(request) {
         payment_type: isDeposit ? 'deposit' : 'full',
         deposit_percentage: isDeposit ? String(depositPct) : '',
       },
-    });
+    };
+
+    // Stripe Connect: platform takes application_fee, rest goes to connected account
+    if (useConnect) {
+      const feeRate = PLATFORM_FEES[detailer.plan || 'free'] || PLATFORM_FEES.free;
+      const platformFee = Math.round(totalAmount * feeRate); // already in cents
+      console.log(`[checkout-connect] dest=${detailer.stripe_account_id} plan=${detailer.plan} feeRate=${feeRate} fee=${platformFee}cents total=${totalAmount}cents`);
+
+      sessionParams.payment_intent_data = {
+        application_fee_amount: platformFee,
+        transfer_data: {
+          destination: detailer.stripe_account_id,
+        },
+      };
+    } else {
+      console.log(`[checkout-direct] key=${stripeKey.slice(0, 12)}... amount=${totalAmount}cents quote=${quote.id}`);
+    }
+
+    const session = await stripe.checkout.sessions.create(sessionParams);
 
     return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), { status: 200 });
   } catch (err) {

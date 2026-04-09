@@ -46,12 +46,13 @@ export async function GET(request) {
 
     // Check if detailer has their own Stripe API keys saved
     const hasKeys = !!(detailer?.stripe_publishable_key && detailer?.stripe_secret_key);
-    if (hasKeys) {
+    if (hasKeys && !detailer?.stripe_account_id) {
       return new Response(JSON.stringify({
         connected: true,
         hasKeys: true,
+        connectAccountId: null,
         status: 'ACTIVE',
-        message: 'Stripe API keys configured',
+        message: 'Stripe API keys configured (direct charges)',
         chargeback_terms_accepted_at: detailer?.chargeback_terms_accepted_at || null,
       }), { status: 200 });
     }
@@ -101,6 +102,8 @@ export async function GET(request) {
 
     return new Response(JSON.stringify({
       connected: true,
+      hasKeys,
+      connectAccountId: detailer.stripe_account_id,
       status,
       stripe_mode: mode,
       chargesEnabled: account.charges_enabled,

@@ -34,6 +34,7 @@ function IntegrationsContent() {
   const [stripeKeySaving, setStripeKeySaving] = useState(false);
   const [stripeKeyMsg, setStripeKeyMsg] = useState(null);
   const [showUpdateKeys, setShowUpdateKeys] = useState(false);
+  const [stripeConnecting, setStripeConnecting] = useState(false);
 
   // QuickBooks state
   const [qbStatus, setQbStatus] = useState({ connected: false, status: 'UNKNOWN' });
@@ -209,6 +210,20 @@ function IntegrationsContent() {
       const res = await fetch('/api/stripe/status', { headers: getHeaders() });
       if (res.ok) setStripeStatus(await res.json());
     } catch {}
+  };
+
+  const handleStripeConnect = async () => {
+    setStripeConnecting(true); setStripeKeyMsg(null);
+    try {
+      const res = await fetch('/api/stripe/connect', { method: 'POST', headers: getHeaders() });
+      const data = await res.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        setStripeKeyMsg({ type: 'error', text: data.error || 'Failed to start Stripe Connect' });
+      }
+    } catch (err) { setStripeKeyMsg({ type: 'error', text: err.message }); }
+    finally { setStripeConnecting(false); }
   };
 
   // === QUICKBOOKS ===
@@ -465,17 +480,34 @@ function IntegrationsContent() {
               )}
             </div>
 
+            {stripeKeyMsg && (
+              <div className={`mb-3 p-2 text-xs rounded ${stripeKeyMsg.type === 'error' ? 'bg-red-900/20 border border-red-500/30 text-red-400' : 'bg-green-900/20 border border-green-500/30 text-green-400'}`}>
+                {stripeKeyMsg.text}
+              </div>
+            )}
+
             {stripeConnected ? (
               <div>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <span className="text-green-500">&#10003;</span>
-                    <span className="text-green-400 text-xs font-medium">Stripe keys saved</span>
+                    <span className="text-green-400 text-xs font-medium">
+                      {stripeStatus.connectAccountId ? 'Stripe Connect active' : 'Stripe keys saved'}
+                    </span>
                   </div>
                   <button onClick={() => setShowUpdateKeys(v => !v)} className="text-xs text-v-text-secondary hover:text-v-gold transition-colors">
                     {showUpdateKeys ? 'Cancel' : 'Update API Keys'}
                   </button>
                 </div>
+                {!showUpdateKeys && !stripeStatus.connectAccountId && (
+                  <div className="mb-3 p-3 bg-blue-900/10 border border-blue-500/20 rounded">
+                    <p className="text-xs text-blue-400 mb-2">Upgrade to Stripe Connect for seamless onboarding and automatic payments.</p>
+                    <button onClick={handleStripeConnect} disabled={stripeConnecting}
+                      className="px-4 py-2 bg-[#635BFF] text-white text-xs font-semibold rounded hover:bg-[#5549e0] disabled:opacity-50 transition-colors">
+                      {stripeConnecting ? 'Connecting...' : 'Connect with Stripe'}
+                    </button>
+                  </div>
+                )}
                 {!showUpdateKeys && (
                   <a href="https://dashboard.stripe.com" target="_blank" rel="noreferrer" className="text-xs text-v-gold hover:text-v-gold-dim transition-colors">
                     Manage in Stripe Dashboard &rarr;
@@ -483,11 +515,6 @@ function IntegrationsContent() {
                 )}
                 {showUpdateKeys && (
                   <div className="mt-3">
-                    {stripeKeyMsg && (
-                      <div className={`mb-2 p-2 text-xs rounded ${stripeKeyMsg.type === 'error' ? 'bg-red-900/20 border border-red-500/30 text-red-400' : 'bg-green-900/20 border border-green-500/30 text-green-400'}`}>
-                        {stripeKeyMsg.text}
-                      </div>
-                    )}
                     <div className="space-y-2">
                       <input type="text" value={stripePk} onChange={e => setStripePk(e.target.value)} placeholder="pk_live_..."
                         className="w-full bg-v-surface border border-v-border text-v-text-primary rounded-sm px-3 py-2 text-xs font-mono placeholder-v-text-secondary/50 outline-none focus:border-v-gold/50" />
@@ -500,20 +527,18 @@ function IntegrationsContent() {
                           const validPK = pkVal.startsWith('pk_live_') || pkVal.startsWith('pk_test_');
                           const validSK = skVal.startsWith('sk_live_') || skVal.startsWith('sk_test_') || skVal.startsWith('rk_live_') || skVal.startsWith('rk_test_') || skVal.startsWith('mk_live_') || skVal.startsWith('mk_test_') || skVal.startsWith('mk_');
                           if (!validPK || !validSK) {
-                            setStripeKeyMsg({ type: 'error', text: `Invalid key format. PK starts with "${pkVal.slice(0, 10)}...", SK starts with "${skVal.slice(0, 10)}...". Expected pk_live_/pk_test_ and sk_live_/sk_test_/mk_.` });
+                            setStripeKeyMsg({ type: 'error', text: `Invalid key format. Expected pk_live_/pk_test_ and sk_live_/sk_test_.` });
                             return;
                           }
-                          setStripePk(pkVal);
-                          setStripeSk(skVal);
                           setStripeKeySaving(true); setStripeKeyMsg(null);
                           try {
                             const res = await fetch('/api/user/settings', {
                               method: 'POST', headers: getHeaders(),
-                              body: JSON.stringify({ stripe_publishable_key: stripePk.trim(), stripe_secret_key: stripeSk.trim() }),
+                              body: JSON.stringify({ stripe_publishable_key: pkVal, stripe_secret_key: skVal }),
                             });
                             if (res.ok) {
                               setStripeKeyMsg({ type: 'success', text: 'Stripe keys updated!' });
-                              setShowUpdateKeys(false);
+                              setShowUpdateKeys(false); checkStripeStatus();
                             } else {
                               const d = await res.json(); setStripeKeyMsg({ type: 'error', text: d.error || 'Failed to save' });
                             }
@@ -535,12 +560,24 @@ function IntegrationsContent() {
               </div>
             ) : (
               <div>
-                <p className="text-xs text-v-text-secondary mb-3">Enter your Stripe API keys to accept quote payments.</p>
-                {stripeKeyMsg && (
-                  <div className={`mb-2 p-2 text-xs rounded ${stripeKeyMsg.type === 'error' ? 'bg-red-900/20 border border-red-500/30 text-red-400' : 'bg-green-900/20 border border-green-500/30 text-green-400'}`}>
-                    {stripeKeyMsg.text}
-                  </div>
-                )}
+                {/* Primary: Connect with Stripe */}
+                <button onClick={handleStripeConnect} disabled={stripeConnecting}
+                  className="w-full py-3 mb-3 bg-[#635BFF] text-white text-xs font-semibold uppercase tracking-widest rounded hover:bg-[#5549e0] disabled:opacity-50 transition-colors flex items-center justify-center gap-2">
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none">
+                    <path d="M13.976 9.15c-2.172-.806-3.356-1.426-3.356-2.409 0-.831.683-1.305 1.901-1.305 2.227 0 4.515.858 6.09 1.631l.89-5.494C18.252.975 15.697 0 12.165 0 9.667 0 7.589.654 6.104 1.872 4.56 3.147 3.757 4.918 3.757 7.11c0 3.723 2.249 5.353 5.864 6.744 2.368.911 3.182 1.557 3.182 2.536 0 .954-.839 1.575-2.379 1.575-1.946 0-4.836-.963-6.778-2.186L2.758 21.3C4.458 22.421 7.764 23.4 10.784 23.4c2.607 0 4.765-.654 6.293-1.885 1.623-1.303 2.445-3.176 2.445-5.56.03-3.817-2.293-5.414-5.546-6.805z" fill="white"/>
+                  </svg>
+                  {stripeConnecting ? 'Connecting...' : 'Connect with Stripe'}
+                </button>
+                <p className="text-xs text-v-text-secondary mb-3">Connect your Stripe account to accept payments. Quick setup, no API keys needed.</p>
+
+                {/* Divider */}
+                <div className="flex items-center gap-3 my-4">
+                  <div className="flex-1 border-t border-v-border" />
+                  <span className="text-[10px] text-v-text-secondary uppercase">Or enter keys manually</span>
+                  <div className="flex-1 border-t border-v-border" />
+                </div>
+
+                {/* Secondary: Manual keys */}
                 <div className="space-y-2">
                   <input
                     type="text"
@@ -563,7 +600,7 @@ function IntegrationsContent() {
                       const pkOk = pkTrimmed.startsWith('pk_live_') || pkTrimmed.startsWith('pk_test_');
                       const skOk = skTrimmed.startsWith('sk_live_') || skTrimmed.startsWith('sk_test_') || skTrimmed.startsWith('rk_live_') || skTrimmed.startsWith('rk_test_') || skTrimmed.startsWith('mk_live_') || skTrimmed.startsWith('mk_test_') || skTrimmed.startsWith('mk_');
                       if (!pkOk || !skOk) {
-                        setStripeKeyMsg({ type: 'error', text: `Invalid key format. PK starts with "${pkTrimmed.slice(0, 10)}...", SK starts with "${skTrimmed.slice(0, 10)}...". Expected pk_live_/pk_test_ and sk_live_/sk_test_/mk_.` });
+                        setStripeKeyMsg({ type: 'error', text: `Invalid key format. Expected pk_live_/pk_test_ and sk_live_/sk_test_.` });
                         return;
                       }
                       setStripePk(pkTrimmed);
