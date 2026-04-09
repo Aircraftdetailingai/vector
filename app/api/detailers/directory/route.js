@@ -96,5 +96,10 @@ export async function GET(request) {
     stripe_publishable_key: undefined,
   }));
 
-  return Response.json({ detailers: enriched });
+  return Response.json({ detailers: enriched }, {
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET',
+    },
+  });
 }
