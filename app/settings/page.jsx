@@ -253,15 +253,19 @@ function SettingsContent() {
     savedUserRef.current = { ...u };
     // Refresh user data from server to get latest plan/permissions
     fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } })
-      .then(r => r.ok ? r.json() : null)
+      .then(r => {
+        if (!r.ok) { console.error('[settings] /api/user/me failed:', r.status); return null; }
+        return r.json();
+      })
       .then(data => {
         if (data?.user) {
+          console.log('[settings] Refreshed user:', data.user.company, 'rate:', data.user.default_labor_rate);
           hydrateFromUser(data.user);
           savedUserRef.current = { ...data.user };
           localStorage.setItem('vector_user', JSON.stringify(data.user));
         }
       })
-      .catch(() => {});
+      .catch(err => console.error('[settings] user/me error:', err));
       // Fetch SMS settings for business/enterprise/admin users
       if (u.plan === 'business' || u.plan === 'enterprise' || u.is_admin) {
         fetch('/api/sms/settings', {
