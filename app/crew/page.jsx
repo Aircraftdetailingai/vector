@@ -828,17 +828,17 @@ export default function CrewDashboard() {
               <div className="text-white/50 text-center py-8">{'No products yet'}</div>
             )}
             {products.map(p => (
-              <div key={p.id} className="bg-white/10 backdrop-blur rounded-xl p-4">
+              <div key={p.id} className={`bg-white/10 backdrop-blur rounded-xl p-4 ${p.low_stock ? 'border border-amber-500/30' : ''}`}>
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-white font-medium">{p.name}</p>
                     <p className="text-white/50 text-sm">{p.brand || p.category}</p>
                   </div>
                   <div className="text-right">
-                    <p className={`font-medium ${p.low_stock ? 'text-red-400' : 'text-white'}`}>
-                      {p.current_quantity} {p.unit}
+                    <p className={`font-medium ${p.low_stock ? 'text-amber-400' : 'text-white'}`}>
+                      {p.quantity} {p.unit}
                     </p>
-                    {p.low_stock && <p className="text-red-400 text-xs">{'Low stock'}</p>}
+                    {p.low_stock && <p className="text-amber-400 text-xs">{'Low stock'}</p>}
                   </div>
                 </div>
               </div>

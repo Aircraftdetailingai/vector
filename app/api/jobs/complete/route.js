@@ -293,17 +293,17 @@ export async function POST(request) {
           // Get current quantity
           const { data: product } = await supabase
             .from('products')
-            .select('current_quantity')
+            .select('quantity')
             .eq('id', usage.product_id)
             .eq('detailer_id', user.id)
             .single();
 
           if (product) {
-            const newQuantity = Math.max(0, (product.current_quantity || 0) - parseFloat(usage.amount));
+            const newQuantity = Math.max(0, (product.quantity || 0) - parseFloat(usage.amount));
             await supabase
               .from('products')
               .update({
-                current_quantity: newQuantity,
+                quantity: newQuantity,
                 updated_at: new Date().toISOString(),
               })
               .eq('id', usage.product_id)

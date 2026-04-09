@@ -57,7 +57,7 @@ export async function GET(request, { params }) {
     if (user.can_see_inventory) {
       const { data: spLinks } = await supabase
         .from('service_products')
-        .select('service_id, quantity_per_hour, fixed_quantity, notes, products(id, name, category, unit, current_quantity, reorder_threshold, brand, image_url)')
+        .select('service_id, quantity_per_hour, fixed_quantity, notes, products(id, name, category, unit, quantity, reorder_level, brand, image_url)')
         .in('service_id', svcIds);
 
       if (spLinks) {
@@ -96,8 +96,8 @@ export async function GET(request, { params }) {
               unit: p.unit,
               brand: p.brand,
               image_url: p.image_url,
-              current_quantity: p.current_quantity,
-              low_stock: p.reorder_threshold > 0 && p.current_quantity <= p.reorder_threshold,
+              current_quantity: p.quantity,
+              low_stock: p.reorder_level > 0 && p.quantity <= p.reorder_level,
               quantity_needed: qty,
               for_services: [svcMap[link.service_id] || ''].filter(Boolean),
             };

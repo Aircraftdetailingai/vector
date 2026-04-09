@@ -95,12 +95,12 @@ export async function GET(request) {
 
   // Calculate inventory value
   const inventoryValue = (products || []).reduce((sum, p) =>
-    sum + ((p.current_quantity || 0) * (p.cost_per_unit || 0)), 0
+    sum + ((p.quantity || 0) * (p.cost_per_unit || 0)), 0
   );
 
   // Find low stock items
   const lowStock = (products || []).filter(p =>
-    p.reorder_threshold > 0 && p.current_quantity <= p.reorder_threshold
+    p.reorder_level > 0 && p.quantity <= p.reorder_level
   );
 
   // Calculate equipment ROI
@@ -144,16 +144,16 @@ export async function GET(request) {
     lowStock: lowStock.map(p => ({
       id: p.id,
       name: p.name,
-      currentQuantity: p.current_quantity,
-      reorderThreshold: p.reorder_threshold,
+      currentQuantity: p.quantity,
+      reorderThreshold: p.reorder_level,
       unit: p.unit,
     })),
     equipmentROI: equipmentStats.slice(0, 5), // Top 5 by cost per job
     alerts: [
       ...lowStock.map(p => ({
         type: 'low_stock',
-        message: `${p.name} inventory low: ${p.current_quantity} ${p.unit} remaining`,
-        severity: p.current_quantity === 0 ? 'critical' : 'warning',
+        message: `${p.name} inventory low: ${p.quantity} ${p.unit} remaining`,
+        severity: p.quantity === 0 ? 'critical' : 'warning',
       })),
       ...(avgMaterialCostPerJob > 150 ? [{
         type: 'high_material_cost',

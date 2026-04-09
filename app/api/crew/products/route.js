@@ -28,7 +28,7 @@ export async function GET(request) {
 
   const { data: products, error } = await supabase
     .from('products')
-    .select('id, name, category, unit, current_quantity, reorder_threshold, brand, notes, image_url')
+    .select('id, name, category, unit, quantity, reorder_level, brand, notes, image_url')
     .eq('detailer_id', user.detailer_id)
     .order('name', { ascending: true });
 
@@ -43,8 +43,8 @@ export async function GET(request) {
     name: p.name,
     category: p.category,
     unit: p.unit,
-    current_quantity: p.current_quantity,
-    low_stock: p.reorder_threshold > 0 && p.current_quantity <= p.reorder_threshold,
+    quantity: parseFloat(p.quantity) || 0,
+    low_stock: parseFloat(p.reorder_level) > 0 && parseFloat(p.quantity) <= parseFloat(p.reorder_level),
     brand: p.brand,
     notes: p.notes,
     image_url: p.image_url,
@@ -83,7 +83,7 @@ export async function POST(request) {
   // Verify product belongs to crew's detailer
   const { data: product } = await supabase
     .from('products')
-    .select('id, current_quantity')
+    .select('id, quantity')
     .eq('id', product_id)
     .eq('detailer_id', user.detailer_id)
     .single();
@@ -107,11 +107,11 @@ export async function POST(request) {
       .single();
 
     if (!error) {
-      // Deduct from current_quantity
-      const newQty = Math.max(0, (product.current_quantity || 0) - parseFloat(amount_used));
+      // Deduct from quantity
+      const newQty = Math.max(0, (parseFloat(product.quantity) || 0) - parseFloat(amount_used));
       await supabase
         .from('products')
-        .update({ current_quantity: newQty })
+        .update({ quantity: newQty })
         .eq('id', product_id);
 
       return Response.json({ success: true, usage_id: data.id });
