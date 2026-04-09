@@ -21,13 +21,21 @@ export default function JobDetailPage() {
     fetchJob(token);
   }, [jobId]);
 
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
   const fetchJob = async (token) => {
     try {
       const headers = { Authorization: `Bearer ${token}` };
-      const res = await fetch(`/api/quotes/${jobId}`, { headers });
-      if (!res.ok) throw new Error('Failed to fetch');
-      const data = await res.json();
-      setJob(data);
+      // Try quotes table first, then jobs table
+      let res = await fetch(`/api/quotes/${jobId}`, { headers });
+      let data = res.ok ? await res.json() : null;
+      if (!data) {
+        // Try jobs table via direct query
+        res = await fetch(`/api/jobs/${jobId}/detail`, { headers });
+        data = res.ok ? await res.json() : null;
+      }
+      if (data) setJob(data);
 
       const mediaRes = await fetch(`/api/job-media?quote_id=${jobId}`, { headers });
       if (mediaRes.ok) {
@@ -40,6 +48,18 @@ export default function JobDetailPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const res = await fetch(`/api/jobs/${jobId}/delete`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) router.push('/jobs');
+    } catch {} finally { setDeleting(false); }
   };
 
   const updateStatus = async (status) => {
@@ -89,10 +109,31 @@ export default function JobDetailPage() {
             {job.tail_number && <span className="text-v-text-secondary ml-2 text-lg">{job.tail_number}</span>}
           </h1>
         </div>
-        <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[job.status] || 'bg-gray-500/20 text-gray-400'}`}>
-          {(job.status || '').replace('_', ' ')}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[job.status] || 'bg-gray-500/20 text-gray-400'}`}>
+            {(job.status || '').replace('_', ' ')}
+          </span>
+          <button onClick={() => setShowDeleteConfirm(true)} className="px-3 py-1 text-xs text-red-400 border border-red-400/30 rounded-full hover:bg-red-400/10 transition-colors">
+            Delete
+          </button>
+        </div>
       </div>
+
+      {/* Delete confirmation */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-v-surface border border-v-border rounded-lg p-6 max-w-sm w-full">
+            <h3 className="text-white font-semibold mb-2">Delete this job?</h3>
+            <p className="text-v-text-secondary text-sm mb-4">This action cannot be undone. The job and all associated data will be permanently removed.</p>
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowDeleteConfirm(false)} className="px-4 py-2 text-sm text-v-text-secondary border border-v-border rounded">Cancel</button>
+              <button onClick={handleDelete} disabled={deleting} className="px-4 py-2 text-sm bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50">
+                {deleting ? 'Deleting...' : 'Delete Job'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Info cards */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">

@@ -168,8 +168,8 @@ export default function JobsPage() {
           {/* Mobile Card Layout */}
           <div className="sm:hidden space-y-2">
             {filteredJobs.map((job) => (
-              <div key={job.id} onClick={() => { if (job.share_link) window.open(`/q/${job.share_link}`, '_blank'); }}
-                className="bg-v-surface border border-v-border p-4 cursor-pointer active:bg-white/[0.04]">
+              <div key={job.id} onClick={() => router.push(`/jobs/${job.id}`)}
+                className="bg-v-surface border border-v-border p-4 cursor-pointer active:bg-white/[0.04] hover:bg-white/[0.02] transition-colors">
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-white text-sm font-medium truncate mr-2">{job.customer_company || job.client_name || '—'}</span>
                   <span className={`shrink-0 px-2 py-0.5 text-[10px] uppercase tracking-wider ${statusColors[job.status] || 'border border-gray-500/30 text-gray-400'}`}>
@@ -203,7 +203,7 @@ export default function JobsPage() {
             {filteredJobs.map((job) => (
               <div
                 key={job.id}
-                onClick={() => { if (job.share_link) window.open(`/q/${job.share_link}`, '_blank'); }}
+                onClick={() => router.push(`/jobs/${job.id}`)}
                 className="group grid grid-cols-[1fr_1fr_1.2fr_120px_100px_120px] min-w-[800px] px-6 items-center border-b border-[#1A2236] transition-colors cursor-pointer hover:bg-white/[0.02]"
                 style={{ height: '56px' }}
               >
