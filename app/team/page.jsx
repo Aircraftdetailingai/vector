@@ -131,7 +131,7 @@ export default function TeamPage() {
             href="/team/add"
             className="px-6 py-3 bg-v-gold text-white rounded-lg hover:bg-v-gold-dim transition-colors font-medium inline-block"
           >
-            {'Add Your First Team Member'}
+            {'Add Team Member'}
           </a>
         </div>
       ) : (

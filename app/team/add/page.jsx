@@ -66,7 +66,7 @@ export default function AddTeamMemberPage() {
       {/* Header */}
       <header className="flex items-center space-x-3 mb-6">
         <a href="/team" className="text-white text-2xl">&#8592;</a>
-        <h1 className="text-2xl font-bold text-white">{'Add Your First Team Member'}</h1>
+        <h1 className="text-2xl font-bold text-white">{'Add Team Member'}</h1>
       </header>
 
       <div className="max-w-lg mx-auto">
@@ -215,7 +215,7 @@ export default function AddTeamMemberPage() {
               disabled={loading}
               className="flex-1 py-2 bg-v-gold-muted/200 text-white rounded-lg hover:bg-v-gold-dim transition-colors font-medium disabled:opacity-50"
             >
-              {loading ? 'Creating...' : 'Add Your First Team Member'}
+              {loading ? 'Creating...' : 'Add Team Member'}
             </button>
             <a
               href="/team"
