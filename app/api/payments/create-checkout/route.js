@@ -9,6 +9,10 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
+function cleanKey(k) {
+  return k?.replace(/^["']|["']$/g, '').replace(/\\n/g, '').trim() || null;
+}
+
 export async function POST(request) {
   const supabase = getSupabase();
 
@@ -28,10 +32,10 @@ export async function POST(request) {
         .eq('share_link', shareLink);
     }
 
-    // Fetch quote
+    // Fetch quote — include line_items for itemized checkout
     const { data: quote, error: quoteError } = await supabase
       .from('quotes')
-      .select('id, detailer_id, total_price, aircraft_type, aircraft_model, status, valid_until, share_link, client_name, client_email')
+      .select('id, detailer_id, total_price, aircraft_type, aircraft_model, status, valid_until, share_link, client_name, client_email, line_items')
       .eq('id', quoteId)
       .eq('share_link', shareLink)
       .single();
@@ -46,15 +50,13 @@ export async function POST(request) {
       return new Response(JSON.stringify({ error: 'Quote has expired', code: 'quote_expired' }), { status: 400 });
     }
 
-    // Fetch detailer — include stripe_account_id for Connect
+    // Fetch detailer
     const { data: detailer } = await supabase
       .from('detailers')
       .select('stripe_secret_key, stripe_account_id, company, email, plan, cc_fee_mode, booking_mode, deposit_percentage')
       .eq('id', quote.detailer_id)
       .single();
 
-    // Need at least one valid Stripe key — strip quotes, newlines, whitespace
-    const cleanKey = (k) => k?.replace(/^["']|["']$/g, '').replace(/\\n/g, '').trim() || null;
     const platformKey = cleanKey(process.env.STRIPE_SECRET_KEY);
     const detailerKey = cleanKey(detailer?.stripe_secret_key);
 
@@ -79,29 +81,78 @@ export async function POST(request) {
     }
 
     // CC processing fee pass-through
-    let totalAmount = baseAmount;
     const ccFeeMode = detailer?.cc_fee_mode || 'absorb';
+    let ccFeeCents = 0;
     if (ccFeeMode === 'pass' || ccFeeMode === 'customer_choice') {
-      const ccFee = calculateCcFee(totalAmount / 100);
-      totalAmount += Math.round(ccFee * 100);
+      ccFeeCents = Math.round(calculateCcFee(baseAmount / 100) * 100);
     }
+    const totalAmount = baseAmount + ccFeeCents;
 
     const appUrl = 'https://crm.shinyjets.com';
-    const productName = isDeposit
-      ? `Deposit (${depositPct}%) - ${quote.aircraft_model || quote.aircraft_type || 'Quote'}`
-      : `Aircraft Detail - ${quote.aircraft_model || quote.aircraft_type || 'Quote'}`;
+
+    // Build line items — use itemized services from quote if available
+    const quoteLineItems = Array.isArray(quote.line_items) ? quote.line_items : [];
+    const hasItemizedServices = quoteLineItems.length > 0 && quoteLineItems.every(li => li.description && li.amount > 0);
+
+    let stripeLineItems;
+
+    if (isDeposit) {
+      // Deposits show as a single line
+      stripeLineItems = [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Deposit (${depositPct}%) - ${quote.aircraft_model || quote.aircraft_type || 'Quote'}`,
+            description: `Quote from ${detailer.company || 'Detailer'}`,
+          },
+          unit_amount: baseAmount,
+        },
+        quantity: 1,
+      }];
+    } else if (hasItemizedServices) {
+      // Itemized services from the quote
+      stripeLineItems = quoteLineItems.map(svc => ({
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: svc.description || svc.name || 'Service',
+            ...(svc.hours > 0 ? { description: `${svc.hours}h estimated` } : {}),
+          },
+          unit_amount: Math.round((svc.amount || svc.price || 0) * 100),
+        },
+        quantity: 1,
+      }));
+    } else {
+      // Fallback: single line item
+      stripeLineItems = [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Aircraft Detail - ${quote.aircraft_model || quote.aircraft_type || 'Quote'}`,
+            description: `Quote from ${detailer.company || 'Detailer'}`,
+          },
+          unit_amount: baseAmount,
+        },
+        quantity: 1,
+      }];
+    }
+
+    // Add CC fee as a separate line item if applicable
+    if (ccFeeCents > 0) {
+      stripeLineItems.push({
+        price_data: {
+          currency: 'usd',
+          product_data: { name: 'Credit Card Processing Fee' },
+          unit_amount: ccFeeCents,
+        },
+        quantity: 1,
+      });
+    }
 
     const baseSessionParams = {
       mode: 'payment',
       payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: { name: productName, description: `Quote from ${detailer.company || 'Detailer'}` },
-          unit_amount: totalAmount,
-        },
-        quantity: 1,
-      }],
+      line_items: stripeLineItems,
       success_url: `${appUrl}/q/${quote.share_link}?payment=success`,
       cancel_url: `${appUrl}/q/${quote.share_link}?payment=cancelled`,
       metadata: {
@@ -119,7 +170,7 @@ export async function POST(request) {
       try {
         const feeRate = PLATFORM_FEES[detailer.plan || 'free'] || PLATFORM_FEES.free;
         const platformFee = Math.round(totalAmount * feeRate);
-        console.log(`[checkout-connect] dest=${detailer.stripe_account_id} plan=${detailer.plan} feeRate=${feeRate} fee=${platformFee}cents total=${totalAmount}cents key=${platformKey.slice(0, 12)}...`);
+        console.log(`[checkout-connect] dest=${detailer.stripe_account_id} plan=${detailer.plan} feeRate=${feeRate} fee=${platformFee}cents total=${totalAmount}cents`);
 
         const stripe = new Stripe(platformKey);
         const connectParams = {
@@ -137,19 +188,17 @@ export async function POST(request) {
       } catch (connectErr) {
         console.error(`[checkout-connect-failed] ${connectErr.type} | ${connectErr.code} | ${connectErr.message}`);
         console.log('[checkout] Falling back to direct charge...');
-        // Fall through to direct charge
       }
     }
 
-    // Direct charge fallback — use detailer's own key
+    // Direct charge fallback
     if (detailerKey) {
-      console.log(`[checkout-direct] key=${detailerKey.slice(0, 12)}... amount=${totalAmount}cents quote=${quote.id}`);
+      console.log(`[checkout-direct] key=${detailerKey.slice(0, 12)}... total=${totalAmount}cents quote=${quote.id}`);
       const stripe = new Stripe(detailerKey);
       const session = await stripe.checkout.sessions.create(baseSessionParams);
       return new Response(JSON.stringify({ url: session.url, sessionId: session.id }), { status: 200 });
     }
 
-    // If we got here, Connect failed and no detailer key exists
     return new Response(JSON.stringify({ error: 'Payment processing unavailable. Please contact the detailer.', code: 'stripe_not_configured' }), { status: 400 });
 
   } catch (err) {
