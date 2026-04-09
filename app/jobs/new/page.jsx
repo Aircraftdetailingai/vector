@@ -20,7 +20,7 @@ export default function NewJobPage() {
   // Form state
   const [customerMode, setCustomerMode] = useState('existing'); // existing | new
   const [selectedCustomer, setSelectedCustomer] = useState(null);
-  const [newCustomer, setNewCustomer] = useState({ name: '', email: '', phone: '' });
+  const [newCustomer, setNewCustomer] = useState({ name: '', company_name: '', email: '', phone: '' });
   const [manufacturer, setManufacturer] = useState('');
   const [model, setModel] = useState('');
   const [tailNumber, setTailNumber] = useState('');
@@ -105,7 +105,7 @@ export default function NewJobPage() {
       if (!customerId && newCustomer.email) {
         const custRes = await fetch('/api/customers', {
           method: 'POST', headers,
-          body: JSON.stringify({ name: newCustomer.name, email: newCustomer.email, phone: newCustomer.phone }),
+          body: JSON.stringify({ name: newCustomer.name, email: newCustomer.email, phone: newCustomer.phone, company_name: newCustomer.company_name || null }),
         });
         if (custRes.ok) { const d = await custRes.json(); customerId = d.customer?.id; }
       }
@@ -170,8 +170,9 @@ export default function NewJobPage() {
                 {customers.map(c => <option key={c.id} value={c.id}>{c.name} {c.email ? `(${c.email})` : ''}</option>)}
               </select>
             ) : (
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 gap-2">
                 <input value={newCustomer.name} onChange={e => setNewCustomer(p => ({ ...p, name: e.target.value }))} placeholder="Name *" className={cls} />
+                <input value={newCustomer.company_name} onChange={e => setNewCustomer(p => ({ ...p, company_name: e.target.value }))} placeholder="Company Name (optional)" className={cls} />
                 <input value={newCustomer.email} onChange={e => setNewCustomer(p => ({ ...p, email: e.target.value }))} placeholder="Email" className={cls} />
                 <input value={newCustomer.phone} onChange={e => setNewCustomer(p => ({ ...p, phone: e.target.value }))} placeholder="Phone" className={cls} />
               </div>
