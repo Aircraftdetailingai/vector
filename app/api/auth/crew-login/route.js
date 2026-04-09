@@ -18,7 +18,7 @@ export async function POST(request) {
       // Email + password login (from invite acceptance)
       const { data, error } = await supabase
         .from('team_members')
-        .select('id, detailer_id, name, email, type, hourly_pay, status, is_lead_tech, can_see_inventory, can_see_equipment, can_see_pricing, can_see_customer_contact, can_see_other_jobs, can_upload_photos, can_log_products, can_mark_complete, can_clock, password_hash')
+        .select('id, detailer_id, name, email, type, title, hourly_pay, status, is_lead_tech, can_see_inventory, can_see_equipment, can_see_pricing, can_see_customer_contact, can_see_other_jobs, can_upload_photos, can_log_products, can_mark_complete, can_clock, password_hash')
         .eq('email', email.toLowerCase().trim())
         .eq('status', 'active')
         .single();
@@ -42,7 +42,7 @@ export async function POST(request) {
       }
       const { data, error } = await supabase
         .from('team_members')
-        .select('id, detailer_id, name, email, type, hourly_pay, status, is_lead_tech, can_see_inventory, can_see_equipment, can_see_pricing, can_see_customer_contact, can_see_other_jobs, can_upload_photos, can_log_products, can_mark_complete, can_clock')
+        .select('id, detailer_id, name, email, type, title, hourly_pay, status, is_lead_tech, can_see_inventory, can_see_equipment, can_see_pricing, can_see_customer_contact, can_see_other_jobs, can_upload_photos, can_log_products, can_mark_complete, can_clock')
         .eq('pin_code', pinTrimmed)
         .eq('status', 'active')
         .order('created_at', { ascending: true })
@@ -86,6 +86,7 @@ export async function POST(request) {
         name: member.name,
         email: member.email,
         type: member.type,
+        title: member.title || null,
         hourly_pay: member.hourly_pay || 0,
         role: 'crew',
         is_lead_tech: member.is_lead_tech || false,

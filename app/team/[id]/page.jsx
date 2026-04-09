@@ -296,6 +296,27 @@ export default function TeamMemberPage() {
               />
             </div>
             <div>
+              <label className="block text-sm text-v-text-secondary mb-1">Title</label>
+              <input
+                type="text"
+                list="title-suggestions"
+                value={editForm.title || ''}
+                onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+                placeholder="e.g. Lead Detailer"
+                className="w-full px-3 py-2 border border-v-border rounded-lg focus:ring-2 focus:ring-v-gold outline-none"
+              />
+              <datalist id="title-suggestions">
+                <option value="Lead Detailer" />
+                <option value="Detailer" />
+                <option value="Apprentice" />
+                <option value="Ceramic Specialist" />
+                <option value="Interior Specialist" />
+                <option value="Paint Correction Specialist" />
+                <option value="Shop Manager" />
+                <option value="Owner" />
+              </datalist>
+            </div>
+            <div>
               <label className="block text-sm text-v-text-secondary mb-1">{'Type'}</label>
               <select
                 value={editForm.type || 'employee'}
@@ -393,6 +414,12 @@ export default function TeamMemberPage() {
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {member.title && (
+              <div className="col-span-full">
+                <p className="text-sm text-v-text-secondary">Title</p>
+                <p className="text-v-text-primary font-medium">{member.title}</p>
+              </div>
+            )}
             <div>
               <p className="text-sm text-v-text-secondary">{'Email'}</p>
               <p className="text-v-text-primary">{member.email || '-'}</p>

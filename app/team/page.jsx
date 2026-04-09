@@ -157,6 +157,7 @@ export default function TeamPage() {
                 >
                   <td className="px-4 py-3">
                     <div className="font-medium text-v-text-primary">{member.name}</div>
+                    {member.title && <div className="text-xs text-v-gold">{member.title}</div>}
                     <div className="text-xs text-v-text-secondary">{member.email || ''}</div>
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">

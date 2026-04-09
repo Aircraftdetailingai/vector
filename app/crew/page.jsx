@@ -348,7 +348,11 @@ export default function CrewDashboard() {
           <h1 className="text-white font-bold text-lg flex items-center gap-2">
             <span>✈️</span> {'Shiny Jets Crew'}
           </h1>
-          <p className="text-white/60 text-sm">{user.name} {user.is_lead_tech && <span className="text-v-gold text-xs ml-1">{'Lead Tech'}</span>}</p>
+          <p className="text-white/60 text-sm">
+            {user.name}
+            {user.title && <span className="text-v-gold text-xs ml-1">{user.title}</span>}
+            {!user.title && user.is_lead_tech && <span className="text-v-gold text-xs ml-1">Lead Tech</span>}
+          </p>
         </div>
         <button onClick={logout} className="text-white/60 hover:text-white text-sm px-3 py-1 rounded border border-white/20">
           {'Logout'}
