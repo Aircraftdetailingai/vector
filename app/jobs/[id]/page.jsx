@@ -14,6 +14,12 @@ export default function JobDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [beforePhotos, setBeforePhotos] = useState([]);
   const [afterPhotos, setAfterPhotos] = useState([]);
+  const [progress, setProgress] = useState(0);
+  const progressTimer = useRef(null);
+
+  useEffect(() => {
+    if (job?.progress_percentage !== undefined) setProgress(job.progress_percentage || 0);
+  }, [job?.progress_percentage]);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -92,9 +98,6 @@ export default function JobDetailPage() {
 
   if (loading) return <AppShell title="Job"><div className="p-8 text-v-text-secondary">Loading...</div></AppShell>;
   if (!job) return <AppShell title="Job"><div className="p-8 text-red-400">Job not found</div></AppShell>;
-
-  const [progress, setProgress] = useState(job.progress_percentage || 0);
-  const progressTimer = useRef(null);
 
   const saveProgress = (val) => {
     setProgress(val);
