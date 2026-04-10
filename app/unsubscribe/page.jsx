@@ -1,8 +1,16 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 export default function UnsubscribePage() {
+  return (
+    <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0a0e1a' }} />}>
+      <UnsubscribeContent />
+    </Suspense>
+  );
+}
+
+function UnsubscribeContent() {
   const params = useSearchParams();
   const [email, setEmail] = useState('');
   const [status, setStatus] = useState('idle');
