@@ -72,7 +72,7 @@ export async function GET(request) {
           scheduled_date: mj.scheduled_date,
           created_at: mj.created_at,
           completed_at: mj.completed_at,
-          services: mj.services,
+          services: typeof mj.services === 'string' ? (() => { try { return JSON.parse(mj.services); } catch { return mj.services; } })() : mj.services,
           _source: 'jobs_table',
         });
       }
@@ -96,6 +96,7 @@ export async function GET(request) {
     totalRevenue: jobs.reduce((sum, j) => sum + (parseFloat(j.total_price) || 0), 0),
   };
 
+  console.log(`[jobs] Returning ${jobs.length} jobs (${jobs.filter(j => j._source === 'jobs_table').length} from jobs table, ${jobs.filter(j => !j._source).length} from quotes)`);
   return Response.json({ jobs, stats });
 }
 

@@ -41,7 +41,7 @@ export async function POST(request) {
     aircraft_make: aircraft_make || null,
     aircraft_model: aircraft_model || null,
     airport: airport || null,
-    services: services ? JSON.stringify(services.map(s => s.name).filter(Boolean)) : null,
+    services: services ? JSON.stringify(services) : null,
     scheduled_date: scheduled_date || null,
     total_price: parseFloat(total_price) || 0,
     status: isPaid ? 'scheduled' : 'scheduled',

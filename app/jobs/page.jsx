@@ -78,8 +78,10 @@ export default function JobsPage() {
     if (job.line_items && Array.isArray(job.line_items) && job.line_items.length > 0) {
       return job.line_items.map(i => i.description || i.service).filter(Boolean).join(', ');
     }
-    if (job.services && Array.isArray(job.services)) {
-      return job.services.map(s => typeof s === 'string' ? s : s.name || s.service).filter(Boolean).join(', ');
+    let svc = job.services;
+    if (typeof svc === 'string') { try { svc = JSON.parse(svc); } catch { return svc; } }
+    if (Array.isArray(svc) && svc.length > 0) {
+      return svc.map(s => typeof s === 'string' ? s : s.name || s.service || s.description).filter(Boolean).join(', ');
     }
     return '—';
   };
