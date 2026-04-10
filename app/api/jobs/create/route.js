@@ -11,6 +11,9 @@ export async function POST(request) {
   const user = await getAuthUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+  // Resolve detailer_id: for crew tokens, use detailer_id field; for detailer tokens, use id
+  const detailerId = user.detailer_id || user.id;
+
   const body = await request.json();
   const {
     customer_id, customer_name, customer_email,
@@ -19,7 +22,7 @@ export async function POST(request) {
     assigned_crew, payment_method, total_price, notes,
   } = body;
 
-  console.log('[jobs/create] received:', { customer_name, aircraft_make, aircraft_model, payment_method, total_price });
+  console.log('[jobs/create] detailer_id:', detailerId, 'user.id:', user.id, 'role:', user.role, 'received:', { customer_name, aircraft_make, aircraft_model, payment_method, total_price });
 
   if (!customer_name || !aircraft_make) {
     return Response.json({ error: 'Customer name and aircraft required' }, { status: 400 });
@@ -30,7 +33,7 @@ export async function POST(request) {
 
   // Create job
   const jobData = {
-    detailer_id: user.id,
+    detailer_id: detailerId,
     customer_id: customer_id || null,
     customer_name: customer_name || '',
     customer_email: customer_email || null,
@@ -56,7 +59,7 @@ export async function POST(request) {
       delete jobData[colMatch[1]];
       continue;
     }
-    console.error('[jobs/create] Insert error:', jobErr);
+    console.error('[jobs/create] Insert error:', jobErr.message, 'code:', jobErr.code, 'detailer_id:', user.id);
     return Response.json({ error: jobErr.message }, { status: 500 });
   }
 
@@ -72,7 +75,7 @@ export async function POST(request) {
         await supabase.from('job_assignments').insert({
           job_id: job.id,
           team_member_id: crewId,
-          detailer_id: user.id,
+          detailer_id: detailerId,
         });
       } catch {}
     }
