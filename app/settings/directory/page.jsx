@@ -10,6 +10,7 @@ export default function DirectorySettingsPage() {
 
   const [listed, setListed] = useState(false);
   const [onlineBooking, setOnlineBooking] = useState(false);
+  const [homeAirport, setHomeAirport] = useState('');
   const [airports, setAirports] = useState([]);
   const [newAirport, setNewAirport] = useState('');
   const [description, setDescription] = useState('');
@@ -39,6 +40,7 @@ export default function DirectorySettingsPage() {
         const u = userData.user;
         setListed(u.listed_in_directory || false);
         setOnlineBooking(u.has_online_booking || false);
+        setHomeAirport(u.home_airport || '');
         setAirports(u.airports_served || []);
         setDescription(u.directory_description || '');
         setCertifications((u.certifications || []).filter(c => c !== 'Verified Finish Certified'));
@@ -62,6 +64,7 @@ export default function DirectorySettingsPage() {
         body: JSON.stringify({
           listed_in_directory: listed,
           has_online_booking: onlineBooking,
+          home_airport: homeAirport.trim().toUpperCase() || null,
           airports_served: airports,
           directory_description: description.slice(0, 200),
           certifications,
@@ -143,6 +146,22 @@ export default function DirectorySettingsPage() {
           className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${onlineBooking ? 'bg-v-gold' : 'bg-gray-600'}`}>
           <div className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform ${onlineBooking ? 'translate-x-5' : ''}`} />
         </div>
+      </div>
+
+      {/* Home Airport */}
+      <div>
+        <label className="block text-xs uppercase tracking-wider text-v-text-secondary mb-2">Home Airport (ICAO)</label>
+        <input
+          value={homeAirport}
+          onChange={e => setHomeAirport(e.target.value.toUpperCase().slice(0, 4))}
+          placeholder="e.g. KCNO"
+          maxLength={4}
+          className={cls + ' uppercase tracking-wider'}
+          style={{ fontFamily: 'monospace' }}
+        />
+        <p className="text-[10px] text-v-text-secondary mt-1">
+          Your primary base — used to place your pin on the directory map at directory.shinyjets.com
+        </p>
       </div>
 
       {/* Airports */}

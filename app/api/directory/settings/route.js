@@ -18,6 +18,10 @@ export async function POST(request) {
   if (body.listed_in_directory !== undefined) updates.listed_in_directory = !!body.listed_in_directory;
   if (body.has_online_booking !== undefined) updates.has_online_booking = !!body.has_online_booking;
   if (body.airports_served !== undefined) updates.airports_served = body.airports_served;
+  if (body.home_airport !== undefined) {
+    const cleaned = (body.home_airport || '').trim().toUpperCase();
+    updates.home_airport = cleaned || null;
+  }
   if (body.directory_description !== undefined) updates.directory_description = (body.directory_description || '').slice(0, 200);
   if (body.certifications !== undefined) updates.certifications = body.certifications;
   if (body.insurance_insurer !== undefined) updates.insurance_insurer = body.insurance_insurer || null;
