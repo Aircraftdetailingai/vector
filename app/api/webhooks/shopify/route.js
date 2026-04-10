@@ -80,23 +80,31 @@ function verifyHmac(rawBody, signature, secret) {
   }
 }
 
-async function sendEmail(to, subject, html) {
+async function sendEmail(to, subject, html, options = {}) {
   const key = process.env.RESEND_API_KEY;
   if (!key) {
     console.error('[shopify-webhook] RESEND_API_KEY not configured');
     return false;
   }
   try {
+    const payload = {
+      to,
+      from: process.env.RESEND_FROM_EMAIL || 'Brett @ Shiny Jets <noreply@mail.shinyjets.com>',
+      reply_to: 'brett@shinyjets.com',
+      subject,
+      headers: {
+        'X-Priority': '1',
+        'X-MSMail-Priority': 'High',
+        'Importance': 'high',
+        'X-Mailer': 'Shiny Jets CRM',
+      },
+    };
+    if (html) payload.html = html;
+    if (options.text) payload.text = options.text;
     const res = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        to,
-        from: process.env.RESEND_FROM_EMAIL || 'Shiny Jets CRM <noreply@mail.shinyjets.com>',
-        reply_to: 'brett@shinyjets.com',
-        subject,
-        html,
-      }),
+      body: JSON.stringify(payload),
     });
     if (!res.ok) {
       const body = await res.text();
@@ -272,8 +280,9 @@ async function handleOrderPaid(supabase, payload) {
       const firstName = (name || '').split(' ')[0] || 'there';
       await sendEmail(
         email,
-        `Welcome to Shiny Jets CRM — your ${labels[plan]} account is ready`,
+        'Your Shiny Jets CRM login details',
         `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#1a1a1a;background:#f9f9f9;">
+          <span style="display:none !important;visibility:hidden;mso-hide:all;font-size:1px;color:#f9f9f9;line-height:1px;max-height:0;max-width:0;opacity:0;overflow:hidden;">Your login details are inside — username, temporary password, and login link.</span>
           <div style="background:#fff;padding:32px;border-radius:12px;border:1px solid #e5e5e5;">
             <h1 style="color:#007CB1;margin:0 0 8px;font-size:24px;">Welcome aboard, ${firstName}!</h1>
             <p style="font-size:15px;line-height:1.6;margin:0 0 20px;color:#555;">Your Shiny Jets CRM <strong>${labels[plan]}</strong> account is ready. Here are your login details:</p>
@@ -306,6 +315,30 @@ async function handleOrderPaid(supabase, payload) {
             <p style="font-size:11px;color:#999;margin:0;text-align:center;">Shiny Jets CRM &middot; <a href="https://crm.shinyjets.com" style="color:#999;">crm.shinyjets.com</a></p>
           </div>
         </body></html>`,
+      );
+
+      // Plain-text follow-up — higher chance of inbox delivery if HTML lands in spam
+      await sendEmail(
+        email,
+        'Action required: Check your inbox for CRM access',
+        null,
+        {
+          text: `Hi ${firstName},
+
+Thanks for signing up for Shiny Jets CRM. We just sent you an email with your login details — please check your inbox (and spam folder) for a message titled "Your Shiny Jets CRM login details".
+
+Quick reference:
+- Login URL: https://crm.shinyjets.com/login
+- Username: ${email}
+- Temporary password: ${tempPassword}
+
+You'll be asked to change your password on first login.
+
+If you have any trouble, just reply to this email.
+
+— Brett
+Shiny Jets`,
+        }
       );
 
       // Drip schedule
