@@ -32,6 +32,8 @@ export default function NewJobPage() {
   const [paymentMethod, setPaymentMethod] = useState('unpaid');
   const [notes, setNotes] = useState('');
   const [totalOverride, setTotalOverride] = useState('');
+  const [hourOverrides, setHourOverrides] = useState({});
+  const [saveHoursForAircraft, setSaveHoursForAircraft] = useState(false);
 
   const token = typeof window !== 'undefined' ? localStorage.getItem('vector_token') : null;
   const headers = { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' };
@@ -40,7 +42,7 @@ export default function NewJobPage() {
     if (!token) { router.push('/login'); return; }
     Promise.all([
       fetch('/api/customers', { headers }).then(r => r.ok ? r.json() : { customers: [] }),
-      fetch('/api/aircraft/manufacturers').then(r => r.ok ? r.json() : { manufacturers: [] }),
+      fetch('/api/aircraft/manufacturers', { headers }).then(r => r.ok ? r.json() : { manufacturers: [] }),
       fetch('/api/services', { headers }).then(r => r.ok ? r.json() : { services: [] }),
       fetch('/api/team', { headers }).then(r => r.ok ? r.json() : { members: [] }),
     ]).then(([custData, mfrData, svcData, teamData]) => {
@@ -53,7 +55,7 @@ export default function NewJobPage() {
 
   useEffect(() => {
     if (!manufacturer) { setModels([]); setSelectedAircraft(null); return; }
-    fetch(`/api/aircraft/models?make=${encodeURIComponent(manufacturer)}`)
+    fetch(`/api/aircraft/models?make=${encodeURIComponent(manufacturer)}`, { headers })
       .then(r => r.ok ? r.json() : { models: [] })
       .then(d => setModels(d.models || []));
   }, [manufacturer]);
@@ -70,12 +72,18 @@ export default function NewJobPage() {
     }
   }, [model, models]);
 
-  const getHours = (svc) => {
-    if (!svc || !selectedAircraft) return 0;
-    if (svc.hours_field && selectedAircraft[svc.hours_field] !== undefined) {
+  const getDefaultHours = (svc) => {
+    if (!svc) return 0;
+    if (selectedAircraft && svc.hours_field && selectedAircraft[svc.hours_field] !== undefined) {
       return parseFloat(selectedAircraft[svc.hours_field]) || 0;
     }
     return parseFloat(svc.default_hours) || 0;
+  };
+
+  const getHours = (svc) => {
+    if (!svc) return 0;
+    if (hourOverrides[svc.id] !== undefined) return hourOverrides[svc.id];
+    return getDefaultHours(svc);
   };
 
   const getRate = (svc) => parseFloat(svc?.hourly_rate) || 0;
@@ -136,6 +144,26 @@ export default function NewJobPage() {
         }),
       });
       if (!res.ok) { const d = await res.json(); throw new Error(d.error || 'Failed'); }
+
+      // Save hour overrides per aircraft if checked
+      if (saveHoursForAircraft && selectedAircraft && Object.keys(hourOverrides).length > 0) {
+        for (const [svcId, hours] of Object.entries(hourOverrides)) {
+          const svc = services.find(s => s.id === svcId);
+          try {
+            await fetch('/api/custom-aircraft/overrides', {
+              method: 'POST', headers,
+              body: JSON.stringify({
+                aircraft_id: selectedAircraft.custom ? null : selectedAircraft.id,
+                custom_aircraft_id: selectedAircraft.custom ? selectedAircraft.id : null,
+                service_id: svcId,
+                service_name: svc?.name || '',
+                hours,
+              }),
+            });
+          } catch {}
+        }
+      }
+
       router.push('/jobs');
     } catch (err) {
       setError(err.message);
@@ -208,24 +236,40 @@ export default function NewJobPage() {
                 const rate = getRate(svc);
                 const svcTotal = getServiceTotal(svc);
                 return (
-                  <label key={svc.id} className={`flex items-center gap-3 p-3 rounded border cursor-pointer transition-colors ${sel ? 'border-v-gold/50 bg-v-gold/5' : 'border-v-border bg-v-surface'}`}>
+                  <div key={svc.id} className={`flex items-center gap-3 p-3 rounded border transition-colors ${sel ? 'border-v-gold/50 bg-v-gold/5' : 'border-v-border bg-v-surface'}`}>
                     <input type="checkbox" checked={sel}
                       onChange={() => setSelectedServices(prev => sel ? prev.filter(id => id !== svc.id) : [...prev, svc.id])}
-                      className="w-4 h-4 rounded accent-v-gold" />
+                      className="w-4 h-4 rounded accent-v-gold cursor-pointer" />
                     <div className="flex-1 min-w-0">
                       <span className="text-sm text-v-text-primary">{svc.name}</span>
-                      {hours > 0 && <span className="text-xs text-v-text-secondary ml-2">{hours.toFixed(1)}h</span>}
                       {!selectedAircraft && <span className="text-[10px] text-v-text-secondary/50 ml-2 italic">Select aircraft for hours</span>}
                     </div>
-                    <div className="text-right shrink-0">
+                    {sel && (
+                      <div className="flex items-center gap-2 shrink-0">
+                        <input type="number" step="0.5" min="0"
+                          value={hourOverrides[svc.id] !== undefined ? hourOverrides[svc.id] : (getDefaultHours(svc) || '')}
+                          onChange={e => setHourOverrides(prev => ({ ...prev, [svc.id]: parseFloat(e.target.value) || 0 }))}
+                          className="w-16 bg-v-charcoal border border-v-border text-v-text-primary rounded px-2 py-1 text-xs text-center outline-none focus:border-v-gold/50" />
+                        <span className="text-[10px] text-v-text-secondary">hrs</span>
+                      </div>
+                    )}
+                    <div className="text-right shrink-0 w-20">
                       {svcTotal > 0 && <span className="text-sm text-v-text-primary font-medium">${svcTotal.toFixed(0)}</span>}
                       {rate > 0 && hours > 0 && <span className="text-[10px] text-v-text-secondary block">@ ${rate}/hr</span>}
                     </div>
-                  </label>
+                  </div>
                 );
               })}
             </div>
           </div>
+
+          {/* Save hours for this aircraft */}
+          {selectedAircraft && Object.keys(hourOverrides).length > 0 && (
+            <label className="flex items-center gap-2 cursor-pointer mt-1 mb-2">
+              <input type="checkbox" checked={saveHoursForAircraft} onChange={e => setSaveHoursForAircraft(e.target.checked)} className="w-4 h-4 rounded accent-[var(--v-gold)]" />
+              <span className="text-xs text-v-text-secondary">Save these hours for {model} for future quotes</span>
+            </label>
+          )}
 
           {/* Schedule + Crew */}
           <div className="grid grid-cols-2 gap-4">

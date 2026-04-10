@@ -76,6 +76,7 @@ function NewQuoteContent() {
   const [saveDefaultPrompt, setSaveDefaultPrompt] = useState({});
   const [savingDefault, setSavingDefault] = useState({});
   const [aircraftHoursRef, setAircraftHoursRef] = useState(null);
+  const [aircraftOverrides, setAircraftOverrides] = useState({}); // { svcId: hours }
   const [communityHours, setCommunityHours] = useState({});
   const [ccFeeMode, setCcFeeMode] = useState('absorb');
   const [quota, setQuota] = useState(null); // { plan, used, limit, unlimited }
@@ -387,10 +388,29 @@ function NewQuoteContent() {
         setCustomHours({});
         setSaveDefaultPrompt({});
         setAircraftHoursRef(null);
+        setAircraftOverrides({});
         setCommunityHours({});
 
-        // Fetch reference hours from aircraft_hours table
+        // Fetch per-aircraft hour overrides saved by this detailer
         const ac = data.aircraft;
+        try {
+          const token = localStorage.getItem('vector_token');
+          const ovRes = await fetch('/api/custom-aircraft/overrides', { headers: { Authorization: `Bearer ${token}` } });
+          if (ovRes.ok) {
+            const ovData = await ovRes.json();
+            const map = {};
+            for (const ov of (ovData.overrides || [])) {
+              const matchesStandard = !ac.custom && ov.aircraft_id === ac.id;
+              const matchesCustom = ac.custom && ov.custom_aircraft_id === ac.id;
+              if (matchesStandard || matchesCustom) {
+                if (ov.service_id) map[ov.service_id] = parseFloat(ov.hours);
+              }
+            }
+            setAircraftOverrides(map);
+          }
+        } catch {}
+
+        // Fetch reference hours from aircraft_hours table
         if (ac.manufacturer && ac.model) {
           const encodedMake = encodeURIComponent(ac.manufacturer);
           const encodedModel = encodeURIComponent(ac.model);
@@ -498,20 +518,22 @@ function NewQuoteContent() {
     return 0;
   };
 
-  // Get hours for a service: manual override > detailer default > community avg > aircraft_hours ref > old aircraft > 1.0 fallback
+  // Get hours for a service: manual override > per-aircraft override > detailer default > community avg > aircraft_hours ref > old aircraft > 1.0 fallback
   const getHoursForService = (svc) => {
     if (customHours[svc.id] !== undefined) return customHours[svc.id];
+    if (aircraftOverrides[svc.id] !== undefined) return aircraftOverrides[svc.id];
     if (svc.default_hours && parseFloat(svc.default_hours) > 0) return parseFloat(svc.default_hours);
     const community = getCommunityHours(svc);
     if (community > 0) return community;
     const aircraft = getAircraftHours(svc);
     if (aircraft > 0) return aircraft;
-    return 1.0; // Default for custom services not in aircraft database
+    return 1.0;
   };
 
   // Get the source of hours for display
   const getHoursSource = (svc) => {
     if (customHours[svc.id] !== undefined) return { type: 'manual', label: 'Your override' };
+    if (aircraftOverrides[svc.id] !== undefined) return { type: 'personal', label: `Saved for ${selectedAircraft?.model || 'this aircraft'}` };
     if (svc.default_hours && parseFloat(svc.default_hours) > 0) return { type: 'personal', label: 'Your default' };
     const field = svc.hours_field;
     if (field && communityHours[field] && communityHours[field].sample_count >= 3) {
@@ -526,6 +548,7 @@ function NewQuoteContent() {
 
   // Get the "starting" hours (before manual override) for comparison
   const getDefaultHours = (svc) => {
+    if (aircraftOverrides[svc.id] !== undefined) return aircraftOverrides[svc.id];
     if (svc.default_hours && parseFloat(svc.default_hours) > 0) return parseFloat(svc.default_hours);
     const community = getCommunityHours(svc);
     if (community > 0) return community;
@@ -553,15 +576,34 @@ function NewQuoteContent() {
     setSavingDefault(prev => ({ ...prev, [svcId]: true }));
     try {
       const token = localStorage.getItem('vector_token');
-      await fetch(`/api/services/${svcId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ default_hours: hours }),
-      });
-      // Update local service data
+      const svc = availableServices.find(s => s.id === svcId);
+
+      if (selectedAircraft) {
+        // Save per-aircraft override (custom or standard)
+        await fetch('/api/custom-aircraft/overrides', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({
+            aircraft_id: selectedAircraft.custom ? null : selectedAircraft.id,
+            custom_aircraft_id: selectedAircraft.custom ? selectedAircraft.id : null,
+            service_id: svcId,
+            service_name: svc?.name || '',
+            hours,
+          }),
+        });
+        toastSuccess(`Saved ${hours}h for ${svc?.name} on ${selectedAircraft.model}`);
+      } else {
+        // Fallback: save as global service default
+        await fetch(`/api/services/${svcId}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ default_hours: hours }),
+        });
+        toastSuccess('Default hours saved');
+      }
+
       setAvailableServices(prev => prev.map(s => s.id === svcId ? { ...s, default_hours: hours } : s));
       setSaveDefaultPrompt(prev => ({ ...prev, [svcId]: false }));
-      toastSuccess('Default hours saved');
     } catch {} finally {
       setSavingDefault(prev => ({ ...prev, [svcId]: false }));
     }
@@ -1117,7 +1159,7 @@ function NewQuoteContent() {
                       {/* Save default prompt */}
                       {showPrompt && (
                         <div className="flex items-center gap-2 px-3 py-1.5 text-xs ml-7">
-                          <span className="text-gray-500">Save {(customHours[svc.id] || 0).toFixed(1)} hrs as default for {svc.name}?</span>
+                          <span className="text-gray-500">Save {(customHours[svc.id] || 0).toFixed(1)}h for {svc.name}{selectedAircraft ? ` on ${selectedAircraft.model}` : ''}?</span>
                           <button
                             onClick={() => saveAsDefault(svc.id)}
                             disabled={savingDefault[svc.id]}
