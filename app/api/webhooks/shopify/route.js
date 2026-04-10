@@ -82,17 +82,33 @@ function verifyHmac(rawBody, signature, secret) {
 
 async function sendEmail(to, subject, html) {
   const key = process.env.RESEND_API_KEY;
-  if (!key) return;
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      to,
-      from: process.env.RESEND_FROM_EMAIL || 'Shiny Jets CRM <noreply@shinyjets.com>',
-      subject,
-      html,
-    }),
-  });
+  if (!key) {
+    console.error('[shopify-webhook] RESEND_API_KEY not configured');
+    return false;
+  }
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to,
+        from: process.env.RESEND_FROM_EMAIL || 'Shiny Jets CRM <noreply@mail.shinyjets.com>',
+        reply_to: 'brett@vectorav.ai',
+        subject,
+        html,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.text();
+      console.error(`[shopify-webhook] Resend rejected email to ${to}:`, res.status, body);
+      return false;
+    }
+    console.log(`[shopify-webhook] Email sent to ${to}: ${subject}`);
+    return true;
+  } catch (e) {
+    console.error(`[shopify-webhook] Email send error to ${to}:`, e.message);
+    return false;
+  }
 }
 
 function planChangeEmail(email, oldPlan, newPlan) {
@@ -204,10 +220,17 @@ async function handleOrderPaid(supabase, payload) {
     plan = resolvePlan(item);
     if (plan) break;
   }
-  if (!plan) return;
+  if (!plan) {
+    console.log('[shopify-webhook] orders/paid: no matching plan, skipping');
+    return;
+  }
 
   const email = extractEmail(payload);
-  if (!email) return;
+  if (!email) {
+    console.error('[shopify-webhook] orders/paid: no customer email found in payload, cannot create account');
+    return;
+  }
+  console.log(`[shopify-webhook] orders/paid: email=${email} plan=${plan}`);
 
   const detailer = await findDetailer(supabase, payload);
   const shopifyCustomerId = String(payload?.customer?.id || '');
@@ -244,17 +267,44 @@ async function handleOrderPaid(supabase, payload) {
       .maybeSingle();
 
     if (inserted) {
+      console.log(`[shopify-webhook] Created detailer ${inserted.id} for ${email}`);
       const labels = { free: 'Free', pro: 'Pro', business: 'Business', enterprise: 'Enterprise' };
+      const firstName = (name || '').split(' ')[0] || 'there';
       await sendEmail(
         email,
-        `Welcome to Shiny Jets CRM — ${labels[plan]} Plan`,
-        `<!DOCTYPE html><html><body style="font-family:-apple-system,sans-serif;max-width:600px;margin:0 auto;padding:20px;">
-          <h2 style="color:#333;">Welcome to Shiny Jets CRM</h2>
-          <p>Hello ${name},</p>
-          <p>Your <strong>${labels[plan]}</strong> account is ready. Log in with your temporary password:</p>
-          <p style="background:#f5f5f5;padding:12px;border-radius:6px;font-family:monospace;font-size:18px;text-align:center;">${tempPassword}</p>
-          <p><a href="https://crm.shinyjets.com" style="color:#007CB1;">Log in to Shiny Jets CRM →</a></p>
-          <p style="color:#999;font-size:12px;margin-top:24px;">Shiny Jets CRM</p>
+        `Welcome to Shiny Jets CRM — your ${labels[plan]} account is ready`,
+        `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#1a1a1a;background:#f9f9f9;">
+          <div style="background:#fff;padding:32px;border-radius:12px;border:1px solid #e5e5e5;">
+            <h1 style="color:#007CB1;margin:0 0 8px;font-size:24px;">Welcome aboard, ${firstName}!</h1>
+            <p style="font-size:15px;line-height:1.6;margin:0 0 20px;color:#555;">Your Shiny Jets CRM <strong>${labels[plan]}</strong> account is ready. Here are your login details:</p>
+
+            <div style="background:#f0f7fb;border:1px solid #cfe4f0;border-radius:8px;padding:18px 20px;margin:20px 0;">
+              <p style="margin:0 0 8px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.05em;">Login URL</p>
+              <p style="margin:0 0 16px;"><a href="https://crm.shinyjets.com/login" style="color:#007CB1;font-weight:600;text-decoration:none;">crm.shinyjets.com/login</a></p>
+
+              <p style="margin:0 0 8px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.05em;">Username</p>
+              <p style="margin:0 0 16px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;color:#1a1a1a;">${email}</p>
+
+              <p style="margin:0 0 8px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.05em;">Temporary Password</p>
+              <p style="margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:18px;font-weight:600;color:#007CB1;letter-spacing:0.05em;">${tempPassword}</p>
+            </div>
+
+            <div style="text-align:center;margin:28px 0;">
+              <a href="https://crm.shinyjets.com/login" style="display:inline-block;padding:14px 32px;background:#007CB1;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:15px;">Log In Now</a>
+            </div>
+
+            <h3 style="font-size:15px;color:#1a1a1a;margin:32px 0 12px;">Get Started in 3 Steps</h3>
+            <ol style="margin:0;padding-left:20px;line-height:1.8;font-size:14px;color:#555;">
+              <li><strong>Set up your services</strong> — Add your service menu and hourly rate in Settings</li>
+              <li><strong>Connect Stripe</strong> — Accept payments directly through your quotes</li>
+              <li><strong>Send your first quote</strong> — Pick an aircraft, choose services, send to a customer in 2 minutes</li>
+            </ol>
+
+            <p style="font-size:13px;color:#666;line-height:1.6;margin:24px 0 0;">You'll be prompted to change your password after your first login. Need help? Just reply to this email.</p>
+
+            <hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0;">
+            <p style="font-size:11px;color:#999;margin:0;text-align:center;">Shiny Jets CRM &middot; <a href="https://crm.shinyjets.com" style="color:#999;">crm.shinyjets.com</a></p>
+          </div>
         </body></html>`,
       );
 
