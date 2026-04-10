@@ -869,7 +869,12 @@ export default function CrewDashboard() {
             {products.length === 0 && <div className="text-white/50 text-center py-8">No products yet</div>}
             {products.map(p => {
               const currentQty = inventoryChanges[p.id] !== undefined ? inventoryChanges[p.id] : p.quantity;
-              const isLow = currentQty < 5;
+              const unit = p.unit || 'units';
+              const isLow = unit === 'gallon' ? currentQty < 1
+                : unit === 'oz' ? currentQty < 8
+                : unit === 'ml' ? currentQty < 250
+                : (unit === 'count' || unit === 'units') ? currentQty < 3
+                : currentQty < 2;
               const changed = inventoryChanges[p.id] !== undefined && inventoryChanges[p.id] !== p.quantity;
               return (
                 <div key={p.id} className={`bg-white/10 backdrop-blur rounded-xl p-4 ${isLow ? 'border border-amber-500/30' : ''}`}>
@@ -881,12 +886,11 @@ export default function CrewDashboard() {
                     <div className="flex items-center gap-2">
                       <button onClick={() => setInventoryChanges(prev => ({...prev, [p.id]: Math.max(0, (prev[p.id] !== undefined ? prev[p.id] : p.quantity) - 1)}))}
                         className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center text-lg font-bold hover:bg-white/20">-</button>
-                      <span className={`w-12 text-center font-medium ${isLow ? 'text-amber-400' : 'text-white'} ${changed ? 'text-blue-400' : ''}`}>
-                        {currentQty}
+                      <span className={`min-w-[4rem] text-center font-medium ${isLow ? 'text-amber-400' : 'text-white'} ${changed ? 'text-blue-400' : ''}`}>
+                        {currentQty} {unit}
                       </span>
                       <button onClick={() => setInventoryChanges(prev => ({...prev, [p.id]: (prev[p.id] !== undefined ? prev[p.id] : p.quantity) + 1}))}
                         className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center text-lg font-bold hover:bg-white/20">+</button>
-                      <span className="text-white/50 text-xs w-8">{p.unit}</span>
                     </div>
                   </div>
                   {isLow && <p className="text-amber-400 text-xs mt-1">Low stock</p>}
