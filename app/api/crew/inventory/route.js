@@ -131,26 +131,43 @@ export async function POST(request) {
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
   if (!user.can_see_inventory) return Response.json({ error: 'No inventory access' }, { status: 403 });
 
-  const { name, category, unit, size, quantity, brand, notes } = await request.json();
+  const { name, category, unit, size, quantity, brand, notes, image_url, url } = await request.json();
   if (!name) return Response.json({ error: 'Product name required' }, { status: 400 });
 
   const supabase = getSupabase();
 
   const newQty = parseFloat(quantity) || 0;
-  const { data, error } = await supabase
-    .from('products')
-    .insert({
-      detailer_id: user.detailer_id,
-      name,
-      category: category || 'General',
-      unit: unit || 'oz',
-      size: size || null,
-      quantity: newQty,
-      brand: brand || null,
-      notes: notes || null,
-    })
-    .select('id, name, category, unit, size, quantity, brand')
-    .single();
+  let insertData = {
+    detailer_id: user.detailer_id,
+    name,
+    category: category || 'General',
+    unit: unit || 'oz',
+    size: size || null,
+    quantity: newQty,
+    brand: brand || null,
+    notes: notes || null,
+    image_url: image_url || null,
+    product_url: url || null,
+  };
+
+  // Column-stripping retry (products table may not have image_url or product_url)
+  let data = null;
+  let error = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const result = await supabase
+      .from('products')
+      .insert(insertData)
+      .select('id, name, category, unit, size, quantity, brand, image_url')
+      .single();
+    if (!result.error) { data = result.data; break; }
+    const colMatch = result.error.message?.match(/column "([^"]+)".*does not exist/);
+    if (colMatch) {
+      delete insertData[colMatch[1]];
+      continue;
+    }
+    error = result.error;
+    break;
+  }
 
   if (error) {
     console.error('[crew/inventory] POST error:', error);

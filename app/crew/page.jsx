@@ -31,7 +31,8 @@ export default function CrewDashboard() {
   const [inventoryChanges, setInventoryChanges] = useState({});
   const [inventorySaving, setInventorySaving] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
-  const [newProduct, setNewProduct] = useState({ name: '', quantity: '', unit: 'oz', category: 'cleaner', size: '' });
+  const [newProduct, setNewProduct] = useState({ name: '', brand: '', quantity: '', unit: 'oz', category: 'cleaner', size: '', url: '', image_url: '' });
+  const [scraping, setScraping] = useState(false);
 
   // Equipment state
   const [equipment, setEquipment] = useState([]);
@@ -825,64 +826,59 @@ export default function CrewDashboard() {
         )}
 
         {/* ===== PRODUCTS TAB ===== */}
-        {tab === 'products' && (
+        {tab === 'products' && (() => {
+          const sortedProducts = [...products].sort((a, b) => {
+            const aQty = inventoryChanges[a.id] !== undefined ? inventoryChanges[a.id] : a.quantity;
+            const bQty = inventoryChanges[b.id] !== undefined ? inventoryChanges[b.id] : b.quantity;
+            const aLow = aQty < 2;
+            const bLow = bQty < 2;
+            if (aLow && !bLow) return -1;
+            if (!aLow && bLow) return 1;
+            return 0;
+          });
+          const lowStockCount = sortedProducts.filter(p => {
+            const qty = inventoryChanges[p.id] !== undefined ? inventoryChanges[p.id] : p.quantity;
+            return qty < 2;
+          }).length;
+          return (
           <div className="space-y-3">
             <div className="flex items-center justify-between mb-3">
               <h2 className="text-white font-semibold text-lg">Inventory</h2>
-              <button onClick={() => setShowAddProduct(v => !v)} className="px-3 py-1.5 text-xs bg-white/10 text-white border border-white/20 rounded-lg">
-                {showAddProduct ? 'Cancel' : '+ Add Product'}
+              <button onClick={() => setShowAddProduct(true)} className="px-3 py-1.5 text-xs bg-white/10 text-white border border-white/20 rounded-lg">
+                + Add Product
               </button>
             </div>
 
-            {/* Add product form */}
-            {showAddProduct && (
-              <div className="bg-white/10 backdrop-blur rounded-xl p-4 space-y-2">
-                <input value={newProduct.name} onChange={e => setNewProduct(p => ({...p, name: e.target.value}))} placeholder="Product name" className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40" />
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="number" value={newProduct.size || ''} onChange={e => setNewProduct(p => ({...p, size: e.target.value}))} placeholder="Container size (e.g. 16)" className="bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40" />
-                  <select value={newProduct.unit} onChange={e => setNewProduct(p => ({...p, unit: e.target.value}))} className="bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm">
-                    <option value="oz">oz</option><option value="gallon">gallon</option><option value="ml">ml</option><option value="count">count</option>
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <input type="number" value={newProduct.quantity} onChange={e => setNewProduct(p => ({...p, quantity: e.target.value}))} placeholder="# of containers" className="bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40" />
-                  <select value={newProduct.category} onChange={e => setNewProduct(p => ({...p, category: e.target.value}))} className="bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm">
-                    <option value="cleaner">Cleaner</option><option value="wax">Wax</option><option value="polish">Polish</option><option value="ceramic">Ceramic</option><option value="degreaser">Degreaser</option><option value="other">Other</option>
-                  </select>
-                </div>
-                <button onClick={async () => {
-                  if (!newProduct.name) return;
-                  const tk = localStorage.getItem('crew_token');
-                  const res = await fetch('/api/crew/inventory', {
-                    method: 'POST',
-                    headers: { Authorization: `Bearer ${tk}`, 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newProduct),
-                  });
-                  if (res.ok) {
-                    const d = await res.json();
-                    setProducts(prev => [...prev, d.product]);
-                    setNewProduct({ name: '', quantity: '', unit: 'oz', category: 'cleaner', size: '' });
-                    setShowAddProduct(false);
-                  }
-                }} className="w-full py-2 bg-green-600 text-white rounded-lg text-sm font-medium">Add Product</button>
+            {/* Low stock summary */}
+            {lowStockCount > 0 && (
+              <div className="bg-amber-500/10 border border-amber-500/30 rounded-xl p-3 flex items-center gap-2">
+                <span className="text-amber-400 text-lg">&#9888;</span>
+                <p className="text-amber-400 text-sm font-medium">
+                  {lowStockCount} item{lowStockCount !== 1 ? 's' : ''} running low on stock
+                </p>
               </div>
             )}
 
             {/* Product list with +/- controls */}
-            {products.length === 0 && <div className="text-white/50 text-center py-8">No products yet</div>}
-            {products.map(p => {
+            {sortedProducts.length === 0 && <div className="text-white/50 text-center py-8">No products yet</div>}
+            {sortedProducts.map(p => {
               const currentQty = inventoryChanges[p.id] !== undefined ? inventoryChanges[p.id] : p.quantity;
               const isLow = currentQty < 2;
               const changed = inventoryChanges[p.id] !== undefined && inventoryChanges[p.id] !== p.quantity;
               const sizeLabel = p.size ? `${p.size} ${p.unit || 'oz'}` : (p.unit || 'units');
               return (
-                <div key={p.id} className={`bg-white/10 backdrop-blur rounded-xl p-4 ${isLow ? 'border border-amber-500/30' : ''}`}>
+                <div key={p.id} className={`bg-white/10 backdrop-blur rounded-xl p-4 ${isLow ? 'border border-amber-500/50' : ''}`}>
                   <div className="flex items-center justify-between">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-white font-medium">{p.name}</p>
-                      <p className="text-white/50 text-sm">{p.brand || p.category}</p>
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      {p.image_url && (
+                        <img src={p.image_url} alt="" className="w-10 h-10 rounded-lg object-cover bg-white/5" />
+                      )}
+                      <div className="flex-1 min-w-0">
+                        <p className="text-white font-medium truncate">{p.name}</p>
+                        <p className="text-white/50 text-sm truncate">{p.brand || p.category}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 shrink-0">
                       <button onClick={() => setInventoryChanges(prev => ({...prev, [p.id]: Math.max(0, (prev[p.id] !== undefined ? prev[p.id] : p.quantity) - 1)}))}
                         className="w-8 h-8 rounded-full bg-white/10 text-white flex items-center justify-center text-lg font-bold hover:bg-white/20">&minus;</button>
                       <span className={`w-8 text-center font-semibold ${isLow ? 'text-amber-400' : 'text-white'} ${changed ? 'text-blue-400' : ''}`}>
@@ -893,7 +889,11 @@ export default function CrewDashboard() {
                       <span className="text-white/40 text-xs ml-1">{p.size ? `× ${sizeLabel}` : sizeLabel}</span>
                     </div>
                   </div>
-                  {isLow && <p className="text-amber-400 text-xs mt-1">Low stock</p>}
+                  {isLow && (
+                    <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 text-[10px] font-semibold uppercase tracking-wider">
+                      &#9888; Low Stock
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -924,6 +924,168 @@ export default function CrewDashboard() {
                 {inventorySaving ? 'Saving...' : `Save Changes (${Object.keys(inventoryChanges).length} items)`}
               </button>
             )}
+          </div>
+          );
+        })()}
+
+        {/* Add Product Modal */}
+        {showAddProduct && (
+          <div className="fixed inset-0 z-50 bg-black/70 flex items-end sm:items-center justify-center p-4" onClick={() => setShowAddProduct(false)}>
+            <div onClick={e => e.stopPropagation()} className="bg-[#0f1623] border border-white/10 rounded-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
+              <div className="sticky top-0 bg-[#0f1623] border-b border-white/10 px-5 py-4 flex items-center justify-between">
+                <h3 className="text-white font-semibold text-lg">Add Product</h3>
+                <button onClick={() => setShowAddProduct(false)} className="text-white/50 hover:text-white text-2xl leading-none">&times;</button>
+              </div>
+              <div className="p-5 space-y-3">
+                {/* URL + Auto-fill */}
+                <div>
+                  <label className="block text-white/60 text-xs uppercase tracking-wider mb-1">Product URL (optional)</label>
+                  <div className="flex gap-2">
+                    <input
+                      type="url"
+                      value={newProduct.url}
+                      onChange={e => setNewProduct(p => ({...p, url: e.target.value}))}
+                      placeholder="https://flyshiny.com/..."
+                      className="flex-1 bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40"
+                    />
+                    <button
+                      disabled={!newProduct.url || scraping}
+                      onClick={async () => {
+                        if (!newProduct.url) return;
+                        setScraping(true);
+                        try {
+                          const tk = localStorage.getItem('crew_token');
+                          const res = await fetch('/api/products/scrape', {
+                            method: 'POST',
+                            headers: { Authorization: `Bearer ${tk}`, 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ url: newProduct.url }),
+                          });
+                          if (res.ok) {
+                            const d = await res.json();
+                            setNewProduct(p => ({
+                              ...p,
+                              name: d.name || p.name,
+                              brand: d.brand || d.supplier || p.brand,
+                              size: d.size ? String(d.size).replace(/[^0-9.]/g, '') : p.size,
+                              category: d.category || p.category,
+                              image_url: d.image || p.image_url,
+                            }));
+                          }
+                        } catch {}
+                        finally { setScraping(false); }
+                      }}
+                      className="px-3 py-2 bg-blue-500/20 border border-blue-500/30 text-blue-400 text-xs font-semibold rounded-lg disabled:opacity-50 whitespace-nowrap">
+                      {scraping ? 'Loading...' : 'Auto-fill'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Image preview */}
+                {newProduct.image_url && (
+                  <div className="flex items-center gap-3 p-3 bg-white/5 border border-white/10 rounded-lg">
+                    <img src={newProduct.image_url} alt="" className="w-16 h-16 rounded-lg object-cover" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-white text-sm truncate">{newProduct.name}</p>
+                      <p className="text-white/50 text-xs truncate">{newProduct.brand}</p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Product name */}
+                <div>
+                  <label className="block text-white/60 text-xs uppercase tracking-wider mb-1">Name *</label>
+                  <input
+                    value={newProduct.name}
+                    onChange={e => setNewProduct(p => ({...p, name: e.target.value}))}
+                    placeholder="Product name"
+                    className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40"
+                  />
+                </div>
+
+                {/* Brand/Supplier */}
+                <div>
+                  <label className="block text-white/60 text-xs uppercase tracking-wider mb-1">Brand / Supplier</label>
+                  <input
+                    value={newProduct.brand}
+                    onChange={e => setNewProduct(p => ({...p, brand: e.target.value}))}
+                    placeholder="e.g. Fly Shiny"
+                    className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40"
+                  />
+                </div>
+
+                {/* Container size + unit */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-white/60 text-xs uppercase tracking-wider mb-1">Container Size</label>
+                    <input
+                      type="number"
+                      value={newProduct.size}
+                      onChange={e => setNewProduct(p => ({...p, size: e.target.value}))}
+                      placeholder="16"
+                      className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white/60 text-xs uppercase tracking-wider mb-1">Unit</label>
+                    <select value={newProduct.unit} onChange={e => setNewProduct(p => ({...p, unit: e.target.value}))} className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm">
+                      <option value="oz">oz</option>
+                      <option value="gallon">gallon</option>
+                      <option value="ml">ml</option>
+                      <option value="lb">lb</option>
+                      <option value="count">count</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Quantity + category */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-white/60 text-xs uppercase tracking-wider mb-1">Quantity on Hand</label>
+                    <input
+                      type="number"
+                      value={newProduct.quantity}
+                      onChange={e => setNewProduct(p => ({...p, quantity: e.target.value}))}
+                      placeholder="# of containers"
+                      className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm placeholder-white/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white/60 text-xs uppercase tracking-wider mb-1">Category</label>
+                    <select value={newProduct.category} onChange={e => setNewProduct(p => ({...p, category: e.target.value}))} className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2 text-sm">
+                      <option value="cleaner">Cleaner</option>
+                      <option value="polish">Polish</option>
+                      <option value="coating">Coating</option>
+                      <option value="wax">Wax</option>
+                      <option value="solvent">Solvent</option>
+                      <option value="tool">Tool</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Submit */}
+                <button
+                  disabled={!newProduct.name}
+                  onClick={async () => {
+                    if (!newProduct.name) return;
+                    const tk = localStorage.getItem('crew_token');
+                    const res = await fetch('/api/crew/inventory', {
+                      method: 'POST',
+                      headers: { Authorization: `Bearer ${tk}`, 'Content-Type': 'application/json' },
+                      body: JSON.stringify(newProduct),
+                    });
+                    if (res.ok) {
+                      const d = await res.json();
+                      setProducts(prev => [...prev, d.product]);
+                      setNewProduct({ name: '', brand: '', quantity: '', unit: 'oz', category: 'cleaner', size: '', url: '', image_url: '' });
+                      setShowAddProduct(false);
+                    }
+                  }}
+                  className="w-full py-3 bg-green-600 text-white rounded-xl font-semibold text-sm disabled:opacity-50 transition-colors">
+                  Add Product
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
