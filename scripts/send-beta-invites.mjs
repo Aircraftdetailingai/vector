@@ -26,7 +26,7 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
 const RESEND_API_KEY = process.env.RESEND_API_KEY;
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@vectorav.ai';
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'noreply@mail.shinyjets.com';
 
 if (!SUPABASE_URL || !SUPABASE_KEY) { console.error('Missing Supabase credentials'); process.exit(1); }
 if (!RESEND_API_KEY) { console.error('Missing RESEND_API_KEY'); process.exit(1); }
@@ -43,7 +43,7 @@ const INVITES = [
 
 const PLAN = 'pro';
 const DURATION_DAYS = 180;
-const NOTE = 'You\'ve been personally invited by Brett Berry to try Vector Aviation CRM — 6 months of Pro access, completely free.';
+const NOTE = 'You\'ve been personally invited to try Shiny Jets CRM — 6 months of Pro access, completely free.';
 
 function buildEmailHtml(email, token) {
   const signupUrl = `${APP_URL}/signup?invite=${token}`;
@@ -57,14 +57,14 @@ function buildEmailHtml(email, token) {
       <table width="600" cellpadding="0" cellspacing="0" style="max-width:600px; width:100%;">
         <!-- Header -->
         <tr><td style="background: linear-gradient(135deg, #0F1117 0%, #1a2332 100%); padding: 32px 40px; text-align: center; border-radius: 8px 8px 0 0;">
-          <h1 style="margin:0; color: #007CB1; font-size: 24px; font-weight: 300; letter-spacing: 0.3em;">VECTOR</h1>
-          <p style="margin: 8px 0 0; color: rgba(255,255,255,0.5); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;">Aviation CRM</p>
+          <h1 style="margin:0; color: #007CB1; font-size: 24px; font-weight: 300; letter-spacing: 0.3em;">SHINY JETS</h1>
+          <p style="margin: 8px 0 0; color: rgba(255,255,255,0.5); font-size: 11px; letter-spacing: 0.15em; text-transform: uppercase;">CRM</p>
         </td></tr>
         <!-- Body -->
         <tr><td style="background: #ffffff; padding: 40px;">
           <h2 style="margin: 0 0 20px; color: #0F1117; font-size: 22px; font-weight: 600;">You're Invited</h2>
           <p style="font-size: 16px; color: #333; line-height: 1.6; margin: 0 0 20px;">
-            You've been personally invited by <strong>Brett Berry</strong> to try Vector Aviation CRM — the first platform built exclusively for aircraft detailers.
+            You've been personally invited to try <strong>Shiny Jets CRM</strong> — the first platform built exclusively for aircraft detailers.
           </p>
           <p style="font-size: 16px; color: #333; line-height: 1.6; margin: 0 0 24px;">
             We're giving you <strong>6 months of Pro access — completely free</strong>. No credit card required.

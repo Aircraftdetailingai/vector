@@ -1,14 +1,8 @@
 import { createClient } from '@supabase/supabase-js';
-import { Resend } from 'resend';
 import { SignJWT } from 'jose';
+import { sendEmail as sendLibEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
-
-let _resend;
-function getResend() {
-  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY || 're_placeholder');
-  return _resend;
-}
 
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET);
 
@@ -20,7 +14,6 @@ function getSupabase() {
 }
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com';
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Shiny Jets CRM <noreply@shinyjets.com>';
 
 function resetEmailHtml(resetLink) {
   return `
@@ -90,17 +83,18 @@ export async function POST(request) {
 
     const resetLink = `${APP_URL}/reset-password?token=${resetToken}`;
 
-    // Send branded email via Resend
-    const { error: emailError } = await getResend().emails.send({
-      from: FROM_EMAIL,
+    // Send via shared lib/email.js infrastructure so every password reset
+    // email uses the verified noreply@mail.shinyjets.com FROM address,
+    // the CAN-SPAM footer, and the List-Unsubscribe headers automatically.
+    const result = await sendLibEmail({
       to: detailer.email,
       subject: 'Reset your Shiny Jets CRM password',
       html: resetEmailHtml(resetLink),
       text: `Reset your Shiny Jets CRM password.\n\nClick this link to set a new password (expires in 1 hour):\n${resetLink}\n\nIf you didn't request this, you can safely ignore this email.`,
     });
 
-    if (emailError) {
-      console.error('Failed to send reset email:', emailError);
+    if (!result?.success) {
+      console.error('Failed to send reset email:', result?.error);
       return new Response(JSON.stringify({ error: 'Failed to send email' }), { status: 500 });
     }
 
