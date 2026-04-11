@@ -24,8 +24,7 @@ export async function GET(request) {
     .from('detailers')
     .select('id, name, company, country, home_airport, preferred_currency, plan, stripe_account_id, stripe_publishable_key, has_online_booking')
     .eq('listed_in_directory', true)
-    .eq('status', 'active')
-    .in('plan', ['pro', 'business', 'enterprise']);
+    .eq('status', 'active');
 
   if (country) {
     query = query.eq('country', country.toUpperCase());
