@@ -463,7 +463,15 @@ function NewQuoteContent() {
 
   const toggleService = (serviceId) => {
     setSelectedPackage(null);
-    setSelectedServices((prev) => ({ ...prev, [serviceId]: !prev[serviceId] }));
+    setSelectedServices((prev) => {
+      const wasSelected = prev[serviceId];
+      const next = { ...prev, [serviceId]: !wasSelected };
+      // Auto-save silently when adding a service (not removing)
+      if (!wasSelected && selectedAircraft) {
+        setTimeout(() => saveDraft(true), 500);
+      }
+      return next;
+    });
   };
 
   const selectPackage = (pkg) => {
@@ -1920,24 +1928,38 @@ function NewQuoteContent() {
       </div>
 
       {/* Sticky footer bar */}
-      {selectedAircraft && selectedServicesList.length > 0 && (
+      {(selectedAircraft || preselectedCustomer || Object.keys(selectedServices).some(k => selectedServices[k])) && (
         <div className="fixed bottom-0 left-0 right-0 bg-v-charcoal/95 backdrop-blur-sm border-t border-v-gold/20 px-4 py-3 z-50">
           <div className="max-w-3xl mx-auto">
-            <div className="flex items-center justify-between gap-3 mb-2 sm:mb-0">
-              <div className="min-w-0">
-                <p className="text-white text-sm truncate">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
-                <p className="text-gray-500 text-xs">{selectedServicesList.length} service{selectedServicesList.length !== 1 ? 's' : ''} &middot; {totalHours.toFixed(1)}h</p>
+            {selectedAircraft && selectedServicesList.length > 0 && (
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div className="min-w-0">
+                  <p className="text-white text-sm truncate">{selectedAircraft.manufacturer} {selectedAircraft.model}</p>
+                  <p className="text-gray-500 text-xs">{selectedServicesList.length} service{selectedServicesList.length !== 1 ? 's' : ''} &middot; {totalHours.toFixed(1)}h</p>
+                </div>
+                <span className="text-v-gold text-2xl font-extralight flex-shrink-0">{currencySymbol()}{formatPrice(totalPrice)}</span>
               </div>
-              <span className="text-v-gold text-2xl font-extralight flex-shrink-0">{currencySymbol()}{formatPrice(totalPrice)}</span>
+            )}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => saveDraft(false)}
+                disabled={draftSaving || !selectedAircraft}
+                className="px-4 py-3 border border-white/20 text-white/70 hover:text-white hover:border-white/40 text-xs uppercase tracking-wider transition-colors whitespace-nowrap min-h-[44px]"
+              >
+                {draftSaving ? 'Saving...' : autoSaveLabel ? '✓ Saved' : draftId ? '💾 Update Draft' : '💾 Save Draft'}
+              </button>
+              {selectedAircraft && selectedServicesList.length > 0 && (
+                <button
+                  type="button"
+                  onClick={openSendModal}
+                  disabled={totalPrice === 0 || !airport || airport.length < 3}
+                  className="flex-1 px-5 py-3 bg-v-gold text-v-charcoal font-medium uppercase tracking-[0.15em] hover:bg-v-gold-dim disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm min-h-[44px] whitespace-nowrap transition-colors"
+                >
+                  {!airport || airport.length < 3 ? 'Enter Airport' : 'Send to Client'}
+                </button>
+              )}
             </div>
-            <button
-              type="button"
-              onClick={openSendModal}
-              disabled={totalPrice === 0 || !airport || airport.length < 3}
-              className="w-full sm:w-auto sm:float-right px-5 sm:px-8 py-3 bg-v-gold text-v-charcoal font-medium uppercase tracking-[0.15em] hover:bg-v-gold-dim disabled:opacity-40 disabled:cursor-not-allowed text-xs sm:text-sm min-h-[44px] whitespace-nowrap transition-colors"
-            >
-              {!airport || airport.length < 3 ? 'Enter Airport' : 'Send to Client'}
-            </button>
           </div>
         </div>
       )}
