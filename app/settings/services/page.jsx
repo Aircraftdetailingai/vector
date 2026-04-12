@@ -1,9 +1,12 @@
 "use client";
-import { useState, useEffect, Fragment } from 'react';
+import { useState, useEffect, Fragment, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import LoadingSpinner from '@/components/LoadingSpinner';
 import CalibrationModal from '@/components/CalibrationModal';
 import { currencySymbol } from '@/lib/formatPrice';
+import { DndContext, closestCenter, PointerSensor, TouchSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy, useSortable, arrayMove } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 const CATEGORY_OPTIONS = {
   exterior: 'Exterior',
@@ -11,6 +14,116 @@ const CATEGORY_OPTIONS = {
   package: 'Package',
   other: 'Other',
 };
+
+// --- Sortable package card using @dnd-kit ---
+function SortablePackageCard({ pkg, getServiceById, setEditingPackage, deletePackage, dragOver, draggedService, handleDragOverPkg, handleDragLeavePkg, handleDropOnPackage }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pkg.id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+    zIndex: isDragging ? 50 : 'auto',
+  };
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      onDragOver={(e) => handleDragOverPkg(e, pkg.id)}
+      onDragLeave={handleDragLeavePkg}
+      onDrop={(e) => { e.stopPropagation(); handleDropOnPackage(e, pkg); }}
+      className={`p-4 rounded-lg border transition-all ${
+        dragOver === pkg.id ? 'bg-[#1A2236] border-[#C9A84C] ring-2 ring-[#C9A84C]/50 scale-[1.02]'
+        : 'bg-[#1A2236] border-[#2A3548] hover:border-[#C9A84C]/30'
+      }`}
+    >
+      {dragOver === pkg.id && draggedService && (
+        <div className="text-xs text-v-gold font-medium mb-2">
+          Drop to add &quot;{draggedService.name}&quot; to this package
+        </div>
+      )}
+      <div className="flex justify-between items-start">
+        <div className="flex items-start gap-2">
+          <span
+            {...attributes}
+            {...listeners}
+            className="text-white/40 hover:text-white/80 cursor-grab active:cursor-grabbing select-none mt-1 touch-none"
+            title="Drag to reorder"
+          >&#9776;</span>
+          <div>
+            <h4 className="font-semibold text-white">{pkg.name}</h4>
+            {pkg.description && <p className="text-sm text-white/60">{pkg.description}</p>}
+            <div className="flex flex-wrap gap-1 mt-2">
+              {(pkg.service_ids || []).map(id => {
+                const svc = getServiceById(id);
+                return svc ? (
+                  <span key={id} className="text-xs bg-white/10 border border-white/20 text-white/80 px-2 py-0.5 rounded">{svc.name}</span>
+                ) : null;
+              })}
+            </div>
+          </div>
+        </div>
+        <div className="text-right">
+          {(pkg.discount_percent || 0) > 0 ? (
+            <span className="inline-block px-2 py-1 bg-v-gold/20 text-v-gold text-xs font-medium rounded">{pkg.discount_percent}% off</span>
+          ) : (
+            <p className="text-xs text-white/40">No discount</p>
+          )}
+          <div className="flex gap-1 mt-2 justify-end">
+            <button onClick={() => setEditingPackage({ ...pkg })} className="p-1.5 text-white/50 hover:text-white transition-colors">&#9998;</button>
+            <button onClick={() => deletePackage(pkg)} className="p-1.5 text-white/50 hover:text-red-400 transition-colors">&#128465;</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PackageSortableList({ packages, setPackages, getToken, getServiceById, setEditingPackage, deletePackage, dragOver, draggedService, handleDragOverPkg, handleDragLeavePkg, handleDropOnPackage }) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
+
+  const handleDragEnd = async (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = packages.findIndex(p => p.id === active.id);
+    const newIndex = packages.findIndex(p => p.id === over.id);
+    const reordered = arrayMove(packages, oldIndex, newIndex);
+    setPackages(reordered);
+    try {
+      await fetch('/api/packages/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ order: reordered.map(p => p.id) }),
+      });
+    } catch {}
+  };
+
+  return (
+    <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <SortableContext items={packages.map(p => p.id)} strategy={verticalListSortingStrategy}>
+        <div className="space-y-3">
+          {packages.map(pkg => (
+            <SortablePackageCard
+              key={pkg.id}
+              pkg={pkg}
+              getServiceById={getServiceById}
+              setEditingPackage={setEditingPackage}
+              deletePackage={deletePackage}
+              dragOver={dragOver}
+              draggedService={draggedService}
+              handleDragOverPkg={handleDragOverPkg}
+              handleDragLeavePkg={handleDragLeavePkg}
+              handleDropOnPackage={handleDropOnPackage}
+            />
+          ))}
+        </div>
+      </SortableContext>
+    </DndContext>
+  );
+}
 
 const DEFAULT_SERVICES = [
   { name: 'Maintenance Wash', description: 'Regular exterior wash', hourly_rate: 120, category: 'exterior' },
@@ -958,74 +1071,26 @@ export default function ServicesPage() {
               </div>
             )}
 
-            {/* Existing Packages */}
+            {/* Existing Packages — @dnd-kit sortable */}
             {packages.length === 0 && !showPackageBuilder ? (
               <div className="text-center py-12 border-2 border-dashed rounded-lg">
                 <p className="text-v-text-secondary mb-2">No packages yet</p>
                 <p className="text-sm text-v-text-secondary">Create a package to bundle services</p>
               </div>
             ) : (
-              <div className="space-y-3">
-                {packages.map((pkg, pkgIdx) => (
-                  <div key={pkg.id}
-                    onDragOver={(e) => {
-                      // Package reorder drop zone
-                      if (pkgDragIdx !== null) { handlePkgDragOver(e, pkgIdx); return; }
-                      handleDragOverPkg(e, pkg.id);
-                    }}
-                    onDragLeave={handleDragLeavePkg}
-                    onDrop={(e) => {
-                      if (pkgDragIdx !== null) { handlePkgDrop(e, pkgIdx); return; }
-                      e.stopPropagation(); handleDropOnPackage(e, pkg);
-                    }}
-                    className={`p-4 rounded-lg border transition-all ${
-                      dragOver === pkg.id ? 'bg-[#1A2236] border-[#C9A84C] ring-2 ring-[#C9A84C]/50 scale-[1.02]'
-                      : pkgOverIdx === pkgIdx && pkgDragIdx !== null ? 'bg-[#1A2236] border-[#C9A84C] scale-[1.01]'
-                      : pkgDragIdx === pkgIdx ? 'bg-[#1A2236] opacity-40 scale-[0.98] border-[#2A3548]'
-                      : 'bg-[#1A2236] border-[#2A3548] hover:border-[#C9A84C]/30'
-                    }`}>
-                    {dragOver === pkg.id && (
-                      <div className="text-xs text-v-gold font-medium mb-2">
-                        Drop to add &quot;{draggedService?.name}&quot; to this package
-                      </div>
-                    )}
-                    <div className="flex justify-between items-start">
-                      <div className="flex items-start gap-2">
-                        <span
-                          draggable
-                          onDragStart={(e) => { e.stopPropagation(); handlePkgDragStart(e, pkgIdx); }}
-                          onDragEnd={() => { setPkgDragIdx(null); setPkgOverIdx(null); }}
-                          className="text-white/40 hover:text-white/80 cursor-grab active:cursor-grabbing select-none mt-1"
-                          title="Drag to reorder"
-                        >&#9776;</span>
-                        <div>
-                          <h4 className="font-semibold text-white">{pkg.name}</h4>
-                          {pkg.description && <p className="text-sm text-white/60">{pkg.description}</p>}
-                          <div className="flex flex-wrap gap-1 mt-2">
-                            {(pkg.service_ids || []).map(id => {
-                              const svc = getServiceById(id);
-                              return svc ? (
-                                <span key={id} className="text-xs bg-white/10 border border-white/20 text-white/80 px-2 py-0.5 rounded">{svc.name}</span>
-                              ) : null;
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        {(pkg.discount_percent || 0) > 0 ? (
-                          <span className="inline-block px-2 py-1 bg-v-gold/20 text-v-gold text-xs font-medium rounded">{pkg.discount_percent}% off</span>
-                        ) : (
-                          <p className="text-xs text-white/40">No discount</p>
-                        )}
-                        <div className="flex gap-1 mt-2 justify-end">
-                          <button onClick={() => setEditingPackage({ ...pkg })} className="p-1.5 text-white/50 hover:text-white transition-colors">&#9998;</button>
-                          <button onClick={() => deletePackage(pkg)} className="p-1.5 text-white/50 hover:text-red-400 transition-colors">&#128465;</button>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+              <PackageSortableList
+                packages={packages}
+                setPackages={setPackages}
+                getToken={getToken}
+                getServiceById={getServiceById}
+                setEditingPackage={setEditingPackage}
+                deletePackage={deletePackage}
+                dragOver={dragOver}
+                draggedService={draggedService}
+                handleDragOverPkg={handleDragOverPkg}
+                handleDragLeavePkg={handleDragLeavePkg}
+                handleDropOnPackage={handleDropOnPackage}
+              />
             )}
           </div>
         </div>
