@@ -13,7 +13,7 @@ function getSupabase() {
 const REFERENCE_MAP = {
   wash: { column: 'ext_wash_hours', fallback: 2 },
   polish: { column: 'polish_hours', fallback: 12 },
-  compound: { column: 'compound_hours', fallback: 16 },
+  compound: { column: 'polish_hours', fallback: 16 },
   wax: { column: 'wax_hours', fallback: 6 },
   ceramic: { column: 'ceramic_hours', fallback: 18 },
   detail_interior: { column: 'int_detail_hours', fallback: 6 },
