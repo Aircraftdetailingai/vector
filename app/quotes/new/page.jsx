@@ -57,6 +57,9 @@ function NewQuoteContent() {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [accessDifficulty, setAccessDifficulty] = useState(1.0);
   const [quoteNotes, setQuoteNotes] = useState('');
+  const [draftId, setDraftId] = useState(null);
+  const [draftSaving, setDraftSaving] = useState(false);
+  const [autoSaveLabel, setAutoSaveLabel] = useState('');
   const [isModalOpen, setModalOpen] = useState(false);
   const [minimumFee, setMinimumFee] = useState(0);
   const [minimumFeeLocations, setMinimumFeeLocations] = useState([]);
@@ -703,10 +706,6 @@ function NewQuoteContent() {
   const toggleAddon = (addonId) => {
     setSelectedAddons(prev => ({ ...prev, [addonId]: !prev[addonId] }));
   };
-
-  const [draftId, setDraftId] = useState(null);
-  const [draftSaving, setDraftSaving] = useState(false);
-  const [autoSaveLabel, setAutoSaveLabel] = useState('');
 
   // Build the full quote payload (reusable for draft + send)
   const buildQuotePayload = () => {
