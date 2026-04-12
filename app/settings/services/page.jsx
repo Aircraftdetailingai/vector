@@ -931,11 +931,11 @@ export default function ServicesPage() {
                       if (pkgDragIdx !== null) { handlePkgDrop(e, pkgIdx); return; }
                       e.stopPropagation(); handleDropOnPackage(e, pkg);
                     }}
-                    className={`p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border transition-all ${
+                    className={`p-4 bg-v-surface rounded-lg border transition-all ${
                       dragOver === pkg.id ? 'border-v-gold ring-2 ring-v-gold/50 scale-[1.02]'
                       : pkgOverIdx === pkgIdx && pkgDragIdx !== null ? 'border-v-gold bg-v-gold/10 scale-[1.01]'
-                      : pkgDragIdx === pkgIdx ? 'opacity-40 scale-[0.98] border-green-200'
-                      : 'border-green-200'
+                      : pkgDragIdx === pkgIdx ? 'opacity-40 scale-[0.98] border-v-border'
+                      : 'border-v-border hover:border-v-gold/30'
                     }`}>
                     {dragOver === pkg.id && (
                       <div className="text-xs text-v-gold font-medium mb-2">
@@ -948,17 +948,17 @@ export default function ServicesPage() {
                           draggable
                           onDragStart={(e) => { e.stopPropagation(); handlePkgDragStart(e, pkgIdx); }}
                           onDragEnd={() => { setPkgDragIdx(null); setPkgOverIdx(null); }}
-                          className="text-green-600/50 hover:text-green-800 cursor-grab active:cursor-grabbing select-none mt-1"
+                          className="text-white/40 hover:text-white/80 cursor-grab active:cursor-grabbing select-none mt-1"
                           title="Drag to reorder"
                         >&#9776;</span>
                         <div>
-                          <h4 className="font-semibold text-green-800">{pkg.name}</h4>
-                          {pkg.description && <p className="text-sm text-v-text-secondary">{pkg.description}</p>}
+                          <h4 className="font-semibold text-white">{pkg.name}</h4>
+                          {pkg.description && <p className="text-sm text-white/60">{pkg.description}</p>}
                           <div className="flex flex-wrap gap-1 mt-2">
                             {(pkg.service_ids || []).map(id => {
                               const svc = getServiceById(id);
                               return svc ? (
-                                <span key={id} className="text-xs bg-green-900/30 text-green-400 px-2 py-0.5 rounded">{svc.name}</span>
+                                <span key={id} className="text-xs bg-white/10 border border-white/20 text-white/80 px-2 py-0.5 rounded">{svc.name}</span>
                               ) : null;
                             })}
                           </div>
@@ -966,13 +966,13 @@ export default function ServicesPage() {
                       </div>
                       <div className="text-right">
                         {(pkg.discount_percent || 0) > 0 ? (
-                          <p className="text-xl font-bold text-green-600">{pkg.discount_percent}% off</p>
+                          <span className="inline-block px-2 py-1 bg-v-gold/20 text-v-gold text-xs font-medium rounded">{pkg.discount_percent}% off</span>
                         ) : (
-                          <p className="text-sm text-v-text-secondary">No discount</p>
+                          <p className="text-xs text-white/40">No discount</p>
                         )}
-                        <div className="flex gap-1 mt-1">
-                          <button onClick={() => setEditingPackage({ ...pkg })} className="p-1 text-v-text-secondary hover:text-blue-600">&#9998;</button>
-                          <button onClick={() => deletePackage(pkg)} className="p-1 text-v-text-secondary hover:text-red-600">&#128465;</button>
+                        <div className="flex gap-1 mt-2 justify-end">
+                          <button onClick={() => setEditingPackage({ ...pkg })} className="p-1.5 text-white/50 hover:text-white transition-colors">&#9998;</button>
+                          <button onClick={() => deletePackage(pkg)} className="p-1.5 text-white/50 hover:text-red-400 transition-colors">&#128465;</button>
                         </div>
                       </div>
                     </div>
