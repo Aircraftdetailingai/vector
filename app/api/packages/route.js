@@ -40,11 +40,19 @@ export async function GET(request) {
       return Response.json({ error: 'Database not configured' }, { status: 500 });
     }
 
-    const { data: packages, error } = await supabase
+    let { data: packages, error } = await supabase
       .from('packages')
       .select('*')
       .eq('detailer_id', user.id)
+      .order('sort_order', { ascending: true })
       .order('created_at', { ascending: true });
+
+    // Retry without sort_order if column doesn't exist
+    if (error && error.message?.includes('sort_order')) {
+      const retry = await supabase.from('packages').select('*').eq('detailer_id', user.id).order('created_at', { ascending: true });
+      packages = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       console.error('Failed to fetch packages:', error);

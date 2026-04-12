@@ -112,6 +112,12 @@ export default function ServicesPage() {
   // Reorder drag state (for service list ordering)
   const [reorderDragIdx, setReorderDragIdx] = useState(null);
   const [reorderOverIdx, setReorderOverIdx] = useState(null);
+  // Package reorder state
+  const [pkgDragIdx, setPkgDragIdx] = useState(null);
+  const [pkgOverIdx, setPkgOverIdx] = useState(null);
+  // Service reorder within package edit modal
+  const [pkgSvcDragIdx, setPkgSvcDragIdx] = useState(null);
+  const [pkgSvcOverIdx, setPkgSvcOverIdx] = useState(null);
   const [orderSavedToast, setOrderSavedToast] = useState(false);
 
   useEffect(() => {
@@ -645,6 +651,48 @@ export default function ServicesPage() {
     setReorderOverIdx(null);
   };
 
+  // Package reorder handlers
+  const handlePkgDragStart = (e, idx) => {
+    setPkgDragIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', String(idx));
+  };
+  const handlePkgDragOver = (e, idx) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setPkgOverIdx(idx); };
+  const handlePkgDrop = async (e, dropIdx) => {
+    e.preventDefault(); e.stopPropagation();
+    setPkgOverIdx(null);
+    if (pkgDragIdx === null || pkgDragIdx === dropIdx) { setPkgDragIdx(null); return; }
+    const reordered = [...packages];
+    const [moved] = reordered.splice(pkgDragIdx, 1);
+    reordered.splice(dropIdx, 0, moved);
+    setPackages(reordered);
+    setPkgDragIdx(null);
+    try {
+      await fetch('/api/packages/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${getToken()}` },
+        body: JSON.stringify({ order: reordered.map(p => p.id) }),
+      });
+    } catch {}
+  };
+
+  // Service reorder within package edit modal
+  const handlePkgSvcDragStart = (e, idx) => {
+    setPkgSvcDragIdx(idx);
+    e.dataTransfer.effectAllowed = 'move';
+  };
+  const handlePkgSvcDragOver = (e, idx) => { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; setPkgSvcOverIdx(idx); };
+  const handlePkgSvcDrop = (e, dropIdx) => {
+    e.preventDefault();
+    setPkgSvcOverIdx(null);
+    if (pkgSvcDragIdx === null || pkgSvcDragIdx === dropIdx) { setPkgSvcDragIdx(null); return; }
+    const ids = [...(editingPackage?.service_ids || [])];
+    const [moved] = ids.splice(pkgSvcDragIdx, 1);
+    ids.splice(dropIdx, 0, moved);
+    setEditingPackage({ ...editingPackage, service_ids: ids });
+    setPkgSvcDragIdx(null);
+  };
+
   if (loading) {
     return <LoadingSpinner message="Loading services..." />;
   }
@@ -871,11 +919,23 @@ export default function ServicesPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                {packages.map((pkg) => (
-                  <div key={pkg.id} onDragOver={(e) => handleDragOverPkg(e, pkg.id)} onDragLeave={handleDragLeavePkg}
-                    onDrop={(e) => { e.stopPropagation(); handleDropOnPackage(e, pkg); }}
+                {packages.map((pkg, pkgIdx) => (
+                  <div key={pkg.id}
+                    onDragOver={(e) => {
+                      // Package reorder drop zone
+                      if (pkgDragIdx !== null) { handlePkgDragOver(e, pkgIdx); return; }
+                      handleDragOverPkg(e, pkg.id);
+                    }}
+                    onDragLeave={handleDragLeavePkg}
+                    onDrop={(e) => {
+                      if (pkgDragIdx !== null) { handlePkgDrop(e, pkgIdx); return; }
+                      e.stopPropagation(); handleDropOnPackage(e, pkg);
+                    }}
                     className={`p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border transition-all ${
-                      dragOver === pkg.id ? 'border-v-gold ring-2 ring-v-gold/50 scale-[1.02]' : 'border-green-200'
+                      dragOver === pkg.id ? 'border-v-gold ring-2 ring-v-gold/50 scale-[1.02]'
+                      : pkgOverIdx === pkgIdx && pkgDragIdx !== null ? 'border-v-gold bg-v-gold/10 scale-[1.01]'
+                      : pkgDragIdx === pkgIdx ? 'opacity-40 scale-[0.98] border-green-200'
+                      : 'border-green-200'
                     }`}>
                     {dragOver === pkg.id && (
                       <div className="text-xs text-v-gold font-medium mb-2">
@@ -883,16 +943,25 @@ export default function ServicesPage() {
                       </div>
                     )}
                     <div className="flex justify-between items-start">
-                      <div>
-                        <h4 className="font-semibold text-green-800">{pkg.name}</h4>
-                        {pkg.description && <p className="text-sm text-v-text-secondary">{pkg.description}</p>}
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {(pkg.service_ids || []).map(id => {
-                            const svc = getServiceById(id);
-                            return svc ? (
-                              <span key={id} className="text-xs bg-green-900/30 text-green-400 px-2 py-0.5 rounded">{svc.name}</span>
-                            ) : null;
-                          })}
+                      <div className="flex items-start gap-2">
+                        <span
+                          draggable
+                          onDragStart={(e) => { e.stopPropagation(); handlePkgDragStart(e, pkgIdx); }}
+                          onDragEnd={() => { setPkgDragIdx(null); setPkgOverIdx(null); }}
+                          className="text-green-600/50 hover:text-green-800 cursor-grab active:cursor-grabbing select-none mt-1"
+                          title="Drag to reorder"
+                        >&#9776;</span>
+                        <div>
+                          <h4 className="font-semibold text-green-800">{pkg.name}</h4>
+                          {pkg.description && <p className="text-sm text-v-text-secondary">{pkg.description}</p>}
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {(pkg.service_ids || []).map(id => {
+                              const svc = getServiceById(id);
+                              return svc ? (
+                                <span key={id} className="text-xs bg-green-900/30 text-green-400 px-2 py-0.5 rounded">{svc.name}</span>
+                              ) : null;
+                            })}
+                          </div>
                         </div>
                       </div>
                       <div className="text-right">
@@ -1201,15 +1270,28 @@ export default function ServicesPage() {
               onChange={(e) => setEditingPackage({ ...editingPackage, description: e.target.value })}
               rows={2} className="w-full border border-v-border bg-v-charcoal text-v-text-primary rounded-lg px-3 py-2 resize-y min-h-[60px]" />
             <div>
-              <p className="text-sm font-medium mb-2">Services:</p>
-              <div className="space-y-2 mb-2">
-                {(editingPackage.service_ids || []).map(id => {
+              <p className="text-sm font-medium mb-2">Services <span className="text-v-text-secondary font-normal">(drag ≡ to reorder)</span>:</p>
+              <div className="space-y-1 mb-2">
+                {(editingPackage.service_ids || []).map((id, svcIdx) => {
                   const svc = getServiceById(id);
                   return svc ? (
-                    <div key={id} className="flex justify-between items-center bg-v-charcoal p-2 rounded">
-                      <span>{svc.name} <span className="text-xs text-v-text-secondary">(${svc.hourly_rate}/hr)</span></span>
+                    <div key={id}
+                      draggable
+                      onDragStart={(e) => handlePkgSvcDragStart(e, svcIdx)}
+                      onDragOver={(e) => handlePkgSvcDragOver(e, svcIdx)}
+                      onDrop={(e) => handlePkgSvcDrop(e, svcIdx)}
+                      onDragEnd={() => { setPkgSvcDragIdx(null); setPkgSvcOverIdx(null); }}
+                      className={`flex items-center justify-between bg-v-charcoal p-2 rounded cursor-grab transition-all ${
+                        pkgSvcDragIdx === svcIdx ? 'opacity-40 scale-[0.98]'
+                        : pkgSvcOverIdx === svcIdx && pkgSvcDragIdx !== null ? 'ring-1 ring-v-gold scale-[1.01]'
+                        : ''
+                      }`}>
+                      <div className="flex items-center gap-2">
+                        <span className="text-gray-500 select-none text-sm">&#9776;</span>
+                        <span>{svc.name} <span className="text-xs text-v-text-secondary">(${svc.hourly_rate}/hr)</span></span>
+                      </div>
                       <button onClick={() => setEditingPackage({ ...editingPackage, service_ids: editingPackage.service_ids.filter(sid => sid !== id) })}
-                        className="text-red-500">&times;</button>
+                        className="text-red-500 hover:text-red-400 px-1">&times;</button>
                     </div>
                   ) : null;
                 })}
