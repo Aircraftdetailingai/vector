@@ -24,15 +24,21 @@ export default function CalibrationModal({ isOpen, onClose, service, detailerSer
   const [error, setError] = useState('');
   const debounceRef = useRef(null);
 
-  // Reset on open
+  // Load saved calibration (or reset to defaults) when modal opens
   useEffect(() => {
-    if (isOpen) {
+    if (!isOpen) return;
+    setSuccessMessage('');
+    setError('');
+    // Look up existing calibration for this service
+    const existing = (calibrations || []).find(c => c.service_id === service?.id);
+    if (existing) {
+      setReferenceType(existing.reference_service_type || 'polish');
+      setAdjustmentPct(existing.adjustment_pct ?? 0);
+    } else {
       setReferenceType('polish');
       setAdjustmentPct(0);
-      setSuccessMessage('');
-      setError('');
     }
-  }, [isOpen, service?.id]);
+  }, [isOpen, service?.id, calibrations]);
 
   // Debounced preview fetch
   useEffect(() => {
@@ -147,6 +153,13 @@ export default function CalibrationModal({ isOpen, onClose, service, detailerSer
           <p className="text-sm text-v-text-secondary">
             Pick a reference service and adjust how much more or less time this service takes.
           </p>
+
+          {(calibrations || []).some(c => c.service_id === service?.id) && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-v-gold/10 border border-v-gold/30 rounded-sm text-xs text-v-gold">
+              <span>&#10003;</span>
+              <span>Previously calibrated — edit below to update</span>
+            </div>
+          )}
 
           {/* Reference dropdown — own services + standard types */}
           <div>
