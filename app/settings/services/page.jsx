@@ -98,6 +98,7 @@ export default function ServicesPage() {
 
   // Service suggestion tips (aircraft hours matching)
   const [serviceSuggestions, setServiceSuggestions] = useState({});
+  const [serviceAccuracy, setServiceAccuracy] = useState({});
 
   // Calibration modal state
   const [calibratingService, setCalibratingService] = useState(null);
@@ -174,6 +175,19 @@ export default function ServicesPage() {
       ]);
       if (spRes?.ok) { const d = await spRes.json(); setAllProductLinks(d.links || []); }
       if (seRes?.ok) { const d = await seRes.json(); setAllEquipmentLinks(d.links || []); }
+
+      // Fetch service accuracy data for badges
+      try {
+        const accRes = await fetch('/api/services/accuracy', { headers: { Authorization: `Bearer ${token}` } });
+        if (accRes?.ok) {
+          const accData = await accRes.json();
+          const accMap = {};
+          (accData.accuracy || []).forEach(a => {
+            accMap[a.service_name] = { avg_variance_pct: a.avg_variance_pct, sample_size: a.sample_size, badge: a.badge };
+          });
+          setServiceAccuracy(accMap);
+        }
+      } catch {}
     } catch (err) {
       console.error('Failed to fetch:', err);
     } finally {
@@ -796,7 +810,20 @@ export default function ServicesPage() {
                           title="Drag to reorder"
                         >&#9776;</span>
                         <div>
-                          <p className="font-medium">{svc.name}</p>
+                          <p className="font-medium flex items-center gap-1.5">
+                            {svc.name}
+                            {serviceAccuracy[svc.name] && serviceAccuracy[svc.name].sample_size >= 3 && (() => {
+                              const acc = serviceAccuracy[svc.name];
+                              const v = acc.avg_variance_pct;
+                              const color = v < 10 ? 'bg-green-500' : v <= 25 ? 'bg-amber-500' : 'bg-red-500';
+                              const tip = v < 10
+                                ? `Well calibrated — ${v.toFixed(0)}% avg variance over ${acc.sample_size} jobs`
+                                : v <= 25
+                                ? `Consider calibrating — ${v.toFixed(0)}% avg variance`
+                                : `Needs calibration — ${v.toFixed(0)}% avg variance over ${acc.sample_size} jobs`;
+                              return <span className={`inline-block w-2 h-2 rounded-full ${color}`} title={tip} />;
+                            })()}
+                          </p>
                           {svc.description && <p className="text-xs text-v-text-secondary">{svc.description}</p>}
                           <p className="text-[10px] text-v-text-secondary">
                             {CATEGORY_OPTIONS[svc.category] || 'Other'}

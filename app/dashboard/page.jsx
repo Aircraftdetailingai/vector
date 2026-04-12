@@ -108,6 +108,7 @@ function DashboardContent() {
   const [teamMembers, setTeamMembers] = useState([]);
   const [changeOrderRequests, setChangeOrderRequests] = useState([]);
   const [quota, setQuota] = useState(null);
+  const [jobAlerts, setJobAlerts] = useState([]);
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -204,12 +205,33 @@ function DashboardContent() {
       if (quotaRes.status === 'fulfilled' && quotaRes.value.ok) {
         setQuota(await quotaRes.value.json());
       }
+
+      // Fetch over-estimate job alerts
+      try {
+        const alertsRes = await fetch('/api/jobs/alerts', { headers });
+        if (alertsRes.ok) {
+          const alertsData = await alertsRes.json();
+          setJobAlerts(alertsData.alerts || []);
+        }
+      } catch {}
     };
 
     checkOnboarding().then(redirected => {
       if (!redirected) fetchDashboardData().catch(err => console.error('Dashboard fetch error:', err));
     });
   }, [router]);
+
+  const dismissJobAlert = async (alertId) => {
+    try {
+      const token = localStorage.getItem('vector_token');
+      await fetch('/api/jobs/alerts', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ alert_id: alertId }),
+      });
+      setJobAlerts(prev => prev.filter(a => a.id !== alertId));
+    } catch {}
+  };
 
   if (loading) return <LoadingSpinner message="Loading..." />;
 
@@ -351,7 +373,7 @@ function DashboardContent() {
         </div>
 
         {/* ━━━ 1. NEEDS ATTENTION ━━━ */}
-        {(quoteRequests.length > 0 || changeOrderRequests.length > 0 || (quickStats?.expiringQuotes?.length > 0) || staleViewedQuotes.length > 0 || staleUnviewedQuotes.length > 0 || upcomingJobs.some(j => new Date(j.scheduled_date).toDateString() === new Date().toDateString())) && (
+        {(quoteRequests.length > 0 || changeOrderRequests.length > 0 || (quickStats?.expiringQuotes?.length > 0) || staleViewedQuotes.length > 0 || staleUnviewedQuotes.length > 0 || jobAlerts.length > 0 || upcomingJobs.some(j => new Date(j.scheduled_date).toDateString() === new Date().toDateString())) && (
           <div id="attention" className="mt-10">
             <p className="text-[10px] uppercase tracking-[0.2em] text-v-gold mb-4 pb-2 border-b border-v-gold/20">Needs Attention</p>
 
@@ -374,6 +396,31 @@ function DashboardContent() {
                     </div>
                     <span className="text-v-text-secondary text-[10px] ml-3 shrink-0">{req.created_at ? new Date(req.created_at).toLocaleDateString() : ''}</span>
                   </a>
+                ))}
+              </div>
+            )}
+
+            {/* Over-Estimate Job Alerts */}
+            {jobAlerts.length > 0 && (
+              <div className="mb-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <p className="text-v-text-secondary text-xs">{jobAlerts.length} job{jobAlerts.length !== 1 ? 's' : ''} running over estimate</p>
+                </div>
+                {jobAlerts.map(alert => (
+                  <div key={alert.id} className="flex items-center justify-between py-2.5 border-b border-v-border-subtle/50 hover:bg-white/[0.02] transition-colors">
+                    <a href={`/jobs/${alert.job_id}`} className="min-w-0 flex-1">
+                      <p className="text-amber-400 text-sm truncate">
+                        &#9888; {alert.aircraft_model || 'Aircraft'} {alert.tail_number || ''} running {alert.hours_over || '?'}h over estimate
+                      </p>
+                    </a>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); dismissJobAlert(alert.id); }}
+                      className="text-v-text-secondary/60 hover:text-v-text-primary text-xs ml-3 shrink-0 px-2 py-1 border border-v-border rounded hover:bg-white/5 transition-colors"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
                 ))}
               </div>
             )}

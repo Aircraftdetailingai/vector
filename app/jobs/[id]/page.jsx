@@ -33,6 +33,9 @@ export default function JobDetailPage() {
   const [invoiceLoading, setInvoiceLoading] = useState(false);
   const [invoiceSent, setInvoiceSent] = useState(false);
   const [showInvoicePrompt, setShowInvoicePrompt] = useState(false);
+  const [showCompletionPrompt, setShowCompletionPrompt] = useState(false);
+  const [completionData, setCompletionData] = useState(null);
+  const [submittingCompletion, setSubmittingCompletion] = useState(false);
 
   // Edit job state
   const [showEditModal, setShowEditModal] = useState(false);
@@ -253,12 +256,71 @@ export default function JobDetailPage() {
       });
       if (res.ok) {
         await fetchJob(token);
-        if (status === 'completed') setShowInvoicePrompt(true);
+        if (status === 'completed') {
+          setShowInvoicePrompt(true);
+          // Build calibration data comparing estimated vs actual hours
+          buildCompletionCalibration();
+        }
       }
     } catch (err) {
       console.error(err);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const buildCompletionCalibration = () => {
+    const svcs = Array.isArray(job?.services) ? job.services.map(s => {
+      if (typeof s === 'string') return { name: s, hours: 0 };
+      return { name: s.name || s.service_name || 'Service', hours: parseFloat(s.hours) || 0 };
+    }) : [];
+    const estimatedTotal = svcs.reduce((sum, s) => sum + s.hours, 0);
+    const actualTotal = labor?.actual_hours || 0;
+    if (estimatedTotal <= 0 || actualTotal <= 0) return;
+    const variancePct = Math.abs((actualTotal - estimatedTotal) / estimatedTotal) * 100;
+    if (variancePct <= 10) return; // Within tolerance
+
+    // Build per-service variance data
+    const ratio = actualTotal / estimatedTotal;
+    const serviceVariances = svcs.filter(s => s.hours > 0).map(s => {
+      const estH = s.hours;
+      const actH = parseFloat((s.hours * ratio).toFixed(1));
+      const pct = ((actH - estH) / estH * 100).toFixed(0);
+      return { name: s.name, estimated: estH, actual: actH, variance_pct: parseFloat(pct) };
+    }).filter(s => Math.abs(s.variance_pct) > 10);
+
+    setCompletionData({
+      aircraft_model: job.aircraft_model || 'Aircraft',
+      estimated_total: estimatedTotal,
+      actual_total: actualTotal,
+      variance_pct: parseFloat(((actualTotal - estimatedTotal) / estimatedTotal * 100).toFixed(0)),
+      services: serviceVariances,
+    });
+    setShowCompletionPrompt(true);
+  };
+
+  const handleCompletionSubmit = async (updateEstimates) => {
+    setSubmittingCompletion(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const body = {
+        services: (completionData?.services || []).map(s => ({
+          name: s.name,
+          estimated_hours: s.estimated,
+          actual_hours: s.actual,
+          update_override: updateEstimates,
+        })),
+      };
+      await fetch(`/api/jobs/${jobId}/complete-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+    } catch (err) {
+      console.error('Completion data submit error:', err);
+    } finally {
+      setSubmittingCompletion(false);
+      setShowCompletionPrompt(false);
     }
   };
 
@@ -930,6 +992,46 @@ export default function JobDetailPage() {
               </div>
             </div>
           )}
+        </div>
+      )}
+
+      {/* Completion Calibration Prompt */}
+      {showCompletionPrompt && completionData && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-v-surface border border-v-border rounded-xl max-w-lg w-full p-6 shadow-2xl">
+            <h3 className="text-lg font-heading text-v-text-primary mb-1">Job Complete — Update your estimates?</h3>
+            <p className="text-sm text-v-text-secondary mb-4">
+              You estimated {completionData.estimated_total}h but it took {completionData.actual_total.toFixed(1)}h for {completionData.aircraft_model}
+            </p>
+            {completionData.services.length > 0 && (
+              <div className="space-y-2 mb-6">
+                {completionData.services.map((s, i) => (
+                  <div key={i} className="flex items-center justify-between bg-v-charcoal border border-v-border rounded-lg px-4 py-2.5">
+                    <span className="text-sm text-v-text-primary">{s.name}</span>
+                    <span className={`text-xs font-data ${s.variance_pct > 0 ? 'text-amber-400' : 'text-blue-400'}`}>
+                      Estimated {s.estimated}h → Actual {s.actual}h ({s.variance_pct > 0 ? '+' : ''}{s.variance_pct}%)
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => handleCompletionSubmit(false)}
+                disabled={submittingCompletion}
+                className="px-5 py-2.5 text-sm text-v-text-secondary border border-v-border rounded-lg hover:bg-white/5 transition-colors disabled:opacity-50"
+              >
+                Skip
+              </button>
+              <button
+                onClick={() => handleCompletionSubmit(true)}
+                disabled={submittingCompletion}
+                className="px-5 py-2.5 text-sm bg-v-gold text-v-charcoal rounded-lg font-medium hover:bg-v-gold-dim transition-colors disabled:opacity-50"
+              >
+                {submittingCompletion ? 'Updating...' : 'Update Estimates'}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

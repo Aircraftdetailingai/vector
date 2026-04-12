@@ -275,6 +275,22 @@ export async function POST(request) {
       ? await getJobLabel(supabase, { job_id: closedEntry.job_id, quote_id: closedEntry.quote_id })
       : null;
 
+    // Non-blocking overrun check after successful clock-out with a job
+    if (closedEntry?.job_id) {
+      try {
+        const origin = new URL(request.url).origin;
+        fetch(`${origin}/api/jobs/${closedEntry.job_id}/check-overrun`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': request.headers.get('authorization') || '',
+          },
+        }).catch(() => {});
+      } catch {
+        // Never break the clock-out flow
+      }
+    }
+
     return Response.json({
       success: true,
       clocked_in: false,
