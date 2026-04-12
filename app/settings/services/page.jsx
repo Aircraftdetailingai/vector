@@ -15,6 +15,37 @@ const CATEGORY_OPTIONS = {
   other: 'Other',
 };
 
+// --- Sortable service row using @dnd-kit (reorder via ≡ handle) ---
+function SortableServiceRow({ id, left, right, svc, handleDragStart, handleDragEnd: onNativeDragEnd }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.4 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style}>
+      <div
+        draggable
+        onDragStart={(e) => handleDragStart?.(e, svc)}
+        onDragEnd={() => onNativeDragEnd?.()}
+        className="flex items-center justify-between p-3 bg-v-charcoal rounded-lg border transition-all group hover:border-v-gold hover:bg-v-gold/10"
+      >
+        <div className="flex items-center gap-3">
+          <span
+            {...attributes}
+            {...listeners}
+            className="text-gray-500 group-hover:text-v-gold select-none cursor-grab active:cursor-grabbing touch-none px-1"
+            title="Drag to reorder"
+          >&#9776;</span>
+          {left}
+        </div>
+        {right}
+      </div>
+    </div>
+  );
+}
+
 // --- Sortable package card using @dnd-kit ---
 function SortablePackageCard({ pkg, getServiceById, setEditingPackage, deletePackage, dragOver, draggedService, handleDragOverPkg, handleDragLeavePkg, handleDropOnPackage }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: pkg.id });
@@ -225,8 +256,7 @@ export default function ServicesPage() {
   const [dragOver, setDragOver] = useState(null);
 
   // Reorder drag state (for service list ordering)
-  const [reorderDragIdx, setReorderDragIdx] = useState(null);
-  const [reorderOverIdx, setReorderOverIdx] = useState(null);
+  // reorderDragIdx/reorderOverIdx removed — using @dnd-kit now
   // Package reorder state
   const [pkgDragIdx, setPkgDragIdx] = useState(null);
   const [pkgOverIdx, setPkgOverIdx] = useState(null);
@@ -751,32 +781,19 @@ export default function ServicesPage() {
   };
 
   // ---- Reorder handlers (service list ordering) ----
-  const handleReorderDragStart = (e, idx) => {
-    setReorderDragIdx(idx);
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', String(idx));
-  };
+  // @dnd-kit service reorder handler (replaces native drag)
+  const svcSensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 5 } })
+  );
 
-  const handleReorderDragOver = (e, idx) => {
-    e.preventDefault(); autoScroll(e.clientY);
-    e.dataTransfer.dropEffect = 'move';
-    setReorderOverIdx(idx);
-  };
-
-  const handleReorderDrop = async (e, dropIdx) => {
-    e.preventDefault();
-    setReorderOverIdx(null);
-    if (reorderDragIdx === null || reorderDragIdx === dropIdx) {
-      setReorderDragIdx(null);
-      return;
-    }
-    const reordered = [...services];
-    const [moved] = reordered.splice(reorderDragIdx, 1);
-    reordered.splice(dropIdx, 0, moved);
+  const handleServiceDragEnd = async (event) => {
+    const { active, over } = event;
+    if (!over || active.id === over.id) return;
+    const oldIndex = services.findIndex(s => s.id === active.id);
+    const newIndex = services.findIndex(s => s.id === over.id);
+    const reordered = arrayMove(services, oldIndex, newIndex);
     setServices(reordered);
-    setReorderDragIdx(null);
-
-    // Save new order to backend
     const token = getToken();
     try {
       const res = await fetch('/api/services/reorder', {
@@ -791,11 +808,6 @@ export default function ServicesPage() {
     } catch (err) {
       console.error('Failed to save order:', err);
     }
-  };
-
-  const handleReorderDragEnd = () => {
-    setReorderDragIdx(null);
-    setReorderOverIdx(null);
   };
 
   // Package reorder handlers
@@ -845,7 +857,7 @@ export default function ServicesPage() {
   }
 
   return (
-    <div className="page-transition min-h-screen bg-v-charcoal p-4" onDragOver={(e) => { if (draggedService || reorderDragIdx !== null || pkgDragIdx !== null) autoScroll(e.clientY); }}>
+    <div className="page-transition min-h-screen bg-v-charcoal p-4" onDragOver={(e) => { if (draggedService || pkgDragIdx !== null) autoScroll(e.clientY); }}>
       {/* Order saved toast */}
       {orderSavedToast && (
         <div className="fixed top-4 right-4 z-50 bg-green-900/90 border border-green-500/50 text-green-200 px-4 py-2 rounded-lg shadow-lg text-sm animate-pulse">
@@ -897,111 +909,91 @@ export default function ServicesPage() {
                 <button onClick={importDefaults} className="text-v-gold hover:underline">Import suggested services</button>
               </div>
             ) : (
-              <div className="space-y-1">
-                {services.map((svc, idx) => (
-                  <Fragment key={svc.id}>
-                    <div
-                      draggable
-                      onDragStart={(e) => handleDragStart(e, svc)}
-                      onDragEnd={() => handleDragEnd()}
-                      onDragOver={(e) => handleReorderDragOver(e, idx)}
-                      onDrop={(e) => handleReorderDrop(e, idx)}
-                      className={`flex items-center justify-between p-3 bg-v-charcoal rounded-lg border transition-all group ${
-                        reorderDragIdx === idx
-                          ? 'opacity-40 border-v-gold scale-[0.98]'
-                          : reorderOverIdx === idx && reorderDragIdx !== null
-                          ? 'border-v-gold bg-v-gold/10 scale-[1.01]'
-                          : 'hover:border-v-gold hover:bg-v-gold/10'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <span
-                          draggable
-                          onDragStart={(e) => { e.stopPropagation(); handleReorderDragStart(e, idx); }}
-                          onDragEnd={(e) => { e.stopPropagation(); handleReorderDragEnd(); }}
-                          className="text-gray-500 group-hover:text-v-gold select-none cursor-grab active:cursor-grabbing px-1"
-                          title="Drag to reorder"
-                        >&#9776;</span>
-                        <div>
-                          <p className="font-medium flex items-center gap-1.5">
-                            {svc.name}
-                            {serviceAccuracy[svc.name] && serviceAccuracy[svc.name].sample_size >= 3 && (() => {
-                              const acc = serviceAccuracy[svc.name];
-                              const v = acc.avg_variance_pct;
-                              const color = v < 10 ? 'bg-green-500' : v <= 25 ? 'bg-amber-500' : 'bg-red-500';
-                              const tip = v < 10
-                                ? `Well calibrated — ${v.toFixed(0)}% avg variance over ${acc.sample_size} jobs`
-                                : v <= 25
-                                ? `Consider calibrating — ${v.toFixed(0)}% avg variance`
-                                : `Needs calibration — ${v.toFixed(0)}% avg variance over ${acc.sample_size} jobs`;
-                              return <span className={`inline-block w-2 h-2 rounded-full ${color}`} title={tip} />;
-                            })()}
-                          </p>
-                          {svc.description && <p className="text-xs text-v-text-secondary">{svc.description}</p>}
-                          <p className="text-[10px] text-v-text-secondary">
-                            {CATEGORY_OPTIONS[svc.category] || 'Other'}
-                            {getServiceLinkCount(svc.id) > 0 && (
-                              <span className="ml-2 px-1.5 py-0.5 bg-blue-900/30 text-blue-400 rounded text-[9px] font-medium">
-                                {getServiceLinkCount(svc.id)} linked
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="text-right">
-                          <span className="text-lg font-bold text-v-gold">${svc.hourly_rate || 0}</span>
-                          <span className="text-xs text-v-text-secondary">/hr</span>
-                          {parseFloat(svc.product_cost_per_hour) > 0 && (
-                            <p className="text-[10px] text-v-text-secondary">${svc.product_cost_per_hour} product/hr</p>
-                          )}
-                        </div>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setCalibratingService({ id: svc.id, name: svc.name }); }}
-                          title="Calibrate Hours"
-                          className="px-2 py-1 text-[10px] font-medium text-v-text-secondary border border-v-border rounded hover:text-v-gold hover:border-v-gold/50 hover:bg-v-gold/10"
-                        >
-                          &#9881; Calibrate
-                        </button>
-                        <button onClick={() => openEditService(svc)} className="p-1.5 text-v-text-secondary hover:text-blue-600 hover:bg-blue-900/20 rounded">&#9998;</button>
-                        <button onClick={() => deleteService(svc)} className="p-1.5 text-v-text-secondary hover:text-red-600 hover:bg-red-900/20 rounded">&#128465;</button>
-                      </div>
-                    </div>
-                    {serviceSuggestions[svc.id] && (
-                      <div
-                        className="ml-8 mr-3 p-3 bg-v-gold/5 border border-v-gold/20 rounded-lg flex items-start gap-3 cursor-pointer hover:bg-v-gold/10 transition-colors"
-                        onClick={() => setCalibratingService({ id: svc.id, name: svc.name })}
-                      >
-                        <span className="text-v-gold text-sm mt-0.5">&#10022;</span>
-                        <div className="flex-1 text-sm text-v-text-secondary">
-                          {serviceSuggestions[svc.id].type === 'no_match' ? (
-                            <p>
-                              <span className="text-v-gold font-medium">Tip:</span> This service doesn&apos;t match our aircraft hours database. Click to calibrate hours based on a similar standard service.
-                            </p>
-                          ) : (
+              <DndContext sensors={svcSensors} collisionDetection={closestCenter} onDragEnd={handleServiceDragEnd}>
+                <SortableContext items={services.map(s => s.id)} strategy={verticalListSortingStrategy}>
+                  <div className="space-y-1">
+                    {services.map((svc) => (
+                      <Fragment key={svc.id}>
+                        <SortableServiceRow
+                          id={svc.id}
+                          svc={svc}
+                          handleDragStart={handleDragStart}
+                          handleDragEnd={handleDragEnd}
+                          left={
                             <div>
-                              <p>
-                                <span className="text-v-gold font-medium">We found a possible match:</span> this service looks similar to &ldquo;{serviceSuggestions[svc.id].match.label}&rdquo;. Link it to use aircraft-based hour estimates?
+                              <p className="font-medium flex items-center gap-1.5">
+                                {svc.name}
+                                {serviceAccuracy[svc.name] && serviceAccuracy[svc.name].sample_size >= 3 && (() => {
+                                  const acc = serviceAccuracy[svc.name];
+                                  const v = acc.avg_variance_pct;
+                                  const color = v < 10 ? 'bg-green-500' : v <= 25 ? 'bg-amber-500' : 'bg-red-500';
+                                  const tip = v < 10
+                                    ? `Well calibrated — ${v.toFixed(0)}% avg variance over ${acc.sample_size} jobs`
+                                    : v <= 25
+                                    ? `Consider calibrating — ${v.toFixed(0)}% avg variance`
+                                    : `Needs calibration — ${v.toFixed(0)}% avg variance over ${acc.sample_size} jobs`;
+                                  return <span className={`inline-block w-2 h-2 rounded-full ${color}`} title={tip} />;
+                                })()}
                               </p>
-                              <div className="flex gap-2 mt-2">
-                                <button onClick={(e) => { e.stopPropagation(); linkServiceToHours(svc.id, serviceSuggestions[svc.id].match.column); }}
-                                  className="px-3 py-1 text-xs bg-v-gold text-v-charcoal rounded font-medium hover:bg-v-gold-dim">
-                                  Yes, link it
-                                </button>
-                                <button onClick={(e) => { e.stopPropagation(); dismissSuggestion(svc.id); }}
-                                  className="px-3 py-1 text-xs text-v-text-secondary border border-v-border rounded hover:bg-white/5">
-                                  No thanks
-                                </button>
-                              </div>
+                              {svc.description && <p className="text-xs text-v-text-secondary">{svc.description}</p>}
+                              <p className="text-[10px] text-v-text-secondary">
+                                {CATEGORY_OPTIONS[svc.category] || 'Other'}
+                                {getServiceLinkCount(svc.id) > 0 && (
+                                  <span className="ml-2 px-1.5 py-0.5 bg-blue-900/30 text-blue-400 rounded text-[9px] font-medium">
+                                    {getServiceLinkCount(svc.id)} linked
+                                  </span>
+                                )}
+                              </p>
                             </div>
-                          )}
-                        </div>
-                        <button onClick={(e) => { e.stopPropagation(); dismissSuggestion(svc.id); }} className="text-v-text-secondary hover:text-v-text-primary text-sm shrink-0">&times;</button>
-                      </div>
-                    )}
-                  </Fragment>
-                ))}
-              </div>
+                          }
+                          right={
+                            <div className="flex items-center gap-3">
+                              <div className="text-right">
+                                <span className="text-lg font-bold text-v-gold">${svc.hourly_rate || 0}</span>
+                                <span className="text-xs text-v-text-secondary">/hr</span>
+                                {parseFloat(svc.product_cost_per_hour) > 0 && (
+                                  <p className="text-[10px] text-v-text-secondary">${svc.product_cost_per_hour} product/hr</p>
+                                )}
+                              </div>
+                              <button
+                                onClick={(e) => { e.stopPropagation(); setCalibratingService({ id: svc.id, name: svc.name }); }}
+                                title="Calibrate Hours"
+                                className="px-2 py-1 text-[10px] font-medium text-v-text-secondary border border-v-border rounded hover:text-v-gold hover:border-v-gold/50 hover:bg-v-gold/10"
+                              >
+                                &#9881; Calibrate
+                              </button>
+                              <button onClick={() => openEditService(svc)} className="p-1.5 text-v-text-secondary hover:text-blue-600 hover:bg-blue-900/20 rounded">&#9998;</button>
+                              <button onClick={() => deleteService(svc)} className="p-1.5 text-v-text-secondary hover:text-red-600 hover:bg-red-900/20 rounded">&#128465;</button>
+                            </div>
+                          }
+                        />
+                        {serviceSuggestions[svc.id] && (
+                          <div
+                            className="ml-8 mr-3 p-3 bg-v-gold/5 border border-v-gold/20 rounded-lg flex items-start gap-3 cursor-pointer hover:bg-v-gold/10 transition-colors"
+                            onClick={() => setCalibratingService({ id: svc.id, name: svc.name })}
+                          >
+                            <span className="text-v-gold text-sm mt-0.5">&#10022;</span>
+                            <div className="flex-1 text-sm text-v-text-secondary">
+                              {serviceSuggestions[svc.id].type === 'no_match' ? (
+                                <p><span className="text-v-gold font-medium">Tip:</span> This service doesn&apos;t match our aircraft hours database. Click to calibrate hours based on a similar standard service.</p>
+                              ) : (
+                                <div>
+                                  <p><span className="text-v-gold font-medium">We found a possible match:</span> this service looks similar to &ldquo;{serviceSuggestions[svc.id].match.label}&rdquo;. Link it to use aircraft-based hour estimates?</p>
+                                  <div className="flex gap-2 mt-2">
+                                    <button onClick={(e) => { e.stopPropagation(); linkServiceToHours(svc.id, serviceSuggestions[svc.id].match.column); }} className="px-3 py-1 text-xs bg-v-gold text-v-charcoal rounded font-medium hover:bg-v-gold-dim">Yes, link it</button>
+                                    <button onClick={(e) => { e.stopPropagation(); dismissSuggestion(svc.id); }} className="px-3 py-1 text-xs text-v-text-secondary border border-v-border rounded hover:bg-white/5">No thanks</button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                            <button onClick={(e) => { e.stopPropagation(); dismissSuggestion(svc.id); }} className="text-v-text-secondary hover:text-v-text-primary text-sm shrink-0">&times;</button>
+                          </div>
+                        )}
+                      </Fragment>
+                    ))}
+                  </div>
+                </SortableContext>
+              </DndContext>
             )}
           </div>
         </div>
