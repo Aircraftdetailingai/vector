@@ -1773,7 +1773,7 @@ function NewQuoteContent() {
                         type="text"
                         value={userDiscountReason}
                         onChange={e => setUserDiscountReason(e.target.value)}
-                        placeholder="Reason (optional)"
+                        placeholder="e.g. Loyalty Discount, Referral Reward..."
                         className="flex-1 bg-white/10 border border-white/20 text-white rounded px-3 py-1.5 text-sm placeholder-gray-500 outline-none focus:border-green-500/50"
                       />
                     </div>
@@ -1783,7 +1783,7 @@ function NewQuoteContent() {
                 {userDiscountAmt > 0 && (
                   <div className="flex justify-between text-sm text-green-400 mb-1">
                     <span>
-                      Discount{userDiscountReason ? ` — ${userDiscountReason}` : ''}
+                      {userDiscountReason || 'Discount'}
                       {userDiscountType === 'percentage' ? ` (-${userDiscountValue}%)` : ''}
                     </span>
                     <span>-{currencySymbol()}{formatPrice(userDiscountAmt)}</span>
