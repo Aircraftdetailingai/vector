@@ -707,98 +707,6 @@ function NewQuoteContent() {
     setSelectedAddons(prev => ({ ...prev, [addonId]: !prev[addonId] }));
   };
 
-  // Build the full quote payload (reusable for draft + send)
-  const buildQuotePayload = () => {
-    if (!quoteData) return null;
-    return {
-      aircraft_type: quoteData.aircraft?.category || quoteData.aircraft?.name || 'unknown',
-      aircraft_model: quoteData.aircraft?.name || '',
-      aircraft_id: quoteData.aircraft?.id || null,
-      surface_area_sqft: quoteData.aircraft?.surface_area_sqft || null,
-      selected_services: quoteData.selectedServices?.map(s => s.id) || [],
-      selected_package_id: quoteData.selectedPackage?.id || null,
-      selected_package_name: quoteData.selectedPackage?.name || null,
-      total_hours: quoteData.totalHours || 0,
-      total_price: quoteData.totalPrice || 0,
-      notes: quoteNotes || '',
-      line_items: quoteData.lineItems || [],
-      labor_total: quoteData.laborTotal || 0,
-      products_total: quoteData.productsTotal || 0,
-      access_difficulty: quoteData.accessDifficulty || 1.0,
-      job_location: quoteData.jobLocation || null,
-      minimum_fee_applied: quoteData.isMinimumApplied || false,
-      calculated_price: quoteData.calculatedPrice || quoteData.totalPrice || 0,
-      discount_percent: quoteData.discountPercent || 0,
-      addon_fees: quoteData.addonFees || [],
-      addon_total: quoteData.addonsTotal || 0,
-      airport: airport || null,
-      tail_number: tailNumber || null,
-      proposed_date: proposedDate || null,
-      proposed_time: proposedTime || null,
-      product_estimates: quoteData.productEstimates || [],
-      linked_products: quoteData.linkedProducts || [],
-      linked_equipment: quoteData.linkedEquipment || [],
-      client_name: preselectedCustomer?.name || '',
-      client_email: preselectedCustomer?.email || '',
-      customer_id: preselectedCustomer?.id || null,
-      customer_phone: preselectedCustomer?.phone || null,
-    };
-  };
-
-  const saveDraft = async (silent = false) => {
-    if (!quoteData || !selectedAircraft) return;
-    const payload = buildQuotePayload();
-    if (!payload) return;
-    if (!silent) setDraftSaving(true);
-    try {
-      const token = localStorage.getItem('vector_token');
-      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
-      if (draftId) {
-        // Update existing draft
-        await fetch(`/api/quotes/${draftId}`, { method: 'PUT', headers, body: JSON.stringify(payload) });
-      } else {
-        // Create new draft
-        const res = await fetch('/api/quotes', { method: 'POST', headers, body: JSON.stringify(payload) });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.id) setDraftId(data.id);
-        }
-      }
-      if (silent) {
-        setAutoSaveLabel('Auto-saved');
-        setTimeout(() => setAutoSaveLabel(''), 3000);
-      } else {
-        toastSuccess('Draft saved — find it in Quotes');
-      }
-    } catch (err) {
-      if (!silent) toastError?.('Failed to save draft');
-      console.error('[saveDraft]', err);
-    } finally {
-      if (!silent) setDraftSaving(false);
-    }
-  };
-
-  // Cmd+S / Ctrl+S → save draft
-  useEffect(() => {
-    const handler = (e) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
-        e.preventDefault();
-        if (selectedAircraft && Object.keys(selectedServices).length > 0) {
-          saveDraft();
-        }
-      }
-    };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
-  }, [selectedAircraft, selectedServices, quoteData, draftId]);
-
-  // Auto-save every 60s while editing (if customer + services selected)
-  useEffect(() => {
-    if (!selectedAircraft || Object.keys(selectedServices).length === 0) return;
-    const interval = setInterval(() => saveDraft(true), 60000);
-    return () => clearInterval(interval);
-  }, [selectedAircraft, selectedServices, quoteData, draftId]);
-
   const openSendModal = () => {
     if (!preselectedCustomer) {
       alert('Please select or add a customer before sending the quote.');
@@ -884,6 +792,96 @@ function NewQuoteContent() {
         })(),
       }
     : null;
+
+  // --- Draft save functions (must be after quoteData is computed) ---
+  const buildQuotePayload = () => {
+    if (!quoteData) return null;
+    return {
+      aircraft_type: quoteData.aircraft?.category || quoteData.aircraft?.name || 'unknown',
+      aircraft_model: quoteData.aircraft?.name || '',
+      aircraft_id: quoteData.aircraft?.id || null,
+      surface_area_sqft: quoteData.aircraft?.surface_area_sqft || null,
+      selected_services: quoteData.selectedServices?.map(s => s.id) || [],
+      selected_package_id: quoteData.selectedPackage?.id || null,
+      selected_package_name: quoteData.selectedPackage?.name || null,
+      total_hours: quoteData.totalHours || 0,
+      total_price: quoteData.totalPrice || 0,
+      notes: quoteNotes || '',
+      line_items: quoteData.lineItems || [],
+      labor_total: quoteData.laborTotal || 0,
+      products_total: quoteData.productsTotal || 0,
+      access_difficulty: quoteData.accessDifficulty || 1.0,
+      job_location: quoteData.jobLocation || null,
+      minimum_fee_applied: quoteData.isMinimumApplied || false,
+      calculated_price: quoteData.calculatedPrice || quoteData.totalPrice || 0,
+      discount_percent: quoteData.discountPercent || 0,
+      addon_fees: quoteData.addonFees || [],
+      addon_total: quoteData.addonsTotal || 0,
+      airport: airport || null,
+      tail_number: tailNumber || null,
+      proposed_date: proposedDate || null,
+      proposed_time: proposedTime || null,
+      product_estimates: quoteData.productEstimates || [],
+      linked_products: quoteData.linkedProducts || [],
+      linked_equipment: quoteData.linkedEquipment || [],
+      client_name: preselectedCustomer?.name || '',
+      client_email: preselectedCustomer?.email || '',
+      customer_id: preselectedCustomer?.id || null,
+      customer_phone: preselectedCustomer?.phone || null,
+    };
+  };
+
+  const saveDraft = async (silent = false) => {
+    if (!quoteData || !selectedAircraft) return;
+    const payload = buildQuotePayload();
+    if (!payload) return;
+    if (!silent) setDraftSaving(true);
+    try {
+      const token = localStorage.getItem('vector_token');
+      const headers = { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` };
+      if (draftId) {
+        await fetch(`/api/quotes/${draftId}`, { method: 'PUT', headers, body: JSON.stringify(payload) });
+      } else {
+        const res = await fetch('/api/quotes', { method: 'POST', headers, body: JSON.stringify(payload) });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.id) setDraftId(data.id);
+        }
+      }
+      if (silent) {
+        setAutoSaveLabel('Auto-saved');
+        setTimeout(() => setAutoSaveLabel(''), 3000);
+      } else {
+        toastSuccess('Draft saved — find it in Quotes');
+      }
+    } catch (err) {
+      if (!silent) toastError?.('Failed to save draft');
+      console.error('[saveDraft]', err);
+    } finally {
+      if (!silent) setDraftSaving(false);
+    }
+  };
+
+  // Cmd+S / Ctrl+S → save draft
+  useEffect(() => {
+    const handler = (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+        e.preventDefault();
+        if (selectedAircraft && Object.keys(selectedServices).length > 0) {
+          saveDraft();
+        }
+      }
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [selectedAircraft, selectedServices, quoteData, draftId]);
+
+  // Auto-save every 60s while editing
+  useEffect(() => {
+    if (!selectedAircraft || Object.keys(selectedServices).length === 0) return;
+    const interval = setInterval(() => saveDraft(true), 60000);
+    return () => clearInterval(interval);
+  }, [selectedAircraft, selectedServices, quoteData, draftId]);
 
   if (loading) {
     return <LoadingSpinner message="Loading..." />;
