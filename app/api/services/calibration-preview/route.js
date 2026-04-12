@@ -56,13 +56,25 @@ export async function GET(request) {
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
-    const referenceType = searchParams.get('reference_type') || 'wash';
+    let referenceType = searchParams.get('reference_type') || 'wash';
     const adjPctRaw = searchParams.get('adjustment_pct');
     const adjPct = Number.isFinite(Number(adjPctRaw)) ? Number(adjPctRaw) : 0;
-    const multiplier = 1 + adjPct / 100;
+    const multiplier = Math.max(0, 1 + adjPct / 100);
 
     const supabase = getSupabase();
     if (!supabase) return Response.json({ error: 'Database not configured' }, { status: 500 });
+
+    // If reference is a detailer's own service (svc:uuid), resolve its hours_field
+    let svcHoursField = null;
+    if (referenceType.startsWith('svc:')) {
+      const svcId = referenceType.slice(4);
+      const { data: svcRow } = await supabase.from('services').select('hours_field').eq('id', svcId).maybeSingle();
+      if (svcRow?.hours_field) {
+        svcHoursField = svcRow.hours_field;
+      }
+      // Fall back to standard type mapping
+      referenceType = 'wash';
+    }
 
     const { data: aircraft, error } = await supabase
       .from('aircraft')
@@ -77,7 +89,13 @@ export async function GET(request) {
     for (const bucket of CATEGORY_BUCKETS) {
       const sample = pickSample(aircraft || [], bucket);
       if (!sample) continue;
-      const refHours = computeReferenceHours(sample, referenceType);
+      // Use the resolved hours_field from the detailer's service, or fall back to standard
+      let refHours;
+      if (svcHoursField && sample[svcHoursField] != null) {
+        refHours = parseFloat(sample[svcHoursField]) || 0;
+      } else {
+        refHours = computeReferenceHours(sample, referenceType);
+      }
       const calibratedHours = Math.round(refHours * multiplier * 100) / 100;
       samples.push({
         category: bucket.key,

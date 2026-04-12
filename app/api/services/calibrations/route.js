@@ -96,7 +96,17 @@ export async function POST(request) {
       return Response.json({ error: calibErr.message }, { status: 500 });
     }
 
-    // 2. Fetch aircraft
+    // 2. Resolve reference — standard type or detailer's own service (svc:uuid)
+    let resolvedRefType = reference_service_type;
+    let svcHoursField = null;
+    if (reference_service_type.startsWith('svc:')) {
+      const refSvcId = reference_service_type.slice(4);
+      const { data: refSvc } = await supabase.from('services').select('hours_field').eq('id', refSvcId).maybeSingle();
+      if (refSvc?.hours_field) svcHoursField = refSvc.hours_field;
+      resolvedRefType = 'wash'; // fallback for standard mapping
+    }
+
+    // 3. Fetch aircraft
     const { data: aircraft, error: acErr } = await supabase
       .from('aircraft')
       .select('*');
@@ -106,10 +116,15 @@ export async function POST(request) {
       return Response.json({ error: acErr.message }, { status: 500 });
     }
 
-    // 3-4. Compute and build overrides
-    const multiplier = 1 + adjPct / 100;
+    // 4. Compute and build overrides
+    const multiplier = Math.max(0, 1 + adjPct / 100);
     const overrides = (aircraft || []).map((ac) => {
-      const refHours = computeReferenceHours(ac, reference_service_type);
+      let refHours;
+      if (svcHoursField && ac[svcHoursField] != null) {
+        refHours = parseFloat(ac[svcHoursField]) || 0;
+      } else {
+        refHours = computeReferenceHours(ac, resolvedRefType);
+      }
       const calibratedHours = Math.round(refHours * multiplier * 100) / 100;
       return {
         detailer_id: user.id,

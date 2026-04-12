@@ -1437,6 +1437,8 @@ export default function ServicesPage() {
         isOpen={!!calibratingService}
         onClose={() => setCalibratingService(null)}
         service={calibratingService}
+        detailerServices={services}
+        calibrations={[]}
       />
     </div>
   );

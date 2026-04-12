@@ -1,22 +1,22 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 
-const REFERENCE_OPTIONS = [
+const STANDARD_REFERENCES = [
   { value: 'wash', label: 'Wash (Maintenance Wash)' },
   { value: 'polish', label: 'Polish' },
   { value: 'compound', label: 'Compound' },
   { value: 'wax', label: 'Wax' },
   { value: 'ceramic', label: 'Ceramic Coating' },
-  { value: 'interior', label: 'Interior Detail' },
+  { value: 'detail_interior', label: 'Interior Detail' },
   { value: 'leather', label: 'Leather Conditioning' },
 ];
 
 const INPUT_CLASS =
   'w-full bg-v-surface border border-v-border text-v-text-primary rounded-sm px-3 py-2 text-sm outline-none focus:border-v-gold/50';
 
-export default function CalibrationModal({ isOpen, onClose, service }) {
+export default function CalibrationModal({ isOpen, onClose, service, detailerServices, calibrations }) {
   const [referenceType, setReferenceType] = useState('polish');
-  const [adjustmentPct, setAdjustmentPct] = useState(50);
+  const [adjustmentPct, setAdjustmentPct] = useState(0);
   const [preview, setPreview] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -28,7 +28,7 @@ export default function CalibrationModal({ isOpen, onClose, service }) {
   useEffect(() => {
     if (isOpen) {
       setReferenceType('polish');
-      setAdjustmentPct(50);
+      setAdjustmentPct(0);
       setSuccessMessage('');
       setError('');
     }
@@ -43,7 +43,7 @@ export default function CalibrationModal({ isOpen, onClose, service }) {
       try {
         const token = localStorage.getItem('vector_token');
         const res = await fetch(
-          `/api/services/calibration-preview?reference_type=${referenceType}&adjustment_pct=${adjustmentPct}`,
+          `/api/services/calibration-preview?reference_type=${encodeURIComponent(referenceType)}&adjustment_pct=${adjustmentPct}`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (res.ok) {
@@ -102,6 +102,28 @@ export default function CalibrationModal({ isOpen, onClose, service }) {
   if (!isOpen || !service) return null;
 
   const multiplier = (1 + adjustmentPct / 100).toFixed(2).replace(/\.?0+$/, '');
+  const calibratedIds = new Set((calibrations || []).map(c => c.service_id));
+
+  // Build grouped reference options: detailer's own services first, then standard
+  const ownServices = (detailerServices || [])
+    .filter(s => s.id !== service.id) // exclude the service being calibrated
+    .map(s => ({
+      value: `svc:${s.id}`,
+      label: s.name,
+      calibrated: calibratedIds.has(s.id),
+    }));
+
+  const adjustmentLabel = adjustmentPct === 0
+    ? 'SAME'
+    : adjustmentPct > 0
+      ? `+${adjustmentPct}% MORE TIME`
+      : `${adjustmentPct}% LESS TIME`;
+
+  const adjustmentColor = adjustmentPct === 0
+    ? 'text-white'
+    : adjustmentPct > 0
+      ? 'text-blue-400'
+      : 'text-red-400';
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -109,7 +131,7 @@ export default function CalibrationModal({ isOpen, onClose, service }) {
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-v-border shrink-0">
           <h2 className="text-base sm:text-lg font-semibold text-v-text-primary">
-            Calibrate Hours: <span className="text-v-gold">{service.name}</span>
+            Calibrate: <span className="text-v-gold">{service.name}</span>
           </h2>
           <button
             onClick={onClose}
@@ -123,55 +145,65 @@ export default function CalibrationModal({ isOpen, onClose, service }) {
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
           <p className="text-sm text-v-text-secondary">
-            Pick a similar standard service and how much MORE time your service takes.
+            Pick a reference service and adjust how much more or less time this service takes.
           </p>
 
-          {/* Reference dropdown */}
+          {/* Reference dropdown — own services + standard types */}
           <div>
             <label className="block text-xs font-medium text-v-text-secondary mb-1.5 uppercase tracking-wide">
-              Most similar to:
+              This service is most similar to:
             </label>
             <select
               value={referenceType}
               onChange={(e) => setReferenceType(e.target.value)}
               className={INPUT_CLASS}
             >
-              {REFERENCE_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
-                  {opt.label}
-                </option>
-              ))}
+              {ownServices.length > 0 && (
+                <optgroup label="YOUR SERVICES">
+                  {ownServices.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.calibrated ? '✓ ' : ''}{opt.label}
+                    </option>
+                  ))}
+                </optgroup>
+              )}
+              <optgroup label="STANDARD REFERENCES">
+                {STANDARD_REFERENCES.map((opt) => (
+                  <option key={opt.value} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </optgroup>
             </select>
           </div>
 
-          {/* Adjustment slider */}
+          {/* Adjustment slider: -50 to +200 */}
           <div>
             <label className="block text-xs font-medium text-v-text-secondary mb-2 uppercase tracking-wide">
-              Adjustment
+              Time Adjustment
             </label>
             <div className="text-center mb-3">
-              <div className="text-3xl sm:text-4xl font-bold text-v-gold">
-                {adjustmentPct === 0 ? 'Same' : `+${adjustmentPct}% MORE TIME`}
+              <div className={`text-3xl sm:text-4xl font-bold ${adjustmentColor}`}>
+                {adjustmentLabel}
               </div>
-              {adjustmentPct > 0 && (
-                <div className="text-xs text-v-text-secondary mt-1">
-                  {multiplier}x reference time
-                </div>
-              )}
+              <div className="text-xs text-v-text-secondary mt-1">
+                {multiplier}x reference time
+              </div>
             </div>
             <input
               type="range"
-              min="0"
-              max="100"
+              min="-50"
+              max="200"
               step="5"
               value={adjustmentPct}
               onChange={(e) => setAdjustmentPct(parseInt(e.target.value, 10))}
               className="w-full accent-v-gold cursor-pointer"
             />
             <div className="flex justify-between text-[10px] text-v-text-secondary mt-1 px-0.5">
+              <span>-50% (0.5x)</span>
               <span>Same</span>
-              <span>1.5x</span>
-              <span>2x</span>
+              <span>+100% (2x)</span>
+              <span>+200% (3x)</span>
             </div>
           </div>
 
@@ -189,18 +221,19 @@ export default function CalibrationModal({ isOpen, onClose, service }) {
                 preview.slice(0, 4).map((row, i) => {
                   const model = row.model || row.aircraft_model || row.name || `Aircraft ${i + 1}`;
                   const ref = row.reference_hours ?? row.reference ?? row.base_hours ?? 0;
-                  const cal = row.calibrated_hours ?? row.adjusted_hours ?? row.hours ?? 0;
+                  const cal = Number(ref) * (1 + adjustmentPct / 100);
                   return (
                     <div
                       key={i}
-                      className="flex items-center justify-between px-3 py-2 text-sm"
+                      className="flex items-center justify-between px-3 py-2.5 text-sm"
                     >
-                      <span className="text-v-text-primary font-medium">{model}</span>
-                      <span className="text-xs">
-                        <span className="text-v-text-secondary">Reference: </span>
+                      <span className="text-v-text-primary font-medium truncate mr-2">{model}</span>
+                      <span className="text-xs whitespace-nowrap">
                         <span className="text-v-text-secondary">{Number(ref).toFixed(1)}h</span>
-                        <span className="text-v-text-secondary"> &rarr; Your service: </span>
-                        <span className="text-v-gold font-semibold">{Number(cal).toFixed(1)}h</span>
+                        <span className="text-v-text-secondary"> → </span>
+                        <span className={`font-semibold ${adjustmentPct < 0 ? 'text-red-400' : adjustmentPct > 0 ? 'text-blue-400' : 'text-white'}`}>
+                          {cal.toFixed(1)}h
+                        </span>
                       </span>
                     </div>
                   );
