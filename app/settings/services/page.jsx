@@ -101,6 +101,7 @@ export default function ServicesPage() {
 
   // Calibration modal state
   const [calibratingService, setCalibratingService] = useState(null);
+  const [calibrations, setCalibrations] = useState([]);
 
   // Error state
   const [error, setError] = useState('');
@@ -132,12 +133,13 @@ export default function ServicesPage() {
   const fetchData = async () => {
     const token = localStorage.getItem('vector_token');
     try {
-      const [svcRes, pkgRes, feeRes, prodRes, equipRes] = await Promise.all([
+      const [svcRes, pkgRes, feeRes, prodRes, equipRes, calRes] = await Promise.all([
         fetch('/api/services', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/packages', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/addon-fees', { headers: { Authorization: `Bearer ${token}` } }),
         fetch('/api/products', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
         fetch('/api/equipment', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
+        fetch('/api/services/calibrations', { headers: { Authorization: `Bearer ${token}` } }).catch(() => null),
       ]);
       if (svcRes.ok) {
         const data = await svcRes.json();
@@ -158,6 +160,12 @@ export default function ServicesPage() {
       if (equipRes?.ok) {
         const data = await equipRes.json();
         setAllEquipment(data.equipment || []);
+      }
+      if (calRes?.ok) {
+        try {
+          const data = await calRes.json();
+          setCalibrations(data.calibrations || []);
+        } catch {}
       }
       // Fetch all service links for badge counts
       const [spRes, seRes] = await Promise.all([
@@ -1435,10 +1443,10 @@ export default function ServicesPage() {
 
       <CalibrationModal
         isOpen={!!calibratingService}
-        onClose={() => setCalibratingService(null)}
+        onClose={() => { setCalibratingService(null); fetchData(); }}
         service={calibratingService}
         detailerServices={services}
-        calibrations={[]}
+        calibrations={calibrations}
       />
     </div>
   );
