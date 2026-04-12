@@ -26,83 +26,77 @@ export async function GET(request) {
   const days = parseInt(searchParams.get('days')) || 7;
 
   const supabase = getSupabase();
+  const isLead = user.is_lead_tech;
+  const contactCols = isLead ? ', client_name, client_phone, client_email' : '';
 
-  // Fetch active jobs (paid, scheduled, accepted, in_progress) for next X days
-  const now = new Date();
-  const futureDate = new Date(now);
-  futureDate.setDate(futureDate.getDate() + days);
+  // Step 1: Get all job_assignments for this crew member (or all for lead tech)
+  let assignmentQuery = supabase.from('job_assignments').select('job_id');
+  if (isLead) {
+    assignmentQuery = assignmentQuery.eq('detailer_id', user.detailer_id);
+  } else {
+    assignmentQuery = assignmentQuery.eq('team_member_id', user.id);
+  }
+  const { data: assignments } = await assignmentQuery;
+  const assignedJobIds = new Set((assignments || []).map(a => a.job_id).filter(Boolean));
+  console.log(`[crew/jobs] member=${user.id} is_lead=${isLead} assignments=${assignedJobIds.size}`);
 
-  // Get quotes that are active jobs
-  let query = supabase
-    .from('quotes')
-    .select('id, aircraft_model, aircraft_type, airport, scheduled_date, status, line_items, notes, created_at')
-    .eq('detailer_id', user.detailer_id)
-    .in('status', ['paid', 'accepted', 'scheduled', 'in_progress'])
-    .order('scheduled_date', { ascending: true, nullsFirst: false });
+  const jobs = [];
 
-  // Only include lead tech fields if authorized
-  if (user.is_lead_tech) {
-    query = supabase
+  // Step 2: Fetch quote-based jobs — lead techs see all, regular crew only see assigned
+  try {
+    let quoteQuery = supabase
       .from('quotes')
-      .select('id, aircraft_model, aircraft_type, airport, scheduled_date, status, line_items, notes, created_at, client_name, client_phone, client_email')
+      .select(`id, aircraft_model, aircraft_type, airport, scheduled_date, status, line_items, notes, created_at${contactCols}`)
       .eq('detailer_id', user.detailer_id)
       .in('status', ['paid', 'accepted', 'scheduled', 'in_progress'])
       .order('scheduled_date', { ascending: true, nullsFirst: false });
-  }
 
-  const { data: quotesJobs, error } = await query;
-
-  console.log('[crew/jobs] member:', user.id, 'detailer:', user.detailer_id, 'quote_jobs:', quotesJobs?.length || 0, 'error:', error?.message || 'none');
-
-  if (error) {
-    console.error('Crew jobs fetch error:', error);
-    return Response.json({ error: 'Failed to fetch jobs' }, { status: 500 });
-  }
-
-  const jobs = [...(quotesJobs || [])];
-
-  // Also fetch manually created jobs — assigned to this crew member, or ALL if lead tech
-  try {
-    let assignmentQuery = supabase.from('job_assignments').select('job_id');
-    if (user.is_lead_tech) {
-      assignmentQuery = assignmentQuery.eq('detailer_id', user.detailer_id);
+    const { data: quotesJobs, error } = await quoteQuery;
+    if (error) {
+      console.log('[crew/jobs] quotes error:', error.message);
     } else {
-      assignmentQuery = assignmentQuery.eq('team_member_id', user.id);
-    }
-    const { data: assignments, error: assignErr } = await assignmentQuery;
-    console.log(`[crew-jobs] user.id=${user.id} is_lead=${user.is_lead_tech} assignments=${assignments?.length || 0} err=${assignErr?.message || 'none'}`);
-
-    if (assignments?.length > 0) {
-      const assignedJobIds = assignments.map(a => a.job_id).filter(Boolean);
-      const { data: manualJobs } = await supabase
-        .from('jobs')
-        .select('id, customer_name, customer_email, aircraft_make, aircraft_model, tail_number, airport, services, total_price, status, scheduled_date, created_at, completion_notes')
-        .in('id', assignedJobIds)
-        .in('status', ['scheduled', 'in_progress']);
-
-      if (manualJobs?.length > 0) {
-        for (const mj of manualJobs) {
-          // Convert to same format as quote-based jobs
-          jobs.push({
-            id: mj.id,
-            aircraft_model: mj.aircraft_model,
-            aircraft_type: mj.aircraft_make,
-            airport: mj.airport,
-            scheduled_date: mj.scheduled_date,
-            status: mj.status,
-            line_items: [],
-            notes: mj.completion_notes,
-            created_at: mj.created_at,
-            client_name: mj.customer_name,
-            client_email: mj.customer_email,
-            _source: 'jobs_table',
-            _services_text: mj.services,
-          });
-        }
+      for (const q of quotesJobs || []) {
+        // Regular crew: only show if assigned to this quote (or if no assignments exist for any job — backward compat)
+        if (!isLead && assignedJobIds.size > 0 && !assignedJobIds.has(q.id)) continue;
+        jobs.push(q);
       }
     }
   } catch (e) {
-    console.log('[crew-jobs] Assignments query error:', e.message);
+    console.log('[crew/jobs] quotes error:', e.message);
+  }
+
+  // Step 3: Fetch manual jobs from jobs table — only assigned ones
+  if (assignedJobIds.size > 0) {
+    try {
+      const { data: manualJobs } = await supabase
+        .from('jobs')
+        .select('id, customer_name, customer_email, aircraft_make, aircraft_model, tail_number, airport, services, total_price, status, scheduled_date, created_at, completion_notes')
+        .in('id', [...assignedJobIds])
+        .in('status', ['scheduled', 'in_progress']);
+
+      for (const mj of manualJobs || []) {
+        // Skip if already in quotes list
+        if (jobs.some(j => j.id === mj.id)) continue;
+        jobs.push({
+          id: mj.id,
+          aircraft_model: mj.aircraft_model,
+          aircraft_type: mj.aircraft_make,
+          airport: mj.airport,
+          scheduled_date: mj.scheduled_date,
+          status: mj.status,
+          line_items: [],
+          notes: mj.completion_notes,
+          created_at: mj.created_at,
+          client_name: mj.customer_name,
+          client_email: mj.customer_email,
+          tail_number: mj.tail_number,
+          _source: 'jobs_table',
+          _services_text: mj.services,
+        });
+      }
+    } catch (e) {
+      console.log('[crew/jobs] manual jobs error:', e.message);
+    }
   }
 
   // Strip pricing from line items - crew should never see pricing
@@ -122,10 +116,11 @@ export async function GET(request) {
     const result = {
       id: job.id,
       aircraft: job.aircraft_model || job.aircraft_type || 'Aircraft',
+      tail_number: job.tail_number || null,
       airport: job.airport,
       scheduled_date: job.scheduled_date,
       status: job.status,
-      services: sanitizedLineItems.length > 0 ? sanitizedLineItems : (Array.isArray(servicesText) ? servicesText.map(s => ({ description: s })) : []),
+      services: sanitizedLineItems.length > 0 ? sanitizedLineItems : (Array.isArray(servicesText) ? servicesText.map(s => typeof s === 'string' ? { description: s } : { description: s.name || s.description || 'Service' }) : []),
       notes: job.notes,
       created_at: job.created_at,
     };

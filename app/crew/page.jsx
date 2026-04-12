@@ -523,8 +523,11 @@ export default function CrewDashboard() {
             )}
 
             <h2 className="text-white font-semibold text-lg mb-3">{'Active Jobs'}</h2>
-            {jobs.length === 0 && (
-              <div className="text-white/50 text-center py-8">{'No active jobs'}</div>
+            {jobs.length === 0 && pendingAssignments === 0 && (
+              <div className="bg-white/5 border border-white/10 rounded-xl p-8 text-center">
+                <p className="text-white/60 text-sm mb-1">No jobs assigned to you today</p>
+                <p className="text-white/40 text-xs">When your team lead dispatches a job, it will appear here.</p>
+              </div>
             )}
             {jobs.map(job => (
               <button
@@ -534,7 +537,7 @@ export default function CrewDashboard() {
               >
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-white font-medium">{job.aircraft}</p>
+                    <p className="text-white font-medium">{job.aircraft}{job.tail_number ? ` · ${job.tail_number}` : ''}</p>
                     <p className="text-white/60 text-sm">{job.airport || 'No airport'}</p>
                     {job.scheduled_date && (
                       <p className="text-white/50 text-xs mt-1">
