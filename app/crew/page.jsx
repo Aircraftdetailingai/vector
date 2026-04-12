@@ -20,6 +20,11 @@ export default function CrewDashboard() {
   const [jobs, setJobs] = useState([]);
   const [selectedJob, setSelectedJob] = useState(null);
 
+  // Assignments state
+  const [assignments, setAssignments] = useState([]);
+  const [pendingAssignments, setPendingAssignments] = useState(0);
+  const [assignmentActioning, setAssignmentActioning] = useState(null);
+
   // Clock state
   const [clockStatus, setClockStatus] = useState(null);
   const [clockLoading, setClockLoading] = useState(false);
@@ -95,6 +100,32 @@ export default function CrewDashboard() {
     if (data.jobs) setJobs(data.jobs);
   }, [token]);
 
+  // Fetch assignments (pending + accepted job assignments)
+  const fetchAssignments = useCallback(async () => {
+    if (!token) return;
+    const data = await API('/api/crew/assignments', token);
+    if (data.assignments) {
+      setAssignments(data.assignments);
+      setPendingAssignments(data.assignments.filter(a => a.status === 'pending').length);
+    }
+  }, [token]);
+
+  // Handle accept/decline of an assignment
+  const handleAssignmentAction = async (assignmentId, action) => {
+    setAssignmentActioning(assignmentId);
+    const data = await API('/api/crew/assignments', token, {
+      method: 'PATCH',
+      body: JSON.stringify({ assignment_id: assignmentId, action }),
+    });
+    if (data.success) {
+      showMsg(action === 'accept' ? 'Assignment accepted!' : 'Assignment declined');
+      await Promise.all([fetchAssignments(), fetchJobs()]);
+    } else {
+      showMsg(data.error || 'Failed', 'error');
+    }
+    setAssignmentActioning(null);
+  };
+
   // Fetch clock status
   const fetchClock = useCallback(async () => {
     if (!token) return;
@@ -145,8 +176,15 @@ export default function CrewDashboard() {
   useEffect(() => {
     if (!token) return;
     setLoading(true);
-    Promise.all([fetchJobs(), fetchClock()]).finally(() => setLoading(false));
-  }, [token, fetchJobs, fetchClock]);
+    Promise.all([fetchJobs(), fetchClock(), fetchAssignments()]).finally(() => setLoading(false));
+  }, [token, fetchJobs, fetchClock, fetchAssignments]);
+
+  // Poll assignments every 30s
+  useEffect(() => {
+    if (!token) return;
+    const interval = setInterval(() => { fetchAssignments(); }, 30000);
+    return () => clearInterval(interval);
+  }, [token, fetchAssignments]);
 
   // Load tab data
   useEffect(() => {
@@ -422,6 +460,68 @@ export default function CrewDashboard() {
         {/* ===== JOBS TAB ===== */}
         {tab === 'jobs' && !selectedJob && (
           <div className="space-y-3">
+            {/* Pending assignments banner */}
+            {pendingAssignments > 0 && (
+              <button
+                onClick={() => {
+                  const el = document.getElementById('pending-assignments-list');
+                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }}
+                className="w-full bg-amber-500/20 border border-amber-400/40 hover:bg-amber-500/25 rounded-xl p-4 text-left transition-colors flex items-center gap-3"
+              >
+                <span className="text-2xl">🔔</span>
+                <div className="flex-1">
+                  <p className="text-amber-200 font-semibold text-sm">
+                    {`You have ${pendingAssignments} pending job assignment${pendingAssignments === 1 ? '' : 's'}`}
+                  </p>
+                  <p className="text-amber-200/70 text-xs">{'Tap to review and respond'}</p>
+                </div>
+                <span className="text-amber-200 text-xl">→</span>
+              </button>
+            )}
+
+            {/* Pending assignment cards */}
+            {pendingAssignments > 0 && (
+              <div id="pending-assignments-list" className="space-y-3">
+                <h2 className="text-white font-semibold text-lg mb-1">{'Pending Assignments'}</h2>
+                {assignments.filter(a => a.status === 'pending').map(a => (
+                  <div
+                    key={a.id}
+                    className="bg-white/10 backdrop-blur border border-amber-400/30 rounded-xl p-4"
+                  >
+                    <div className="mb-3">
+                      <p className="text-white font-semibold text-base">{a.aircraft || 'Aircraft'}</p>
+                      {a.tail_number && (
+                        <p className="text-white/70 text-sm">{a.tail_number}</p>
+                      )}
+                      <p className="text-white/60 text-sm">{a.airport || 'No airport'}</p>
+                      {a.scheduled_date && (
+                        <p className="text-white/50 text-xs mt-1">
+                          {new Date(a.scheduled_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleAssignmentAction(a.id, 'accept')}
+                        disabled={assignmentActioning === a.id}
+                        className="flex-1 bg-green-500 hover:bg-green-600 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
+                      >
+                        {assignmentActioning === a.id ? '...' : 'Accept'}
+                      </button>
+                      <button
+                        onClick={() => handleAssignmentAction(a.id, 'decline')}
+                        disabled={assignmentActioning === a.id}
+                        className="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-50 text-white font-semibold py-3 rounded-lg transition-colors"
+                      >
+                        {assignmentActioning === a.id ? '...' : 'Decline'}
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             <h2 className="text-white font-semibold text-lg mb-3">{'Active Jobs'}</h2>
             {jobs.length === 0 && (
               <div className="text-white/50 text-center py-8">{'No active jobs'}</div>
