@@ -11,7 +11,7 @@ import ReactFlow, {
   MarkerType,
   useReactFlow,
   ReactFlowProvider,
-  getSmoothStepPath,
+  getBezierPath,
   EdgeLabelRenderer,
   BaseEdge,
 } from 'reactflow';
@@ -24,12 +24,13 @@ import FlowPreview from '@/components/flow-builder/FlowPreview';
 // ─── Deletable edge with hover ✕ button ───
 function DeletableEdge({ id, sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition, style, markerEnd, label, labelStyle, selected, data }) {
   const [hovered, setHovered] = useState(false);
-  const [edgePath, labelX, labelY] = getSmoothStepPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
+  const [edgePath, labelX, labelY] = getBezierPath({ sourceX, sourceY, targetX, targetY, sourcePosition, targetPosition });
 
   const activeStyle = {
     ...style,
-    stroke: selected ? '#f87171' : (hovered ? '#94a3b8' : style?.stroke),
-    strokeWidth: selected ? 3 : (style?.strokeWidth || 2),
+    stroke: selected ? '#f87171' : (hovered ? '#60a5fa' : (style?.stroke || '#0ea5e9')),
+    strokeWidth: selected ? 3 : (hovered ? 2.5 : (style?.strokeWidth || 2)),
+    strokeDasharray: style?.strokeDasharray || '6 4',
   };
 
   return (
@@ -79,9 +80,9 @@ const NODE_PALETTE = [
 // ─── Default edge style ───
 const defaultEdgeOptions = {
   type: 'deletable',
-  animated: true,
-  style: { stroke: '#4a5568', strokeWidth: 2 },
-  markerEnd: { type: MarkerType.ArrowClosed, color: '#4a5568' },
+  animated: false,
+  style: { stroke: '#0ea5e9', strokeWidth: 2, strokeDasharray: '6 4' },
+  markerEnd: { type: MarkerType.ArrowClosed, color: '#0ea5e9', width: 14, height: 14 },
 };
 
 // ─── Standard default flow — linear, clean ───
@@ -114,19 +115,24 @@ export { buildDefaultFlow };
 function autoLayout(nodes, edges) {
   const g = new dagre.graphlib.Graph();
   g.setDefaultEdgeLabel(() => ({}));
-  g.setGraph({ rankdir: 'TB', nodesep: 80, ranksep: 160, marginx: 40, marginy: 40 });
+  g.setGraph({ rankdir: 'TB', nodesep: 200, ranksep: 180, marginx: 60, marginy: 60 });
 
   nodes.forEach(n => {
-    const w = n.type === 'start' || n.type === 'end' ? 220 : 260;
-    g.setNode(n.id, { width: w, height: 120 });
+    const w = n.type === 'start' || n.type === 'end' ? 220 : 280;
+    // Wider allocation for branching nodes
+    const isBranching = n.data?.answerType === 'single_select' && n.data?.allowBranching;
+    const isYesNo = n.data?.answerType === 'yes_no';
+    const branchCount = (isBranching && n.data?.options?.length) || (isYesNo ? 2 : 0);
+    const effectiveWidth = branchCount > 2 ? w + branchCount * 60 : w;
+    g.setNode(n.id, { width: effectiveWidth, height: 140 });
   });
   edges.forEach(e => g.setEdge(e.source, e.target));
   dagre.layout(g);
 
   return nodes.map(n => {
     const pos = g.node(n.id);
-    const w = n.type === 'start' || n.type === 'end' ? 220 : 260;
-    return { ...n, position: { x: pos.x - w / 2, y: pos.y - 60 } };
+    const w = n.type === 'start' || n.type === 'end' ? 220 : 280;
+    return { ...n, position: { x: pos.x - w / 2, y: pos.y - 70 } };
   });
 }
 
@@ -311,9 +317,17 @@ function FlowBuilderInner() {
   const handleCleanUp = useCallback(() => {
     setNodes(nds => {
       const laid = autoLayout(nds, edges);
-      setTimeout(() => reactFlowInstance?.fitView({ padding: 0.3 }), 50);
+      setTimeout(() => reactFlowInstance?.fitView({ padding: 0.15, duration: 300 }), 100);
       return laid;
     });
+    // Ensure all edges use the deletable type and proper styling
+    setEdges(eds => eds.map(e => ({
+      ...e,
+      type: 'deletable',
+      animated: false,
+      style: { stroke: '#0ea5e9', strokeWidth: 2, strokeDasharray: '6 4' },
+      markerEnd: { type: MarkerType.ArrowClosed, color: '#0ea5e9', width: 14, height: 14 },
+    })));
     showToast('Layout cleaned up');
   }, [edges, reactFlowInstance]);
 
