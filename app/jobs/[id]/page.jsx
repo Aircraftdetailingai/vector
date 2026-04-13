@@ -37,6 +37,10 @@ export default function JobDetailPage() {
   const [completionData, setCompletionData] = useState(null);
   const [submittingCompletion, setSubmittingCompletion] = useState(false);
 
+  // Delivery report state
+  const [deliveryLoading, setDeliveryLoading] = useState(false);
+  const [deliveryLink, setDeliveryLink] = useState(null);
+
   // Product selection state
   const [jobProducts, setJobProducts] = useState({ selections: [], serviceProducts: [] });
   const [changingProduct, setChangingProduct] = useState(null);
@@ -109,6 +113,8 @@ export default function JobDetailPage() {
     if (!token) return;
     fetchAssignments(token);
     fetchSuggestions(token);
+    // Load existing delivery link
+    if (job?.delivery_link) setDeliveryLink(job.delivery_link);
     // Fetch product selections for this job
     fetch(`/api/jobs/${jobId}/products`, { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : {})
@@ -815,6 +821,42 @@ export default function JobDetailPage() {
                 {invoiceLoading ? 'Sending...' : 'Generate & Send Invoice'}
               </button>
             )}
+
+            {/* Delivery Report */}
+            <div className="mt-4 pt-4 border-t border-green-500/10">
+              {deliveryLink ? (
+                <div className="text-center">
+                  <p className="text-green-400 text-sm mb-2">Delivery report ready</p>
+                  <a href={`/delivery/${deliveryLink}`} target="_blank" rel="noreferrer" className="text-v-gold text-xs hover:underline">
+                    View Report &rarr;
+                  </a>
+                </div>
+              ) : (
+                <button
+                  onClick={async () => {
+                    setDeliveryLoading(true);
+                    try {
+                      const token = localStorage.getItem('vector_token');
+                      const customerEmail = job.client_email || job.customer_email;
+                      const res = await fetch(`/api/jobs/${jobId}/delivery`, {
+                        method: 'POST',
+                        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ send_email: !!customerEmail, customer_email: customerEmail }),
+                      });
+                      if (res.ok) {
+                        const d = await res.json();
+                        setDeliveryLink(d.share_link);
+                        if (customerEmail) alert('Delivery report sent to ' + customerEmail);
+                      }
+                    } catch {} finally { setDeliveryLoading(false); }
+                  }}
+                  disabled={deliveryLoading}
+                  className="w-full px-5 py-2 border border-green-500/30 text-green-400 rounded-lg text-sm font-medium hover:bg-green-500/10 transition-colors disabled:opacity-50"
+                >
+                  {deliveryLoading ? 'Generating...' : 'Generate Delivery Report'}
+                </button>
+              )}
+            </div>
           </div>
         )}
       </div>

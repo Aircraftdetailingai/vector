@@ -60,6 +60,12 @@ export default function CrewDashboard() {
   const [checkedEquipment, setCheckedEquipment] = useState({});
   const [missingReport, setMissingReport] = useState({ type: '', item_id: '', item_name: '', notes: '' });
 
+  // Schedule state
+  const [scheduleJobs, setScheduleJobs] = useState([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [scheduleWeekOffset, setScheduleWeekOffset] = useState(0);
+  const [scheduleVisibility, setScheduleVisibility] = useState(7);
+
   // Issue report state
   const [showIssueReport, setShowIssueReport] = useState(false);
   const [issueDescription, setIssueDescription] = useState('');
@@ -172,6 +178,18 @@ export default function CrewDashboard() {
     setJobMaterialsLoading(false);
   }, [token, user]);
 
+  // Fetch schedule
+  const fetchSchedule = useCallback(async () => {
+    if (!token) return;
+    setScheduleLoading(true);
+    try {
+      const data = await API('/api/crew/schedule', token);
+      if (data.jobs) setScheduleJobs(data.jobs);
+      if (data.visibility_days) setScheduleVisibility(data.visibility_days);
+    } catch { /* ignore */ }
+    setScheduleLoading(false);
+  }, [token]);
+
   // Initial load
   useEffect(() => {
     if (!token) return;
@@ -190,7 +208,8 @@ export default function CrewDashboard() {
   useEffect(() => {
     if (tab === 'products') fetchProducts();
     if (tab === 'equipment') fetchEquipment();
-  }, [tab, fetchProducts, fetchEquipment]);
+    if (tab === 'schedule') fetchSchedule();
+  }, [tab, fetchProducts, fetchEquipment, fetchSchedule]);
 
   // Load photos and materials when job selected
   useEffect(() => {
@@ -406,6 +425,7 @@ export default function CrewDashboard() {
     ...(user.type === 'contractor' ? [{ id: 'earnings', label: t('crew.earnings') || 'Earnings', icon: '💰' }] : []),
     ...(user.can_see_inventory ? [{ id: 'products', label: t('crew.inventory') || 'Inventory', icon: '🧴' }] : []),
     ...(user.can_see_equipment ? [{ id: 'equipment', label: t('crew.equipment') || 'Equipment', icon: '🔧' }] : []),
+    { id: 'schedule', label: 'Schedule', icon: '📅' },
   ];
 
   return (
@@ -1503,6 +1523,149 @@ export default function CrewDashboard() {
             })()}
           </div>
         )}
+
+        {/* ===== SCHEDULE TAB ===== */}
+        {tab === 'schedule' && (() => {
+          const getWeekDates = (offset) => {
+            const now = new Date();
+            const dayOfWeek = now.getDay();
+            const monday = new Date(now);
+            monday.setDate(now.getDate() - ((dayOfWeek + 6) % 7) + (offset * 7));
+            monday.setHours(0, 0, 0, 0);
+            const days = [];
+            for (let i = 0; i < 7; i++) {
+              const d = new Date(monday);
+              d.setDate(monday.getDate() + i);
+              days.push(d);
+            }
+            return days;
+          };
+
+          const weekDates = getWeekDates(scheduleWeekOffset);
+          const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+          const todayStr = new Date().toISOString().split('T')[0];
+
+          const getJobsForDate = (date) => {
+            const dateStr = date.toISOString().split('T')[0];
+            return scheduleJobs.filter(j => j.scheduled_date === dateStr);
+          };
+
+          const statusColors = {
+            accepted: 'bg-blue-500/20 border-blue-400/40 text-blue-200',
+            paid: 'bg-green-500/20 border-green-400/40 text-green-200',
+            scheduled: 'bg-purple-500/20 border-purple-400/40 text-purple-200',
+            in_progress: 'bg-amber-500/20 border-amber-400/40 text-amber-200',
+          };
+
+          const weekLabel = `${weekDates[0].toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${weekDates[6].toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`;
+
+          return (
+            <div className="space-y-4">
+              {/* Week navigation */}
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => setScheduleWeekOffset(prev => prev - 1)}
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded transition-colors"
+                >
+                  &larr; Prev
+                </button>
+                <div className="text-center">
+                  <p className="text-white font-semibold text-sm">{weekLabel}</p>
+                  {scheduleWeekOffset !== 0 && (
+                    <button
+                      onClick={() => setScheduleWeekOffset(0)}
+                      className="text-v-gold text-xs hover:underline mt-0.5"
+                    >
+                      Current Week
+                    </button>
+                  )}
+                </div>
+                <button
+                  onClick={() => setScheduleWeekOffset(prev => prev + 1)}
+                  className="px-3 py-2 bg-white/10 hover:bg-white/20 text-white text-sm rounded transition-colors"
+                >
+                  Next &rarr;
+                </button>
+              </div>
+
+              {scheduleLoading ? (
+                <div className="text-white/50 text-center py-8">Loading schedule...</div>
+              ) : (
+                <>
+                  {/* Desktop: 7-column grid */}
+                  <div className="hidden sm:grid grid-cols-7 gap-1">
+                    {weekDates.map((date, i) => {
+                      const dateStr = date.toISOString().split('T')[0];
+                      const isToday = dateStr === todayStr;
+                      const dayJobs = getJobsForDate(date);
+                      return (
+                        <div key={i} className={`rounded-lg p-2 min-h-[120px] ${isToday ? 'bg-v-gold/10 border border-v-gold/30' : 'bg-white/5 border border-white/10'}`}>
+                          <div className="text-center mb-2">
+                            <p className={`text-[10px] uppercase tracking-wider ${isToday ? 'text-v-gold font-bold' : 'text-white/50'}`}>{dayNames[i]}</p>
+                            <p className={`text-lg font-bold ${isToday ? 'text-v-gold' : 'text-white/80'}`}>{date.getDate()}</p>
+                          </div>
+                          <div className="space-y-1">
+                            {dayJobs.map(job => (
+                              <div key={job.id} className={`rounded p-1.5 border text-[10px] leading-tight ${statusColors[job.status] || 'bg-white/10 border-white/20 text-white/70'}`}>
+                                <p className="font-semibold truncate">{job.aircraft_model || job.title}</p>
+                                {job.tail_number && <p className="opacity-70">{job.tail_number}</p>}
+                                {job.scheduled_time && <p className="opacity-70">{job.scheduled_time}</p>}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Mobile: stacked day view */}
+                  <div className="sm:hidden space-y-2">
+                    {weekDates.map((date, i) => {
+                      const dateStr = date.toISOString().split('T')[0];
+                      const isToday = dateStr === todayStr;
+                      const dayJobs = getJobsForDate(date);
+                      return (
+                        <div key={i} className={`rounded-lg overflow-hidden ${isToday ? 'border border-v-gold/30' : 'border border-white/10'}`}>
+                          <div className={`px-3 py-2 flex items-center justify-between ${isToday ? 'bg-v-gold/15' : 'bg-white/5'}`}>
+                            <span className={`text-xs font-semibold ${isToday ? 'text-v-gold' : 'text-white/60'}`}>
+                              {dayNames[i]} {date.getDate()}
+                            </span>
+                            {dayJobs.length > 0 && (
+                              <span className="text-[10px] text-white/40">{dayJobs.length} job{dayJobs.length > 1 ? 's' : ''}</span>
+                            )}
+                          </div>
+                          {dayJobs.length > 0 && (
+                            <div className="px-3 py-2 space-y-1.5 bg-white/[0.02]">
+                              {dayJobs.map(job => (
+                                <div key={job.id} className={`rounded-lg p-2.5 border ${statusColors[job.status] || 'bg-white/10 border-white/20 text-white/70'}`}>
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-xs font-semibold">{job.aircraft_model || job.title}</p>
+                                    {job.scheduled_time && <span className="text-[10px] opacity-70">{job.scheduled_time}</span>}
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-0.5">
+                                    {job.tail_number && <span className="text-[10px] opacity-70">{job.tail_number}</span>}
+                                    {job.airport && <span className="text-[10px] opacity-70">{job.airport}</span>}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {scheduleJobs.length === 0 && (
+                    <div className="text-white/50 text-center py-8">
+                      <p className="text-2xl mb-2">📅</p>
+                      <p className="text-sm">No jobs scheduled in your visibility window ({scheduleVisibility} days)</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

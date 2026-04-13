@@ -17,6 +17,13 @@ export default function DirectorySettingsPage() {
   const [certifications, setCertifications] = useState([]);
   const [newCert, setNewCert] = useState('');
   const [verifiedFinish, setVerifiedFinish] = useState(false);
+  const [verifiedFinishStatus, setVerifiedFinishStatus] = useState('none');
+  const [verifiedFinishExpiresAt, setVerifiedFinishExpiresAt] = useState(null);
+  const [userPlan, setUserPlan] = useState('free');
+  const [vfApplying, setVfApplying] = useState(false);
+  const [vfChecklist, setVfChecklist] = useState({ equipment: false, chemicals: false, training: false, insurance: false, experience: false, standards: false });
+  const [vfDescription, setVfDescription] = useState('');
+  const [vfPortfolioUrls, setVfPortfolioUrls] = useState('');
   const [services, setServices] = useState([]);
 
   // Insurance
@@ -45,6 +52,9 @@ export default function DirectorySettingsPage() {
         setDescription(u.directory_description || '');
         setCertifications((u.certifications || []).filter(c => c !== 'Verified Finish Certified'));
         setVerifiedFinish(u.verified_finish || false);
+        setVerifiedFinishStatus(u.verified_finish_status || 'none');
+        setVerifiedFinishExpiresAt(u.verified_finish_expires_at || null);
+        setUserPlan(u.plan || 'free');
         setInsuranceUrl(u.insurance_url || null);
         setInsuranceExpiry(u.insurance_expiry_date || null);
         setInsuranceVerified(u.insurance_verified || false);
@@ -227,6 +237,130 @@ export default function DirectorySettingsPage() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Verified Finish Program */}
+      <div>
+        <h2 className="text-xs font-medium uppercase tracking-widest text-v-gold pb-2 border-b border-v-gold/20 mb-4">Verified Finish Program</h2>
+
+        {userPlan !== 'enterprise' ? (
+          <div className="bg-v-surface border border-v-border rounded p-5 text-center space-y-3">
+            <div className="text-2xl">🏅</div>
+            <p className="text-sm text-v-text-primary font-medium">Verified Finish Certification</p>
+            <p className="text-xs text-v-text-secondary">The Verified Finish badge signals premium quality to aircraft owners. Available on the Enterprise plan.</p>
+            <button onClick={() => router.push('/settings/billing')} className="px-5 py-2 bg-v-gold text-v-charcoal text-xs font-semibold rounded">Upgrade to Enterprise</button>
+          </div>
+        ) : verifiedFinishStatus === 'approved' ? (
+          <div className="bg-v-surface border border-v-gold/30 rounded p-5 space-y-3">
+            <div className="flex items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-v-gold/15 border border-v-gold/30 rounded text-v-gold text-xs font-semibold">
+                <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                Verified Finish Certified
+              </span>
+            </div>
+            <p className="text-sm text-v-text-primary">Your Verified Finish badge is active and displayed on your listing.</p>
+            {verifiedFinishExpiresAt && (
+              <p className="text-xs text-v-text-secondary">
+                Certified until <strong className="text-v-gold">{new Date(verifiedFinishExpiresAt).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</strong>
+              </p>
+            )}
+          </div>
+        ) : verifiedFinishStatus === 'pending' ? (
+          <div className="bg-v-surface border border-amber-500/30 rounded p-5 space-y-2">
+            <div className="flex items-center gap-2">
+              <span className="text-amber-400 text-lg">⏳</span>
+              <p className="text-sm text-v-text-primary font-medium">Application Under Review</p>
+            </div>
+            <p className="text-xs text-v-text-secondary">Your Verified Finish application is being reviewed. You will be notified by email once a decision is made.</p>
+          </div>
+        ) : verifiedFinishStatus === 'expired' ? (
+          <div className="bg-v-surface border border-red-500/30 rounded p-5 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-red-400 text-lg">⚠️</span>
+              <p className="text-sm text-v-text-primary font-medium">Certification Expired</p>
+            </div>
+            <p className="text-xs text-v-text-secondary">Your Verified Finish certification has expired. Reapply below to renew.</p>
+            <button onClick={() => setVerifiedFinishStatus('none')} className="px-4 py-2 bg-v-gold text-v-charcoal text-xs font-semibold rounded">Reapply</button>
+          </div>
+        ) : (
+          <div className="bg-v-surface border border-v-border rounded p-5 space-y-4">
+            <div>
+              <p className="text-sm text-v-text-primary font-medium mb-1">Apply for Verified Finish</p>
+              <p className="text-xs text-v-text-secondary">Confirm each requirement to apply for the Verified Finish certification badge.</p>
+            </div>
+
+            <div className="space-y-2">
+              {[
+                { key: 'equipment', label: 'I use professional-grade detailing equipment' },
+                { key: 'chemicals', label: 'I use only aviation-approved chemicals and products' },
+                { key: 'training', label: 'I have completed formal aviation detailing training' },
+                { key: 'insurance', label: 'I maintain adequate liability insurance coverage' },
+                { key: 'experience', label: 'I have 2+ years of aviation detailing experience' },
+                { key: 'standards', label: 'I agree to uphold Verified Finish quality standards' },
+              ].map(item => (
+                <label key={item.key} className="flex items-start gap-3 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={vfChecklist[item.key]}
+                    onChange={() => setVfChecklist(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
+                    className="mt-0.5 accent-[var(--v-gold)]"
+                  />
+                  <span className="text-xs text-v-text-primary group-hover:text-v-gold transition-colors">{item.label}</span>
+                </label>
+              ))}
+            </div>
+
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-v-text-secondary mb-1">Business Description</label>
+              <textarea
+                value={vfDescription}
+                onChange={e => setVfDescription(e.target.value.slice(0, 500))}
+                rows={3}
+                placeholder="Tell us about your aviation detailing business, experience, and specialties..."
+                className={cls + ' resize-none'}
+              />
+              <p className="text-[10px] text-v-text-secondary mt-1">{vfDescription.length}/500</p>
+            </div>
+
+            <div>
+              <label className="block text-[10px] uppercase tracking-wider text-v-text-secondary mb-1">Portfolio URLs (one per line)</label>
+              <textarea
+                value={vfPortfolioUrls}
+                onChange={e => setVfPortfolioUrls(e.target.value)}
+                rows={2}
+                placeholder="https://instagram.com/yourwork&#10;https://yourwebsite.com/gallery"
+                className={cls + ' resize-none'}
+              />
+            </div>
+
+            <button
+              onClick={async () => {
+                const allChecked = Object.values(vfChecklist).every(v => v);
+                if (!allChecked) { showToast('Please confirm all checklist items'); return; }
+                setVfApplying(true);
+                try {
+                  const urls = vfPortfolioUrls.split('\n').map(u => u.trim()).filter(Boolean);
+                  const res = await fetch('/api/verified-finish/apply', {
+                    method: 'POST', headers,
+                    body: JSON.stringify({ checklist: vfChecklist, business_description: vfDescription, portfolio_urls: urls }),
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setVerifiedFinishStatus('pending');
+                    showToast('Application submitted!');
+                  } else {
+                    showToast(data.error || 'Failed to submit');
+                  }
+                } catch { showToast('Failed to submit application'); }
+                finally { setVfApplying(false); }
+              }}
+              disabled={vfApplying || !Object.values(vfChecklist).every(v => v)}
+              className="w-full py-3 bg-v-gold text-v-charcoal font-semibold text-xs uppercase tracking-widest rounded hover:bg-v-gold-dim disabled:opacity-50 transition-colors"
+            >
+              {vfApplying ? 'Submitting...' : 'Submit Application'}
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Certifications */}
