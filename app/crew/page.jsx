@@ -1430,10 +1430,12 @@ export default function CrewDashboard() {
           onDetected={async (upc) => {
             setShowScanner(false);
             setBarcodeLookup(true);
+            const safetyTimer = setTimeout(() => setBarcodeLookup(false), 10000);
             try {
               const tk = localStorage.getItem('crew_token');
               const res = await fetch(`/api/products/barcode?upc=${encodeURIComponent(upc)}`, {
                 headers: { Authorization: `Bearer ${tk}` },
+                signal: AbortSignal.timeout(8000),
               });
               if (res.ok) {
                 const d = await res.json();

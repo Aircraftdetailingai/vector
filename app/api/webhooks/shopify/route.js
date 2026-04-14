@@ -207,8 +207,104 @@ async function updatePlan(supabase, detailer, newPlan, extra = {}) {
   return { oldPlan, newPlan, changed: true };
 }
 
+// ─── Course / training product detection ───
+const COURSE_KEYWORDS = ['course', 'masterclass', 'certification', 'training', '5 day', '5-day'];
+const COURSE_HANDLES = ['aircraft-detailing-masterclass', 'online-aircraft-detailing-course'];
+
+function isCourseProduct(item) {
+  const sku = (item.sku || '').toLowerCase();
+  const title = (item.title || '').toLowerCase();
+  const handle = (item.product_id ? '' : '').toLowerCase(); // handle not in line_item
+  if (COURSE_HANDLES.some(h => sku.includes(h) || title.includes(h))) return true;
+  if (COURSE_KEYWORDS.some(k => sku.includes(k) || title.includes(k))) return true;
+  return false;
+}
+
+function resolveCourseProductType(item) {
+  const sku = (item.sku || '').toLowerCase();
+  const title = (item.title || '').toLowerCase();
+  if (sku.includes('masterclass') || title.includes('masterclass') || title.includes('5 day') || title.includes('5-day') || title.includes('certification')) {
+    return 'masterclass_annual';
+  }
+  if (sku.includes('airventure') || title.includes('airventure') || title.includes('eaa')) {
+    return 'airventure_annual';
+  }
+  if (sku.includes('onsite') || sku.includes('on-site') || title.includes('on-site') || title.includes('on site') || title.includes('corporate')) {
+    return 'onsite_annual';
+  }
+  return 'online_course_annual';
+}
+
+async function handleCoursePricingAccess(supabase, payload) {
+  const items = payload?.line_items || [];
+  const courseItem = items.find(isCourseProduct);
+  if (!courseItem) return;
+
+  const email = extractEmail(payload);
+  if (!email) return;
+
+  const productType = resolveCourseProductType(courseItem);
+  const now = new Date();
+  const accessEnd = new Date(now.getTime() + 365 * 24 * 60 * 60 * 1000);
+
+  const { error } = await supabase
+    .from('app_access')
+    .upsert({
+      email,
+      shopify_order_id: String(payload.id || ''),
+      product_type: productType,
+      access_start: now.toISOString(),
+      access_end: accessEnd.toISOString(),
+      status: 'active',
+      updated_at: now.toISOString(),
+    }, { onConflict: 'email' });
+
+  if (error) {
+    console.error('[shopify-webhook] course app_access upsert error:', error);
+    return;
+  }
+
+  console.log(`[shopify-webhook] course pricing access granted: ${email} type=${productType} until ${accessEnd.toISOString()}`);
+
+  const firstName = payload?.customer?.first_name || 'there';
+  const accessEndStr = accessEnd.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+  await sendEmail(
+    email,
+    'Your Shiny Jets Pricing App Access',
+    `<!DOCTYPE html><html><body style="font-family:-apple-system,BlinkMacSystemFont,sans-serif;max-width:560px;margin:0 auto;padding:32px 24px;color:#1a1a1a;background:#f9f9f9;">
+      <div style="background:#fff;padding:32px;border-radius:12px;border:1px solid #e5e5e5;">
+        <h1 style="color:#007CB1;margin:0 0 8px;font-size:24px;">Welcome to Shiny Jets Pricing, ${firstName}!</h1>
+        <p style="font-size:15px;line-height:1.6;margin:0 0 20px;color:#555;">Your course purchase includes <strong>12 months</strong> of full access to the aircraft detailing pricing database.</p>
+        <div style="background:#f0f7fb;border:1px solid #cfe4f0;border-radius:8px;padding:18px 20px;margin:20px 0;">
+          <p style="margin:0 0 8px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.05em;">Login URL</p>
+          <p style="margin:0 0 16px;"><a href="https://pricing.shinyjets.com" style="color:#007CB1;font-weight:600;text-decoration:none;">pricing.shinyjets.com</a></p>
+          <p style="margin:0 0 8px;font-size:12px;color:#666;text-transform:uppercase;letter-spacing:0.05em;">Your Email</p>
+          <p style="margin:0;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:14px;color:#1a1a1a;">${email}</p>
+        </div>
+        <div style="text-align:center;margin:28px 0;">
+          <a href="https://pricing.shinyjets.com" style="display:inline-block;padding:14px 32px;background:#007CB1;color:#fff;text-decoration:none;border-radius:8px;font-weight:600;font-size:15px;">Access Pricing Tool</a>
+        </div>
+        <p style="font-size:13px;color:#666;line-height:1.6;margin:24px 0 0;">Your access is valid through <strong>${accessEndStr}</strong>. Log in with the email address from your course purchase. Need help? Reply to this email.</p>
+        <hr style="border:none;border-top:1px solid #e5e5e5;margin:24px 0;">
+        <p style="font-size:11px;color:#999;margin:0;text-align:center;">Shiny Jets &middot; <a href="https://pricing.shinyjets.com" style="color:#999;">pricing.shinyjets.com</a></p>
+      </div>
+    </body></html>`,
+  );
+
+  await supabase.from('webhook_logs').insert({
+    source: 'shopify',
+    topic: 'course_pricing_access_granted',
+    payload: { email, product_type: productType, access_end: accessEnd.toISOString(), order_id: payload.id },
+    processed: true,
+  });
+}
+
 // ─── Handle: orders/paid ───
 async function handleOrderPaid(supabase, payload) {
+  // Check for course products → grant pricing app access
+  await handleCoursePricingAccess(supabase, payload);
+
   const items = payload?.line_items || [];
   let plan = null;
   for (const item of items) {
@@ -216,7 +312,7 @@ async function handleOrderPaid(supabase, payload) {
     if (plan) break;
   }
   if (!plan) {
-    console.log('[shopify-webhook] orders/paid: no matching plan, skipping');
+    console.log('[shopify-webhook] orders/paid: no matching CRM plan, skipping CRM provisioning');
     return;
   }
 

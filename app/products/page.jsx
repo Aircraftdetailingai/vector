@@ -247,8 +247,17 @@ export default function ProductsPage() {
 
   const handleCloseModal = () => {
     setShowModal(false);
+    setShowScanner(false);
+    setBarcodeLookup(false);
     setEditingProduct(null);
   };
+
+  // Escape key closes modals
+  useEffect(() => {
+    const handleEsc = (e) => { if (e.key === 'Escape') handleCloseModal(); };
+    window.addEventListener('keydown', handleEsc);
+    return () => window.removeEventListener('keydown', handleEsc);
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -629,12 +638,13 @@ export default function ProductsPage() {
 
       {/* Add/Edit Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4">
-          <div className="bg-v-surface rounded-t-xl sm:rounded-sm w-full sm:max-w-md overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
-            <div className="px-6 py-4 border-b border-v-border sticky top-0 bg-v-surface">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 sm:p-4" onClick={handleCloseModal}>
+          <div className="bg-v-surface rounded-t-xl sm:rounded-sm w-full sm:max-w-md overflow-hidden max-h-[95vh] sm:max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="px-6 py-4 border-b border-v-border sticky top-0 bg-v-surface flex items-center justify-between">
               <h2 className="text-lg font-semibold text-v-text-primary">
                 {editingProduct ? 'Edit Product' : 'Add Product'}
               </h2>
+              <button type="button" onClick={handleCloseModal} className="text-v-text-secondary hover:text-white text-2xl leading-none px-2" aria-label="Close">&times;</button>
             </div>
 
             <form onSubmit={handleSubmit} className="p-6 space-y-4">
@@ -853,10 +863,13 @@ export default function ProductsPage() {
         onDetected={async (upc) => {
           setShowScanner(false);
           setBarcodeLookup(true);
+          // Safety net: auto-cancel after 10 seconds
+          const safetyTimer = setTimeout(() => setBarcodeLookup(false), 10000);
           try {
             const tk = localStorage.getItem('vector_token');
             const res = await fetch(`/api/products/barcode?upc=${encodeURIComponent(upc)}`, {
               headers: { Authorization: `Bearer ${tk}` },
+              signal: AbortSignal.timeout(8000),
             });
             if (res.ok) {
               const d = await res.json();
@@ -879,6 +892,7 @@ export default function ProductsPage() {
           } catch (e) {
             // Lookup exception — silently let user type manually
           } finally {
+            clearTimeout(safetyTimer);
             setBarcodeLookup(false);
           }
         }}
