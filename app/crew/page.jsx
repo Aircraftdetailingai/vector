@@ -119,15 +119,25 @@ export default function CrewDashboard() {
   // Handle accept/decline of an assignment
   const handleAssignmentAction = async (assignmentId, action) => {
     setAssignmentActioning(assignmentId);
+
+    // Optimistic: immediately remove from pending list
+    setAssignments(prev => prev.map(a =>
+      a.id === assignmentId ? { ...a, status: action === 'accept' ? 'accepted' : 'declined' } : a
+    ));
+    setPendingAssignments(prev => Math.max(0, prev - 1));
+
     const data = await API('/api/crew/assignments', token, {
       method: 'PATCH',
       body: JSON.stringify({ assignment_id: assignmentId, action }),
     });
     if (data.success) {
       showMsg(action === 'accept' ? 'Assignment accepted!' : 'Assignment declined');
+      // Refetch real data (removes declined assignments entirely)
       await Promise.all([fetchAssignments(), fetchJobs()]);
     } else {
       showMsg(data.error || 'Failed', 'error');
+      // Revert optimistic update
+      await fetchAssignments();
     }
     setAssignmentActioning(null);
   };
@@ -577,7 +587,7 @@ export default function CrewDashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="text-white font-medium">{job.aircraft}{job.tail_number ? ` · ${job.tail_number}` : ''}</p>
-                    <p className="text-white/60 text-sm">{job.airport || 'No airport'}</p>
+                    <p className="text-white/60 text-sm">{job.airport || ''}</p>
                     {job.scheduled_date && (
                       <p className="text-white/50 text-xs mt-1">
                         {new Date(job.scheduled_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}
@@ -613,7 +623,7 @@ export default function CrewDashboard() {
               <div className="flex items-start justify-between mb-3">
                 <div>
                   <h2 className="text-white font-bold text-xl">{selectedJob.aircraft}</h2>
-                  <p className="text-white/60">{selectedJob.airport || 'No airport'}</p>
+                  <p className="text-white/60">{selectedJob.airport || ''}</p>
                 </div>
                 <span className={`text-xs px-2 py-1 rounded-full font-medium ${statusColors[selectedJob.status] || 'bg-gray-100 text-gray-800'}`}>
                   {selectedJob.status?.replace('_', ' ')}
