@@ -109,8 +109,22 @@ export async function POST(request) {
           .upload(path, buffer, { contentType, upsert: true });
 
         if (uploadErr) {
-          console.error('[crew/photos] Storage upload error:', uploadErr.message);
-          // Fall back to storing base64 in DB
+          console.error('[crew/photos] Storage upload error:', uploadErr.message, 'path:', path, 'size:', buffer.length);
+          // Try creating bucket if it doesn't exist, then retry
+          try {
+            await supabase.storage.createBucket('job-photos', { public: true });
+            const { error: retryErr } = await supabase.storage
+              .from('job-photos')
+              .upload(path, buffer, { contentType, upsert: true });
+            if (!retryErr) {
+              const { data: urlData } = supabase.storage.from('job-photos').getPublicUrl(path);
+              finalUrl = urlData.publicUrl;
+              console.log('[crew/photos] Uploaded after bucket creation:', path);
+            } else {
+              console.error('[crew/photos] Retry failed:', retryErr.message);
+            }
+          } catch {}
+          // Fall back to storing base64 in DB if still not uploaded
         } else {
           const { data: urlData } = supabase.storage.from('job-photos').getPublicUrl(path);
           finalUrl = urlData.publicUrl;

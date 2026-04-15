@@ -2,7 +2,8 @@
 -- team_members additions
 ALTER TABLE team_members
   ADD COLUMN IF NOT EXISTS owner_notes TEXT,
-  ADD COLUMN IF NOT EXISTS pay_period_start DATE DEFAULT CURRENT_DATE;
+  ADD COLUMN IF NOT EXISTS pay_period_start DATE DEFAULT CURRENT_DATE,
+  ADD COLUMN IF NOT EXISTS pay_period_frequency VARCHAR DEFAULT 'biweekly';
 
 -- jobs additions
 ALTER TABLE jobs

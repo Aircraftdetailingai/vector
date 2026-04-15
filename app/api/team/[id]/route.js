@@ -47,13 +47,55 @@ export async function GET(request, { params }) {
     }
 
     const timeEntries = entries || [];
-    const totalHours = timeEntries.reduce((sum, e) => sum + parseFloat(e.hours_worked || 0), 0);
+
+    // Calculate pay period window
+    const freq = member.pay_period_frequency || 'biweekly';
+    const periodStart = member.pay_period_start ? new Date(member.pay_period_start + 'T00:00:00') : new Date(member.created_at);
+    const now = new Date();
+    let windowStart, windowEnd;
+
+    if (freq === 'weekly') {
+      // Find current week window anchored to pay_period_start
+      const diffDays = Math.floor((now - periodStart) / 86400000);
+      const weeksSince = Math.floor(diffDays / 7);
+      windowStart = new Date(periodStart);
+      windowStart.setDate(windowStart.getDate() + weeksSince * 7);
+      windowEnd = new Date(windowStart);
+      windowEnd.setDate(windowEnd.getDate() + 7);
+    } else if (freq === 'biweekly') {
+      const diffDays = Math.floor((now - periodStart) / 86400000);
+      const periodsSince = Math.floor(diffDays / 14);
+      windowStart = new Date(periodStart);
+      windowStart.setDate(windowStart.getDate() + periodsSince * 14);
+      windowEnd = new Date(windowStart);
+      windowEnd.setDate(windowEnd.getDate() + 14);
+    } else if (freq === 'semi_monthly') {
+      const day = now.getDate();
+      if (day <= 15) {
+        windowStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        windowEnd = new Date(now.getFullYear(), now.getMonth(), 16);
+      } else {
+        windowStart = new Date(now.getFullYear(), now.getMonth(), 16);
+        windowEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+      }
+    } else {
+      // monthly
+      windowStart = new Date(now.getFullYear(), now.getMonth(), 1);
+      windowEnd = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    }
+
+    const windowStartStr = windowStart.toISOString().split('T')[0];
+    const windowEndStr = windowEnd.toISOString().split('T')[0];
+
+    const periodEntries = timeEntries.filter(e => e.date >= windowStartStr && e.date < windowEndStr);
+    const totalHours = periodEntries.reduce((sum, e) => sum + parseFloat(e.hours_worked || 0), 0);
     const totalPay = totalHours * parseFloat(member.hourly_pay || 0);
 
     return Response.json({
       member,
       time_entries: timeEntries,
       stats: { total_hours: totalHours, total_pay: totalPay },
+      pay_period: { start: windowStartStr, end: windowEndStr, frequency: freq },
     });
 
   } catch (err) {
@@ -102,24 +144,34 @@ export async function PATCH(request, { params }) {
     if (body.hourly_pay !== undefined) updates.hourly_pay = parseFloat(body.hourly_pay) || 0;
     if (body.status !== undefined) updates.status = body.status;
     if (body.pin_code !== undefined) updates.pin_code = body.pin_code;
+    if (body.pay_period_frequency !== undefined) {
+      const validFreqs = ['weekly', 'biweekly', 'semi_monthly', 'monthly'];
+      if (validFreqs.includes(body.pay_period_frequency)) updates.pay_period_frequency = body.pay_period_frequency;
+    }
     if (body.role !== undefined) {
       const validRoles = ['owner', 'manager', 'lead_tech', 'employee', 'contractor'];
       if (validRoles.includes(body.role)) updates.role = body.role;
     }
 
-    const { data, error } = await supabase
-      .from('team_members')
-      .update(updates)
-      .eq('id', id)
-      .select()
-      .single();
+    // Column-stripping retry
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const { data, error } = await supabase
+        .from('team_members')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
 
-    if (error) {
+      if (!error) return Response.json(data);
+
+      const colMatch = error.message?.match(/column "([^"]+)".*does not exist/);
+      if (colMatch) { delete updates[colMatch[1]]; continue; }
+
       console.error('Team update error:', error);
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json(data);
+    return Response.json({ error: 'Update failed after retries' }, { status: 500 });
 
   } catch (err) {
     console.error('Team PATCH error:', err);

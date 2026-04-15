@@ -11,6 +11,7 @@ export default function TeamPage() {
   const [error, setError] = useState('');
   const [resending, setResending] = useState(null);
   const [resendMsg, setResendMsg] = useState('');
+  const [liveStatus, setLiveStatus] = useState({});
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -19,6 +20,15 @@ export default function TeamPage() {
       return;
     }
     fetchMembers(token);
+    // Fetch live clock status
+    fetch('/api/team/live-status', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : { statuses: [] })
+      .then(d => {
+        const map = {};
+        for (const s of d.statuses || []) map[s.team_member_id] = s;
+        setLiveStatus(map);
+      })
+      .catch(() => {});
   }, [router]);
 
   const fetchMembers = async (token) => {
@@ -193,10 +203,15 @@ export default function TeamPage() {
                     ${formatPrice(member.total_pay)}
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`inline-block w-2 h-2 rounded-full ${
-                      member.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
-                    }`} />
-                    <span className="ml-2 text-sm text-v-text-secondary hidden sm:inline">{member.status}</span>
+                    {liveStatus[member.id]?.clocked_in ? (
+                      <span className="text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded-full">Clocked In</span>
+                    ) : (
+                      <span className={`inline-block w-2 h-2 rounded-full ${
+                        member.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
+                      }`}>
+                      </span>
+                    )}
+                    {!liveStatus[member.id]?.clocked_in && <span className="ml-2 text-sm text-v-text-secondary hidden sm:inline">{member.status}</span>}
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     {member.email ? (

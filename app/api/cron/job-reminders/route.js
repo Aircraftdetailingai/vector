@@ -7,6 +7,18 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
+const VALID_STATUSES = ['scheduled', 'accepted', 'paid', 'in_progress'];
+
+async function fetchJobsByPreference(supabase, table, date, preference) {
+  const { data } = await supabase.from(table)
+    .select('*')
+    .eq('scheduled_date', date)
+    .eq('delivery_preference', preference)
+    .is('reminder_sent_at', null)
+    .in('status', VALID_STATUSES);
+  return (data || []).map(j => ({ ...j, _source: table }));
+}
+
 export async function POST(request) {
   const authHeader = request.headers.get('authorization') || request.headers.get('Authorization') || '';
   const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
@@ -16,59 +28,56 @@ export async function POST(request) {
 
   const supabase = getSupabase();
   const now = new Date();
+  const utcHour = now.getUTCHours();
   const tomorrow = new Date(now);
   tomorrow.setDate(tomorrow.getDate() + 1);
   const tomorrowDate = tomorrow.toISOString().split('T')[0];
   const todayDate = now.toISOString().split('T')[0];
 
-  // Find jobs needing briefings:
-  // - delivery_preference = 'day_before' AND scheduled_date = tomorrow
-  // - delivery_preference = 'morning_of' AND scheduled_date = today
-  // - reminder_sent_at must be null (not already sent)
   const jobsToNotify = [];
 
-  // Check jobs table — day_before (tomorrow)
-  const { data: dayBeforeJobs } = await supabase.from('jobs')
-    .select('*')
-    .eq('scheduled_date', tomorrowDate)
-    .eq('delivery_preference', 'day_before')
-    .is('reminder_sent_at', null)
-    .in('status', ['scheduled', 'accepted', 'paid', 'in_progress']);
+  // day_before: only fire at UTC 18 (11am Pacific / 2pm Eastern)
+  if (utcHour === 18) {
+    const dbJobs = await fetchJobsByPreference(supabase, 'jobs', tomorrowDate, 'day_before');
+    const dbQuotes = await fetchJobsByPreference(supabase, 'quotes', tomorrowDate, 'day_before');
+    jobsToNotify.push(...dbJobs, ...dbQuotes);
+  }
 
-  if (dayBeforeJobs?.length) jobsToNotify.push(...dayBeforeJobs.map(j => ({ ...j, _source: 'jobs' })));
+  // morning_of: only fire at UTC 13 (6am Pacific / 9am Eastern)
+  if (utcHour === 13) {
+    const moJobs = await fetchJobsByPreference(supabase, 'jobs', todayDate, 'morning_of');
+    const moQuotes = await fetchJobsByPreference(supabase, 'quotes', todayDate, 'morning_of');
+    jobsToNotify.push(...moJobs, ...moQuotes);
+  }
 
-  // Check jobs table — morning_of (today)
-  const { data: morningOfJobs } = await supabase.from('jobs')
-    .select('*')
-    .eq('scheduled_date', todayDate)
-    .eq('delivery_preference', 'morning_of')
-    .is('reminder_sent_at', null)
-    .in('status', ['scheduled', 'accepted', 'paid', 'in_progress']);
+  // 1_hour_before: scheduled_date = today AND scheduled_start_time within 55-65 min from now
+  {
+    const tables = ['jobs', 'quotes'];
+    for (const table of tables) {
+      const { data } = await supabase.from(table)
+        .select('*')
+        .eq('scheduled_date', todayDate)
+        .eq('delivery_preference', '1_hour_before')
+        .is('reminder_sent_at', null)
+        .in('status', VALID_STATUSES)
+        .not('scheduled_start_time', 'is', null);
 
-  if (morningOfJobs?.length) jobsToNotify.push(...morningOfJobs.map(j => ({ ...j, _source: 'jobs' })));
-
-  // Check quotes table — day_before (tomorrow)
-  const { data: dayBeforeQuotes } = await supabase.from('quotes')
-    .select('*')
-    .eq('scheduled_date', tomorrowDate)
-    .eq('delivery_preference', 'day_before')
-    .is('reminder_sent_at', null)
-    .in('status', ['scheduled', 'accepted', 'paid', 'in_progress']);
-
-  if (dayBeforeQuotes?.length) jobsToNotify.push(...dayBeforeQuotes.map(q => ({ ...q, _source: 'quotes' })));
-
-  // Check quotes table — morning_of (today)
-  const { data: morningOfQuotes } = await supabase.from('quotes')
-    .select('*')
-    .eq('scheduled_date', todayDate)
-    .eq('delivery_preference', 'morning_of')
-    .is('reminder_sent_at', null)
-    .in('status', ['scheduled', 'accepted', 'paid', 'in_progress']);
-
-  if (morningOfQuotes?.length) jobsToNotify.push(...morningOfQuotes.map(q => ({ ...q, _source: 'quotes' })));
+      for (const job of data || []) {
+        const startTime = job.scheduled_start_time; // e.g. "09:00" or "14:30"
+        if (!startTime) continue;
+        const [h, m] = startTime.split(':').map(Number);
+        const jobStart = new Date(now);
+        jobStart.setUTCHours(h, m, 0, 0);
+        const diffMin = (jobStart - now) / 60000;
+        if (diffMin >= 55 && diffMin <= 65) {
+          jobsToNotify.push({ ...job, _source: table });
+        }
+      }
+    }
+  }
 
   if (jobsToNotify.length === 0) {
-    return Response.json({ sent: 0, message: 'No jobs need briefings' });
+    return Response.json({ sent: 0, message: `No briefings needed (UTC hour: ${utcHour})` });
   }
 
   if (!process.env.RESEND_API_KEY) {
@@ -83,7 +92,6 @@ export async function POST(request) {
     const detailerId = job.detailer_id;
     if (!detailerId) continue;
 
-    // Get assigned crew with emails
     const { data: assignments } = await supabase.from('job_assignments')
       .select('team_member_id')
       .eq('job_id', job.id)
@@ -96,13 +104,11 @@ export async function POST(request) {
     const crewWithEmail = (members || []).filter(m => m.email);
     if (crewWithEmail.length === 0) continue;
 
-    // Parse aircraft info
     const aircraft = job._source === 'jobs'
       ? [job.aircraft_make, job.aircraft_model].filter(Boolean).join(' ')
       : (job.aircraft_model || job.aircraft_type || 'Aircraft');
     const tailDisplay = aircraft + (job.tail_number ? ` · ${job.tail_number}` : '');
 
-    // Parse services
     let services = [];
     try {
       if (job.services) {
@@ -113,14 +119,12 @@ export async function POST(request) {
       }
     } catch {}
 
-    // Get standing notes
     let standingNotes = [];
     if (job.tail_number) {
       const { data } = await supabase.from('aircraft_notes').select('note').eq('detailer_id', detailerId).eq('tail_number', job.tail_number.toUpperCase());
       standingNotes = (data || []).map(n => n.note);
     }
 
-    // Build email
     const dateStr = job.scheduled_date ? new Date(job.scheduled_date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : 'TBD';
     const servicesStr = services.length > 0 ? services.join(', ') : 'See job details';
     const standingHtml = standingNotes.length > 0 ? standingNotes.map(n => `<li style="margin-bottom:6px;">${n}</li>`).join('') : '<li style="color:#999;">No standing notes</li>';
@@ -170,7 +174,6 @@ export async function POST(request) {
     if (sentCount > 0) {
       totalSent += sentCount;
       totalJobs++;
-      // Mark as sent
       const table = job._source === 'jobs' ? 'jobs' : 'quotes';
       await supabase.from(table).update({ reminder_sent_at: new Date().toISOString() }).eq('id', job.id).catch(() => {});
     }

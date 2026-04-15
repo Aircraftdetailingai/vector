@@ -72,6 +72,10 @@ export default function CrewDashboard() {
   const [issuePhoto, setIssuePhoto] = useState(null);
   const [issueSending, setIssueSending] = useState(false);
 
+  // Notes state (read-only for crew)
+  const [standingNotes, setStandingNotes] = useState([]);
+  const [jobCrewNotes, setJobCrewNotes] = useState('');
+
   // Messages
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState('success');
@@ -221,15 +225,27 @@ export default function CrewDashboard() {
     if (tab === 'schedule') fetchSchedule();
   }, [tab, fetchProducts, fetchEquipment, fetchSchedule]);
 
-  // Load photos and materials when job selected
+  // Load photos, materials, and notes when job selected
   useEffect(() => {
     if (selectedJob) {
       fetchPhotos();
       fetchJobMaterials(selectedJob.id);
+      // Fetch standing notes for this aircraft
+      setStandingNotes([]);
+      setJobCrewNotes(selectedJob.crew_notes || '');
+      if (selectedJob.tail_number && token) {
+        fetch(`/api/aircraft-notes?tail_number=${encodeURIComponent(selectedJob.tail_number)}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }).then(r => r.ok ? r.json() : { notes: [] })
+          .then(d => setStandingNotes(d.notes || []))
+          .catch(() => {});
+      }
     } else {
       setJobMaterials(null);
       setCheckedProducts({});
       setCheckedEquipment({});
+      setStandingNotes([]);
+      setJobCrewNotes('');
     }
   }, [selectedJob, fetchPhotos, fetchJobMaterials]);
 
@@ -295,33 +311,74 @@ export default function CrewDashboard() {
     }
   };
 
-  // Photo upload (base64)
+  // Compress image client-side before upload
+  const compressImage = (file, maxDim = 2000, quality = 0.85) => {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        let { width, height } = img;
+        if (width > maxDim || height > maxDim) {
+          const ratio = Math.min(maxDim / width, maxDim / height);
+          width = Math.round(width * ratio);
+          height = Math.round(height * ratio);
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Compression failed')), 'image/jpeg', quality);
+      };
+      img.onerror = () => reject(new Error('Failed to load image'));
+      img.src = URL.createObjectURL(file);
+    });
+  };
+
+  // Photo upload with client-side compression
   const handlePhotoUpload = async (e, mediaType) => {
     const file = e.target.files?.[0];
     if (!file || !selectedJob) return;
     setPhotoUploading(true);
     try {
+      // Compress if image is over 3MB
+      let processedFile = file;
+      if (file.size > 3 * 1024 * 1024 && file.type.startsWith('image/')) {
+        try {
+          processedFile = await compressImage(file);
+        } catch {
+          // Fall back to original file
+        }
+      }
+
       const reader = new FileReader();
       reader.onload = async () => {
-        const data = await API('/api/crew/photos', token, {
-          method: 'POST',
-          body: JSON.stringify({
-            quote_id: selectedJob.id,
-            media_type: mediaType,
-            url: reader.result,
-          }),
-        });
-        if (data.success) {
-          showMsg('Photo uploaded!');
-          fetchPhotos();
-        } else {
-          showMsg(data.error || 'Failed to upload', 'error');
+        try {
+          const data = await API('/api/crew/photos', token, {
+            method: 'POST',
+            body: JSON.stringify({
+              quote_id: selectedJob.id,
+              media_type: mediaType,
+              url: reader.result,
+            }),
+          });
+          if (data.success) {
+            showMsg('Photo uploaded!');
+            fetchPhotos();
+          } else {
+            showMsg(data.error || 'Failed to upload photo', 'error');
+          }
+        } catch (err) {
+          showMsg('Upload failed — photo may be too large. Try a smaller image.', 'error');
         }
         setPhotoUploading(false);
       };
-      reader.readAsDataURL(file);
-    } catch {
-      showMsg('Failed to upload', 'error');
+      reader.onerror = () => {
+        showMsg('Failed to read photo file', 'error');
+        setPhotoUploading(false);
+      };
+      reader.readAsDataURL(processedFile);
+    } catch (err) {
+      showMsg('Failed to process photo: ' + (err.message || 'Unknown error'), 'error');
       setPhotoUploading(false);
     }
   };
@@ -669,6 +726,31 @@ export default function CrewDashboard() {
                 <div className="mb-3">
                   <p className="text-white/50 text-xs uppercase tracking-wide mb-1">{'Notes'}</p>
                   <p className="text-white/80 text-sm">{selectedJob.notes}</p>
+                </div>
+              )}
+
+              {/* Standing Notes + Crew Notes */}
+              {(standingNotes.length > 0 || jobCrewNotes) && (
+                <div className="bg-white/5 rounded-lg p-3 mb-3 space-y-3">
+                  {standingNotes.length > 0 && (
+                    <div>
+                      <p className="text-white/50 text-xs uppercase tracking-wide mb-1.5">Aircraft Notes</p>
+                      <ul className="space-y-1">
+                        {standingNotes.map(n => (
+                          <li key={n.id} className="text-white/80 text-sm flex items-start gap-2">
+                            <span className="text-white/30 mt-0.5">&#8226;</span>
+                            <span>{n.note}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {jobCrewNotes && (
+                    <div>
+                      <p className="text-white/50 text-xs uppercase tracking-wide mb-1.5">Job Notes</p>
+                      <p className="text-white/80 text-sm">{jobCrewNotes}</p>
+                    </div>
+                  )}
                 </div>
               )}
 

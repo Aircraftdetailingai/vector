@@ -32,6 +32,8 @@ export default function TeamMemberPage() {
   const [ownerNotes, setOwnerNotes] = useState('');
   const [notesSaving, setNotesSaving] = useState(false);
   const [payPeriodResetting, setPayPeriodResetting] = useState(false);
+  const [payPeriod, setPayPeriod] = useState(null);
+  const [payFrequency, setPayFrequency] = useState('biweekly');
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -60,6 +62,8 @@ export default function TeamMemberPage() {
       setStats(data.stats || { total_hours: 0, total_pay: 0 });
       setEditForm(data.member);
       setOwnerNotes(data.member?.owner_notes || '');
+      setPayPeriod(data.pay_period || null);
+      setPayFrequency(data.member?.pay_period_frequency || data.pay_period?.frequency || 'biweekly');
       // Fetch availability
       try {
         const availRes = await fetch(`/api/team/${params.id}/availability`, {
@@ -651,7 +655,9 @@ export default function TeamMemberPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-white font-medium">Hours This Pay Period</h3>
-                <p className="text-v-text-secondary text-xs">Since {member.pay_period_start || 'account creation'}</p>
+                <p className="text-v-text-secondary text-xs">
+                  {payPeriod ? `${new Date(payPeriod.start + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${new Date(payPeriod.end + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : `Since ${member.pay_period_start || 'account creation'}`}
+                </p>
               </div>
               <div className="flex items-center gap-3">
                 <button
@@ -680,6 +686,25 @@ export default function TeamMemberPage() {
                   {payPeriodResetting ? '...' : 'Reset Pay Period'}
                 </button>
               </div>
+            </div>
+            <div className="flex items-center gap-3 mb-4">
+              <label className="text-sm text-v-text-secondary shrink-0">Frequency:</label>
+              <select value={payFrequency} onChange={async (e) => {
+                const val = e.target.value;
+                setPayFrequency(val);
+                const token = localStorage.getItem('vector_token');
+                await fetch(`/api/team/${params.id}`, {
+                  method: 'PATCH',
+                  headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ pay_period_frequency: val }),
+                }).catch(() => {});
+                fetchMember(token);
+              }} className="bg-v-charcoal border border-v-border text-white rounded px-3 py-1.5 text-sm outline-none focus:border-v-gold/50">
+                <option value="weekly">Weekly</option>
+                <option value="biweekly">Bi-weekly</option>
+                <option value="semi_monthly">Semi-monthly</option>
+                <option value="monthly">Monthly</option>
+              </select>
             </div>
             <div className="grid grid-cols-2 gap-4 mb-4">
               <div className="bg-v-charcoal/50 rounded p-3 text-center">
