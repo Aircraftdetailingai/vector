@@ -247,7 +247,20 @@ export default function Sidebar() {
             <p className="text-xs text-v-text-primary truncate" style={{ fontVariant: 'small-caps', letterSpacing: '0.05em' }}>
               {user?.name || user?.email || ''}
             </p>
-            <p className="text-[10px] text-v-text-secondary truncate">{user?.company || ''}</p>
+            <div className="flex items-center gap-1.5 mt-0.5">
+              {user?.plan === 'enterprise' ? (
+                <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-yellow-900/30 text-yellow-300 border border-yellow-700/50">Enterprise</span>
+              ) : user?.plan === 'business' ? (
+                <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-900/30 text-cyan-300 border border-cyan-700/50">Business</span>
+              ) : user?.plan === 'pro' ? (
+                <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-cyan-900/30 text-cyan-300 border border-cyan-700/50">&#9889; Pro</span>
+              ) : (
+                <>
+                  <span className="text-[9px] font-semibold uppercase tracking-wider px-1.5 py-0.5 rounded bg-gray-700/50 text-gray-300 border border-gray-600/50">Free</span>
+                  <a href="/settings" className="text-[9px] text-cyan-400 hover:underline">Upgrade &rarr;</a>
+                </>
+              )}
+            </div>
           </div>
           <button
             onClick={handleLogout}

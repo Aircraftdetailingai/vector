@@ -1954,57 +1954,82 @@ function SettingsContent() {
         {/* Plan & Billing */}
         <div id="billing" className="pb-6 mb-2">
           <h2 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">{'Billing'}</h2>
-          {user?.is_admin ? (
-            <div>
-              <p className="mb-1 capitalize text-v-text-primary">{user?.plan || 'enterprise'} Plan</p>
-              <span className="inline-block px-3 py-1 rounded bg-v-gold text-white text-sm font-medium">{'Admin Access - All Features'}</span>
+
+          {/* Current Plan Card */}
+          <div className={`rounded-lg p-5 mb-4 border ${
+            user?.plan === 'enterprise' ? 'bg-yellow-900/10 border-yellow-700/30' :
+            user?.plan === 'business' ? 'bg-cyan-900/10 border-cyan-700/30' :
+            user?.plan === 'pro' ? 'bg-cyan-900/10 border-cyan-700/30' :
+            'bg-white/5 border-v-border'
+          }`}>
+            <p className="text-[10px] uppercase tracking-widest text-v-text-secondary mb-2">Your Current Plan</p>
+            <div className="flex items-center gap-3 mb-3">
+              <span className={`text-2xl font-bold capitalize ${
+                user?.plan === 'enterprise' ? 'text-yellow-300' :
+                (user?.plan === 'pro' || user?.plan === 'business') ? 'text-cyan-300' :
+                'text-v-text-primary'
+              }`}>
+                {user?.is_admin ? 'Enterprise' : (user?.plan || 'Free')}
+              </span>
+              {user?.is_admin && <span className="text-xs bg-v-gold/20 text-v-gold px-2 py-0.5 rounded">Admin</span>}
             </div>
-          ) : (
-            <div>
-              <p className="capitalize mb-3 text-v-text-primary">{user?.plan} - ${planPrice}/mo</p>
-              {!hasAllFeatures && (
+            <div className="text-sm text-v-text-secondary space-y-1 mb-4">
+              {(user?.plan === 'pro' || user?.plan === 'business' || user?.plan === 'enterprise' || user?.is_admin) ? (
                 <>
-                  <div className="flex flex-wrap gap-2 mb-4">
-                    {user?.plan !== 'pro' && user?.plan !== 'business' && (
-                      <a
-                        href={`https://shinyjets.com/products/aircraft-detailing-crm-pro?email=${encodeURIComponent(user?.email || '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-4 py-2 bg-v-gold text-v-charcoal text-xs uppercase tracking-widest font-semibold hover:bg-v-gold-dim transition-colors"
-                      >
-                        Upgrade to Pro - $79/mo
-                      </a>
-                    )}
-                    {user?.plan !== 'business' && user?.plan !== 'enterprise' && (
-                      <a
-                        href={`https://shinyjets.com/products/aircraft-detailing-crm-business?email=${encodeURIComponent(user?.email || '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-4 py-2 rounded bg-gradient-to-r from-v-gold to-v-gold-dim text-white text-sm"
-                      >
-                        Upgrade to Business - $149/mo
-                      </a>
-                    )}
-                    {user?.plan !== 'enterprise' && (
-                      <a
-                        href={`https://shinyjets.com/products/aircraft-detailing-crm-enterprise?email=${encodeURIComponent(user?.email || '')}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="px-4 py-2 border border-v-gold text-v-gold text-xs uppercase tracking-widest font-semibold hover:bg-v-gold/10 transition-colors"
-                      >
-                        Upgrade to Enterprise - $299/mo
-                      </a>
-                    )}
-                  </div>
-                  <a
-                    href="https://shinyjets.com/account/subscriptions"
-                    target="_blank"
-                    rel="noreferrer"
-                    className="text-sm text-v-text-secondary hover:text-v-gold transition-colors underline"
-                  >
-                    Manage Subscription
-                  </a>
+                  <p>&#10003; Unlimited quotes</p>
+                  <p>&#10003; Crew management</p>
+                  <p>&#10003; Customer portal</p>
+                  {(user?.plan === 'business' || user?.plan === 'enterprise' || user?.is_admin) && <p>&#10003; White-label branding</p>}
+                  {(user?.plan === 'enterprise' || user?.is_admin) && <p>&#10003; 0% platform fee</p>}
                 </>
+              ) : (
+                <>
+                  <p>&#10003; 5 quotes / month</p>
+                  <p>&#10003; Basic quoting</p>
+                  <p className="text-v-text-secondary/50">&#10007; Crew management (Pro)</p>
+                  <p className="text-v-text-secondary/50">&#10007; Customer portal (Pro)</p>
+                </>
+              )}
+            </div>
+            {user?.subscription_status === 'active' && !user?.is_admin && (
+              <a href="https://shinyjets.com/account/subscriptions" target="_blank" rel="noreferrer" className="text-xs text-v-text-secondary hover:text-v-gold transition-colors underline">
+                Manage Subscription
+              </a>
+            )}
+          </div>
+
+          {/* Upgrade options for non-max plans */}
+          {!user?.is_admin && user?.plan !== 'enterprise' && (
+            <div className="flex flex-wrap gap-2">
+              {user?.plan !== 'pro' && user?.plan !== 'business' && (
+                <a
+                  href={`https://shinyjets.com/products/aircraft-detailing-crm-pro?email=${encodeURIComponent(user?.email || '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 bg-v-gold text-v-charcoal text-xs uppercase tracking-widest font-semibold hover:bg-v-gold-dim transition-colors"
+                >
+                  Upgrade to Pro - $79/mo
+                </a>
+              )}
+              {user?.plan !== 'business' && user?.plan !== 'enterprise' && (
+                <a
+                  href={`https://shinyjets.com/products/aircraft-detailing-crm-business?email=${encodeURIComponent(user?.email || '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 rounded bg-gradient-to-r from-v-gold to-v-gold-dim text-white text-sm"
+                >
+                  Upgrade to Business - $149/mo
+                </a>
+              )}
+              {user?.plan !== 'enterprise' && (
+                <a
+                  href={`https://shinyjets.com/products/aircraft-detailing-crm-enterprise?email=${encodeURIComponent(user?.email || '')}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="px-4 py-2 border border-v-gold text-v-gold text-xs uppercase tracking-widest font-semibold hover:bg-v-gold/10 transition-colors"
+                >
+                  Upgrade to Enterprise - $299/mo
+                </a>
               )}
             </div>
           )}

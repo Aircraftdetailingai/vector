@@ -291,6 +291,29 @@ function DashboardContent() {
           DASHBOARD
         </h1>
 
+        {/* Free Plan Upgrade Banner */}
+        {user && (!user.plan || user.plan === 'free') && (() => {
+          const dismissed = typeof window !== 'undefined' && localStorage.getItem('upgrade_banner_dismissed');
+          const dismissedAt = dismissed ? parseInt(dismissed) : 0;
+          const sevenDays = 7 * 24 * 60 * 60 * 1000;
+          if (Date.now() - dismissedAt < sevenDays) return null;
+          return (
+            <div className="mb-6 bg-gradient-to-r from-cyan-900/20 to-cyan-800/10 border border-cyan-700/30 rounded-lg p-4 flex items-center justify-between gap-4">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-v-text-primary">
+                  {"You're on the Free plan"} &middot; Upgrade to Pro for unlimited quotes, crew management, and more
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <a href="/settings" className="px-4 py-2 bg-cyan-600 text-white text-xs font-semibold rounded-lg hover:bg-cyan-700 transition-colors">
+                  Upgrade Now
+                </a>
+                <button onClick={() => { localStorage.setItem('upgrade_banner_dismissed', String(Date.now())); window.location.reload(); }} className="text-white/30 hover:text-white/60 text-lg leading-none">&times;</button>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Services Setup */}
         {user && availableServices.length === 0 && (
           <div className="flex items-center justify-between py-5 border-b border-v-border-subtle">
