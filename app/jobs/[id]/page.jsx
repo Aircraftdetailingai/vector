@@ -15,6 +15,13 @@ export default function JobDetailPage() {
   const [beforePhotos, setBeforePhotos] = useState([]);
   const [afterPhotos, setAfterPhotos] = useState([]);
   const [labor, setLabor] = useState(null);
+  const [standingNotes, setStandingNotes] = useState([]);
+  const [newStandingNote, setNewStandingNote] = useState('');
+  const [crewNotes, setCrewNotes] = useState('');
+  const [crewNotesSaving, setCrewNotesSaving] = useState(false);
+  const [briefingSending, setBriefingSending] = useState(false);
+  const [briefingResult, setBriefingResult] = useState(null);
+  const [deliveryPref, setDeliveryPref] = useState('day_before');
   const [progress, setProgress] = useState(0);
   const progressTimer = useRef(null);
 
@@ -272,6 +279,21 @@ export default function JobDetailPage() {
           setLabor(laborData);
         }
       } catch {}
+
+      // Fetch aircraft standing notes + crew notes
+      if (data) {
+        setCrewNotes(data.crew_notes || '');
+        setDeliveryPref(data.delivery_preference || 'day_before');
+        if (data.tail_number) {
+          try {
+            const notesRes = await fetch(`/api/aircraft-notes?tail_number=${encodeURIComponent(data.tail_number)}`, { headers });
+            if (notesRes.ok) {
+              const nd = await notesRes.json();
+              setStandingNotes(nd.notes || []);
+            }
+          } catch {}
+        }
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -1164,6 +1186,122 @@ export default function JobDetailPage() {
                 {submittingCompletion ? 'Updating...' : 'Update Estimates'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Crew Notes ─── */}
+      <div className="mb-8 space-y-4">
+        {/* Standing notes for this aircraft */}
+        {job?.tail_number && (
+          <div className="bg-v-surface border border-v-border rounded-lg p-5">
+            <h3 className="text-sm font-medium text-v-text-secondary uppercase tracking-wider mb-3">
+              Standing Notes for {job.tail_number}
+            </h3>
+            <p className="text-[10px] text-v-text-secondary/60 mb-3">Applies to all future jobs for this aircraft</p>
+            {standingNotes.length > 0 && (
+              <div className="space-y-2 mb-3">
+                {standingNotes.map(n => (
+                  <div key={n.id} className="flex items-start gap-2 bg-v-charcoal/50 rounded p-2">
+                    <span className="text-white/70 text-sm flex-1">{n.note}</span>
+                    <button onClick={async () => {
+                      const token = localStorage.getItem('vector_token');
+                      await fetch(`/api/aircraft-notes?id=${n.id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
+                      setStandingNotes(prev => prev.filter(x => x.id !== n.id));
+                    }} className="text-red-400/50 hover:text-red-400 text-xs shrink-0">&times;</button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <div className="flex gap-2">
+              <input value={newStandingNote} onChange={e => setNewStandingNote(e.target.value)}
+                placeholder="Add standing note..." onKeyDown={async e => {
+                  if (e.key === 'Enter' && newStandingNote.trim()) {
+                    const token = localStorage.getItem('vector_token');
+                    const res = await fetch('/api/aircraft-notes', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ tail_number: job.tail_number, note: newStandingNote.trim() }) });
+                    if (res.ok) { const d = await res.json(); setStandingNotes(prev => [...prev, d.note]); setNewStandingNote(''); }
+                  }
+                }}
+                className="flex-1 bg-v-charcoal border border-v-border text-white rounded px-3 py-2 text-sm outline-none focus:border-v-gold/50 placeholder-v-text-secondary/40" />
+              <button onClick={async () => {
+                if (!newStandingNote.trim()) return;
+                const token = localStorage.getItem('vector_token');
+                const res = await fetch('/api/aircraft-notes', { method: 'POST', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ tail_number: job.tail_number, note: newStandingNote.trim() }) });
+                if (res.ok) { const d = await res.json(); setStandingNotes(prev => [...prev, d.note]); setNewStandingNote(''); }
+              }} className="px-4 py-2 bg-v-gold text-v-charcoal text-xs font-semibold rounded hover:bg-v-gold-dim">Add</button>
+            </div>
+          </div>
+        )}
+
+        {/* Job-specific crew note */}
+        <div className="bg-v-surface border border-v-border rounded-lg p-5">
+          <h3 className="text-sm font-medium text-v-text-secondary uppercase tracking-wider mb-2">
+            Crew Notes — This Job Only
+            {crewNotesSaving && <span className="text-v-text-secondary/40 text-[10px] ml-2 normal-case">Saving...</span>}
+          </h3>
+          <textarea value={crewNotes} onChange={e => setCrewNotes(e.target.value)}
+            onBlur={async () => {
+              if (crewNotes === (job?.crew_notes || '')) return;
+              setCrewNotesSaving(true);
+              const token = localStorage.getItem('vector_token');
+              await fetch(`/api/jobs/${jobId}`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ crew_notes: crewNotes }) }).catch(() => {});
+              setCrewNotesSaving(false);
+            }}
+            placeholder="One-time note for this job..."
+            rows={2}
+            className="w-full bg-v-charcoal border border-v-border text-white rounded px-3 py-2 text-sm outline-none focus:border-v-gold/50 placeholder-v-text-secondary/40 resize-none" />
+        </div>
+      </div>
+
+      {/* ─── Crew Briefing ─── */}
+      {assignments.length > 0 && (
+        <div className="mb-8 bg-v-surface border border-v-border rounded-lg p-5">
+          <h3 className="text-sm font-medium text-v-text-secondary uppercase tracking-wider mb-3">Crew Briefing</h3>
+          <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center mb-4">
+            <label className="text-sm text-v-text-secondary shrink-0">Auto-send:</label>
+            <select value={deliveryPref} onChange={async (e) => {
+              const val = e.target.value;
+              setDeliveryPref(val);
+              const token = localStorage.getItem('vector_token');
+              await fetch(`/api/jobs/${jobId}`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' }, body: JSON.stringify({ delivery_preference: val }) }).catch(() => {});
+            }} className="bg-v-charcoal border border-v-border text-white rounded px-3 py-2 text-sm outline-none focus:border-v-gold/50">
+              <option value="day_before">Day before job</option>
+              <option value="morning_of">Morning of job</option>
+              <option value="manual">Manual only</option>
+            </select>
+          </div>
+          <div className="flex items-center gap-3">
+            <button disabled={briefingSending} onClick={async () => {
+              setBriefingSending(true);
+              setBriefingResult(null);
+              try {
+                const token = localStorage.getItem('vector_token');
+                const res = await fetch(`/api/jobs/${jobId}/send-briefing`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } });
+                const data = await res.json();
+                if (res.ok) {
+                  setBriefingResult({ success: true, count: data.sent });
+                  setTimeout(() => setBriefingResult(null), 5000);
+                } else {
+                  setBriefingResult({ success: false, message: data.error || 'Failed to send' });
+                  setTimeout(() => setBriefingResult(null), 5000);
+                }
+              } catch {
+                setBriefingResult({ success: false, message: 'Network error' });
+                setTimeout(() => setBriefingResult(null), 5000);
+              } finally {
+                setBriefingSending(false);
+              }
+            }} className="px-5 py-2.5 bg-v-gold text-v-charcoal text-sm font-semibold rounded-lg hover:bg-v-gold-dim disabled:opacity-50 transition-colors">
+              {briefingSending ? 'Sending...' : 'Send Briefing Now'}
+            </button>
+            {briefingResult && (
+              <span className={`text-sm ${briefingResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                {briefingResult.success ? `Briefing sent to ${briefingResult.count} crew member${briefingResult.count !== 1 ? 's' : ''}` : briefingResult.message}
+              </span>
+            )}
+            {job?.reminder_sent_at && !briefingResult && (
+              <span className="text-xs text-v-text-secondary/50">Last sent {new Date(job.reminder_sent_at).toLocaleDateString()}</span>
+            )}
           </div>
         </div>
       )}
