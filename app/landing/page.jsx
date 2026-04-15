@@ -160,7 +160,7 @@ export default function LandingPage() {
         {/* Navigation */}
         <nav className="relative z-10 max-w-7xl w-full mx-auto px-6 py-8 flex justify-between items-center">
           <div className="flex items-center gap-3">
-            <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-10 max-w-[160px] object-contain" />
+            <img src="/logos/shiny-jets-dark.png" alt="Shiny Jets CRM" className="h-10 max-w-[160px] object-contain" />
             <span className="ml-2 px-2 py-0.5 text-[9px] tracking-[0.15em] uppercase border border-v-gold/50 text-v-gold rounded-full">Beta</span>
           </div>
           <div className="flex items-center gap-8">
@@ -177,7 +177,7 @@ export default function LandingPage() {
         <div className="relative z-10 flex-1 flex flex-col items-center justify-center px-6 pb-20">
           <p className="text-[#8A9BB0] text-[10px] tracking-[0.4em] uppercase mb-8">Est. 2024</p>
 
-          <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-16 sm:h-20 md:h-24 object-contain mb-6" />
+          <img src="/logos/shiny-jets-dark.png" alt="Shiny Jets CRM" className="h-16 sm:h-20 md:h-24 object-contain mb-6" />
 
           {/* Gold rule */}
           <div className="w-20 h-[1px] bg-v-gold mx-auto mb-8" />

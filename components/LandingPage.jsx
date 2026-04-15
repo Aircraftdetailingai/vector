@@ -33,7 +33,7 @@ export default function LandingPage({ t, lang = 'en' }) {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-[#0a0f1e]/90 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 flex justify-between items-center">
           <div className="flex items-center space-x-2 text-white text-xl font-bold">
-            <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-8 object-contain" />
+            <img src="/logos/shiny-jets-dark.png" alt="Shiny Jets CRM" className="h-8 object-contain" />
           </div>
           <div className="flex items-center space-x-4 sm:space-x-6">
             <a href="#features" className="text-gray-400 hover:text-white text-sm hidden sm:inline transition-colors">{t.nav.features}</a>
@@ -359,7 +359,7 @@ export default function LandingPage({ t, lang = 'en' }) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6">
             <div className="flex items-center space-x-2 text-white font-bold">
-              <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-6 object-contain" />
+              <img src="/logos/shiny-jets-dark.png" alt="Shiny Jets CRM" className="h-6 object-contain" />
               <span className="text-gray-500 font-normal text-sm ml-2">{t.footer.by}</span>
             </div>
             <div className="flex items-center gap-6 text-sm text-gray-400">

@@ -103,7 +103,7 @@ function LoginContent() {
       <div className="w-full max-w-md">
         {/* Header */}
         <div className="text-center mb-8">
-          <img src="/images/shiny-jets-logo.png" alt="Shiny Jets CRM" className="h-12 mx-auto mb-2 object-contain" />
+          <img src="/logos/shiny-jets-dark.png" alt="Shiny Jets CRM" className="h-12 mx-auto mb-2 object-contain" />
           <p className="text-v-text-secondary mt-2 text-sm">{t('login.professionalSoftware')}</p>
         </div>
 
