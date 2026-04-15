@@ -1,6 +1,7 @@
 import { getAuthUser } from '@/lib/auth';
 import { createClient } from '@supabase/supabase-js';
 import { sendCustomerIntroEmail } from '@/lib/email';
+import { TERMS_VERSION } from '@/lib/terms';
 
 export const dynamic = 'force-dynamic';
 
@@ -217,7 +218,7 @@ export async function POST(request) {
     if (action === 'complete') {
       await supabase
         .from('detailers')
-        .update({ onboarding_complete: true, onboarding_completed: true, onboarding_step: 5 })
+        .update({ onboarding_complete: true, onboarding_completed: true, onboarding_step: 5, terms_accepted_version: TERMS_VERSION })
         .eq('id', user.id);
 
       // Award 50 points
@@ -245,7 +246,7 @@ export async function POST(request) {
     if (action === 'skip') {
       await supabase
         .from('detailers')
-        .update({ onboarding_complete: true, onboarding_completed: true })
+        .update({ onboarding_complete: true, onboarding_completed: true, terms_accepted_version: TERMS_VERSION, agreed_to_terms_at: new Date().toISOString() })
         .eq('id', user.id);
       return Response.json({ success: true });
     }

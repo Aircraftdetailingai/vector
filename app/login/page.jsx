@@ -77,7 +77,8 @@ function LoginContent() {
         }
 
         const redirectTo = (data.must_change_password || data.onboarding_complete === false) ? '/onboarding' : '/dashboard';
-        const termsOk = data.user.terms_accepted_version === TERMS_VERSION || localStorage.getItem('terms_accepted_session') === TERMS_VERSION;
+        // Skip terms modal if heading to onboarding — user will agree there
+        const termsOk = redirectTo === '/onboarding' || data.user.terms_accepted_version === TERMS_VERSION || localStorage.getItem('terms_accepted_session') === TERMS_VERSION;
         if (!termsOk) {
           setPendingRedirect(redirectTo);
           setShowTermsModal(true);

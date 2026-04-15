@@ -127,8 +127,9 @@ function DashboardContent() {
           if (data.user) {
             setUser(data.user);
             localStorage.setItem('vector_user', JSON.stringify(data.user));
-            // Only show terms modal if server explicitly says version doesn't match
-            // and user hasn't already accepted in this session
+            // Only show terms modal for UPDATED terms — never during/after initial onboarding
+            // The onboarding flow saves terms_accepted_version on both skip and complete,
+            // so this modal only fires for existing users when TERMS_VERSION bumps
             const serverVersion = data.user.terms_accepted_version;
             const alreadyAccepted = localStorage.getItem('terms_accepted_session');
             if (serverVersion !== TERMS_VERSION && !alreadyAccepted) {
