@@ -20,32 +20,58 @@ export async function GET(request, { params }) {
   const user = await getCrewUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id: quoteId } = await params;
+  const { id: refId } = await params;
   const supabase = getSupabase();
 
-  // Verify job belongs to crew's detailer
-  const { data: quote, error: quoteErr } = await supabase
+  // Verify job belongs to crew's detailer — check both quotes and jobs tables
+  let quote = null;
+  let jobRecord = null;
+  const { data: q } = await supabase
     .from('quotes')
     .select('id, line_items, selected_services')
-    .eq('id', quoteId)
+    .eq('id', refId)
     .eq('detailer_id', user.detailer_id)
-    .single();
+    .maybeSingle();
+  if (q) {
+    quote = q;
+  } else {
+    const { data: j } = await supabase
+      .from('jobs')
+      .select('id, services')
+      .eq('id', refId)
+      .eq('detailer_id', user.detailer_id)
+      .maybeSingle();
+    if (j) jobRecord = j;
+  }
 
-  if (quoteErr || !quote) {
+  if (!quote && !jobRecord) {
+    console.log('[crew/jobs/materials] not found:', refId, 'detailer:', user.detailer_id);
     return Response.json({ error: 'Job not found' }, { status: 404 });
   }
 
-  // Collect service IDs from line_items and selected_services
+  // Collect service IDs from line_items, selected_services, or jobs.services
   const serviceIds = new Set();
-  if (Array.isArray(quote.line_items)) {
-    quote.line_items.forEach(li => {
-      if (li.service_id) serviceIds.add(li.service_id);
-    });
-  }
-  if (Array.isArray(quote.selected_services)) {
-    quote.selected_services.forEach(id => {
-      if (id) serviceIds.add(id);
-    });
+  if (quote) {
+    if (Array.isArray(quote.line_items)) {
+      quote.line_items.forEach(li => {
+        if (li.service_id) serviceIds.add(li.service_id);
+      });
+    }
+    if (Array.isArray(quote.selected_services)) {
+      quote.selected_services.forEach(id => {
+        if (id) serviceIds.add(id);
+      });
+    }
+  } else if (jobRecord) {
+    // Manual jobs may store services as JSON array of objects with id or service_id
+    let svcs = jobRecord.services;
+    if (typeof svcs === 'string') { try { svcs = JSON.parse(svcs); } catch { svcs = []; } }
+    if (Array.isArray(svcs)) {
+      svcs.forEach(s => {
+        const id = typeof s === 'object' ? (s.service_id || s.id) : null;
+        if (id) serviceIds.add(id);
+      });
+    }
   }
 
   const svcIds = [...serviceIds];
@@ -150,13 +176,27 @@ export async function GET(request, { params }) {
   }
 
   // Also fetch existing product usage for this job (check-off state)
+  // Query both legacy product_usage table and newer job_product_usage table
   let productUsage = [];
   if (user.can_see_inventory) {
     const { data: usage } = await supabase
       .from('product_usage')
       .select('id, product_id, amount_used, unit, notes, created_at')
-      .eq('quote_id', quoteId);
+      .or(`quote_id.eq.${refId},job_id.eq.${refId}`);
     productUsage = usage || [];
+
+    // Also include job_product_usage entries
+    const { data: jpu } = await supabase
+      .from('job_product_usage')
+      .select('id, product_id, actual_quantity, amount_used, unit, notes, created_at')
+      .or(`quote_id.eq.${refId},job_id.eq.${refId}`);
+    if (jpu) {
+      productUsage.push(...jpu.map(u => ({
+        id: u.id, product_id: u.product_id,
+        amount_used: u.actual_quantity || u.amount_used,
+        unit: u.unit, notes: u.notes, created_at: u.created_at,
+      })));
+    }
   }
 
   return Response.json({
@@ -171,7 +211,7 @@ export async function POST(request, { params }) {
   const user = await getCrewUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { id: quoteId } = await params;
+  const { id: refId } = await params;
   const { type, item_id, item_name, notes } = await request.json();
 
   if (!type || !item_name) {
@@ -180,34 +220,28 @@ export async function POST(request, { params }) {
 
   const supabase = getSupabase();
 
-  // Verify job belongs to crew's detailer
-  const { data: quote } = await supabase
-    .from('quotes')
-    .select('id')
-    .eq('id', quoteId)
-    .eq('detailer_id', user.detailer_id)
-    .single();
+  // Verify job belongs to crew's detailer (check both tables)
+  let table = null;
+  const { data: quoteRow } = await supabase.from('quotes').select('id, notes').eq('id', refId).eq('detailer_id', user.detailer_id).maybeSingle();
+  if (quoteRow) {
+    table = 'quotes';
+  } else {
+    const { data: jobRow } = await supabase.from('jobs').select('id, notes').eq('id', refId).eq('detailer_id', user.detailer_id).maybeSingle();
+    if (jobRow) table = 'jobs';
+  }
+  if (!table) return Response.json({ error: 'Job not found' }, { status: 404 });
 
-  if (!quote) return Response.json({ error: 'Job not found' }, { status: 404 });
-
-  // Append note to the quote's notes field about missing item
+  // Append note to the record's notes field about missing item
   const timestamp = new Date().toISOString().split('T')[0];
   const missingNote = `[${timestamp} - ${user.name}] MISSING ${type.toUpperCase()}: ${item_name}${notes ? ` - ${notes}` : ''}`;
 
-  const { data: existing } = await supabase
-    .from('quotes')
-    .select('notes')
-    .eq('id', quoteId)
-    .single();
-
-  const updatedNotes = existing?.notes
-    ? `${existing.notes}\n${missingNote}`
-    : missingNote;
+  const existing = quoteRow || (await supabase.from(table).select('notes').eq('id', refId).single()).data;
+  const updatedNotes = existing?.notes ? `${existing.notes}\n${missingNote}` : missingNote;
 
   const { error } = await supabase
-    .from('quotes')
+    .from(table)
     .update({ notes: updatedNotes })
-    .eq('id', quoteId);
+    .eq('id', refId);
 
   if (error) {
     console.error('Report missing item error:', error);

@@ -171,8 +171,21 @@ export default function CrewDashboard() {
   // Fetch products
   const fetchProducts = useCallback(async () => {
     if (!token || !user?.can_see_inventory) return;
-    const data = await API('/api/crew/products', token);
-    if (data.products) setProducts(data.products);
+    try {
+      const res = await fetch('/api/crew/products', { headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        showMsg(err.error || `Failed to load products (${res.status})`, 'error');
+        return;
+      }
+      const data = await res.json();
+      if (data.products) {
+        setProducts(data.products);
+        if (data.products.length === 0) showMsg('No products found in inventory', 'error');
+      }
+    } catch (e) {
+      showMsg('Connection error loading products', 'error');
+    }
   }, [token, user]);
 
   // Fetch equipment
@@ -241,6 +254,10 @@ export default function CrewDashboard() {
       // Fetch standing notes for this aircraft
       setStandingNotes([]);
       setJobCrewNotes(selectedJob.crew_notes || '');
+      // Auto-load products when entering a job (if crew has inventory access)
+      if (user?.can_see_inventory && products.length === 0) {
+        fetchProducts();
+      }
       // Seed progress slider with current saved value
       const p = parseInt(selectedJob.progress_percentage) || 0;
       setProgressVal(p);
