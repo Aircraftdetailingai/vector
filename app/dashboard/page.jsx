@@ -421,7 +421,8 @@ function DashboardContent() {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {liveStatus.members.map(m => {
-                const elapsed = m.clocked_in && m.clock_in_time
+                const isClocked = m.clocked_in === true && !!m.clock_in_time;
+                const elapsed = isClocked
                   ? (() => {
                       const mins = Math.floor((Date.now() - new Date(m.clock_in_time).getTime()) / 60000);
                       const h = Math.floor(mins / 60);
@@ -431,10 +432,10 @@ function DashboardContent() {
                   : null;
                 return (
                   <div key={m.id} onClick={() => router.push(`/team/${m.id}`)} className="flex items-center gap-3 p-3 bg-v-surface border border-v-border rounded-sm cursor-pointer hover:bg-white/[0.03] transition-colors">
-                    <div className={m.clocked_in ? 'dot-pulse' : 'w-2 h-2 rounded-full bg-gray-600'} />
+                    <div className={isClocked ? 'dot-pulse' : 'w-2 h-2 rounded-full bg-gray-600'} />
                     <div className="flex-1 min-w-0">
                       <p className="text-v-text-primary text-sm truncate">{m.name}</p>
-                      {m.clocked_in ? (
+                      {isClocked ? (
                         <p className="text-green-400 text-[10px] truncate">
                           {m.job_label || 'Working'} &middot; {elapsed}
                         </p>

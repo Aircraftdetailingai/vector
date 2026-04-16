@@ -71,7 +71,7 @@ export async function POST(request) {
     return Response.json({ error: 'Photo data corrupted or too large. Try a smaller photo.' }, { status: 400 });
   }
 
-  const { quote_id, job_id, media_type, photo_type, url, notes } = body || {};
+  const { quote_id, job_id, media_type, photo_type, url, notes, captured_at, latitude, longitude, location_name, device_info } = body || {};
   const refId = job_id || quote_id;
 
   if (!refId || !media_type || !url) {
@@ -157,7 +157,7 @@ export async function POST(request) {
     }
   }
 
-  // Insert into job_media
+  // Insert into job_media — include geo + capture metadata
   let entry = {
     job_id: ref.job_id,
     quote_id: ref.quote_id,
@@ -167,6 +167,11 @@ export async function POST(request) {
     photo_type: photo_type || (media_type.startsWith('before') ? 'pre_job' : media_type.startsWith('after') ? 'post_job' : 'in_progress'),
     url: finalUrl,
     notes: notes || null,
+    captured_at: captured_at || new Date().toISOString(),
+    latitude: typeof latitude === 'number' ? latitude : null,
+    longitude: typeof longitude === 'number' ? longitude : null,
+    location_name: location_name || null,
+    device_info: device_info || null,
   };
 
   let inserted = null;
@@ -186,7 +191,12 @@ export async function POST(request) {
       delete entry[colMatch[1]];
       continue;
     }
-    console.error('[crew/photos] insert error:', error.message, 'code:', error.code, 'details:', error.details);
+    // RLS or permission errors get explicit logging
+    if (error.code === '42501' || error.message?.includes('row-level security') || error.message?.includes('policy')) {
+      console.error('[crew/photos] RLS BLOCK — job_media INSERT denied by policy. error:', error.message, 'detailer:', user.detailer_id, 'team_member:', user.id);
+      return Response.json({ error: 'Permission denied saving photo. Contact support.' }, { status: 403 });
+    }
+    console.error('[crew/photos] job_media INSERT failed:', error.message, 'code:', error.code, 'details:', error.details, 'hint:', error.hint);
     break;
   }
 

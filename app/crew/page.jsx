@@ -459,6 +459,19 @@ export default function CrewDashboard() {
         return;
       }
 
+      // Capture geolocation (best-effort, 3s timeout)
+      let geo = null;
+      if (typeof navigator !== 'undefined' && navigator.geolocation) {
+        geo = await new Promise(resolve => {
+          const timeout = setTimeout(() => resolve(null), 3000);
+          navigator.geolocation.getCurrentPosition(
+            (pos) => { clearTimeout(timeout); resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }); },
+            () => { clearTimeout(timeout); resolve(null); },
+            { timeout: 3000, maximumAge: 60000 }
+          );
+        });
+      }
+
       const reader = new FileReader();
       reader.onload = async () => {
         try {
@@ -470,6 +483,11 @@ export default function CrewDashboard() {
               media_type: mediaType,
               photo_type: mediaType.startsWith('before') ? 'pre_job' : mediaType.startsWith('after') ? 'post_job' : 'in_progress',
               url: reader.result,
+              captured_at: new Date().toISOString(),
+              latitude: geo?.latitude || null,
+              longitude: geo?.longitude || null,
+              location_name: selectedJob.airport || null,
+              device_info: typeof navigator !== 'undefined' ? navigator.userAgent?.slice(0, 200) : null,
             }),
           });
 

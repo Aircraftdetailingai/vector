@@ -122,8 +122,12 @@ export async function POST(request) {
     if (!error) { usageId = data.id; break; }
     const colMatch = error.message?.match(/column "([^"]+)".*does not exist/) || error.message?.match(/Could not find the '([^']+)' column/);
     if (colMatch) { delete entry[colMatch[1]]; continue; }
-    if (error.code === '42P01' || error.message?.includes('does not exist in')) break; // table missing — fall back
-    console.error('[crew/products] job_product_usage insert error:', error.message);
+    if (error.code === '42P01' || error.message?.includes('does not exist in')) break;
+    if (error.code === '42501' || error.message?.includes('row-level security') || error.message?.includes('policy')) {
+      console.error('[crew/products] RLS BLOCK — job_product_usage INSERT denied. error:', error.message, 'detailer:', user.detailer_id, 'team_member:', user.id);
+      return Response.json({ error: 'Permission denied saving product usage. Contact support.' }, { status: 403 });
+    }
+    console.error('[crew/products] job_product_usage INSERT failed:', error.message, 'code:', error.code, 'details:', error.details, 'hint:', error.hint);
     break;
   }
 

@@ -204,15 +204,17 @@ export default function TeamPage() {
                     ${formatPrice(member.total_pay)}
                   </td>
                   <td className="px-4 py-3">
-                    {liveStatus[member.id]?.clocked_in ? (
-                      <span className="text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded-full">Clocked In</span>
+                    {liveStatus[member.id]?.clocked_in === true ? (
+                      <span className="inline-flex items-center gap-1.5 text-xs text-green-400 bg-green-900/20 px-2 py-1 rounded-full">
+                        <span className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                        Clocked In
+                      </span>
                     ) : (
-                      <span className={`inline-block w-2 h-2 rounded-full ${
-                        member.status === 'active' ? 'bg-green-500' : 'bg-gray-400'
-                      }`}>
+                      <span className="inline-flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-gray-500" />
+                        <span className="text-sm text-v-text-secondary hidden sm:inline">Off clock</span>
                       </span>
                     )}
-                    {!liveStatus[member.id]?.clocked_in && <span className="ml-2 text-sm text-v-text-secondary hidden sm:inline">{member.status}</span>}
                   </td>
                   <td className="px-4 py-3 hidden sm:table-cell">
                     {member.email ? (
