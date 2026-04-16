@@ -76,6 +76,14 @@ export default function CrewDashboard() {
   const [standingNotes, setStandingNotes] = useState([]);
   const [jobCrewNotes, setJobCrewNotes] = useState('');
 
+  // Progress slider state
+  const [progressVal, setProgressVal] = useState(0);
+  const [savedProgress, setSavedProgress] = useState(0);
+  const [progressSaving, setProgressSaving] = useState(false);
+  const [progressSaved, setProgressSaved] = useState(false);
+  const [progressError, setProgressError] = useState(false);
+  const [showCompleteConfirm, setShowCompleteConfirm] = useState(false);
+
   // Messages
   const [msg, setMsg] = useState('');
   const [msgType, setMsgType] = useState('success');
@@ -233,6 +241,12 @@ export default function CrewDashboard() {
       // Fetch standing notes for this aircraft
       setStandingNotes([]);
       setJobCrewNotes(selectedJob.crew_notes || '');
+      // Seed progress slider with current saved value
+      const p = parseInt(selectedJob.progress_percentage) || 0;
+      setProgressVal(p);
+      setSavedProgress(p);
+      setProgressSaved(false);
+      setProgressError(false);
       if (selectedJob.tail_number && token) {
         fetch(`/api/aircraft-notes?tail_number=${encodeURIComponent(selectedJob.tail_number)}`, {
           headers: { Authorization: `Bearer ${token}` },
@@ -308,6 +322,65 @@ export default function CrewDashboard() {
       setSelectedJob(null);
     } else {
       showMsg(data.error || 'Failed', 'error');
+    }
+  };
+
+  // Save progress slider value
+  const onProgressSliderChange = (val) => {
+    setProgressVal(val);
+    setProgressSaved(false);
+    setProgressError(false);
+  };
+
+  const handleSaveProgress = async () => {
+    if (progressVal === 100 && selectedJob?.status !== 'completed') {
+      setShowCompleteConfirm(true);
+      return;
+    }
+    await commitProgress(progressVal, false);
+  };
+
+  const commitProgress = async (val, markComplete) => {
+    setProgressSaving(true);
+    setProgressError(false);
+    try {
+      const body = { progress_percentage: val };
+      if (markComplete) {
+        body.status = 'completed';
+        body.completed_at = new Date().toISOString();
+      }
+      const res = await fetch(`/api/jobs/${selectedJob.id}/progress`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) throw new Error('Failed');
+
+      // Write activity log (non-blocking)
+      fetch('/api/crew/activity', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          job_id: selectedJob.id,
+          action_type: 'progress_update',
+          action_details: { progress: val, marked_complete: markComplete },
+        }),
+      }).catch(() => {});
+
+      setSavedProgress(val);
+      setProgressSaved(true);
+      setSelectedJob(prev => prev ? { ...prev, progress_percentage: val, ...(markComplete ? { status: 'completed' } : {}) } : prev);
+      if (markComplete) {
+        showMsg('Job marked complete!');
+        fetchJobs();
+        setSelectedJob(null);
+        return;
+      }
+      setTimeout(() => setProgressSaved(false), 2000);
+    } catch {
+      setProgressError(true);
+    } finally {
+      setProgressSaving(false);
     }
   };
 
@@ -729,6 +802,37 @@ export default function CrewDashboard() {
                   <p className="text-white/80 text-sm">{selectedJob.notes}</p>
                 </div>
               )}
+
+              {/* Job Progress Slider */}
+              <div className="bg-white/5 rounded-lg p-3 mb-3">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-white/50 text-xs uppercase tracking-wide">Job Progress</p>
+                  <span className="text-white text-sm font-semibold">{progressVal}%</span>
+                </div>
+                <input
+                  type="range" min="0" max="100" step="5"
+                  value={progressVal}
+                  onChange={e => onProgressSliderChange(parseInt(e.target.value))}
+                  className="w-full h-2 rounded-lg appearance-none cursor-pointer"
+                  style={{ background: `linear-gradient(to right, #0081b8 ${progressVal}%, rgba(255,255,255,0.1) ${progressVal}%)` }}
+                />
+                <div className="flex justify-between text-[10px] text-white/30 mt-1">
+                  <span>Not Started</span>
+                  <span>Complete</span>
+                </div>
+                {progressVal !== savedProgress && (
+                  <button
+                    onClick={handleSaveProgress}
+                    disabled={progressSaving}
+                    className={`w-full mt-3 py-2.5 rounded-lg text-sm font-semibold transition-all ${progressError ? 'bg-red-500/20 text-red-300 border border-red-500/30' : 'bg-[#0081b8] text-white hover:bg-[#006a9a]'} disabled:opacity-50`}
+                  >
+                    {progressSaving ? 'Saving...' : progressError ? 'Save failed — tap to retry' : 'Save Progress'}
+                  </button>
+                )}
+                {progressSaved && progressVal === savedProgress && (
+                  <p className="text-xs text-green-400 text-center mt-2">Saved &#10003;</p>
+                )}
+              </div>
 
               {/* Standing Notes + Crew Notes */}
               {(standingNotes.length > 0 || jobCrewNotes) && (
@@ -1833,6 +1937,34 @@ export default function CrewDashboard() {
           );
         })()}
       </div>
+
+      {/* Completion confirmation modal */}
+      {showCompleteConfirm && (
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowCompleteConfirm(false)}>
+          <div className="bg-v-charcoal border border-white/10 rounded-lg p-6 max-w-sm w-full" onClick={e => e.stopPropagation()}>
+            <h3 className="text-white font-semibold mb-2">Mark this job as complete?</h3>
+            <p className="text-white/60 text-sm mb-4">Setting progress to 100% will mark the job as completed and move it out of your active jobs.</p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowCompleteConfirm(false)}
+                className="px-4 py-2 text-sm text-white/60 border border-white/20 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  setShowCompleteConfirm(false);
+                  await commitProgress(100, true);
+                }}
+                disabled={progressSaving}
+                className="px-4 py-2 text-sm bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+              >
+                {progressSaving ? 'Saving...' : 'Mark Complete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
