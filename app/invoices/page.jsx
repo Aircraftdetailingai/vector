@@ -146,6 +146,8 @@ function InvoicesPageInner() {
   };
 
   // Open edit modal for an invoice — fetches latest data first.
+  // DB line_items canonical shape: { name, hours, rate, price }.
+  // Edit form shape: { description, hours, rate, total } (descriptive UI names).
   const openEdit = async (inv) => {
     setEditError('');
     setEditSavedFlash(false);
@@ -161,12 +163,24 @@ function InvoicesPageInner() {
         aircraft_model: full.aircraft_model || full.aircraft || '',
         tail_number: full.tail_number || '',
         line_items: (full.line_items && full.line_items.length > 0)
-          ? full.line_items.map(li => ({
-              description: li.description || li.service || '',
-              quantity: li.quantity != null ? li.quantity : 1,
-              rate: li.rate != null ? li.rate : (li.price != null ? li.price : (li.amount != null ? li.amount : 0)),
-            }))
-          : [{ description: '', quantity: 1, rate: 0 }],
+          ? full.line_items.map(item => {
+              const rate = parseFloat(item.rate) || 0;
+              const hours = item.hours != null ? parseFloat(item.hours)
+                : item.qty != null ? parseFloat(item.qty)
+                : item.quantity != null ? parseFloat(item.quantity)
+                : 1;
+              const price = item.price != null ? parseFloat(item.price)
+                : item.total != null ? parseFloat(item.total)
+                : item.amount != null ? parseFloat(item.amount)
+                : hours * rate;
+              return {
+                description: item.name || item.description || item.service || '',
+                hours: hours || 1,
+                rate,
+                total: price,
+              };
+            })
+          : [{ description: '', hours: 1, rate: 0, total: 0 }],
         notes: full.notes || '',
         net_terms: full.net_terms || 30,
         due_date: full.due_date ? full.due_date.slice(0, 10) : '',
@@ -181,9 +195,14 @@ function InvoicesPageInner() {
     if (!f) return f;
     const items = [...f.line_items];
     items[i] = { ...items[i], [field]: val };
+    if (field === 'hours' || field === 'rate') {
+      const h = parseFloat(items[i].hours) || 0;
+      const r = parseFloat(items[i].rate) || 0;
+      items[i].total = Math.round(h * r * 100) / 100;
+    }
     return { ...f, line_items: items };
   });
-  const addEditLine = () => setEditForm(f => f && ({ ...f, line_items: [...f.line_items, { description: '', quantity: 1, rate: 0 }] }));
+  const addEditLine = () => setEditForm(f => f && ({ ...f, line_items: [...f.line_items, { description: '', hours: 1, rate: 0, total: 0 }] }));
   const removeEditLine = (i) => setEditForm(f => f && ({ ...f, line_items: f.line_items.filter((_, j) => j !== i) }));
 
   const saveEdit = async () => {
@@ -191,14 +210,19 @@ function InvoicesPageInner() {
     setEditSaving(true);
     setEditError('');
     try {
+      // Map UI shape back to DB canonical shape: { name, hours, rate, price }.
       const lineItems = (editForm.line_items || [])
         .filter(li => (li.description || '').trim())
-        .map(li => ({
-          description: li.description,
-          quantity: parseFloat(li.quantity) || 1,
-          rate: parseFloat(li.rate) || 0,
-          price: (parseFloat(li.quantity) || 1) * (parseFloat(li.rate) || 0),
-        }));
+        .map(li => {
+          const hours = parseFloat(li.hours) || 1;
+          const rate = parseFloat(li.rate) || 0;
+          return {
+            name: li.description,
+            hours,
+            rate,
+            price: Math.round(hours * rate * 100) / 100,
+          };
+        });
       const total = lineItems.reduce((s, li) => s + li.price, 0);
       const body = {
         customer_name: editForm.customer_name,
@@ -1186,8 +1210,8 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
             <div className="space-y-2 mb-2">
               <div className="flex gap-2 text-[10px] uppercase tracking-wider text-v-text-secondary px-1">
                 <span className="flex-1">Description</span>
-                <span className="w-16 text-center">Hours/Qty</span>
-                <span className="w-24 text-right">Rate</span>
+                <span className="w-20 text-center">Hours</span>
+                <span className="w-24 text-right">Rate/hr</span>
                 <span className="w-24 text-right">Total</span>
                 <span className="w-6" />
               </div>
@@ -1196,14 +1220,14 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                   <input value={li.description} onChange={e => updateEditLine(i, 'description', e.target.value)}
                     placeholder="Service description"
                     className="flex-1 bg-v-charcoal border border-v-border rounded px-2 py-1.5 text-sm text-white outline-none" />
-                  <input type="number" value={li.quantity} onChange={e => updateEditLine(i, 'quantity', e.target.value)}
-                    min="0" step="0.5"
-                    className="w-16 bg-v-charcoal border border-v-border rounded px-2 py-1.5 text-sm text-white outline-none text-center" />
+                  <input type="number" value={li.hours} onChange={e => updateEditLine(i, 'hours', e.target.value)}
+                    min="0" step="0.01"
+                    className="w-20 bg-v-charcoal border border-v-border rounded px-2 py-1.5 text-sm text-white outline-none text-center" />
                   <input type="number" value={li.rate} onChange={e => updateEditLine(i, 'rate', e.target.value)}
                     step="0.01"
                     className="w-24 bg-v-charcoal border border-v-border rounded px-2 py-1.5 text-sm text-white outline-none text-right" />
                   <span className="text-sm text-v-text-secondary py-1.5 w-24 text-right">
-                    {sym}{((parseFloat(li.quantity) || 0) * (parseFloat(li.rate) || 0)).toFixed(2)}
+                    {sym}{((parseFloat(li.hours) || 0) * (parseFloat(li.rate) || 0)).toFixed(2)}
                   </span>
                   <button onClick={() => removeEditLine(i)} disabled={editForm.line_items.length <= 1}
                     className="text-red-400 hover:text-red-300 disabled:opacity-30 text-sm py-1.5 w-6">&times;</button>
@@ -1215,7 +1239,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
             <div className="flex items-center justify-between border-t border-v-border pt-3 mb-4">
               <span className="text-sm font-semibold text-v-text-primary">Total</span>
               <span className="text-lg font-bold text-v-gold">
-                {sym}{editForm.line_items.reduce((s, li) => s + (parseFloat(li.quantity) || 0) * (parseFloat(li.rate) || 0), 0).toFixed(2)}
+                {sym}{editForm.line_items.reduce((s, li) => s + (parseFloat(li.hours) || 0) * (parseFloat(li.rate) || 0), 0).toFixed(2)}
               </span>
             </div>
 
