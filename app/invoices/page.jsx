@@ -451,9 +451,18 @@ function InvoicesPageInner() {
   const downloadPDF = (invoice) => {
     const items = invoice.line_items || [];
     const addons = invoice.addon_fees || [];
-    const lineRows = items.map(item =>
-      `<tr><td style="padding:8px;border-bottom:1px solid #eee">${item.description || item.service || 'Service'}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${sym}${formatPrice(item.amount || item.price || 0)}</td></tr>`
-    ).join('');
+    const lineRows = items.map(item => {
+      const hrs = item.hours != null ? item.hours : (item.quantity != null ? item.quantity : null);
+      const rate = parseFloat(item.rate) || 0;
+      const price = item.price != null ? parseFloat(item.price)
+        : item.amount != null ? parseFloat(item.amount)
+        : (parseFloat(hrs) || 0) * rate;
+      const label = item.name || item.description || item.service || 'Service';
+      const detail = (hrs != null && rate > 0)
+        ? ` <span style="color:#9ca3af;font-size:12px">${parseFloat(hrs)}h @ ${sym}${rate}/hr</span>`
+        : '';
+      return `<tr><td style="padding:8px;border-bottom:1px solid #eee">${label}${detail}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right">${sym}${formatPrice(price)}</td></tr>`;
+    }).join('');
     const addonRows = addons.map(a =>
       `<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">${a.name || 'Add-on'}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right;color:#666">${sym}${formatPrice(a.calculated || a.amount || 0)}</td></tr>`
     ).join('');
@@ -804,19 +813,26 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                     </tr>
                   </thead>
                   <tbody>
-                    {viewInvoice.line_items.map((item, i) => (
-                      <tr key={i} className="border-t border-v-border-subtle/50">
-                        <td className="px-3 py-2 text-v-text-primary">
-                          {item.name || item.description || item.service || 'Service'}
-                          {(item.hours || item.quantity) && (item.rate > 0) && (
-                            <span className="text-[10px] text-v-text-secondary ml-1">
-                              ({item.hours || item.quantity}h @ ${item.rate}/hr)
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-3 py-2 text-right text-v-text-primary font-medium">{sym}{formatPrice(item.price || item.amount || ((parseFloat(item.hours || item.quantity || 0)) * (parseFloat(item.rate) || 0)) || 0)}</td>
-                      </tr>
-                    ))}
+                    {viewInvoice.line_items.map((item, i) => {
+                      const hrs = item.hours != null ? item.hours : (item.quantity != null ? item.quantity : null);
+                      const rate = parseFloat(item.rate) || 0;
+                      const price = item.price != null ? parseFloat(item.price)
+                        : item.amount != null ? parseFloat(item.amount)
+                        : (parseFloat(hrs) || 0) * rate;
+                      return (
+                        <tr key={i} className="border-t border-v-border-subtle/50">
+                          <td className="px-3 py-2 text-v-text-primary">
+                            {item.name || item.description || item.service || 'Service'}
+                            {hrs != null && rate > 0 && (
+                              <span className="text-[11px] text-v-text-secondary ml-2">
+                                {parseFloat(hrs)}h @ {sym}{rate}/hr
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-right text-v-text-primary font-medium">{sym}{formatPrice(price)}</td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
