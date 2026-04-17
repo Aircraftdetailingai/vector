@@ -441,25 +441,35 @@ export default function JobDetailPage() {
         }),
       });
 
-      if (!invoiceRes.ok) {
+      if (invoiceRes.status === 409) {
+        const err = await invoiceRes.json().catch(() => ({}));
+        throw new Error(err.error || 'Invoice already exists for this job');
+      }
+      if (!invoiceRes.ok && invoiceRes.status !== 200) {
         const err = await invoiceRes.json().catch(() => ({}));
         throw new Error(err.error || 'Failed to create invoice');
       }
 
       const invoiceData = await invoiceRes.json();
-      // POST /api/invoices returns { invoice: {...} } — unwrap it
       const invoice = invoiceData.invoice || invoiceData;
+      const alreadyExists = invoiceData.already_exists;
 
       if (!invoice?.id) {
         throw new Error('Invoice created but ID missing in response');
       }
 
-      const sendRes = await fetch(`/api/invoices/${invoice.id}/send`, {
-        method: 'POST',
-        headers,
-      });
-
-      const sendData = await sendRes.json().catch(() => ({}));
+      // Only send if it's a new invoice or a draft — skip if already sent/viewed
+      let sendOk = false;
+      let sendError = null;
+      if (!alreadyExists || invoice.status === 'draft') {
+        const sendRes = await fetch(`/api/invoices/${invoice.id}/send`, { method: 'POST', headers });
+        const sendData = await sendRes.json().catch(() => ({}));
+        sendOk = sendRes.ok;
+        sendError = sendRes.ok ? null : (sendData.error || 'Failed to send email');
+      } else {
+        // Already sent/viewed — just show the existing invoice
+        sendOk = true;
+      }
 
       setInvoiceSent(true);
       setShowInvoicePrompt(false);
@@ -469,7 +479,8 @@ export default function JobDetailPage() {
         customer_email: job.client_email || job.customer_email,
         total: displayTotal,
         invoice_number: invoice.invoice_number || invoice.id?.slice(0, 8).toUpperCase(),
-        error: sendRes.ok ? null : (sendData.error || 'Failed to send email'),
+        error: sendError,
+        already_existed: alreadyExists,
       });
     } catch (err) {
       console.error(err);

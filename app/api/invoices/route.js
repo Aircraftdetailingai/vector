@@ -40,7 +40,27 @@ export async function GET(request) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ invoices: data || [] });
+    // Deduplicate: only show the "best" invoice per job — paid > viewed > sent > draft
+    const statusRank = { paid: 1, viewed: 2, sent: 3, draft: 4 };
+    const bestByJob = {};
+    const noJob = [];
+    for (const inv of data || []) {
+      if (!inv.job_id && !inv.quote_id) { noJob.push(inv); continue; }
+      const key = inv.job_id || inv.quote_id;
+      const existing = bestByJob[key];
+      if (!existing || (statusRank[inv.status] || 5) < (statusRank[existing.status] || 5)) {
+        bestByJob[key] = inv;
+      }
+    }
+    const invoices = [...Object.values(bestByJob), ...noJob]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    // Calculate totals from deduplicated list only
+    const totalOutstanding = invoices
+      .filter(i => i.status !== 'paid' && i.status !== 'draft')
+      .reduce((sum, i) => sum + parseFloat(i.balance_due || i.total || 0), 0);
+
+    return Response.json({ invoices, total_outstanding: Math.round(totalOutstanding * 100) / 100 });
   } catch (err) {
     console.error('Invoices GET error:', err);
     return Response.json({ error: 'Failed to fetch invoices' }, { status: 500 });
@@ -71,6 +91,32 @@ export async function POST(request) {
 
     if (!customer_name || !customer_email || !line_items || !total) {
       return Response.json({ error: 'Missing required fields: customer_name, customer_email, line_items, total' }, { status: 400 });
+    }
+
+    // Check for existing invoice for this job — prevent duplicates
+    if (job_id) {
+      const { data: existing } = await supabase
+        .from('invoices')
+        .select('id, status, share_link, customer_email, total, created_at')
+        .eq('job_id', job_id)
+        .eq('detailer_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (existing) {
+        if (existing.status === 'paid') {
+          return Response.json({ error: 'This job already has a paid invoice', existing_invoice: existing }, { status: 409 });
+        }
+        if (existing.status === 'sent' || existing.status === 'viewed') {
+          // Return the existing one so client can offer to resend
+          return Response.json({ invoice: existing, already_exists: true }, { status: 200 });
+        }
+        if (existing.status === 'draft') {
+          // Return the existing draft so client reuses it
+          return Response.json({ invoice: existing, already_exists: true }, { status: 200 });
+        }
+      }
     }
 
     const share_link = crypto.randomBytes(12).toString('hex');
