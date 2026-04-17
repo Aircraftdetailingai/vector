@@ -1650,7 +1650,6 @@ function NewQuoteContent() {
                     <label className="block text-xs uppercase tracking-wider text-gray-500 mb-1.5">Start Date</label>
                     <input type="date" value={proposedDate}
                       onChange={e => setProposedDate(e.target.value)}
-                      min={new Date().toISOString().split('T')[0]}
                       className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary text-base focus:outline-none focus:ring-2 focus:ring-v-gold" />
                   </div>
                   <div>
