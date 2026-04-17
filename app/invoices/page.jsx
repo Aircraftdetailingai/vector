@@ -29,11 +29,19 @@ export default function InvoicesPage() {
   const [markPaidModal, setMarkPaidModal] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('cash');
   const [actionLoading, setActionLoading] = useState(false);
-  const [createModal, setCreateModal] = useState(false);
-  const [paidQuotes, setPaidQuotes] = useState([]);
+  const [createModal, setCreateModal] = useState(false); // false | 'choose' | 'from_job' | 'blank'
+  const [allJobs, setAllJobs] = useState([]);
   const [selectedQuoteId, setSelectedQuoteId] = useState('');
   const [error, setError] = useState('');
   const [paymentNote, setPaymentNote] = useState('');
+
+  // Blank invoice form state
+  const [blankForm, setBlankForm] = useState({
+    customer_name: '', customer_email: '', aircraft_model: '', tail_number: '',
+    line_items: [{ description: '', quantity: 1, rate: 0 }],
+    net_terms: 30, notes: '',
+  });
+  const [customers, setCustomers] = useState([]);
 
   const sym = currencySymbol();
 
@@ -73,35 +81,74 @@ export default function InvoicesPage() {
     }
   };
 
-  const fetchPaidQuotes = async () => {
+  const fetchAllJobs = async () => {
     try {
-      const res = await fetch('/api/quotes?status=paid&limit=100', { headers: headers() });
-      if (res.ok) {
-        const data = await res.json();
-        const res2 = await fetch('/api/quotes?status=completed&limit=100', { headers: headers() });
-        const data2 = res2.ok ? await res2.json() : { quotes: [] };
-        const all = [...(data.quotes || []), ...(data2.quotes || [])];
-        const invoicedQuoteIds = new Set(invoices.map(inv => inv.quote_id));
-        setPaidQuotes(all.filter(q => !invoicedQuoteIds.has(q.id)));
+      // Fetch from both quotes and jobs tables — all active statuses
+      const invoicedIds = new Set(invoices.map(i => i.job_id || i.quote_id).filter(Boolean));
+      const invoiceStatusMap = {};
+      invoices.forEach(i => { const k = i.job_id || i.quote_id; if (k) invoiceStatusMap[k] = i.status; });
+
+      const jobs = [];
+      // Quotes-based jobs
+      for (const st of ['paid', 'completed', 'scheduled', 'accepted', 'in_progress']) {
+        const res = await fetch(`/api/quotes?status=${st}&limit=100`, { headers: headers() });
+        if (res.ok) {
+          const data = await res.json();
+          (data.quotes || []).forEach(q => jobs.push({
+            id: q.id, _source: 'quotes',
+            customer_name: q.client_name || q.customer_name,
+            aircraft: q.aircraft_model || q.aircraft_type,
+            total: q.total_price, status: q.status,
+            date: q.created_at, email: q.client_email || q.customer_email,
+            invoiced: invoicedIds.has(q.id), invoice_status: invoiceStatusMap[q.id] || null,
+          }));
+        }
       }
+      // Manual jobs
+      const jRes = await fetch('/api/jobs?limit=100', { headers: headers() });
+      if (jRes.ok) {
+        const jData = await jRes.json();
+        (jData.jobs || []).forEach(j => jobs.push({
+          id: j.id, _source: 'jobs',
+          customer_name: j.customer_name,
+          aircraft: [j.aircraft_make, j.aircraft_model].filter(Boolean).join(' '),
+          total: j.total_price, status: j.status,
+          date: j.created_at, email: j.customer_email,
+          invoiced: invoicedIds.has(j.id), invoice_status: invoiceStatusMap[j.id] || null,
+        }));
+      }
+      setAllJobs(jobs.sort((a, b) => new Date(b.date) - new Date(a.date)));
     } catch (err) {
-      console.error('Failed to fetch quotes:', err);
+      console.error('Failed to fetch jobs:', err);
     }
   };
 
-  const createInvoice = async () => {
+  const fetchCustomers = async () => {
+    try {
+      const res = await fetch('/api/customers?limit=100', { headers: headers() });
+      if (res.ok) {
+        const data = await res.json();
+        setCustomers((data.customers || []).map(c => ({ name: c.name, email: c.email })));
+      }
+    } catch {}
+  };
+
+  const createInvoiceFromJob = async () => {
     if (!selectedQuoteId) return;
     setActionLoading(true);
     setError('');
     try {
-      const res = await fetch('/api/invoices', {
-        method: 'POST',
-        headers: headers(),
-        body: JSON.stringify({ quote_id: selectedQuoteId }),
-      });
+      const job = allJobs.find(j => j.id === selectedQuoteId);
+      const body = job?._source === 'jobs'
+        ? { job_id: selectedQuoteId, customer_name: job.customer_name, customer_email: job.email, aircraft_model: job.aircraft, total: job.total, line_items: [{ description: job.aircraft || 'Service', quantity: 1, rate: job.total || 0, price: job.total || 0 }] }
+        : { quote_id: selectedQuoteId, customer_name: job?.customer_name, customer_email: job?.email, total: job?.total, line_items: [{ description: job?.aircraft || 'Service', quantity: 1, rate: job?.total || 0, price: job?.total || 0 }] };
+      const res = await fetch('/api/invoices', { method: 'POST', headers: headers(), body: JSON.stringify(body) });
       const data = await res.json();
-      if (res.ok) {
-        setInvoices([data.invoice, ...invoices]);
+      if (res.ok || data.invoice) {
+        if (data.already_exists) {
+          setError('Invoice already exists for this job — showing existing.');
+        }
+        fetchInvoices();
         setCreateModal(false);
         setSelectedQuoteId('');
       } else {
@@ -113,6 +160,63 @@ export default function InvoicesPage() {
       setActionLoading(false);
     }
   };
+
+  const createBlankInvoice = async () => {
+    if (!blankForm.customer_name || !blankForm.customer_email) {
+      setError('Customer name and email are required');
+      return;
+    }
+    const items = blankForm.line_items.filter(li => li.description.trim());
+    if (items.length === 0) {
+      setError('Add at least one line item');
+      return;
+    }
+    setActionLoading(true);
+    setError('');
+    try {
+      const lineItems = items.map(li => ({
+        description: li.description,
+        quantity: parseFloat(li.quantity) || 1,
+        rate: parseFloat(li.rate) || 0,
+        price: (parseFloat(li.quantity) || 1) * (parseFloat(li.rate) || 0),
+      }));
+      const total = lineItems.reduce((s, li) => s + li.price, 0);
+      const res = await fetch('/api/invoices', {
+        method: 'POST',
+        headers: headers(),
+        body: JSON.stringify({
+          customer_name: blankForm.customer_name,
+          customer_email: blankForm.customer_email,
+          aircraft_model: blankForm.aircraft_model || '',
+          tail_number: blankForm.tail_number || '',
+          line_items: lineItems,
+          total,
+          net_terms: blankForm.net_terms || 30,
+          notes: blankForm.notes || '',
+        }),
+      });
+      const data = await res.json();
+      if (res.ok || data.invoice) {
+        fetchInvoices();
+        setCreateModal(false);
+        setBlankForm({ customer_name: '', customer_email: '', aircraft_model: '', tail_number: '', line_items: [{ description: '', quantity: 1, rate: 0 }], net_terms: 30, notes: '' });
+      } else {
+        setError(data.error || 'Failed to create');
+      }
+    } catch {
+      setError('Failed to create invoice');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const addLineItem = () => setBlankForm(f => ({ ...f, line_items: [...f.line_items, { description: '', quantity: 1, rate: 0 }] }));
+  const updateLineItem = (i, field, val) => setBlankForm(f => {
+    const items = [...f.line_items];
+    items[i] = { ...items[i], [field]: val };
+    return { ...f, line_items: items };
+  });
+  const removeLineItem = (i) => setBlankForm(f => ({ ...f, line_items: f.line_items.filter((_, j) => j !== i) }));
 
   const getDisplayStatus = (inv) => {
     if (inv.status === 'paid') return 'paid';
@@ -282,7 +386,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
         <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>INVOICES</h1>
         <button
-          onClick={() => { setCreateModal(true); fetchPaidQuotes(); }}
+          onClick={() => { setCreateModal('choose'); setError(''); }}
           className="px-5 py-2 rounded-lg text-sm font-semibold bg-v-gold text-white shadow hover:brightness-110 transition-colors"
         >
           + Create Invoice
@@ -671,51 +775,173 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
         </div>
       )}
 
-      {/* Create Invoice Modal */}
-      {createModal && (
+      {/* Create Invoice — Choose Mode */}
+      {createModal === 'choose' && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
+          <div className="bg-v-surface rounded-xl max-w-sm w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-v-text-primary mb-4">Create Invoice</h3>
+            <div className="space-y-3">
+              <button
+                onClick={() => { setCreateModal('from_job'); fetchAllJobs(); }}
+                className="w-full flex items-center gap-3 p-4 border border-v-border rounded-lg hover:bg-white/5 transition-colors text-left"
+              >
+                <span className="text-2xl">&#128203;</span>
+                <div>
+                  <p className="text-sm font-semibold text-v-text-primary">From a Job</p>
+                  <p className="text-xs text-v-text-secondary">Invoice an existing job</p>
+                </div>
+              </button>
+              <button
+                onClick={() => { setCreateModal('blank'); fetchCustomers(); }}
+                className="w-full flex items-center gap-3 p-4 border border-v-border rounded-lg hover:bg-white/5 transition-colors text-left"
+              >
+                <span className="text-2xl">&#128221;</span>
+                <div>
+                  <p className="text-sm font-semibold text-v-text-primary">Blank Invoice</p>
+                  <p className="text-xs text-v-text-secondary">Create from scratch — no job needed</p>
+                </div>
+              </button>
+            </div>
+            <button onClick={() => setCreateModal(false)} className="w-full mt-3 text-xs text-v-text-secondary hover:text-white">Cancel</button>
+          </div>
+        </div>
+      )}
+
+      {/* Create Invoice — From a Job */}
+      {createModal === 'from_job' && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
           <div className="bg-v-surface rounded-xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-v-text-primary mb-3">Create Invoice from Job</h3>
-            <p className="text-sm text-v-text-secondary mb-3">Select a paid or completed job to generate an invoice.</p>
-            {error && <p className="text-red-500 text-sm mb-2">{error}</p>}
-            {paidQuotes.length === 0 ? (
-              <p className="text-v-text-secondary text-center py-6">No paid jobs without invoices found.</p>
+            <p className="text-sm text-v-text-secondary mb-3">Select a job to invoice.</p>
+            {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
+            {allJobs.length === 0 ? (
+              <p className="text-v-text-secondary text-center py-6">No jobs found.</p>
             ) : (
-              <div className="space-y-2 max-h-60 overflow-y-auto mb-4">
-                {paidQuotes.map(q => (
-                  <label
-                    key={q.id}
-                    className={`flex items-center justify-between p-3 border rounded-lg cursor-pointer transition-colors ${
-                      selectedQuoteId === q.id ? 'border-v-gold bg-v-gold-muted/20' : 'border-v-border hover:border-v-border'
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="radio"
-                        name="quote"
-                        value={q.id}
-                        checked={selectedQuoteId === q.id}
-                        onChange={() => setSelectedQuoteId(q.id)}
-                        className="accent-v-gold"
-                      />
-                      <div>
-                        <p className="text-sm font-medium text-v-text-primary">{q.client_name || q.customer_name || 'Customer'}</p>
-                        <p className="text-xs text-v-text-secondary">{q.aircraft_model || q.aircraft_type || 'Aircraft'} &middot; {new Date(q.created_at).toLocaleDateString()}</p>
+              <div className="space-y-2 max-h-72 overflow-y-auto mb-4">
+                {allJobs.map(j => {
+                  const disabled = j.invoice_status === 'paid';
+                  return (
+                    <label key={j.id} className={`flex items-center justify-between p-3 border rounded-lg transition-colors ${
+                      disabled ? 'opacity-40 cursor-not-allowed border-v-border' :
+                      selectedQuoteId === j.id ? 'border-v-gold bg-v-gold/10 cursor-pointer' : 'border-v-border hover:border-v-gold/30 cursor-pointer'
+                    }`}>
+                      <div className="flex items-center gap-2">
+                        <input type="radio" name="job" value={j.id}
+                          checked={selectedQuoteId === j.id}
+                          disabled={disabled}
+                          onChange={() => setSelectedQuoteId(j.id)}
+                          className="accent-v-gold" />
+                        <div>
+                          <p className="text-sm font-medium text-v-text-primary">{j.customer_name || 'Customer'}</p>
+                          <p className="text-xs text-v-text-secondary">
+                            {j.aircraft || 'Service'} &middot; {j.status}
+                            {j.invoiced && <span className="ml-1 text-v-gold">&#183; Already invoiced</span>}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <span className="font-bold text-v-text-primary">{sym}{formatPrice(q.total_price)}</span>
-                  </label>
-                ))}
+                      <span className="font-bold text-v-text-primary text-sm">{sym}{formatPrice(j.total || 0)}</span>
+                    </label>
+                  );
+                })}
               </div>
             )}
             <div className="flex gap-2">
-              <button onClick={() => setCreateModal(false)} className="flex-1 px-4 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5 transition-colors">Cancel</button>
-              <button
-                onClick={createInvoice}
-                disabled={!selectedQuoteId || actionLoading}
-                className="flex-1 px-4 py-2 bg-v-gold text-white rounded-lg font-medium disabled:opacity-50 transition-colors"
-              >
-                {actionLoading ? 'Creating...' : '+ Create Invoice'}
+              <button onClick={() => setCreateModal('choose')} className="flex-1 px-4 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5 text-sm">Back</button>
+              <button onClick={createInvoiceFromJob} disabled={!selectedQuoteId || actionLoading}
+                className="flex-1 px-4 py-2 bg-v-gold text-white rounded-lg font-medium disabled:opacity-50 text-sm">
+                {actionLoading ? 'Creating...' : 'Create Invoice'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Invoice — Blank Form */}
+      {createModal === 'blank' && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
+          <div className="bg-v-surface rounded-xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-v-text-primary mb-4">New Invoice</h3>
+            {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
+
+            <div className="space-y-3 mb-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-v-text-secondary mb-1">Customer name *</label>
+                  <input value={blankForm.customer_name} onChange={e => setBlankForm(f => ({ ...f, customer_name: e.target.value }))}
+                    list="customer-names" placeholder="Customer name"
+                    className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
+                  <datalist id="customer-names">
+                    {customers.map((c, i) => <option key={i} value={c.name} />)}
+                  </datalist>
+                </div>
+                <div>
+                  <label className="block text-xs text-v-text-secondary mb-1">Email *</label>
+                  <input value={blankForm.customer_email} onChange={e => setBlankForm(f => ({ ...f, customer_email: e.target.value }))}
+                    type="email" placeholder="customer@email.com"
+                    className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs text-v-text-secondary mb-1">Aircraft</label>
+                  <input value={blankForm.aircraft_model} onChange={e => setBlankForm(f => ({ ...f, aircraft_model: e.target.value }))}
+                    placeholder="Optional"
+                    className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
+                </div>
+                <div>
+                  <label className="block text-xs text-v-text-secondary mb-1">Tail #</label>
+                  <input value={blankForm.tail_number} onChange={e => setBlankForm(f => ({ ...f, tail_number: e.target.value }))}
+                    placeholder="Optional"
+                    className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50 uppercase" />
+                </div>
+              </div>
+            </div>
+
+            {/* Line items */}
+            <p className="text-xs text-v-text-secondary mb-2">Line Items</p>
+            <div className="space-y-2 mb-3">
+              {blankForm.line_items.map((li, i) => (
+                <div key={i} className="flex gap-2 items-start">
+                  <input value={li.description} onChange={e => updateLineItem(i, 'description', e.target.value)}
+                    placeholder="Description" className="flex-1 bg-v-charcoal border border-v-border rounded px-2 py-1.5 text-sm text-white outline-none" />
+                  <input type="number" value={li.quantity} onChange={e => updateLineItem(i, 'quantity', e.target.value)}
+                    placeholder="Qty" min="1" step="0.5" className="w-16 bg-v-charcoal border border-v-border rounded px-2 py-1.5 text-sm text-white outline-none text-center" />
+                  <input type="number" value={li.rate} onChange={e => updateLineItem(i, 'rate', e.target.value)}
+                    placeholder="Rate" step="0.01" className="w-24 bg-v-charcoal border border-v-border rounded px-2 py-1.5 text-sm text-white outline-none text-right" />
+                  <span className="text-sm text-v-text-secondary py-1.5 w-20 text-right">{sym}{((parseFloat(li.quantity) || 0) * (parseFloat(li.rate) || 0)).toFixed(2)}</span>
+                  {blankForm.line_items.length > 1 && (
+                    <button onClick={() => removeLineItem(i)} className="text-red-400 hover:text-red-300 text-sm py-1.5">&times;</button>
+                  )}
+                </div>
+              ))}
+            </div>
+            <button onClick={addLineItem} className="text-v-gold text-xs hover:underline mb-4">+ Add line item</button>
+
+            <div className="flex items-center justify-between border-t border-v-border pt-3 mb-4">
+              <span className="text-sm font-semibold text-v-text-primary">Total</span>
+              <span className="text-lg font-bold text-v-gold">
+                {sym}{blankForm.line_items.reduce((s, li) => s + (parseFloat(li.quantity) || 0) * (parseFloat(li.rate) || 0), 0).toFixed(2)}
+              </span>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3 mb-4">
+              <div>
+                <label className="block text-xs text-v-text-secondary mb-1">Net Terms (days)</label>
+                <input type="number" value={blankForm.net_terms} onChange={e => setBlankForm(f => ({ ...f, net_terms: parseInt(e.target.value) || 30 }))}
+                  className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none" />
+              </div>
+              <div>
+                <label className="block text-xs text-v-text-secondary mb-1">Notes</label>
+                <input value={blankForm.notes} onChange={e => setBlankForm(f => ({ ...f, notes: e.target.value }))}
+                  placeholder="Optional" className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none" />
+              </div>
+            </div>
+
+            <div className="flex gap-2">
+              <button onClick={() => setCreateModal('choose')} className="flex-1 px-4 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5 text-sm">Back</button>
+              <button onClick={createBlankInvoice} disabled={actionLoading}
+                className="flex-1 px-4 py-2 bg-v-gold text-white rounded-lg font-medium disabled:opacity-50 text-sm">
+                {actionLoading ? 'Creating...' : 'Create Invoice'}
               </button>
             </div>
           </div>
