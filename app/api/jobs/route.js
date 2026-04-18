@@ -50,7 +50,7 @@ export async function GET(request) {
   try {
     const { data: manualJobs } = await supabase
       .from('jobs')
-      .select('id, customer_name, customer_email, aircraft_make, aircraft_model, tail_number, airport, services, total_price, status, scheduled_date, schedule_override, created_at, completed_at, completion_notes')
+      .select('id, customer_name, customer_email, customer_phone, aircraft_make, aircraft_model, tail_number, airport, services, total_price, status, scheduled_date, scheduled_time, schedule_override, payment_method, created_at, completed_at, completion_notes')
       .eq('detailer_id', user.id)
       .order('created_at', { ascending: false });
 

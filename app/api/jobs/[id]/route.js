@@ -22,6 +22,8 @@ const ALLOWED_FIELDS = [
   'aircraft_model',
   'customer_name',
   'customer_email',
+  'customer_phone',
+  'payment_method',
   'total_price',
   'status',
   'crew_notes',

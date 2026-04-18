@@ -209,12 +209,15 @@ export default function JobDetailPage() {
     setEditForm({
       customer_name: job.customer_name || job.client_name || '',
       customer_email: job.customer_email || job.client_email || '',
+      customer_phone: job.customer_phone || job.client_phone || '',
       aircraft_make: job.aircraft_make || '',
       aircraft_model: job.aircraft_model || '',
       tail_number: job.tail_number || '',
       airport: job.airport || '',
       scheduled_date: job.scheduled_date || '',
+      scheduled_time: job.scheduled_time || '',
       schedule_override: !!job.schedule_override,
+      payment_method: job.payment_method || 'unpaid',
       status: job.status || 'scheduled',
       services: servicesList,
       total_price: job.total_price || '',
@@ -686,6 +689,10 @@ export default function JobDetailPage() {
                   <input value={editForm.customer_email || ''} onChange={e => setEditForm(p => ({ ...p, customer_email: e.target.value }))} type="email" className={ecls} />
                 </div>
               </div>
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-v-text-secondary mb-1">Customer Phone</label>
+                <input value={editForm.customer_phone || ''} onChange={e => setEditForm(p => ({ ...p, customer_phone: e.target.value }))} type="tel" className={ecls} />
+              </div>
 
               {/* Aircraft */}
               <div className="grid grid-cols-2 gap-2">
@@ -710,10 +717,14 @@ export default function JobDetailPage() {
               </div>
 
               {/* Schedule */}
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider text-v-text-secondary mb-1">Scheduled Date</label>
                   <input type="date" value={editForm.scheduled_date || ''} onChange={e => setEditForm(p => ({ ...p, scheduled_date: e.target.value || null }))} className={ecls} />
+                </div>
+                <div>
+                  <label className="block text-[10px] uppercase tracking-wider text-v-text-secondary mb-1">Scheduled Time</label>
+                  <input type="time" value={editForm.scheduled_time || ''} onChange={e => setEditForm(p => ({ ...p, scheduled_time: e.target.value || null }))} className={ecls} />
                 </div>
                 <div>
                   <label className="block text-[10px] uppercase tracking-wider text-v-text-secondary mb-1">Status</label>
@@ -723,6 +734,17 @@ export default function JobDetailPage() {
                     <option value="completed">Completed</option>
                   </select>
                 </div>
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-wider text-v-text-secondary mb-1">Payment Method</label>
+                <select value={editForm.payment_method || 'unpaid'} onChange={e => setEditForm(p => ({ ...p, payment_method: e.target.value }))} className={ecls}>
+                  <option value="unpaid">Unpaid</option>
+                  <option value="cash">Cash</option>
+                  <option value="check">Check</option>
+                  <option value="stripe">Stripe / Card</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
 
               <label className="flex items-start gap-2 cursor-pointer">
