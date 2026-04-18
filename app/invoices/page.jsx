@@ -768,9 +768,6 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                           </td>
                           <td className="px-4 py-3 text-right">
                             <p className="text-v-text-primary text-sm font-semibold">{sym}{formatPrice(inv.total)}</p>
-                            {parseFloat(inv.balance_due) > 0 && inv.status !== 'paid' && parseFloat(inv.balance_due) !== parseFloat(inv.total) && (
-                              <p className="text-red-400 text-xs">Due: {sym}{formatPrice(inv.balance_due)}</p>
-                            )}
                           </td>
                           <td className="px-4 py-3 text-center">
                             <span className={`text-xs px-2.5 py-1 rounded-full font-medium ${statusColors[ds] || statusColors.sent}`}>
@@ -1498,20 +1495,18 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                 : `${isFinite(discValue) ? discValue : 0}% off`;
               return (
                 <div className="border-t border-v-border pt-3 mb-4 space-y-1">
-                  {discAmt > 0 && (
-                    <>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-v-text-secondary">Subtotal</span>
-                        <span className="text-v-text-primary">{sym}{subtotal.toFixed(2)}</span>
-                      </div>
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-v-text-secondary">
-                          Discount ({discLabel}{editDiscount.reason?.trim() ? ` — ${editDiscount.reason.trim()}` : ''})
-                        </span>
-                        <span className="text-red-400">-{sym}{discAmt.toFixed(2)}</span>
-                      </div>
-                    </>
-                  )}
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-v-text-secondary">Subtotal</span>
+                    <span className="text-v-text-primary">{sym}{subtotal.toFixed(2)}</span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-v-text-secondary">
+                      Discount ({discLabel}{editDiscount.reason?.trim() ? ` — ${editDiscount.reason.trim()}` : ''})
+                    </span>
+                    <span className={discAmt > 0 ? 'text-red-400' : 'text-v-text-secondary'}>
+                      {discAmt > 0 ? '-' : ''}{sym}{discAmt.toFixed(2)}
+                    </span>
+                  </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-semibold text-v-text-primary">Total</span>
                     <span className="text-lg font-bold text-v-gold">{sym}{total.toFixed(2)}</span>
