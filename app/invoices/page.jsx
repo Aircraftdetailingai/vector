@@ -67,8 +67,18 @@ function InvoicesPageInner() {
   const [editHourOverrides, setEditHourOverrides] = useState({});
   const [editCustomLines, setEditCustomLines] = useState([]);
   const [editDiscount, setEditDiscount] = useState({ type: 'percent', value: '', reason: '' });
+  const [detailer, setDetailer] = useState(null); // current detailer's business info for the From block
 
   const sym = currencySymbol();
+
+  // Display label for an invoice. Falls back to a short UUID prefix when there's
+  // no stored invoice number so we never render "Invoice undefined".
+  const invoiceLabel = (inv) => {
+    if (!inv) return '';
+    if (inv.invoice_number) return inv.invoice_number;
+    const idStr = (inv.id || '').toString();
+    return idStr ? `#${idStr.slice(0, 8).toUpperCase()}` : '';
+  };
 
   // Given a pre-discount subtotal and a discount {type, value}, compute the dollar
   // amount that should be subtracted from the invoice total.
@@ -96,6 +106,10 @@ function InvoicesPageInner() {
       }
     } catch {}
     fetchInvoices(token);
+    fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.ok ? r.json() : null)
+      .then(d => { if (d?.user) setDetailer(d.user); })
+      .catch(() => {});
   }, [router]);
 
   const getToken = () => localStorage.getItem('vector_token');
@@ -590,7 +604,12 @@ function InvoicesPageInner() {
     const addonRows = addons.map(a =>
       `<tr><td style="padding:8px;border-bottom:1px solid #eee;color:#666">${a.name || 'Add-on'}</td><td style="padding:8px;border-bottom:1px solid #eee;text-align:right;color:#666">${sym}${formatPrice(a.calculated || a.amount || 0)}</td></tr>`
     ).join('');
-    const html = `<!DOCTYPE html><html><head><title>Invoice ${invoice.invoice_number}</title>
+    const label = invoiceLabel(invoice);
+    const d = detailer || {};
+    const logoSrc = d.logo_light_url || d.logo_url || '';
+    const fromLogo = logoSrc ? `<img src="${logoSrc}" alt="" style="height:40px;max-width:180px;object-fit:contain;margin-bottom:6px" />` : '';
+    const fromName = d.company || d.name || '';
+    const html = `<!DOCTYPE html><html><head><title>Invoice ${label}</title>
 <style>body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;max-width:700px;margin:40px auto;padding:20px;color:#333}
 .header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:30px}
 .inv-num{font-size:28px;font-weight:700;color:#1e3a5f}
@@ -607,14 +626,16 @@ th:last-child{text-align:right}
 @media print{body{margin:0;padding:20px}}</style></head>
 <body>
 <div class="header">
-  <div><div class="inv-num">Invoice ${invoice.invoice_number}</div>
+  <div><div class="inv-num">Invoice ${label}</div>
   <div style="color:#6b7280">${new Date(invoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</div></div>
   <span class="status ${invoice.status === 'paid' ? 'paid' : 'unpaid'}">${(invoice.status || 'unpaid').toUpperCase()}</span>
 </div>
 <div class="info-grid">
-  <div><div class="label">From</div><div class="name">${invoice.detailer_company || invoice.detailer_name || ''}</div>
-  ${invoice.detailer_email ? `<div style="color:#6b7280;font-size:14px">${invoice.detailer_email}</div>` : ''}
-  ${invoice.detailer_phone ? `<div style="color:#6b7280;font-size:14px">${invoice.detailer_phone}</div>` : ''}</div>
+  <div><div class="label">From</div>${fromLogo}${fromName ? `<div class="name">${fromName}</div>` : ''}
+  ${d.name && d.name !== fromName ? `<div style="color:#6b7280;font-size:14px">${d.name}</div>` : ''}
+  ${d.email ? `<div style="color:#6b7280;font-size:14px">${d.email}</div>` : ''}
+  ${d.phone ? `<div style="color:#6b7280;font-size:14px">${d.phone}</div>` : ''}
+  ${d.home_airport ? `<div style="color:#6b7280;font-size:14px">${d.home_airport}</div>` : ''}</div>
   <div><div class="label">Bill To</div><div class="name">${invoice.customer_name || 'Customer'}</div>
   ${invoice.customer_company ? `<div style="color:#6b7280;font-size:14px">${invoice.customer_company}</div>` : ''}
   ${invoice.customer_email ? `<div style="color:#6b7280;font-size:14px">${invoice.customer_email}</div>` : ''}</div>
@@ -760,7 +781,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                         >
                           <td className="px-4 py-3">
                             <p className="text-v-text-primary text-sm font-medium">{inv.customer_name || 'Customer'}</p>
-                            <p className="text-v-text-secondary text-xs">{inv.invoice_number}</p>
+                            <p className="text-v-text-secondary text-xs">{invoiceLabel(inv)}</p>
                           </td>
                           <td className="px-4 py-3">
                             <p className="text-v-text-primary text-sm">{inv.aircraft || inv.aircraft_model || '-'}</p>
@@ -851,7 +872,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                       <div className="flex items-center justify-between mb-2">
                         <div>
                           <p className="text-v-text-primary text-sm font-medium">{inv.customer_name || 'Customer'}</p>
-                          <p className="text-v-text-secondary text-xs">{inv.invoice_number}</p>
+                          <p className="text-v-text-secondary text-xs">{invoiceLabel(inv)}</p>
                         </div>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${statusColors[ds] || statusColors.sent}`}>
                           {statusLabels[ds] || ds}
@@ -894,7 +915,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
           <div className="bg-v-surface rounded-xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
               <div>
-                <h2 className="text-xl font-bold text-v-text-primary">{viewInvoice.invoice_number}</h2>
+                <h2 className="text-xl font-bold text-v-text-primary">Invoice {invoiceLabel(viewInvoice)}</h2>
                 <p className="text-sm text-v-text-secondary">{new Date(viewInvoice.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
               </div>
               <div className="flex items-center gap-2">
@@ -915,8 +936,14 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
             <div className="grid grid-cols-2 gap-4 bg-v-charcoal rounded-lg p-3 mb-4 text-sm">
               <div>
                 <p className="text-xs text-v-text-secondary uppercase">From</p>
-                <p className="font-semibold text-v-text-primary">{viewInvoice.detailer_company || viewInvoice.detailer_name}</p>
-                {viewInvoice.detailer_email && <p className="text-v-text-secondary">{viewInvoice.detailer_email}</p>}
+                {(detailer?.logo_url || detailer?.logo_light_url) && (
+                  <img src={detailer.logo_light_url || detailer.logo_url} alt="" className="h-10 max-w-[160px] object-contain mb-1" />
+                )}
+                {detailer?.company && <p className="font-semibold text-v-text-primary">{detailer.company}</p>}
+                {detailer?.name && <p className="text-v-text-secondary">{detailer.name}</p>}
+                {detailer?.email && <p className="text-v-text-secondary">{detailer.email}</p>}
+                {detailer?.phone && <p className="text-v-text-secondary">{detailer.phone}</p>}
+                {detailer?.home_airport && <p className="text-v-text-secondary">{detailer.home_airport}</p>}
               </div>
               <div>
                 <p className="text-xs text-v-text-secondary uppercase">Bill To</p>
@@ -1083,7 +1110,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setMarkPaidModal(null)}>
           <div className="bg-v-surface rounded-xl max-w-sm w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
             <h3 className="text-lg font-bold text-v-text-primary mb-3">Mark as Paid</h3>
-            <p className="text-sm text-v-text-secondary mb-3">{markPaidModal.invoice_number} &mdash; {sym}{formatPrice(markPaidModal.total)}</p>
+            <p className="text-sm text-v-text-secondary mb-3">{invoiceLabel(markPaidModal)} &mdash; {sym}{formatPrice(markPaidModal.total)}</p>
             <label className="block text-sm font-medium text-v-text-primary mb-1">Payment method</label>
             <div className="flex gap-2 mb-3 flex-wrap">
               {['cash', 'check', 'bank_transfer', 'other'].map(m => (
@@ -1310,7 +1337,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="text-lg font-bold text-v-text-primary">Edit Invoice</h3>
-                <p className="text-xs text-v-text-secondary font-mono">{editInvoice.invoice_number || editInvoice.id?.slice(0, 8).toUpperCase()}</p>
+                <p className="text-xs text-v-text-secondary font-mono">{invoiceLabel(editInvoice)}</p>
               </div>
               <div className="flex items-center gap-2">
                 {editSavedFlash && <span className="text-green-400 text-xs">Saved ✓</span>}

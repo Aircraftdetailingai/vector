@@ -48,18 +48,20 @@ export async function POST(request, { params }) {
       return Response.json({ error: 'No customer email on invoice' }, { status: 400 });
     }
 
-    // Fetch detailer company name
+    // Fetch detailer info for From block (logo, company, contact details)
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('company, name, email')
+      .select('company, name, email, phone, home_airport, logo_url, logo_light_url')
       .eq('id', detailerId)
       .single();
 
     const companyName = detailer?.company || detailer?.name || 'Your Service Provider';
     const invoiceLink = `https://crm.shinyjets.com/invoice/${invoice.share_link}`;
     const total = parseFloat(invoice.total || 0).toLocaleString('en-US', { style: 'currency', currency: 'USD' });
+    const invLabel = invoice.invoice_number || `#${String(invoice.id).slice(0, 8).toUpperCase()}`;
+    const fromLogo = detailer?.logo_light_url || detailer?.logo_url || '';
 
-    const subject = `Invoice from ${companyName}`;
+    const subject = `Invoice ${invLabel} from ${companyName}`;
     const html = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;line-height:1.6;color:#333;max-width:600px;margin:0 auto;padding:20px;background:#f5f5f5;">
   <div style="background:linear-gradient(135deg,#007CB1 0%,#0a1520 100%);padding:30px;border-radius:12px 12px 0 0;text-align:center;">
@@ -68,10 +70,19 @@ export async function POST(request, { params }) {
   <div style="background:#fff;padding:30px;border:1px solid #e5e7eb;border-top:none;border-radius:0 0 12px 12px;">
     <p style="font-size:16px;margin:0 0 16px;">Hi ${invoice.customer_name || 'there'},</p>
     <p style="font-size:15px;color:#4a5568;margin-bottom:20px;">
-      You have a new invoice from <strong>${companyName}</strong> for <strong>${total}</strong>.
+      You have a new invoice (${invLabel}) from <strong>${companyName}</strong> for <strong>${total}</strong>.
     </p>
     ${invoice.aircraft_model ? `<p style="font-size:14px;color:#718096;">Aircraft: ${invoice.aircraft_model}${invoice.tail_number ? ` (${invoice.tail_number})` : ''}</p>` : ''}
     ${invoice.due_date ? `<p style="font-size:14px;color:#718096;">Due: ${new Date(invoice.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>` : ''}
+    <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin:16px 0;">
+      <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;">From</p>
+      ${fromLogo ? `<img src="${fromLogo}" alt="" style="height:36px;max-width:180px;object-fit:contain;display:block;margin:6px 0 4px" />` : ''}
+      ${detailer?.company ? `<p style="margin:4px 0 0;font-weight:600;color:#1f2937;font-size:14px;">${detailer.company}</p>` : ''}
+      ${detailer?.name && detailer.name !== detailer?.company ? `<p style="margin:0;color:#6b7280;font-size:13px;">${detailer.name}</p>` : ''}
+      ${detailer?.email ? `<p style="margin:0;color:#6b7280;font-size:13px;">${detailer.email}</p>` : ''}
+      ${detailer?.phone ? `<p style="margin:0;color:#6b7280;font-size:13px;">${detailer.phone}</p>` : ''}
+      ${detailer?.home_airport ? `<p style="margin:0;color:#6b7280;font-size:13px;">${detailer.home_airport}</p>` : ''}
+    </div>
     <div style="text-align:center;margin:30px 0;">
       <a href="${invoiceLink}" style="display:inline-block;background:#007CB1;color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:600;font-size:16px;">
         View &amp; Pay Invoice
@@ -83,7 +94,7 @@ export async function POST(request, { params }) {
   </div>
 </body></html>`;
 
-    const text = `Hi ${invoice.customer_name || 'there'},\n\nYou have a new invoice from ${companyName} for ${total}.\n\nView & Pay: ${invoiceLink}\n\nThank you.`;
+    const text = `Hi ${invoice.customer_name || 'there'},\n\nYou have a new invoice (${invLabel}) from ${companyName} for ${total}.\n\nView & Pay: ${invoiceLink}\n\nThank you.`;
 
     // Sanitize company name for "from" header (only ASCII, no special chars that break SMTP)
     const safeName = (companyName || 'Shiny Jets CRM').replace(/[<>"]/g, '').replace(/[^\x20-\x7E]/g, '').trim() || 'Shiny Jets CRM';

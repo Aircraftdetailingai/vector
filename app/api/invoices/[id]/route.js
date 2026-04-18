@@ -51,10 +51,11 @@ export async function PATCH(request, { params }) {
     const { id } = await params;
     const body = await request.json();
 
-    // Verify ownership
+    // Verify ownership and read current status so we can make status-transition
+    // decisions (e.g. revert 'viewed' → 'sent' when the invoice is edited).
     const { data: existing, error: fetchError } = await supabase
       .from('invoices')
-      .select('id')
+      .select('id, status')
       .eq('id', id)
       .eq('detailer_id', user.id)
       .single();
@@ -80,6 +81,16 @@ export async function PATCH(request, { params }) {
 
     if (Object.keys(updates).length === 0) {
       return Response.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    // Editing an invoice the customer has already viewed invalidates their view;
+    // revert to 'sent' so the updated version triggers a fresh view event.
+    // Other statuses pass through unchanged except paid, which gets a warning.
+    if (existing.status === 'viewed') {
+      updates.status = 'sent';
+    }
+    if (existing.status === 'paid') {
+      console.warn('[invoice/PATCH] editing a paid invoice is unusual:', id);
     }
 
     // Update with retry for missing columns
