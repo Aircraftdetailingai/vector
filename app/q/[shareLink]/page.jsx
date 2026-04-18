@@ -369,7 +369,7 @@ export default function QuoteViewPage() {
           )}
         </div>
 
-        {plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>}
+        {plan !== 'enterprise' && detailer?.company && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by {detailer.company}</p>}
       </div>
     );
   }
@@ -416,7 +416,7 @@ export default function QuoteViewPage() {
               Skip for now
             </button>
           </div>
-          {plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>}
+          {plan !== 'enterprise' && detailer?.company && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by {detailer.company}</p>}
         </div>
       );
     }
@@ -608,7 +608,7 @@ export default function QuoteViewPage() {
             </div>
           )}
         </div>
-        {plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>}
+        {plan !== 'enterprise' && detailer?.company && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by {detailer.company}</p>}
       </div>
     );
   }
@@ -805,7 +805,7 @@ export default function QuoteViewPage() {
           )}
         </div>
 
-        {plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>}
+        {plan !== 'enterprise' && detailer?.company && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by {detailer.company}</p>}
       </div>
     );
   }
@@ -1158,8 +1158,7 @@ export default function QuoteViewPage() {
         {stripeConnected && !isPaid && !isExpired && (
           <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[9px] leading-relaxed mt-4 text-center">
             Payments are processed securely by Stripe. All payment disputes and refund requests
-            should be directed to {detailer?.company || 'your service provider'}. Shiny Jets
-            is a software platform and is not a party to this transaction.
+            should be directed to {detailer?.company || 'your service provider'}.
           </p>
         )}
 
@@ -1195,8 +1194,10 @@ export default function QuoteViewPage() {
         </div>
       </div>
 
-      {/* Footer */}
-      <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by Shiny Jets</p>
+      {/* Footer — only render if we have a detailer company to attribute to */}
+      {detailer?.company && (
+        <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase mt-8">Powered by {detailer.company}</p>
+      )}
     </div>
   );
 }

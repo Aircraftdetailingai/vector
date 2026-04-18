@@ -237,7 +237,7 @@ export default function AircraftDetailPage() {
         </section>
 
         <footer className="text-center py-6">
-          <p className="text-[#ccc] text-xs">Powered by Shiny Jets Aviation</p>
+          {/* Footer branding removed — portal is multi-detailer; no single company to attribute */}
         </footer>
       </main>
 

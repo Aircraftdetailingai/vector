@@ -98,7 +98,6 @@ export default function PortalLoginPage() {
           )}
         </div>
 
-        <p className="text-center text-[#bbb] text-xs mt-6">Powered by Shiny Jets Aviation</p>
       </div>
     </div>
   );

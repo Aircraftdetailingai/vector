@@ -209,20 +209,8 @@ export default function PortalDashboard() {
           </div>
         </section>
 
-        {/* Find a Detailer */}
-        <section>
-          <div className="bg-gradient-to-r from-[#0D1B2A] to-[#1a3550] rounded-xl p-6 text-center">
-            <h3 className="text-white font-semibold text-lg mb-2">Need aircraft detailing?</h3>
-            <p className="text-white/60 text-sm mb-4">Find certified detailers near your home airport</p>
-            <a href="https://directory.shinyjets.com" target="_blank" rel="noopener noreferrer"
-              className="inline-block bg-[#007CB1] text-white px-6 py-2.5 rounded-lg text-sm font-semibold hover:bg-[#006a9a] transition-colors">
-              Browse Directory
-            </a>
-          </div>
-        </section>
-
         <footer className="text-center py-6">
-          <p className="text-[#ccc] text-xs">Powered by Shiny Jets Aviation</p>
+          {/* Footer branding removed — portal is multi-detailer; no single company to attribute */}
         </footer>
       </main>
     </div>

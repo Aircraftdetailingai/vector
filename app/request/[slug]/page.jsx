@@ -318,7 +318,7 @@ export default function FlowRequestPage() {
         </div>
         <div className="w-10" />
       </div>
-      {!isEnterprise && <p className="text-center text-white/20 text-[9px] mt-1">Powered by Shiny Jets CRM</p>}
+      {!isEnterprise && detailer?.company && <p className="text-center text-white/20 text-[9px] mt-1">Powered by {detailer.company}</p>}
     </div>
   );
 

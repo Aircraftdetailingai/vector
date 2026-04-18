@@ -1269,9 +1269,11 @@ export default function PortalPage() {
           </div>
         )}
 
-        {/* Footer */}
+        {/* Footer — only render if we have a detailer company to attribute to */}
         <div className="text-center mt-10 pb-8">
-          {detailer?.plan !== 'enterprise' && <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase">Powered by <a href="https://shinyjets.com" className="hover:text-[var(--brand-primary,#007CB1)] transition-colors">Shiny Jets</a></p>}
+          {detailer?.plan !== 'enterprise' && detailer?.company && (
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)]/40 text-[10px] tracking-[0.3em] uppercase">Powered by {detailer.company}</p>
+          )}
         </div>
       </div>
     </div>

@@ -17,7 +17,7 @@ export default function ShinyJetsLogo({ size = 'md', mode, className = '' }) {
     return (
       <img
         src="/logos/shiny-jets-dark.png"
-        alt="Shiny Jets CRM"
+        alt="Logo"
         height={dims.height}
         style={{ height: dims.height, maxWidth: dims.width, objectFit: 'contain' }}
         className={className}
@@ -29,7 +29,7 @@ export default function ShinyJetsLogo({ size = 'md', mode, className = '' }) {
     return (
       <img
         src="/logos/shiny-jets-light.png"
-        alt="Shiny Jets CRM"
+        alt="Logo"
         height={dims.height}
         style={{ height: dims.height, maxWidth: dims.width, objectFit: 'contain' }}
         className={className}

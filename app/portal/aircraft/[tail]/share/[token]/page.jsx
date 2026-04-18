@@ -32,7 +32,7 @@ export default function SharedAircraftPage() {
   return (
     <div className="min-h-screen bg-[#f8f9fa]">
       <div className="bg-[#007CB1] text-white text-center py-2 text-sm">
-        Shared by {owner_name || 'Aircraft Owner'} via Shiny Jets
+        Shared by {owner_name || 'Aircraft Owner'}
       </div>
       <header className="bg-white border-b border-[#e5e7eb] px-4 sm:px-6 py-4">
         <div className="max-w-5xl mx-auto">
@@ -88,7 +88,6 @@ export default function SharedAircraftPage() {
         </section>
 
         <footer className="text-center py-6">
-          <p className="text-[#ccc] text-xs">Powered by Shiny Jets Aviation</p>
           <a href="/portal/login" className="text-[#007CB1] text-xs hover:underline mt-1 inline-block">Create your own free aircraft portal</a>
         </footer>
       </main>
