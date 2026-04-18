@@ -185,6 +185,22 @@ function SettingsContent() {
   const [profilePhone, setProfilePhone] = useState('');
   const [profileSaving, setProfileSaving] = useState(false);
 
+  // Mailing address state (for checks & physical correspondence)
+  const [mailingAddressLine1, setMailingAddressLine1] = useState('');
+  const [mailingAddressLine2, setMailingAddressLine2] = useState('');
+  const [mailingCity, setMailingCity] = useState('');
+  const [mailingState, setMailingState] = useState('');
+  const [mailingZip, setMailingZip] = useState('');
+  const [mailingCountry, setMailingCountry] = useState('US');
+
+  // ACH bank info state (sensitive — fetched only with include_remit=1)
+  const [achBankName, setAchBankName] = useState('');
+  const [achAccountName, setAchAccountName] = useState('');
+  const [achRoutingNumber, setAchRoutingNumber] = useState('');
+  const [achAccountNumber, setAchAccountNumber] = useState('');
+  const [showAchRouting, setShowAchRouting] = useState(false);
+  const [showAchAccount, setShowAchAccount] = useState(false);
+
   // Sticky save button state
   const [pendingChanges, setPendingChanges] = useState(new Set());
   const [saving, setSaving] = useState(false);
@@ -202,6 +218,16 @@ function SettingsContent() {
     setProfileName(u.name || '');
     setProfileCompany(u.company || '');
     setProfilePhone(u.phone || '');
+    setMailingAddressLine1(u.mailing_address_line1 || '');
+    setMailingAddressLine2(u.mailing_address_line2 || '');
+    setMailingCity(u.mailing_city || '');
+    setMailingState(u.mailing_state || '');
+    setMailingZip(u.mailing_zip || '');
+    setMailingCountry(u.mailing_country || 'US');
+    setAchBankName(u.ach_bank_name || '');
+    setAchAccountName(u.ach_account_name || '');
+    setAchRoutingNumber(u.ach_routing_number || '');
+    setAchAccountNumber(u.ach_account_number || '');
     setPriceReminder(u.price_reminder_months || 6);
     setQuoteDisplayPref(u.quote_display_preference || 'package');
     setQuoteDisplayMode(u.quote_display_mode || u.quote_display_preference || 'itemized');
@@ -260,7 +286,7 @@ function SettingsContent() {
     hydrateFromUser(u);
     savedUserRef.current = { ...u };
     // Refresh user data from server to get latest plan/permissions
-    fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/user/me?include_remit=1', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => {
         if (!r.ok) { console.error('[settings] /api/user/me failed:', r.status); return null; }
         return r.json();
@@ -270,7 +296,9 @@ function SettingsContent() {
           console.log('[settings] Refreshed user:', data.user.company, 'rate:', data.user.default_labor_rate);
           hydrateFromUser(data.user);
           savedUserRef.current = { ...data.user };
-          localStorage.setItem('vector_user', JSON.stringify(data.user));
+          // Don't persist ACH fields to localStorage (they're sensitive).
+          const { ach_routing_number, ach_account_number, ach_account_name, ach_bank_name, ...safeUser } = data.user;
+          localStorage.setItem('vector_user', JSON.stringify(safeUser));
         }
       })
       .catch(err => console.error('[settings] user/me error:', err));
@@ -894,9 +922,35 @@ function SettingsContent() {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${localStorage.getItem('vector_token')}`,
       },
-      body: JSON.stringify({ name: profileName, company: profileCompany, phone: profilePhone }),
+      body: JSON.stringify({
+        name: profileName,
+        company: profileCompany,
+        phone: profilePhone,
+        mailing_address_line1: mailingAddressLine1,
+        mailing_address_line2: mailingAddressLine2,
+        mailing_city: mailingCity,
+        mailing_state: mailingState,
+        mailing_zip: mailingZip,
+        mailing_country: mailingCountry || 'US',
+        ach_bank_name: achBankName,
+        ach_account_name: achAccountName,
+        ach_routing_number: achRoutingNumber,
+        ach_account_number: achAccountNumber,
+      }),
     });
-    const newUser = { ...user, name: profileName, company: profileCompany, phone: profilePhone };
+    // Note: ACH fields are intentionally NOT written to localStorage (sensitive).
+    const newUser = {
+      ...user,
+      name: profileName,
+      company: profileCompany,
+      phone: profilePhone,
+      mailing_address_line1: mailingAddressLine1 || null,
+      mailing_address_line2: mailingAddressLine2 || null,
+      mailing_city: mailingCity || null,
+      mailing_state: mailingState || null,
+      mailing_zip: mailingZip || null,
+      mailing_country: mailingCountry || 'US',
+    };
     localStorage.setItem('vector_user', JSON.stringify(newUser));
     setUser(newUser);
   };
@@ -1462,6 +1516,151 @@ function SettingsContent() {
                 className="w-full bg-transparent border-0 border-b border-v-border/50 text-v-text-secondary px-0 py-2 text-sm cursor-not-allowed"
               />
             </div>
+          </div>
+
+          {/* Mailing address */}
+          <div className="mt-8 pt-6 border-t border-v-border/50">
+            <h3 className="text-sm font-medium text-v-text-primary mb-1">Mailing address &mdash; for checks and physical correspondence</h3>
+            <p className="text-xs text-v-text-secondary mb-4">Optional. Used when customers mail you checks or other physical items.</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Address line 1</label>
+                <input
+                  type="text"
+                  value={mailingAddressLine1}
+                  onChange={(e) => { setMailingAddressLine1(e.target.value); markDirty('profile'); }}
+                  placeholder="Street address"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Address line 2</label>
+                <input
+                  type="text"
+                  value={mailingAddressLine2}
+                  onChange={(e) => { setMailingAddressLine2(e.target.value); markDirty('profile'); }}
+                  placeholder="Apt, suite, unit (optional)"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">City</label>
+                <input
+                  type="text"
+                  value={mailingCity}
+                  onChange={(e) => { setMailingCity(e.target.value); markDirty('profile'); }}
+                  placeholder="City"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">State / Region</label>
+                <input
+                  type="text"
+                  value={mailingState}
+                  onChange={(e) => { setMailingState(e.target.value); markDirty('profile'); }}
+                  placeholder="e.g. CA"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">ZIP / Postal code</label>
+                <input
+                  type="text"
+                  value={mailingZip}
+                  onChange={(e) => { setMailingZip(e.target.value); markDirty('profile'); }}
+                  placeholder="ZIP"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Country</label>
+                <input
+                  type="text"
+                  value={mailingCountry}
+                  onChange={(e) => { setMailingCountry(e.target.value.toUpperCase()); markDirty('profile'); }}
+                  placeholder="US"
+                  maxLength={2}
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors uppercase"
+                />
+              </div>
+            </div>
+          </div>
+
+          {/* ACH bank info */}
+          <div className="mt-8 pt-6 border-t border-v-border/50">
+            <h3 className="text-sm font-medium text-v-text-primary mb-1">ACH bank info (for customers paying by bank transfer) &mdash; optional</h3>
+            <p className="text-xs text-v-text-secondary mb-4">
+              Leave blank if you don&apos;t accept ACH transfers. These values are shown on invoices so customers can pay you directly.
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Bank name</label>
+                <input
+                  type="text"
+                  value={achBankName}
+                  onChange={(e) => { setAchBankName(e.target.value); markDirty('profile'); }}
+                  placeholder="e.g. Chase"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Account holder name</label>
+                <input
+                  type="text"
+                  value={achAccountName}
+                  onChange={(e) => { setAchAccountName(e.target.value); markDirty('profile'); }}
+                  placeholder="Name on the account"
+                  className="w-full bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Routing number</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type={showAchRouting ? 'text' : 'password'}
+                    value={achRoutingNumber}
+                    onChange={(e) => { setAchRoutingNumber(e.target.value.replace(/\D/g, '')); markDirty('profile'); }}
+                    placeholder="9 digits"
+                    autoComplete="off"
+                    inputMode="numeric"
+                    maxLength={9}
+                    className="flex-1 bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAchRouting(s => !s)}
+                    className="text-xs text-v-text-secondary hover:text-v-gold transition-colors px-2 py-1 border border-v-border rounded"
+                  >
+                    {showAchRouting ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-v-text-secondary mb-1">Account number</label>
+                <div className="flex items-center gap-2">
+                  <input
+                    type={showAchAccount ? 'text' : 'password'}
+                    value={achAccountNumber}
+                    onChange={(e) => { setAchAccountNumber(e.target.value.replace(/\D/g, '')); markDirty('profile'); }}
+                    placeholder="Account number"
+                    autoComplete="off"
+                    inputMode="numeric"
+                    className="flex-1 bg-transparent border-0 border-b border-v-border text-v-text-primary placeholder:text-v-text-secondary px-0 py-2 text-sm focus:border-v-gold focus:ring-0 outline-none transition-colors"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowAchAccount(s => !s)}
+                    className="text-xs text-v-text-secondary hover:text-v-gold transition-colors px-2 py-1 border border-v-border rounded"
+                  >
+                    {showAchAccount ? 'Hide' : 'Show'}
+                  </button>
+                </div>
+              </div>
+            </div>
+            <p className="text-[11px] text-v-text-secondary/60 mt-3">
+              Routing and account numbers are stored and transmitted in plaintext inside Vector. Only share with customers you trust.
+            </p>
           </div>
         </div>
 

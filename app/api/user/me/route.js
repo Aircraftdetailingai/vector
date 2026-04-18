@@ -9,13 +9,28 @@ const ADMIN_EMAILS = [
   'brett@shinyjets.com',
 ];
 
-function buildUserResponse(data, isAdmin) {
+function buildUserResponse(data, isAdmin, { includeRemit = false } = {}) {
   return {
     id: data.id,
     email: data.email,
     name: data.name,
     phone: data.phone,
     company: data.company,
+    mailing_address_line1: data.mailing_address_line1 || null,
+    mailing_address_line2: data.mailing_address_line2 || null,
+    mailing_city: data.mailing_city || null,
+    mailing_state: data.mailing_state || null,
+    mailing_zip: data.mailing_zip || null,
+    mailing_country: data.mailing_country || 'US',
+    // ACH fields are only included when the caller explicitly asks for remit
+    // info (e.g. the detailer editing their own settings or rendering their
+    // own invoice). They are never returned in general user-profile fetches.
+    ...(includeRemit ? {
+      ach_routing_number: data.ach_routing_number || null,
+      ach_account_number: data.ach_account_number || null,
+      ach_account_name: data.ach_account_name || null,
+      ach_bank_name: data.ach_bank_name || null,
+    } : {}),
     plan: isAdmin ? 'enterprise' : (data.plan || 'free'),
     is_admin: isAdmin,
     status: data.status,
@@ -72,17 +87,27 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
-// GET - Return fresh user data for the authenticated user
+// GET - Return fresh user data for the authenticated user.
+// Pass ?include_remit=1 to additionally receive sensitive ACH remit fields
+// (routing/account number). Default responses exclude them.
 export async function GET(request) {
   const user = await getAuthUser(request);
   if (!user) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  const { searchParams } = new URL(request.url);
+  const includeRemit = searchParams.get('include_remit') === '1';
+
+  const baseCols = 'id, email, name, phone, company, plan, status, rates, notification_settings, price_reminder_months, quote_display_preference, efficiency_factor, default_labor_rate, sms_enabled, preferred_currency, country, home_airport, airports_served, listed_in_directory, notify_quote_viewed, cc_fee_mode, pass_fee_to_customer, followup_discount_percent, logo_url, logo_light_url, logo_dark_url, terms_accepted_version, subscription_status, subscription_source, created_at, onboarding_completed, availability, notify_weekly_digest, review_request_enabled, review_request_delay_days, theme_primary, portal_theme, theme_logo_url, booking_mode, deposit_percentage, google_business_url, google_reviews_last_synced, calendly_url, use_calendly_scheduling, website_url, insurance_url, insurance_expiry_date, insurance_verified, insurance_insurer, mailing_address_line1, mailing_address_line2, mailing_city, mailing_state, mailing_zip, mailing_country';
+  const select = includeRemit
+    ? `${baseCols}, ach_routing_number, ach_account_number, ach_account_name, ach_bank_name`
+    : baseCols;
+
   const supabase = getSupabase();
   const { data, error } = await supabase
     .from('detailers')
-    .select('id, email, name, phone, company, plan, status, rates, notification_settings, price_reminder_months, quote_display_preference, efficiency_factor, default_labor_rate, sms_enabled, preferred_currency, country, home_airport, airports_served, listed_in_directory, notify_quote_viewed, cc_fee_mode, pass_fee_to_customer, followup_discount_percent, logo_url, logo_light_url, logo_dark_url, terms_accepted_version, subscription_status, subscription_source, created_at, onboarding_completed, availability, notify_weekly_digest, review_request_enabled, review_request_delay_days, theme_primary, portal_theme, theme_logo_url, booking_mode, deposit_percentage, google_business_url, google_reviews_last_synced, calendly_url, use_calendly_scheduling, website_url, insurance_url, insurance_expiry_date, insurance_verified, insurance_insurer')
+    .select(select)
     .eq('id', user.id)
     .single();
 
@@ -93,6 +118,6 @@ export async function GET(request) {
   const isAdmin = ADMIN_EMAILS.includes(data.email?.toLowerCase());
 
   return Response.json({
-    user: buildUserResponse(data, isAdmin),
+    user: buildUserResponse(data, isAdmin, { includeRemit }),
   });
 }

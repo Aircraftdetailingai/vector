@@ -81,6 +81,17 @@ export default function OnboardingPage() {
   const [logoUrl, setLogoUrl] = useState('');
   const [logoUploading, setLogoUploading] = useState(false);
 
+  // Sub-step after Business Profile: Mailing Address (optional, skippable).
+  // Rendered while screen === 1 && showMailingStep === true so it sits
+  // between the existing Business and Services steps without renumbering.
+  const [showMailingStep, setShowMailingStep] = useState(false);
+  const [mailingAddressLine1, setMailingAddressLine1] = useState('');
+  const [mailingAddressLine2, setMailingAddressLine2] = useState('');
+  const [mailingCity, setMailingCity] = useState('');
+  const [mailingState, setMailingState] = useState('');
+  const [mailingZip, setMailingZip] = useState('');
+  const [mailingCountry, setMailingCountry] = useState('US');
+
   // Screen 2: Services
   const [selectedServices, setSelectedServices] = useState({});
   const [serviceRates, setServiceRates] = useState({});
@@ -173,6 +184,42 @@ export default function OnboardingPage() {
       const data = await res.json();
       if (!res.ok) { setError(data.error || 'Failed to save profile'); return; }
       if (data.user) localStorage.setItem('vector_user', JSON.stringify(data.user));
+      // Show the mailing-address sub-step before advancing to Services.
+      setShowMailingStep(true);
+    } catch (err) { setError(err.message); }
+    finally { setSaving(false); }
+  };
+
+  // Mailing sub-step: save (optional) address and advance to Services.
+  // All fields are optional. On Skip we POST empty strings so the endpoint
+  // normalizes them to NULL and advances regardless.
+  const saveMailing = async ({ skip = false } = {}) => {
+    setSaving(true);
+    setError('');
+    try {
+      const payload = skip ? {
+        mailing_address_line1: '',
+        mailing_address_line2: '',
+        mailing_city: '',
+        mailing_state: '',
+        mailing_zip: '',
+        mailing_country: 'US',
+      } : {
+        mailing_address_line1: mailingAddressLine1,
+        mailing_address_line2: mailingAddressLine2,
+        mailing_city: mailingCity,
+        mailing_state: mailingState,
+        mailing_zip: mailingZip,
+        mailing_country: mailingCountry || 'US',
+      };
+      // Best-effort write — never block onboarding progression on failure.
+      try {
+        await fetch('/api/user/profile', {
+          method: 'POST', headers,
+          body: JSON.stringify(payload),
+        });
+      } catch {}
+      setShowMailingStep(false);
       goNext();
     } catch (err) { setError(err.message); }
     finally { setSaving(false); }
@@ -408,7 +455,7 @@ export default function OnboardingPage() {
           )}
 
           {/* ─── Screen 1: Business Profile ─── */}
-          {screen === 1 && (
+          {screen === 1 && !showMailingStep && (
             <div>
               <h2 className="font-heading text-2xl text-v-gold uppercase tracking-wider mb-1">Business Profile</h2>
               <p className="text-v-text-secondary text-sm mb-6">Tell us about your detailing business</p>
@@ -495,6 +542,105 @@ export default function OnboardingPage() {
                   className="px-8 py-2.5 bg-v-gold text-white font-semibold text-sm hover:bg-v-gold-dim transition-colors disabled:opacity-50">
                   {saving ? 'Saving...' : 'Next'}
                 </button>
+              </div>
+            </div>
+          )}
+
+          {/* ─── Screen 1b: Mailing Address (sub-step after Business Profile) ─── */}
+          {screen === 1 && showMailingStep && (
+            <div>
+              <h2 className="font-heading text-2xl text-v-gold uppercase tracking-wider mb-1">
+                Mailing address
+              </h2>
+              <p className="text-v-text-secondary text-sm mb-6">
+                For checks and physical correspondence. Optional &mdash; you can add this later in Settings.
+              </p>
+
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1.5">Address line 1</label>
+                  <input
+                    type="text" value={mailingAddressLine1}
+                    onChange={(e) => setMailingAddressLine1(e.target.value)}
+                    placeholder="Street address"
+                    className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-v-text-secondary mb-1.5">Address line 2</label>
+                  <input
+                    type="text" value={mailingAddressLine2}
+                    onChange={(e) => setMailingAddressLine2(e.target.value)}
+                    placeholder="Apt, suite, unit (optional)"
+                    className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1.5">City</label>
+                    <input
+                      type="text" value={mailingCity}
+                      onChange={(e) => setMailingCity(e.target.value)}
+                      placeholder="City"
+                      className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1.5">State / Region</label>
+                    <input
+                      type="text" value={mailingState}
+                      onChange={(e) => setMailingState(e.target.value)}
+                      placeholder="e.g. CA"
+                      className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40"
+                    />
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1.5">ZIP / Postal code</label>
+                    <input
+                      type="text" value={mailingZip}
+                      onChange={(e) => setMailingZip(e.target.value)}
+                      placeholder="ZIP"
+                      className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-v-text-secondary mb-1.5">Country</label>
+                    <input
+                      type="text" value={mailingCountry}
+                      onChange={(e) => setMailingCountry(e.target.value.toUpperCase().slice(0, 2))}
+                      placeholder="US"
+                      maxLength={2}
+                      className="w-full bg-v-charcoal border border-v-border text-v-text-primary px-4 py-2.5 text-sm focus:border-v-gold focus:outline-none placeholder:text-v-text-secondary/40 uppercase"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 flex justify-between items-center">
+                <button
+                  onClick={() => { setError(''); setShowMailingStep(false); }}
+                  className="text-v-text-secondary text-sm hover:text-v-text-primary transition-colors"
+                >
+                  Back
+                </button>
+                <div className="flex items-center gap-4">
+                  <button
+                    onClick={() => saveMailing({ skip: true })}
+                    disabled={saving}
+                    className="text-v-text-secondary/70 text-sm hover:text-v-text-primary transition-colors disabled:opacity-50"
+                  >
+                    I&apos;ll add this later
+                  </button>
+                  <button
+                    onClick={() => saveMailing({ skip: false })}
+                    disabled={saving}
+                    className="px-8 py-2.5 bg-v-gold text-white font-semibold text-sm hover:bg-v-gold-dim transition-colors disabled:opacity-50"
+                  >
+                    {saving ? 'Saving...' : 'Continue'}
+                  </button>
+                </div>
               </div>
             </div>
           )}

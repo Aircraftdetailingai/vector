@@ -67,6 +67,8 @@ function InvoicesPageInner() {
   const [editHourOverrides, setEditHourOverrides] = useState({});
   const [editCustomLines, setEditCustomLines] = useState([]);
   const [editDiscount, setEditDiscount] = useState({ type: 'percent', value: '', reason: '' });
+  const [editShowMailing, setEditShowMailing] = useState(false);
+  const [editShowAch, setEditShowAch] = useState(false);
   const [detailer, setDetailer] = useState(null); // current detailer's business info for the From block
 
   const sym = currencySymbol();
@@ -106,7 +108,7 @@ function InvoicesPageInner() {
       }
     } catch {}
     fetchInvoices(token);
-    fetch('/api/user/me', { headers: { Authorization: `Bearer ${token}` } })
+    fetch('/api/user/me?include_remit=1', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.ok ? r.json() : null)
       .then(d => { if (d?.user) setDetailer(d.user); })
       .catch(() => {});
@@ -209,6 +211,7 @@ function InvoicesPageInner() {
     setEditServices([]); setEditModels([]); setEditAircraftHoursRef(null);
     setEditSelectedServices([]); setEditHourOverrides({}); setEditCustomLines([]);
     setEditDiscount({ type: 'percent', value: '', reason: '' });
+    setEditShowMailing(false); setEditShowAch(false);
     try {
       const [invJson, svcJson, mdlJson] = await Promise.all([
         fetch(`/api/invoices/${inv.id}`, { headers: headers() }).then(r => r.json()).catch(() => ({})),
@@ -262,6 +265,8 @@ function InvoicesPageInner() {
         value: (parseFloat(full.discount_value) || 0) > 0 ? String(full.discount_value) : '',
         reason: full.discount_reason || '',
       });
+      setEditShowMailing(!!full.show_mailing_address);
+      setEditShowAch(!!full.show_ach_info);
 
       setEditInvoice(full);
       setEditForm({
@@ -286,6 +291,7 @@ function InvoicesPageInner() {
     setEditServices([]); setEditModels([]); setEditAircraftHoursRef(null);
     setEditSelectedServices([]); setEditHourOverrides({}); setEditCustomLines([]);
     setEditDiscount({ type: 'percent', value: '', reason: '' });
+    setEditShowMailing(false); setEditShowAch(false);
     setEditError(''); setEditSavedFlash(false);
   };
 
@@ -370,6 +376,8 @@ function InvoicesPageInner() {
         discount_value: discountValue,
         discount_amount: discountAmount,
         discount_reason: (editDiscount.reason || '').trim() || null,
+        show_mailing_address: !!editShowMailing,
+        show_ach_info: !!editShowAch,
         notes: editForm.notes,
         net_terms: parseInt(editForm.net_terms) || 30,
         status: editForm.status,
@@ -637,6 +645,30 @@ th:last-child{text-align:right}
   ${invoice.customer_company ? `<div style="color:#6b7280;font-size:14px">${invoice.customer_company}</div>` : ''}
   ${invoice.customer_email ? `<div style="color:#6b7280;font-size:14px">${invoice.customer_email}</div>` : ''}</div>
 </div>
+${((invoice.show_mailing_address && d.mailing_address_line1) || (invoice.show_ach_info && d.ach_routing_number)) ? `
+<div style="background:#f9fafb;padding:14px;border-radius:8px;margin:0 0 16px 0;font-size:13px">
+  <div style="font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">Remit To</div>
+  ${invoice.show_mailing_address && d.mailing_address_line1 ? `
+    <div style="margin-bottom:8px">
+      <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em">By mail</div>
+      <div style="color:#1f2937;font-weight:600">${d.company || d.name || ''}</div>
+      <div style="color:#4b5563">${d.mailing_address_line1}</div>
+      ${d.mailing_address_line2 ? `<div style="color:#4b5563">${d.mailing_address_line2}</div>` : ''}
+      <div style="color:#4b5563">${[d.mailing_city, d.mailing_state].filter(Boolean).join(', ')}${d.mailing_zip ? ` ${d.mailing_zip}` : ''}</div>
+      ${d.mailing_country && d.mailing_country !== 'US' ? `<div style="color:#4b5563">${d.mailing_country}</div>` : ''}
+    </div>
+  ` : ''}
+  ${invoice.show_ach_info && d.ach_routing_number ? `
+    <div>
+      <div style="font-size:10px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em">By ACH / Wire</div>
+      ${d.ach_bank_name ? `<div style="color:#1f2937;font-weight:600">${d.ach_bank_name}</div>` : ''}
+      ${d.ach_account_name ? `<div style="color:#4b5563">Account name: ${d.ach_account_name}</div>` : ''}
+      <div style="color:#4b5563;font-family:monospace">Routing: ${d.ach_routing_number}</div>
+      ${d.ach_account_number ? `<div style="color:#4b5563;font-family:monospace">Account: ${d.ach_account_number}</div>` : ''}
+    </div>
+  ` : ''}
+</div>
+` : ''}
 ${invoice.aircraft ? `<p style="color:#6b7280;margin:0 0 4px">Aircraft: <strong style="color:#1f2937">${invoice.aircraft}</strong></p>` : ''}
 <table><thead><tr><th>Description</th><th>Amount</th></tr></thead><tbody>${lineRows}${addonRows}</tbody></table>
 ${(() => {
@@ -962,6 +994,35 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                 {viewInvoice.customer_email && <p className="text-v-text-secondary">{viewInvoice.customer_email}</p>}
               </div>
             </div>
+
+            {/* Remit To — mailing address + ACH bank info, shown only when opted in on this invoice */}
+            {((viewInvoice.show_mailing_address && detailer?.mailing_address_line1) ||
+              (viewInvoice.show_ach_info && detailer?.ach_routing_number)) && (
+              <div className="bg-v-charcoal rounded-lg p-3 mb-4 text-sm">
+                <p className="text-xs text-v-text-secondary uppercase mb-1">Remit To</p>
+                {viewInvoice.show_mailing_address && detailer?.mailing_address_line1 && (
+                  <div className="mb-2">
+                    <p className="text-[11px] text-v-text-secondary/70 uppercase tracking-wider">By mail</p>
+                    <p className="text-v-text-primary">{detailer.company || detailer.name}</p>
+                    <p className="text-v-text-secondary">{detailer.mailing_address_line1}</p>
+                    {detailer.mailing_address_line2 && <p className="text-v-text-secondary">{detailer.mailing_address_line2}</p>}
+                    <p className="text-v-text-secondary">
+                      {[detailer.mailing_city, detailer.mailing_state].filter(Boolean).join(', ')}{detailer.mailing_zip ? ` ${detailer.mailing_zip}` : ''}
+                    </p>
+                    {detailer.mailing_country && detailer.mailing_country !== 'US' && <p className="text-v-text-secondary">{detailer.mailing_country}</p>}
+                  </div>
+                )}
+                {viewInvoice.show_ach_info && detailer?.ach_routing_number && (
+                  <div>
+                    <p className="text-[11px] text-v-text-secondary/70 uppercase tracking-wider">By ACH / Wire</p>
+                    {detailer.ach_bank_name && <p className="text-v-text-primary">{detailer.ach_bank_name}</p>}
+                    {detailer.ach_account_name && <p className="text-v-text-secondary">Account name: {detailer.ach_account_name}</p>}
+                    <p className="text-v-text-secondary font-mono">Routing: {detailer.ach_routing_number}</p>
+                    {detailer.ach_account_number && <p className="text-v-text-secondary font-mono">Account: {detailer.ach_account_number}</p>}
+                  </div>
+                )}
+              </div>
+            )}
 
             {viewInvoice.aircraft && <p className="text-sm text-v-text-secondary mb-1">Aircraft: <strong className="text-v-text-primary">{viewInvoice.aircraft}</strong>{viewInvoice.tail_number ? ` (${viewInvoice.tail_number})` : ''}</p>}
 
@@ -1576,6 +1637,35 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                 </div>
               );
             })()}
+
+            {/* Remit / Payment info opt-ins */}
+            <p className="text-xs text-v-text-secondary uppercase tracking-wider mb-2">Remit Info on Invoice</p>
+            <div className="space-y-2 mb-4">
+              <label className="flex items-start gap-2 text-sm text-v-text-primary cursor-pointer">
+                <input type="checkbox" checked={editShowMailing}
+                  onChange={e => setEditShowMailing(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded accent-v-gold cursor-pointer" />
+                <span>
+                  Show mailing address on invoice
+                  <span className="block text-[11px] text-v-text-secondary">So customers can mail checks</span>
+                  {editShowMailing && !detailer?.mailing_address_line1 && (
+                    <span className="block text-[11px] text-yellow-400 mt-0.5">No mailing address set — add one in Settings → Business Info</span>
+                  )}
+                </span>
+              </label>
+              <label className="flex items-start gap-2 text-sm text-v-text-primary cursor-pointer">
+                <input type="checkbox" checked={editShowAch}
+                  onChange={e => setEditShowAch(e.target.checked)}
+                  className="mt-0.5 w-4 h-4 rounded accent-v-gold cursor-pointer" />
+                <span>
+                  Show ACH bank info on invoice
+                  <span className="block text-[11px] text-v-text-secondary">Routing + account number for wire/ACH payments</span>
+                  {editShowAch && !detailer?.ach_routing_number && (
+                    <span className="block text-[11px] text-yellow-400 mt-0.5">No ACH info set — add it in Settings → Business Info</span>
+                  )}
+                </span>
+              </label>
+            </div>
 
             {/* Terms & notes */}
             <div className="grid grid-cols-2 gap-3 mb-4">

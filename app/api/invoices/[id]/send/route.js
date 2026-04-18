@@ -49,9 +49,10 @@ export async function POST(request, { params }) {
     }
 
     // Fetch detailer info for From block (logo, company, contact details)
+    // and Remit To block (mailing + ACH) when opted in on this invoice.
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('company, name, email, phone, home_airport, logo_url, logo_light_url')
+      .select('company, name, email, phone, home_airport, logo_url, logo_light_url, mailing_address_line1, mailing_address_line2, mailing_city, mailing_state, mailing_zip, mailing_country, ach_routing_number, ach_account_number, ach_account_name, ach_bank_name')
       .eq('id', detailerId)
       .single();
 
@@ -83,6 +84,30 @@ export async function POST(request, { params }) {
       ${detailer?.phone ? `<p style="margin:0;color:#6b7280;font-size:13px;">${detailer.phone}</p>` : ''}
       ${detailer?.home_airport ? `<p style="margin:0;color:#6b7280;font-size:13px;">${detailer.home_airport}</p>` : ''}
     </div>
+    ${((invoice.show_mailing_address && detailer?.mailing_address_line1) || (invoice.show_ach_info && detailer?.ach_routing_number)) ? `
+      <div style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:8px;padding:14px;margin:16px 0;">
+        <p style="margin:0;font-size:11px;color:#9ca3af;text-transform:uppercase;letter-spacing:0.05em;">Remit To</p>
+        ${invoice.show_mailing_address && detailer?.mailing_address_line1 ? `
+          <div style="margin-top:6px;margin-bottom:8px;">
+            <p style="margin:0;font-size:10px;color:#9ca3af;text-transform:uppercase;">By mail</p>
+            <p style="margin:2px 0 0;font-weight:600;color:#1f2937;font-size:13px;">${detailer.company || detailer.name || ''}</p>
+            <p style="margin:0;color:#4b5563;font-size:13px;">${detailer.mailing_address_line1}</p>
+            ${detailer.mailing_address_line2 ? `<p style="margin:0;color:#4b5563;font-size:13px;">${detailer.mailing_address_line2}</p>` : ''}
+            <p style="margin:0;color:#4b5563;font-size:13px;">${[detailer.mailing_city, detailer.mailing_state].filter(Boolean).join(', ')}${detailer.mailing_zip ? ` ${detailer.mailing_zip}` : ''}</p>
+            ${detailer.mailing_country && detailer.mailing_country !== 'US' ? `<p style="margin:0;color:#4b5563;font-size:13px;">${detailer.mailing_country}</p>` : ''}
+          </div>
+        ` : ''}
+        ${invoice.show_ach_info && detailer?.ach_routing_number ? `
+          <div>
+            <p style="margin:0;font-size:10px;color:#9ca3af;text-transform:uppercase;">By ACH / Wire</p>
+            ${detailer.ach_bank_name ? `<p style="margin:2px 0 0;font-weight:600;color:#1f2937;font-size:13px;">${detailer.ach_bank_name}</p>` : ''}
+            ${detailer.ach_account_name ? `<p style="margin:0;color:#4b5563;font-size:13px;">Account name: ${detailer.ach_account_name}</p>` : ''}
+            <p style="margin:0;color:#4b5563;font-size:13px;font-family:monospace">Routing: ${detailer.ach_routing_number}</p>
+            ${detailer.ach_account_number ? `<p style="margin:0;color:#4b5563;font-size:13px;font-family:monospace">Account: ${detailer.ach_account_number}</p>` : ''}
+          </div>
+        ` : ''}
+      </div>
+    ` : ''}
     <div style="text-align:center;margin:30px 0;">
       <a href="${invoiceLink}" style="display:inline-block;background:#007CB1;color:#ffffff;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:600;font-size:16px;">
         View &amp; Pay Invoice

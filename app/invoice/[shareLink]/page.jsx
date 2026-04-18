@@ -93,13 +93,13 @@ export default function InvoiceViewPage() {
     return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
   };
 
-  const handlePayInvoice = async () => {
+  const handlePayInvoice = async (method) => {
     setPaymentLoading(true);
     try {
       const res = await fetch(`/api/invoices/${invoice.id}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ share_link: params.shareLink }),
+        body: JSON.stringify({ share_link: params.shareLink, method }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -414,15 +414,24 @@ export default function InvoiceViewPage() {
           </div>
         )}
 
-        {/* Pay button (only if unpaid) */}
+        {/* Pay buttons (only if unpaid) */}
         {!isPaid && (
-          <button
-            onClick={handlePayInvoice}
-            disabled={paymentLoading}
-            className="w-full py-4 bg-[var(--brand-primary,#007CB1)] text-[var(--brand-btn-text,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-50 transition-colors mt-6"
-          >
-            {paymentLoading ? 'Processing...' : `Pay Invoice \u2014 ${sym}${formatPrice(parseFloat(invoice.balance_due) || total)}`}
-          </button>
+          <div className="mt-6 space-y-2">
+            <button
+              onClick={() => handlePayInvoice('card')}
+              disabled={paymentLoading}
+              className="w-full py-4 bg-[var(--brand-primary,#007CB1)] text-[var(--brand-btn-text,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-50 transition-colors"
+            >
+              {paymentLoading ? 'Processing...' : `Pay by Card \u2014 ${sym}${formatPrice(parseFloat(invoice.balance_due) || total)}`}
+            </button>
+            <button
+              onClick={() => handlePayInvoice('us_bank_account')}
+              disabled={paymentLoading}
+              className="w-full py-3 border border-[var(--brand-primary,#007CB1)] text-[var(--brand-primary,#007CB1)] text-xs tracking-[0.2em] uppercase font-medium hover:bg-[var(--brand-primary,#007CB1)]/10 disabled:opacity-50 transition-colors"
+            >
+              Pay by ACH Bank Transfer
+            </button>
+          </div>
         )}
 
         {/* Payment disclaimer */}

@@ -22,7 +22,7 @@ export async function POST(request, { params }) {
     if (!supabase) return Response.json({ error: 'Database not configured' }, { status: 500 });
 
     const { id } = await params;
-    const { share_link } = await request.json();
+    const { share_link, method } = await request.json();
 
     if (!share_link) {
       return Response.json({ error: 'share_link is required' }, { status: 400 });
@@ -90,9 +90,15 @@ export async function POST(request, { params }) {
 
     const totalAmountCents = Math.round((invoice.total || 0) * 100);
 
+    // Payment methods: card by default; customer can request ACH via `method`
+    // in the POST body. ACH (us_bank_account) requires the detailer's Stripe
+    // account to have ACH Direct Debit enabled in their dashboard — if it
+    // isn't, Stripe will return an error and the customer can retry with card.
+    const payment_method_types = method === 'us_bank_account' ? ['us_bank_account'] : ['card'];
+
     const baseSessionParams = {
       mode: 'payment',
-      payment_method_types: ['card'],
+      payment_method_types,
       line_items: stripeLineItems,
       success_url: `https://crm.shinyjets.com/invoice/${invoice.share_link}?payment=success`,
       cancel_url: `https://crm.shinyjets.com/invoice/${invoice.share_link}?payment=cancelled`,
@@ -102,6 +108,11 @@ export async function POST(request, { params }) {
         type: 'invoice',
       },
     };
+    if (method === 'us_bank_account') {
+      baseSessionParams.payment_method_options = {
+        us_bank_account: { verification_method: 'automatic' },
+      };
+    }
 
     // Try Connect first if platform key and connected account exist
     const canConnect = !!(detailer?.stripe_account_id && platformKey);

@@ -70,6 +70,7 @@ export async function PATCH(request, { params }) {
       'aircraft_model', 'tail_number', 'line_items', 'total', 'subtotal',
       'net_terms', 'due_date', 'issued_date', 'amount_paid', 'balance_due',
       'discount_type', 'discount_value', 'discount_amount', 'discount_reason',
+      'show_mailing_address', 'show_ach_info',
     ];
 
     const updates = {};

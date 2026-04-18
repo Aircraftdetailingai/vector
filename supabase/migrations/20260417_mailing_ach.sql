@@ -1,0 +1,12 @@
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS mailing_address_line1 text;
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS mailing_address_line2 text;
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS mailing_city text;
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS mailing_state text;
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS mailing_zip text;
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS mailing_country text DEFAULT 'US';
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS ach_routing_number text;
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS ach_account_number text;
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS ach_account_name text;
+ALTER TABLE detailers ADD COLUMN IF NOT EXISTS ach_bank_name text;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS show_mailing_address boolean DEFAULT false;
+ALTER TABLE invoices ADD COLUMN IF NOT EXISTS show_ach_info boolean DEFAULT false;
