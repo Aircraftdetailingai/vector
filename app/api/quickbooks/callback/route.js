@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { verifyToken } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { getAuthUser } from '@/lib/auth';
 import { NextResponse } from 'next/server';
 import { exchangeCodeForTokens } from '@/lib/quickbooks';
 
@@ -34,19 +33,11 @@ export async function GET(request) {
     );
   }
 
-  // Verify user is authenticated via cookie
-  const cookieStore = await cookies();
-  const authCookie = cookieStore.get('auth_token')?.value;
-  if (!authCookie) {
-    return NextResponse.redirect(
-      `${appUrl}/settings/integrations?quickbooks=error&message=Not+authenticated`
-    );
-  }
-
-  const user = await verifyToken(authCookie);
+  // Verify user is authenticated
+  const user = await getAuthUser(request);
   if (!user) {
     return NextResponse.redirect(
-      `${appUrl}/settings/integrations?quickbooks=error&message=Invalid+session`
+      `${appUrl}/settings/integrations?quickbooks=error&message=Not+authenticated`
     );
   }
 

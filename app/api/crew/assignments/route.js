@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 import { sendEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
@@ -12,9 +12,7 @@ function getSupabase() {
 }
 
 async function getCrewUser(request) {
-  const authHeader = request.headers.get('authorization');
-  if (!authHeader?.startsWith('Bearer ')) return null;
-  const payload = await verifyToken(authHeader.slice(7));
+  const payload = await getAuthUser(request);
   if (!payload || payload.role !== 'crew') return null;
   return payload;
 }

@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { getAuthUser, verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -7,22 +7,8 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
-async function authenticateCrewOrOwner(request) {
-  // Try owner auth first
-  const owner = await getAuthUser(request);
-  if (owner) return owner;
-
-  // Try crew auth
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const payload = await verifyToken(authHeader.slice(7));
-    if (payload?.role === 'crew') return payload;
-  }
-  return null;
-}
-
 export async function POST(request, { params }) {
-  const user = await authenticateCrewOrOwner(request);
+  const user = await getAuthUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id } = await params;

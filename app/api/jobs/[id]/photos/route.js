@@ -1,25 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-import { getAuthUser, verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
 function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
-}
-
-async function getUser(request) {
-  // Try owner auth first
-  const owner = await getAuthUser(request);
-  if (owner) return { ...owner, authRole: 'owner' };
-
-  // Try crew auth
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const payload = await verifyToken(authHeader.slice(7));
-    if (payload?.role === 'crew') return { ...payload, authRole: 'crew' };
-  }
-
-  return null;
 }
 
 async function ensureBucket(supabase) {
@@ -31,7 +16,7 @@ async function ensureBucket(supabase) {
 
 // GET - List photos for a job grouped by type
 export async function GET(request, { params }) {
-  const user = await getUser(request);
+  const user = await getAuthUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id: jobId } = await params;
@@ -47,7 +32,7 @@ export async function GET(request, { params }) {
   if (jobErr || !job) return Response.json({ error: 'Job not found' }, { status: 404 });
 
   // Owner must own the job; crew must belong to same detailer
-  const detailerId = user.authRole === 'owner' ? user.id : user.detailer_id;
+  const detailerId = user.id;
   if (job.detailer_id !== detailerId) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }
@@ -74,7 +59,7 @@ export async function GET(request, { params }) {
 
 // POST - Upload a photo
 export async function POST(request, { params }) {
-  const user = await getUser(request);
+  const user = await getAuthUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id: jobId } = await params;
@@ -89,7 +74,7 @@ export async function POST(request, { params }) {
 
   if (jobErr || !job) return Response.json({ error: 'Job not found' }, { status: 404 });
 
-  const detailerId = user.authRole === 'owner' ? user.id : user.detailer_id;
+  const detailerId = user.id;
   if (job.detailer_id !== detailerId) {
     return Response.json({ error: 'Forbidden' }, { status: 403 });
   }

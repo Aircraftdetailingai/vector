@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { cookies } from 'next/headers';
-import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 import { env } from '@/lib/env';
 
 export const dynamic = 'force-dynamic';
@@ -27,16 +26,11 @@ export async function GET(request) {
   }
 
   // Verify user authentication
-  let userId;
-  try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth_token')?.value;
-    if (!token) throw new Error('Not authenticated');
-    const payload = await verifyToken(token);
-    userId = payload.id;
-  } catch {
+  const authUser = await getAuthUser(request);
+  if (!authUser?.id) {
     return Response.redirect(new URL(`${settingsUrl}?gcal=error&message=${encodeURIComponent('Authentication required')}`, url.origin));
   }
+  const userId = authUser.id;
 
   // Verify state matches user ID (CSRF protection)
   if (state !== userId) {

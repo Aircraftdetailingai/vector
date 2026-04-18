@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
-import { verifyToken } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,22 +7,9 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
-async function getUser(request) {
-  // Try owner auth first
-  const user = await getAuthUser(request);
-  if (user) return { ...user, role: user.role || 'owner' };
-  // Try crew auth
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const payload = await verifyToken(authHeader.slice(7));
-    if (payload?.role === 'crew') return payload;
-  }
-  return null;
-}
-
 // GET — product selections for a job's services
 export async function GET(request, { params }) {
-  const user = await getUser(request);
+  const user = await getAuthUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id: jobId } = await params;
@@ -55,7 +41,7 @@ export async function GET(request, { params }) {
 
 // POST — set product for a service on a job
 export async function POST(request, { params }) {
-  const user = await getUser(request);
+  const user = await getAuthUser(request);
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const { id: jobId } = await params;

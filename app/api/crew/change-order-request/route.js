@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { verifyToken } from '@/lib/auth';
+import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,9 +8,7 @@ function getSupabase() {
 }
 
 async function getCrewUser(request) {
-  const auth = request.headers.get('authorization');
-  if (!auth?.startsWith('Bearer ')) return null;
-  return verifyToken(auth.slice(7));
+  return getAuthUser(request);
 }
 
 // POST — crew submits a change order request

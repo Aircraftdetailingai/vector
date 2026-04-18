@@ -1,6 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { verifyToken } from '@/lib/auth';
-import { cookies } from 'next/headers';
+import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -27,25 +26,6 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-async function getUser(request) {
-  // Prefer the Bearer header (fresh token from client localStorage) over the
-  // cookie — a stale httpOnly auth_token cookie from a previous session would
-  // otherwise shadow the current login and return a different detailer's data.
-  const authHeader = request.headers.get('authorization');
-  if (authHeader?.startsWith('Bearer ')) {
-    const user = await verifyToken(authHeader.slice(7));
-    if (user) return user;
-  }
-  try {
-    const cookieStore = await cookies();
-    const authCookie = cookieStore.get('auth_token')?.value;
-    if (authCookie) {
-      return await verifyToken(authCookie);
-    }
-  } catch (e) {}
-  return null;
-}
-
 // GET - Get all services for a detailer
 export async function GET(request) {
   try {
@@ -66,7 +46,7 @@ export async function GET(request) {
       return Response.json({ services: data || [] });
     }
 
-    const user = await getUser(request);
+    const user = await getAuthUser(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
@@ -146,7 +126,7 @@ export async function GET(request) {
 // POST - Create a new service
 export async function POST(request) {
   try {
-    const user = await getUser(request);
+    const user = await getAuthUser(request);
     if (!user) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
