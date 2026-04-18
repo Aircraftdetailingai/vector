@@ -26,12 +26,42 @@ export async function POST(request) {
 
     const normalizedEmail = email.toLowerCase().trim();
 
-    // Look up the detailer — only columns needed for the login flow.
-    // Profile fields (phone, company, rates, theme, etc.) are fetched via
-    // /api/user/me so we don't pull ACH and other sensitive columns on login.
+    // Look up the detailer — explicit column list sized to exactly the fields
+    // the response body writes back to localStorage.vector_user. We deliberately
+    // never select:
+    //   password_hash in the response pipeline (it is pulled here because the
+    //     bcrypt compare needs it, then dropped before serialization),
+    //   stripe_secret_key, stripe_publishable_key,
+    //   ach_routing_number, ach_account_number, ach_account_name, ach_bank_name,
+    //   webauthn_challenge.
+    const LOGIN_SELECT = [
+      // auth
+      'id', 'email', 'password_hash', 'must_change_password',
+      'status', 'plan', 'is_admin', 'onboarding_complete', 'onboarding_completed',
+      // profile
+      'name', 'phone', 'company',
+      'created_at',
+      // preferences
+      'rates', 'notification_settings', 'price_reminder_months',
+      'quote_display_preference',
+      'efficiency_factor', 'default_labor_rate', 'sms_enabled',
+      'preferred_currency', 'country', 'home_airport', 'airports_served',
+      'listed_in_directory', 'notify_quote_viewed',
+      'cc_fee_mode', 'pass_fee_to_customer', 'followup_discount_percent',
+      'terms_accepted_version',
+      'availability', 'notify_weekly_digest',
+      'review_request_enabled', 'review_request_delay_days',
+      'booking_mode', 'deposit_percentage',
+      // branding / theme — read by Sidebar, Send-Quote modal, theme init
+      'theme_primary', 'theme_accent', 'theme_bg', 'theme_surface',
+      'portal_theme', 'theme_logo_url', 'logo_url',
+      // integrations shown in UI
+      'google_business_url', 'google_reviews_last_synced',
+      'calendly_url', 'use_calendly_scheduling', 'website_url',
+    ].join(', ');
     const { data, error } = await supabase
       .from('detailers')
-      .select('id, email, password_hash, name, status, plan, is_admin, must_change_password, onboarding_complete')
+      .select(LOGIN_SELECT)
       .eq('email', normalizedEmail)
       .single();
     if (error || !data) {
