@@ -53,7 +53,7 @@ export async function POST(request) {
     // Fetch detailer
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('stripe_secret_key, stripe_account_id, company, email, plan, cc_fee_mode, booking_mode, deposit_percentage, quote_package_name, quote_itemized_checkout')
+      .select('stripe_secret_key, stripe_mode, stripe_account_id, company, email, plan, cc_fee_mode, booking_mode, deposit_percentage, quote_package_name, quote_itemized_checkout')
       .eq('id', quote.detailer_id)
       .single();
 
@@ -62,6 +62,23 @@ export async function POST(request) {
 
     if (!platformKey && !detailerKey) {
       return new Response(JSON.stringify({ error: 'Stripe not configured. Go to Settings → Integrations to connect Stripe.', code: 'stripe_not_configured' }), { status: 400 });
+    }
+
+    // Enforce stripe_mode / key prefix consistency when using per-detailer keys.
+    // If they disagree, charging would fail silently at Stripe — surface a
+    // 422 now with a clear message so the detailer reconciles in Settings.
+    if (detailerKey) {
+      const keyMode = detailerKey.startsWith('sk_live_') ? 'live'
+        : detailerKey.startsWith('sk_test_') ? 'test'
+        : null;
+      const accountMode = detailer?.stripe_mode || 'test';
+      if (keyMode && keyMode !== accountMode) {
+        console.error('[payments/create-checkout] Stripe mode/key mismatch for detailer', quote.detailer_id, 'keyMode=', keyMode, 'accountMode=', accountMode);
+        return new Response(JSON.stringify({
+          error: `Stripe mode mismatch — key is ${keyMode} but account is set to ${accountMode}. Detailer must reconcile in Settings.`,
+          code: 'stripe_mode_mismatch',
+        }), { status: 422 });
+      }
     }
 
     // Calculate amount in cents

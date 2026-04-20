@@ -47,7 +47,7 @@ export async function POST(request, { params }) {
     // Fetch detailer for Stripe keys and plan
     const { data: detailer } = await supabase
       .from('detailers')
-      .select('stripe_secret_key, stripe_account_id, company, plan')
+      .select('stripe_secret_key, stripe_mode, stripe_account_id, company, plan')
       .eq('id', invoice.detailer_id)
       .single();
 
@@ -56,6 +56,21 @@ export async function POST(request, { params }) {
 
     if (!platformKey && !detailerKey) {
       return Response.json({ error: 'Payment processing not configured', code: 'stripe_not_configured' }, { status: 400 });
+    }
+
+    // Reject mismatched mode/key combinations before trying to charge.
+    if (detailerKey) {
+      const keyMode = detailerKey.startsWith('sk_live_') ? 'live'
+        : detailerKey.startsWith('sk_test_') ? 'test'
+        : null;
+      const accountMode = detailer?.stripe_mode || 'test';
+      if (keyMode && keyMode !== accountMode) {
+        console.error('[invoices/checkout] Stripe mode/key mismatch for detailer', invoice.detailer_id, 'keyMode=', keyMode, 'accountMode=', accountMode);
+        return Response.json({
+          error: `Stripe mode mismatch — key is ${keyMode} but account is set to ${accountMode}. Detailer must reconcile in Settings.`,
+          code: 'stripe_mode_mismatch',
+        }, { status: 422 });
+      }
     }
 
     // Build line items from invoice

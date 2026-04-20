@@ -63,26 +63,19 @@ export async function POST(request) {
 
   const supabase = getSupabase();
 
-  // Column-stripping retry for graceful handling if column doesn't exist yet
-  const updates = { stripe_mode };
-  for (let attempt = 0; attempt < 3; attempt++) {
-    const { error } = await supabase
-      .from('detailers')
-      .update(updates)
-      .eq('id', user.id);
+  // Fail fast on any error. The previous column-stripping retry would
+  // silently drop the stripe_mode field and return { success: true }, which
+  // masked real DB errors and made the UI look like it had saved when it
+  // hadn't. stripe_mode is a real column (migration-backed) — if the update
+  // fails, the caller needs to know.
+  const { error } = await supabase
+    .from('detailers')
+    .update({ stripe_mode })
+    .eq('id', user.id);
 
-    if (!error) {
-      return Response.json({ success: true, stripe_mode });
-    }
-
-    const colMatch = error.message?.match(/column "([^"]+)".*does not exist/);
-    if (colMatch) {
-      delete updates[colMatch[1]];
-      continue;
-    }
-
-    console.log('Failed to save stripe_mode:', error.message);
-    return Response.json({ success: true, note: 'Setting saved locally' });
+  if (error) {
+    console.error('[user/stripe-mode] Failed to save stripe_mode for detailer', user.id, error.message);
+    return Response.json({ error: 'Failed to save Stripe mode', details: error.message }, { status: 500 });
   }
 
   return Response.json({ success: true, stripe_mode });

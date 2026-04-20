@@ -103,10 +103,23 @@ export async function GET(request, { params }) {
 
   // Check if detailer has active Stripe connection
   let stripeConnected = false;
-  // If detailer has their own Stripe API keys, treat as connected (direct charges)
+  // If detailer has their own Stripe API keys, treat as connected (direct
+  // charges) — but only when the key prefix agrees with the account's
+  // stripe_mode. A mismatch means checkout will fail, so we should not
+  // advertise "connected" to the customer.
   if (detailer?.stripe_secret_key) {
-    stripeConnected = true;
-    console.log(`[quote-view] Stripe: detailer has own API keys — connected`);
+    const sk = detailer.stripe_secret_key;
+    const keyMode = sk.startsWith('sk_live_') ? 'live'
+      : sk.startsWith('sk_test_') ? 'test'
+      : null;
+    const accountMode = detailer?.stripe_mode || 'test';
+    if (keyMode && keyMode !== accountMode) {
+      console.error(`[quote-view] Stripe mode/key mismatch for detailer ${detailer.id} — key=${keyMode} account=${accountMode}; treating as not connected`);
+      stripeConnected = false;
+    } else {
+      stripeConnected = true;
+      console.log(`[quote-view] Stripe: detailer has own API keys — connected`);
+    }
   } else if (detailer?.stripe_account_id && process.env.STRIPE_SECRET_KEY) {
     // Connect account — verify via platform key
     try {
