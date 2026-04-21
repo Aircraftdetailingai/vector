@@ -107,8 +107,8 @@ export default function QuoteViewPage() {
   // Once F7a starts persisting these on insert, the quote's stored value is
   // the source of truth. The detailer fallback keeps older quotes (pre-F7a /
   // pre-backfill) rendering sensibly without a forced re-send.
-  const bookingMode = quote.booking_mode ?? detailer?.booking_mode ?? 'pay_to_book';
-  const depositPct = quote.deposit_percentage ?? detailer?.deposit_percentage ?? 25;
+  const bookingMode = quote?.booking_mode ?? detailer?.booking_mode ?? 'pay_to_book';
+  const depositPct = quote?.deposit_percentage ?? detailer?.deposit_percentage ?? 25;
   const isScheduled = quote && (quote.status === 'scheduled' || quote.scheduled_date);
   const hasAvailability = detailer?.availability != null;
   const hasCalendly = !!(detailer?.calendly_url && detailer?.use_calendly_scheduling);
