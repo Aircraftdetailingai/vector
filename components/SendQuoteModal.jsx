@@ -37,7 +37,8 @@ export default function SendQuoteModal({ isOpen, onClose, onSuccess, quote, user
   // Message composer state
   const [emailSubject, setEmailSubject] = useState("");
   const [emailBody, setEmailBody] = useState("");
-  const [previewOpen, setPreviewOpen] = useState(true);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewIframeStatus, setPreviewIframeStatus] = useState('loading'); // 'loading' | 'ready' | 'error'
 
   // Contact fields
   const [pocName, setPocName] = useState("");
@@ -480,7 +481,14 @@ ${companyName}${user?.phone ? '\n' + user.phone : ''}`
 
             {/* Collapsible Quote Preview */}
             <button
-              onClick={() => setPreviewOpen(p => !p)}
+              type="button"
+              onClick={() => {
+                setPreviewOpen(p => {
+                  const next = !p;
+                  if (next) setPreviewIframeStatus('loading');
+                  return next;
+                });
+              }}
               className="w-full flex items-center gap-3 px-6 py-3 hover:bg-white/5 transition-colors border-t border-white/[0.08]"
               style={{ borderBottom: previewOpen ? '1px solid rgba(255,255,255,0.08)' : 'none' }}
             >
@@ -490,22 +498,61 @@ ${companyName}${user?.phone ? '\n' + user.phone : ''}`
                 <svg className={`w-3.5 h-3.5 transition-transform ${previewOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/></svg>
               </span>
             </button>
-            {previewOpen && (
-              <div className="bg-gray-900">
-                <iframe
-                  src={pdfUrl}
-                  className="w-full border-0"
-                  title="Quote Preview"
-                  style={{ height: '500px' }}
-                />
-                <div className="px-6 py-2 flex items-center justify-between border-t border-white/[0.06]">
-                  <a href={pdfUrl} download={`quote-${createdQuote.id.slice(0, 8)}.pdf`}
-                    className="text-xs text-gray-500 hover:text-v-gold transition-colors">
-                    Download PDF
-                  </a>
+            {previewOpen && (() => {
+              const canPreview = !!(pdfUrl && createdQuote?.share_link);
+              const shareUrl = createdQuote?.share_link ? `${appUrl}/q/${createdQuote.share_link}` : null;
+              if (!canPreview || previewIframeStatus === 'error') {
+                return (
+                  <div className="bg-gray-900 px-6 py-8 text-center">
+                    <p className="text-sm text-gray-300 mb-2">Preview unavailable.</p>
+                    {shareUrl ? (
+                      <a
+                        href={shareUrl}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-xs text-v-gold hover:underline"
+                      >
+                        Open quote in new tab
+                      </a>
+                    ) : (
+                      <p className="text-xs text-gray-500">The quote's share link is missing — try reopening this modal.</p>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <div className="bg-gray-900 relative">
+                  {previewIframeStatus === 'loading' && (
+                    <div className="absolute inset-0 flex items-center justify-center bg-gray-900/90 z-10 pointer-events-none" style={{ height: '500px' }}>
+                      <div className="flex items-center gap-2 text-xs text-gray-400">
+                        <div className="w-3 h-3 border-2 border-v-gold border-t-transparent rounded-full animate-spin" />
+                        <span>Loading preview...</span>
+                      </div>
+                    </div>
+                  )}
+                  <iframe
+                    src={pdfUrl}
+                    className="w-full border-0"
+                    title="Quote Preview"
+                    style={{ height: '500px' }}
+                    onLoad={() => setPreviewIframeStatus('ready')}
+                    onError={() => setPreviewIframeStatus('error')}
+                  />
+                  <div className="px-6 py-2 flex items-center justify-between border-t border-white/[0.06]">
+                    <a href={pdfUrl} download={`quote-${createdQuote.id.slice(0, 8)}.pdf`}
+                      className="text-xs text-gray-500 hover:text-v-gold transition-colors">
+                      Download PDF
+                    </a>
+                    {shareUrl && (
+                      <a href={shareUrl} target="_blank" rel="noreferrer"
+                        className="text-xs text-gray-500 hover:text-v-gold transition-colors">
+                        Open in new tab
+                      </a>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
 
           {/* Footer: Cancel | Save Draft | Send */}
