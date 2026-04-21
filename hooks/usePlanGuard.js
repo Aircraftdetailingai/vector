@@ -53,18 +53,20 @@ export function usePlanGuard() {
       const now = Date.now();
       if (now - lastFetchRef.current < MIN_FETCH_INTERVAL_MS) return; // debounce
       if (inFlightRef.current) return; // dedupe concurrent triggers
-      const token = window.localStorage.getItem('vector_token');
-      if (!token) return;
 
       inFlightRef.current = true;
       lastFetchRef.current = now;
 
       try {
         const res = await fetch('/api/user/plan-status', {
-          headers: { Authorization: `Bearer ${token}` },
+          credentials: 'include',
           cache: 'no-store',
         });
-        if (!res.ok) return;
+        if (res.status === 401) return; // not authenticated yet — silent skip
+        if (!res.ok) {
+          console.warn('[usePlanGuard] plan-status non-OK response:', res.status);
+          return;
+        }
         const data = await res.json();
         if (cancelled) return;
 
@@ -112,8 +114,9 @@ export function usePlanGuard() {
             success(`Your plan has been updated to ${label}. New features unlocked.`);
           } catch {}
         }
-      } catch {
-        // network error — retry on next tick (focus/interval/visibility)
+      } catch (err) {
+        console.warn('[usePlanGuard] plan-status network error:', err?.message || err);
+        // retry on next tick (focus/interval/visibility)
       } finally {
         inFlightRef.current = false;
       }
