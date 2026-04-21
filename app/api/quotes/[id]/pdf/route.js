@@ -90,6 +90,7 @@ const s = StyleSheet.create({
   footerText: { fontSize: 7, color: colors.gray400, letterSpacing: 0.5 },
   // Paid stamp
   paidText: { fontSize: 9, color: colors.green, fontFamily: 'Helvetica-Bold', textAlign: 'center', marginTop: 10 },
+  ccFeeDisclosure: { fontSize: 8, color: colors.gray500, textAlign: 'center', marginTop: 6 },
 });
 
 function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees, packageName, packageServices }) {
@@ -117,8 +118,11 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees, package
   const subtotalWithService = basePrice + serviceFee;
 
   const ccFeeMode = detailer?.cc_fee_mode || 'absorb';
-  const ccFee = ccFeeMode === 'pass' ? calculateCcFee(subtotalWithService) : 0;
-  const displayTotal = subtotalWithService + ccFee;
+  // CC fee is disclosed as a muted caption beneath the total, not rolled into
+  // it. The actual charge is appended at Stripe checkout as its own line item.
+  // Compute for both 'pass' and 'customer_choice' so the disclosure can render.
+  const ccFee = (ccFeeMode === 'pass' || ccFeeMode === 'customer_choice') ? calculateCcFee(subtotalWithService) : 0;
+  const displayTotal = subtotalWithService;
 
   const discountPercent = quote.discount_percent || 0;
   const displayPref = detailer?.quote_display_preference || 'package';
@@ -367,19 +371,20 @@ function QuotePDF({ quote, detailer, lineItems, servicesList, addonFees, package
 
         {/* Service fee included in total — not shown to customer */}
 
-        {/* CC Fee */}
-        {ccFee > 0 && (
-          <View style={s.feeRow}>
-            <Text style={s.feeLabel}>Processing Fee (2.9% + $0.30)</Text>
-            <Text style={s.feeValue}>+{fmt(ccFee)}</Text>
-          </View>
-        )}
-
-        {/* Total */}
+        {/* Total. CC processing fee is disclosed as a muted caption below
+            (see ccFeeDisclosure) and appended at Stripe checkout as its own
+            line item — it is NOT added to the printed total. */}
         <View style={s.totalBox}>
           <Text style={s.totalLabel}>Total</Text>
           <Text style={s.totalValue}>{fmt(displayTotal)}</Text>
         </View>
+        {ccFee > 0 && (
+          <Text style={s.ccFeeDisclosure}>
+            {ccFeeMode === 'pass'
+              ? `Card payment adds a ${fmt(ccFee)} processing fee`
+              : `Card payment includes +${fmt(ccFee)} processing fee`}
+          </Text>
+        )}
 
         {isPaid && paidDate && <Text style={s.paidText}>Payment received on {paidDate}</Text>}
 
