@@ -818,9 +818,13 @@ export default function QuoteViewPage() {
   const basePrice = parseFloat(quote.total_price) || 0;
   const serviceFee = passFee ? Math.round(basePrice * feeRate * 100) / 100 : 0;
   const subtotalWithService = basePrice + serviceFee;
+  // The CC processing fee is NOT rolled into the displayed total anymore.
+  // It's disclosed as a muted line beneath the total for both 'pass' and
+  // 'customer_choice' modes, and added as a separate Stripe line item at
+  // checkout time. This keeps the displayed quote amount honest to what was
+  // agreed, while still passing the fee through when the customer pays.
   const ccFee = (ccFeeMode === 'pass' || ccFeeMode === 'customer_choice') ? calculateCcFee(subtotalWithService) : 0;
-  const showCcFee = ccFeeMode === 'pass';
-  const displayTotal = subtotalWithService + (showCcFee ? ccFee : 0);
+  const displayTotal = subtotalWithService;
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-[var(--brand-bg,#0A0E17)] p-4" style={brandFontBody ? { fontFamily: brandFontBody } : undefined}>
@@ -974,18 +978,16 @@ export default function QuoteViewPage() {
           </div>
         )}
 
-        {/* CC processing fee (service/platform fee is included in total but not shown as line item) */}
-        {showCcFee && ccFee > 0 && (
-          <div className="flex justify-between py-2 text-sm">
-            <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Processing Fee</span>
-            <span className="text-[var(--brand-text-secondary,#8A9BB0)]">+{sym}{formatPrice(ccFee)}</span>
-          </div>
-        )}
-
-        {/* Total */}
+        {/* Total. CC processing fee is not a line item — it's disclosed as a
+            muted caption below the total and applied at checkout. */}
         <div className="border-t border-[var(--brand-border-strong,#2A3A50)] pt-8 mb-2 text-center">
           <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Total</p>
           <p className="text-[var(--brand-primary,#007CB1)] text-[2.5rem] font-light">{sym}{formatPrice(displayTotal)}</p>
+          {ccFeeMode === 'pass' && ccFee > 0 && (
+            <p className="text-[var(--brand-text-secondary,#8A9BB0)]/60 text-xs mt-2">
+              Card payment adds a {sym}{formatPrice(ccFee)} processing fee
+            </p>
+          )}
           {ccFeeMode === 'customer_choice' && (
             <p className="text-[var(--brand-text-secondary,#8A9BB0)]/60 text-xs mt-2">
               Card payment includes +{sym}{formatPrice(ccFee)} processing fee
