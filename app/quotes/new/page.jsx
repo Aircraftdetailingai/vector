@@ -237,6 +237,27 @@ function NewQuoteContent() {
     setUser(parsedUser);
     setLoading(false);
 
+    // Keep platform-fee math in sync if the plan flips mid-session
+    // (Shopify upgrade while the quote page is open). usePlanGuard in the
+    // Sidebar writes the new plan to localStorage and fires this event;
+    // we re-read and patch our local copy so PLATFORM_FEES[user.plan]
+    // recomputes on the next render.
+    const onUserUpdated = () => {
+      try {
+        const raw = localStorage.getItem('vector_user');
+        if (!raw) return;
+        const u = JSON.parse(raw);
+        setUser(prev => prev ? {
+          ...prev,
+          plan: u.plan,
+          subscription_status: u.subscription_status,
+          subscription_source: u.subscription_source,
+          plan_updated_at: u.plan_updated_at,
+        } : u);
+      } catch {}
+    };
+    window.addEventListener('vector-user-updated', onUserUpdated);
+
     const headers = { Authorization: `Bearer ${token}` };
 
     const fetchData = async () => {
@@ -367,6 +388,10 @@ function NewQuoteContent() {
         localStorage.removeItem('quote_prefill');
       }
     } catch {}
+
+    return () => {
+      window.removeEventListener('vector-user-updated', onUserUpdated);
+    };
   }, [router]);
 
   // Deferred service restoration — apply pending services once availableServices loads

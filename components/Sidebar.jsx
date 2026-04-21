@@ -149,6 +149,27 @@ export default function Sidebar() {
     }
   }, []);
 
+  // Listen for plan changes pushed by usePlanGuard and re-hydrate the
+  // local user state so the plan badge updates without a page reload.
+  useEffect(() => {
+    const onUserUpdated = () => {
+      try {
+        const raw = localStorage.getItem('vector_user');
+        if (!raw) return;
+        const u = JSON.parse(raw);
+        setUser(prev => ({
+          ...prev,
+          plan: u.plan,
+          subscription_status: u.subscription_status,
+          subscription_source: u.subscription_source,
+          plan_updated_at: u.plan_updated_at,
+        }));
+      } catch {}
+    };
+    window.addEventListener('vector-user-updated', onUserUpdated);
+    return () => window.removeEventListener('vector-user-updated', onUserUpdated);
+  }, []);
+
   const handleLogout = async () => {
     // Clear the httpOnly auth_token cookie server-side — document.cookie
     // cannot remove httpOnly cookies, so skipping this leaves a stale session.

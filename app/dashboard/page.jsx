@@ -233,7 +233,29 @@ function DashboardContent() {
     };
     fetchLive();
     const liveInterval = setInterval(fetchLive, 30000);
-    return () => clearInterval(liveInterval);
+
+    // Re-hydrate the local user object when usePlanGuard (in Sidebar)
+    // detects a plan change, so dashboard plan-gated tiles re-render.
+    const onUserUpdated = () => {
+      try {
+        const raw = localStorage.getItem('vector_user');
+        if (!raw) return;
+        const u = JSON.parse(raw);
+        setUser(prev => prev ? {
+          ...prev,
+          plan: u.plan,
+          subscription_status: u.subscription_status,
+          subscription_source: u.subscription_source,
+          plan_updated_at: u.plan_updated_at,
+        } : u);
+      } catch {}
+    };
+    window.addEventListener('vector-user-updated', onUserUpdated);
+
+    return () => {
+      clearInterval(liveInterval);
+      window.removeEventListener('vector-user-updated', onUserUpdated);
+    };
   }, [router]);
 
   const dismissJobAlert = async (alertId) => {

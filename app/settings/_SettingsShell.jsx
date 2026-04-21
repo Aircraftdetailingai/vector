@@ -332,6 +332,27 @@ function SettingsShell({ bucket: activeBucket = null }) {
         }
       })
       .catch(err => console.error('[settings] user/me error:', err));
+
+    // React to plan changes pushed by usePlanGuard (focus/visibility/interval).
+    // Re-read localStorage (which the hook just merged into) and patch the
+    // plan-related fields in local state so the Billing section re-renders
+    // without a page reload.
+    const onUserUpdated = () => {
+      try {
+        const raw = localStorage.getItem('vector_user');
+        if (!raw) return;
+        const u2 = JSON.parse(raw);
+        setUser(prev => prev ? {
+          ...prev,
+          plan: u2.plan,
+          subscription_status: u2.subscription_status,
+          subscription_source: u2.subscription_source,
+          plan_updated_at: u2.plan_updated_at,
+        } : u2);
+      } catch {}
+    };
+    window.addEventListener('vector-user-updated', onUserUpdated);
+    // Return cleanup from the outer useEffect body.
       // Fetch SMS settings for business/enterprise/admin users
       if (u.plan === 'business' || u.plan === 'enterprise' || u.is_admin) {
         fetch('/api/sms/settings', {
@@ -354,6 +375,10 @@ function SettingsShell({ bucket: activeBucket = null }) {
         if (data.terms_pdf_url) setTermsPdfUrl(data.terms_pdf_url);
         if (data.terms_updated_at) setTermsUpdatedAt(data.terms_updated_at);
       }).catch(() => {});
+
+    return () => {
+      window.removeEventListener('vector-user-updated', onUserUpdated);
+    };
   }, [router]);
 
   const [stripeError, setStripeError] = useState(null);
