@@ -362,7 +362,18 @@ async function handleOrderPaid(supabase, payload) {
     if (hasCourseProGrant && ['pro', 'business', 'enterprise'].includes(detailer.plan)) {
       console.log(`[shopify-webhook] course purchase by existing ${detailer.plan} user ${email}, keeping current plan`);
     } else {
-      await updatePlan(supabase, detailer, plan, extra);
+      const result = await updatePlan(supabase, detailer, plan, extra);
+      console.log('[shopify-webhook] plan-change', JSON.stringify({
+        detailer_id: detailer.id,
+        email,
+        old_plan: result.oldPlan,
+        new_plan: result.newPlan,
+        subscription_status: 'active',
+        subscription_source: subscriptionSource,
+        shopify_order_id: String(payload?.id || ''),
+        topic: 'orders/paid',
+        changed: result.changed,
+      }));
     }
   } else {
     // New customer — create account with temp password
@@ -487,9 +498,20 @@ async function handleSubscriptionUpdate(supabase, payload) {
   }
   if (!plan) return;
 
-  await updatePlan(supabase, detailer, plan, {
+  const result = await updatePlan(supabase, detailer, plan, {
     shopify_customer_id: String(payload?.customer?.id || payload?.customer_id || detailer.shopify_customer_id || ''),
   });
+  console.log('[shopify-webhook] plan-change', JSON.stringify({
+    detailer_id: detailer.id,
+    email: detailer.email,
+    old_plan: result.oldPlan,
+    new_plan: result.newPlan,
+    subscription_status: 'active',
+    subscription_source: 'shopify',
+    shopify_order_id: String(payload?.id || payload?.order_id || ''),
+    topic: 'subscription/updated',
+    changed: result.changed,
+  }));
 }
 
 // ─── Handle: subscription cancel / expire ───
@@ -504,6 +526,18 @@ async function handleSubscriptionCancel(supabase, payload) {
     subscription_source: 'shopify',
     plan_updated_at: new Date().toISOString(),
   }).eq('id', detailer.id);
+
+  console.log('[shopify-webhook] plan-change', JSON.stringify({
+    detailer_id: detailer.id,
+    email: detailer.email,
+    old_plan: oldPlan,
+    new_plan: 'free',
+    subscription_status: 'cancelled',
+    subscription_source: 'shopify',
+    shopify_order_id: String(payload?.id || payload?.order_id || ''),
+    topic: 'subscription/cancelled',
+    changed: oldPlan !== 'free',
+  }));
 
   if (oldPlan !== 'free') {
     try { await planChangeEmail(detailer.email, oldPlan, 'free'); } catch {}
