@@ -5,7 +5,6 @@ import { useState, useEffect } from 'react';
 import NotificationBell from './NotificationBell.jsx';
 import PointsBadge from './PointsBadge.jsx';
 import { applyFullTheme } from '@/lib/theme';
-import { usePlanGuard } from '@/hooks/usePlanGuard';
 
 const NAV_GROUPS = [
   {
@@ -101,12 +100,6 @@ export default function Sidebar() {
   const [user, setUser] = useState(null);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [requestCount, setRequestCount] = useState(0);
-
-  // Keep localStorage.vector_user.plan in sync with the server after any
-  // plan change (Shopify webhook, manual DB edit). Mounted here once
-  // because the Sidebar renders on every authenticated page. Do NOT add
-  // usePlanGuard anywhere else — duplicate mounts would double-poll.
-  usePlanGuard();
 
   useEffect(() => {
     try {

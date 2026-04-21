@@ -5,10 +5,12 @@ import GlobalSearch from './GlobalSearch.jsx';
 import PointsBadge from './PointsBadge.jsx';
 import NotificationBell from './NotificationBell.jsx';
 import PushNotifications from './PushNotifications.jsx';
+import PlanSyncMount from './PlanSyncMount.jsx';
 
 export default function AppShell({ children, title }) {
   return (
     <div className="min-h-screen bg-v-charcoal">
+      <PlanSyncMount />
       <Sidebar />
 
       {/* Main content */}
