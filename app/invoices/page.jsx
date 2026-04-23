@@ -1397,7 +1397,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
               </button>
               <button onClick={() => createInvoiceFromJob({ send: true })} disabled={!selectedQuoteId || actionLoading}
                 className="flex-1 px-4 py-2 bg-v-gold text-white rounded-lg font-medium disabled:opacity-50 text-sm">
-                {actionLoading ? 'Working...' : 'Save &amp; Send'}
+                {actionLoading ? 'Working...' : 'Save & Send'}
               </button>
             </div>
           </div>
@@ -1600,7 +1600,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
               </button>
               <button onClick={() => createBlankInvoice({ send: true })} disabled={actionLoading}
                 className="flex-1 px-4 py-2 bg-v-gold text-white rounded-lg font-medium disabled:opacity-50 text-sm">
-                {actionLoading ? 'Working...' : 'Save &amp; Send'}
+                {actionLoading ? 'Working...' : 'Save & Send'}
               </button>
             </div>
           </div>
@@ -1896,7 +1896,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                   disabled={editSaving || !editForm.customer_email}
                   className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50 text-sm hover:bg-blue-700"
                 >
-                  Save &amp; Send
+                  Save & Send
                 </button>
               )}
             </div>
