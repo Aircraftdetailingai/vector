@@ -30,7 +30,7 @@ export async function GET(request) {
     const archived = searchParams.get('archived');
 
     // Core columns that exist in the customers table
-    let selectCols = 'id, name, email, phone, company_name, notes, tags, is_archived, created_at';
+    let selectCols = 'id, name, email, phone, company_name, airport, tail_numbers, notes, tags, is_archived, created_at';
     let customers = [];
 
     for (let attempt = 0; attempt < 10; attempt++) {
