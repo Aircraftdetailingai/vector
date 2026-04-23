@@ -53,12 +53,17 @@ function InvoicesPageInner() {
     net_terms: 30, notes: '',
   });
   const [customers, setCustomers] = useState([]);
-  // Aircraft picker state for the New Invoice modal. Tracks "+ Add new aircraft"
-  // inline form and "— Different aircraft —" escape hatch separately from the
-  // form payload so cancelling an add doesn't clobber existing picks.
-  const [invAircraftMode, setInvAircraftMode] = useState('list'); // 'list' | 'add' | 'manual'
-  const [invAircraftDraft, setInvAircraftDraft] = useState({ model: '', tail: '' });
-  const [invAircraftSaving, setInvAircraftSaving] = useState(false);
+  // Aircraft picker state for the New Invoice modal — Create Job pattern:
+  // two-select Manufacturer + Model sourced from /api/aircraft/*, with a
+  // Standard / Custom toggle that swaps the selects for free-text inputs
+  // for aircraft not in the catalog.
+  const [invMfrs, setInvMfrs] = useState([]);
+  const [invModels, setInvModels] = useState([]);
+  const [invMfr, setInvMfr] = useState('');
+  const [invModel, setInvModel] = useState('');
+  const [invAcMode, setInvAcMode] = useState('standard'); // 'standard' | 'custom'
+  const [invCustomMake, setInvCustomMake] = useState('');
+  const [invCustomModel, setInvCustomModel] = useState('');
 
   // Edit invoice state
   const [editInvoice, setEditInvoice] = useState(null); // full invoice being edited
@@ -311,6 +316,28 @@ function InvoicesPageInner() {
     setEditShowMailing(false); setEditShowAch(false);
     setEditError(''); setEditSavedFlash(false);
   };
+
+  // Load the aircraft catalog when the New Invoice modal opens. Mirrors the
+  // /jobs/new pattern — manufacturers on mount of modal, models keyed off
+  // the selected manufacturer.
+  useEffect(() => {
+    if (createModal !== 'blank') return;
+    if (invMfrs.length > 0) return; // already loaded in this session
+    fetch('/api/aircraft/manufacturers', { headers: headers() })
+      .then(r => r.ok ? r.json() : { manufacturers: [] })
+      .then(d => setInvMfrs(d.manufacturers || []))
+      .catch(() => {});
+  }, [createModal]);
+
+  useEffect(() => {
+    if (!invMfr) { setInvModels([]); return; }
+    const ctrl = new AbortController();
+    fetch(`/api/aircraft/models?make=${encodeURIComponent(invMfr)}`, { headers: headers(), signal: ctrl.signal })
+      .then(r => r.ok ? r.json() : { models: [] })
+      .then(d => setInvModels(d.models || []))
+      .catch(() => {});
+    return () => ctrl.abort();
+  }, [invMfr]);
 
   // Re-fetch aircraft_hours when the user edits aircraft_model in the modal.
   useEffect(() => {
@@ -1429,126 +1456,74 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                     className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
                 </div>
               </div>
-              {(() => {
-                // Match the free-text customer name against the loaded customer list.
-                // Exact (case-insensitive) name match wins; otherwise no match → free-text.
-                const nameKey = (blankForm.customer_name || '').trim().toLowerCase();
-                const matched = nameKey
-                  ? customers.find(c => (c.name || '').trim().toLowerCase() === nameKey)
-                  : null;
-                const savedAircraft = matched && Array.isArray(matched.tail_numbers) ? matched.tail_numbers : [];
-
-                if (!matched || savedAircraft.length === 0 || invAircraftMode === 'manual') {
-                  // Walk-in / new customer / "— Different aircraft —" → free-text
-                  return (
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-xs text-v-text-secondary mb-1">Aircraft</label>
-                        <input value={blankForm.aircraft_model} onChange={e => setBlankForm(f => ({ ...f, aircraft_model: e.target.value }))}
-                          placeholder="Optional"
-                          className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-v-text-secondary mb-1">Tail #</label>
-                        <input value={blankForm.tail_number} onChange={e => setBlankForm(f => ({ ...f, tail_number: e.target.value.toUpperCase() }))}
-                          placeholder="Optional"
-                          className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50 uppercase" />
-                      </div>
-                    </div>
-                  );
-                }
-
-                if (invAircraftMode === 'add') {
-                  // Inline add form. Cancel returns to list (leaves previous pick).
-                  return (
-                    <div>
-                      <label className="block text-xs text-v-text-secondary mb-1">Add new aircraft for {matched.name}</label>
-                      <div className="grid grid-cols-[1fr,120px,auto,auto] gap-2 items-center">
-                        <input value={invAircraftDraft.model} onChange={e => setInvAircraftDraft(d => ({ ...d, model: e.target.value }))}
-                          placeholder="Model, e.g. Falcon 20"
-                          className="bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
-                        <input value={invAircraftDraft.tail} onChange={e => setInvAircraftDraft(d => ({ ...d, tail: e.target.value.toUpperCase() }))}
-                          placeholder="Tail"
-                          className="bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50 uppercase" />
-                        <button type="button" disabled={invAircraftSaving || !invAircraftDraft.tail.trim()}
-                          onClick={async () => {
-                            setInvAircraftSaving(true);
-                            try {
-                              const res = await fetch(`/api/customers/${matched.id}/aircraft`, {
-                                method: 'POST',
-                                headers: headers(),
-                                body: JSON.stringify({ model: invAircraftDraft.model.trim(), tail: invAircraftDraft.tail.trim().toUpperCase() }),
-                              });
-                              if (res.ok) {
-                                const data = await res.json();
-                                const nextList = Array.isArray(data.aircraft) ? data.aircraft : [];
-                                // Merge back into loaded customers state so the dropdown re-renders
-                                // with the new aircraft selected.
-                                setCustomers(prev => prev.map(c => c.id === matched.id ? { ...c, tail_numbers: nextList } : c));
-                                setBlankForm(f => ({
-                                  ...f,
-                                  aircraft_model: invAircraftDraft.model.trim(),
-                                  tail_number: invAircraftDraft.tail.trim().toUpperCase(),
-                                }));
-                                setInvAircraftDraft({ model: '', tail: '' });
-                                setInvAircraftMode('list');
-                              }
-                            } catch (err) {
-                              console.warn('[invoice/aircraft/add] failed:', err?.message || err);
-                            } finally {
-                              setInvAircraftSaving(false);
-                            }
-                          }}
-                          className="px-3 py-2 text-xs uppercase tracking-widest bg-v-gold text-v-charcoal rounded disabled:opacity-50">
-                          {invAircraftSaving ? 'Saving...' : 'Save'}
-                        </button>
-                        <button type="button"
-                          onClick={() => { setInvAircraftMode('list'); setInvAircraftDraft({ model: '', tail: '' }); }}
-                          className="px-3 py-2 text-xs uppercase tracking-widest text-v-text-secondary hover:text-white">
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  );
-                }
-
-                // Default: saved-aircraft dropdown. Value = current tail_number (if it matches a saved one).
-                const currentTail = (blankForm.tail_number || '').trim().toUpperCase();
-                const currentMatches = savedAircraft.some(a => String(a?.tail || '').trim().toUpperCase() === currentTail);
-                return (
-                  <div>
-                    <label className="block text-xs text-v-text-secondary mb-1">Aircraft — {matched.name}</label>
+              {/* Aircraft — Create Job pattern. Standard mode uses two selects
+                  sourced from /api/aircraft/manufacturers and /api/aircraft/models?make=.
+                  Custom/Not Listed mode swaps the selects for free-text inputs for
+                  aircraft not in the catalog. Tail sits below in both modes. */}
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-xs text-v-text-secondary">Aircraft</span>
+                  <button type="button"
+                    onClick={() => { setInvAcMode('standard'); setInvCustomMake(''); setInvCustomModel(''); }}
+                    className={`px-2 py-0.5 text-[10px] rounded ${invAcMode === 'standard' ? 'bg-v-gold text-v-charcoal' : 'border border-v-border text-v-text-secondary'}`}>
+                    Standard
+                  </button>
+                  <button type="button"
+                    onClick={() => { setInvAcMode('custom'); setInvMfr(''); setInvModel(''); }}
+                    className={`px-2 py-0.5 text-[10px] rounded ${invAcMode === 'custom' ? 'bg-v-gold text-v-charcoal' : 'border border-v-border text-v-text-secondary'}`}>
+                    Custom / Not Listed
+                  </button>
+                </div>
+                {invAcMode === 'standard' ? (
+                  <div className="grid grid-cols-2 gap-3">
                     <select
-                      value={currentMatches ? currentTail : ''}
+                      value={invMfr}
                       onChange={e => {
-                        const v = e.target.value;
-                        if (v === '__ADD__') {
-                          setInvAircraftMode('add');
-                          return;
-                        }
-                        if (v === '__OTHER__') {
-                          setInvAircraftMode('manual');
-                          setBlankForm(f => ({ ...f, aircraft_model: '', tail_number: '' }));
-                          return;
-                        }
-                        const picked = savedAircraft.find(a => String(a?.tail || '').trim().toUpperCase() === v);
-                        if (picked) {
-                          setBlankForm(f => ({ ...f, aircraft_model: picked.model || '', tail_number: (picked.tail || '').toUpperCase() }));
-                        }
+                        const next = e.target.value;
+                        setInvMfr(next);
+                        setInvModel('');
+                        setBlankForm(f => ({ ...f, aircraft_model: '' }));
                       }}
                       className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50">
-                      <option value="">Select aircraft</option>
-                      {savedAircraft.map((a, i) => (
-                        <option key={i} value={String(a?.tail || '').trim().toUpperCase()}>
-                          {[a?.model, a?.tail].filter(Boolean).join(' \u2014 ')}
-                        </option>
-                      ))}
-                      <option value="__ADD__">+ Add new aircraft</option>
-                      <option value="__OTHER__">&mdash; Different aircraft &mdash;</option>
+                      <option value="">Manufacturer...</option>
+                      {invMfrs.map(m => <option key={m} value={m}>{m}</option>)}
+                    </select>
+                    <select
+                      value={invModel}
+                      onChange={e => {
+                        const next = e.target.value;
+                        setInvModel(next);
+                        setBlankForm(f => ({ ...f, aircraft_model: next }));
+                      }}
+                      disabled={!invMfr}
+                      className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50 disabled:opacity-50">
+                      <option value="">Model...</option>
+                      {invModels.map(m => <option key={m.model} value={m.model}>{m.model}</option>)}
                     </select>
                   </div>
-                );
-              })()}
+                ) : (
+                  <div className="grid grid-cols-2 gap-3">
+                    <input value={invCustomMake}
+                      onChange={e => setInvCustomMake(e.target.value)}
+                      placeholder="Make (e.g. Lockheed)"
+                      className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
+                    <input value={invCustomModel}
+                      onChange={e => {
+                        setInvCustomModel(e.target.value);
+                        setBlankForm(f => ({ ...f, aircraft_model: e.target.value }));
+                      }}
+                      placeholder="Model (e.g. 12 Electra Junior)"
+                      className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs text-v-text-secondary mb-1">Tail #</label>
+                <input value={blankForm.tail_number}
+                  onChange={e => setBlankForm(f => ({ ...f, tail_number: e.target.value.toUpperCase() }))}
+                  placeholder="N12345"
+                  className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50 uppercase" />
+              </div>
             </div>
 
             {/* Line items */}
