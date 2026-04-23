@@ -53,6 +53,12 @@ function InvoicesPageInner() {
     net_terms: 30, notes: '',
   });
   const [customers, setCustomers] = useState([]);
+  // Aircraft picker state for the New Invoice modal. Tracks "+ Add new aircraft"
+  // inline form and "— Different aircraft —" escape hatch separately from the
+  // form payload so cancelling an add doesn't clobber existing picks.
+  const [invAircraftMode, setInvAircraftMode] = useState('list'); // 'list' | 'add' | 'manual'
+  const [invAircraftDraft, setInvAircraftDraft] = useState({ model: '', tail: '' });
+  const [invAircraftSaving, setInvAircraftSaving] = useState(false);
 
   // Edit invoice state
   const [editInvoice, setEditInvoice] = useState(null); // full invoice being edited
@@ -181,7 +187,18 @@ function InvoicesPageInner() {
       const res = await fetch('/api/customers?limit=100', { headers: headers() });
       if (res.ok) {
         const data = await res.json();
-        setCustomers((data.customers || []).map(c => ({ name: c.name, email: c.email })));
+        // Keep the full row so the aircraft dropdown can key off the matched
+        // customer's tail_numbers without a second fetch. (The datalist below
+        // still just reads `.name` so existing behaviour is preserved.)
+        setCustomers((data.customers || []).map(c => ({
+          id: c.id,
+          name: c.name,
+          email: c.email,
+          phone: c.phone || null,
+          company_name: c.company_name || null,
+          airport: c.airport || null,
+          tail_numbers: Array.isArray(c.tail_numbers) ? c.tail_numbers : [],
+        })));
       }
     } catch {}
   };
@@ -490,8 +507,38 @@ function InvoicesPageInner() {
         if (send && created?.id) {
           await fetch(`/api/invoices/${created.id}/send`, { method: 'POST', headers: headers() });
         }
+        // Silent tail-learning: if this invoice is for a known customer and
+        // the tail isn't already saved on that customer, persist it to
+        // customers.tail_numbers. Fire-and-forget — doesn't block the UI
+        // and failures are logged, not surfaced.
+        try {
+          const nameKey = (blankForm.customer_name || '').trim().toLowerCase();
+          const matched = nameKey ? customers.find(c => (c.name || '').trim().toLowerCase() === nameKey) : null;
+          const newTail = (blankForm.tail_number || '').trim().toUpperCase();
+          if (matched && newTail) {
+            const already = (matched.tail_numbers || []).some(a => String(a?.tail || '').trim().toUpperCase() === newTail);
+            if (!already) {
+              fetch(`/api/customers/${matched.id}/aircraft`, {
+                method: 'POST',
+                headers: headers(),
+                body: JSON.stringify({ model: (blankForm.aircraft_model || '').trim(), tail: newTail }),
+              })
+                .then(r => r.ok ? r.json() : null)
+                .then(j => {
+                  if (j?.aircraft) {
+                    setCustomers(prev => prev.map(c => c.id === matched.id ? { ...c, tail_numbers: j.aircraft } : c));
+                  }
+                })
+                .catch(e => console.warn('[invoice/tail-learn] silent save failed:', e?.message || e));
+            }
+          }
+        } catch (e) {
+          console.warn('[invoice/tail-learn] pre-post error:', e?.message || e);
+        }
         fetchInvoices();
         setCreateModal(false);
+        setInvAircraftMode('list');
+        setInvAircraftDraft({ model: '', tail: '' });
         setBlankForm({ customer_name: '', customer_email: '', aircraft_model: '', tail_number: '', line_items: [{ description: '', quantity: 1, rate: 0 }], net_terms: 30, notes: '' });
       } else {
         setError(data.error || 'Failed to create');
@@ -1382,20 +1429,126 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                     className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs text-v-text-secondary mb-1">Aircraft</label>
-                  <input value={blankForm.aircraft_model} onChange={e => setBlankForm(f => ({ ...f, aircraft_model: e.target.value }))}
-                    placeholder="Optional"
-                    className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
-                </div>
-                <div>
-                  <label className="block text-xs text-v-text-secondary mb-1">Tail #</label>
-                  <input value={blankForm.tail_number} onChange={e => setBlankForm(f => ({ ...f, tail_number: e.target.value }))}
-                    placeholder="Optional"
-                    className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50 uppercase" />
-                </div>
-              </div>
+              {(() => {
+                // Match the free-text customer name against the loaded customer list.
+                // Exact (case-insensitive) name match wins; otherwise no match → free-text.
+                const nameKey = (blankForm.customer_name || '').trim().toLowerCase();
+                const matched = nameKey
+                  ? customers.find(c => (c.name || '').trim().toLowerCase() === nameKey)
+                  : null;
+                const savedAircraft = matched && Array.isArray(matched.tail_numbers) ? matched.tail_numbers : [];
+
+                if (!matched || savedAircraft.length === 0 || invAircraftMode === 'manual') {
+                  // Walk-in / new customer / "— Different aircraft —" → free-text
+                  return (
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-xs text-v-text-secondary mb-1">Aircraft</label>
+                        <input value={blankForm.aircraft_model} onChange={e => setBlankForm(f => ({ ...f, aircraft_model: e.target.value }))}
+                          placeholder="Optional"
+                          className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-v-text-secondary mb-1">Tail #</label>
+                        <input value={blankForm.tail_number} onChange={e => setBlankForm(f => ({ ...f, tail_number: e.target.value.toUpperCase() }))}
+                          placeholder="Optional"
+                          className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50 uppercase" />
+                      </div>
+                    </div>
+                  );
+                }
+
+                if (invAircraftMode === 'add') {
+                  // Inline add form. Cancel returns to list (leaves previous pick).
+                  return (
+                    <div>
+                      <label className="block text-xs text-v-text-secondary mb-1">Add new aircraft for {matched.name}</label>
+                      <div className="grid grid-cols-[1fr,120px,auto,auto] gap-2 items-center">
+                        <input value={invAircraftDraft.model} onChange={e => setInvAircraftDraft(d => ({ ...d, model: e.target.value }))}
+                          placeholder="Model, e.g. Falcon 20"
+                          className="bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
+                        <input value={invAircraftDraft.tail} onChange={e => setInvAircraftDraft(d => ({ ...d, tail: e.target.value.toUpperCase() }))}
+                          placeholder="Tail"
+                          className="bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50 uppercase" />
+                        <button type="button" disabled={invAircraftSaving || !invAircraftDraft.tail.trim()}
+                          onClick={async () => {
+                            setInvAircraftSaving(true);
+                            try {
+                              const res = await fetch(`/api/customers/${matched.id}/aircraft`, {
+                                method: 'POST',
+                                headers: headers(),
+                                body: JSON.stringify({ model: invAircraftDraft.model.trim(), tail: invAircraftDraft.tail.trim().toUpperCase() }),
+                              });
+                              if (res.ok) {
+                                const data = await res.json();
+                                const nextList = Array.isArray(data.aircraft) ? data.aircraft : [];
+                                // Merge back into loaded customers state so the dropdown re-renders
+                                // with the new aircraft selected.
+                                setCustomers(prev => prev.map(c => c.id === matched.id ? { ...c, tail_numbers: nextList } : c));
+                                setBlankForm(f => ({
+                                  ...f,
+                                  aircraft_model: invAircraftDraft.model.trim(),
+                                  tail_number: invAircraftDraft.tail.trim().toUpperCase(),
+                                }));
+                                setInvAircraftDraft({ model: '', tail: '' });
+                                setInvAircraftMode('list');
+                              }
+                            } catch (err) {
+                              console.warn('[invoice/aircraft/add] failed:', err?.message || err);
+                            } finally {
+                              setInvAircraftSaving(false);
+                            }
+                          }}
+                          className="px-3 py-2 text-xs uppercase tracking-widest bg-v-gold text-v-charcoal rounded disabled:opacity-50">
+                          {invAircraftSaving ? 'Saving...' : 'Save'}
+                        </button>
+                        <button type="button"
+                          onClick={() => { setInvAircraftMode('list'); setInvAircraftDraft({ model: '', tail: '' }); }}
+                          className="px-3 py-2 text-xs uppercase tracking-widest text-v-text-secondary hover:text-white">
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Default: saved-aircraft dropdown. Value = current tail_number (if it matches a saved one).
+                const currentTail = (blankForm.tail_number || '').trim().toUpperCase();
+                const currentMatches = savedAircraft.some(a => String(a?.tail || '').trim().toUpperCase() === currentTail);
+                return (
+                  <div>
+                    <label className="block text-xs text-v-text-secondary mb-1">Aircraft — {matched.name}</label>
+                    <select
+                      value={currentMatches ? currentTail : ''}
+                      onChange={e => {
+                        const v = e.target.value;
+                        if (v === '__ADD__') {
+                          setInvAircraftMode('add');
+                          return;
+                        }
+                        if (v === '__OTHER__') {
+                          setInvAircraftMode('manual');
+                          setBlankForm(f => ({ ...f, aircraft_model: '', tail_number: '' }));
+                          return;
+                        }
+                        const picked = savedAircraft.find(a => String(a?.tail || '').trim().toUpperCase() === v);
+                        if (picked) {
+                          setBlankForm(f => ({ ...f, aircraft_model: picked.model || '', tail_number: (picked.tail || '').toUpperCase() }));
+                        }
+                      }}
+                      className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50">
+                      <option value="">Select aircraft</option>
+                      {savedAircraft.map((a, i) => (
+                        <option key={i} value={String(a?.tail || '').trim().toUpperCase()}>
+                          {[a?.model, a?.tail].filter(Boolean).join(' \u2014 ')}
+                        </option>
+                      ))}
+                      <option value="__ADD__">+ Add new aircraft</option>
+                      <option value="__OTHER__">&mdash; Different aircraft &mdash;</option>
+                    </select>
+                  </div>
+                );
+              })()}
             </div>
 
             {/* Line items */}
