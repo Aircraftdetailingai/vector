@@ -69,6 +69,11 @@ function InvoicesPageInner() {
   const [blankForm, setBlankForm] = useState({
     customer_id: null, customer_name: '', customer_email: '', customer_phone: '',
     aircraft_model: '', tail_number: '',
+    // service_date = when the work was actually performed. Defaults to today
+    // (most invoices bill same-day) but the user can backdate when billing
+    // for work done weeks or months ago. Independent of issued_date and
+    // due_date.
+    service_date: todayISO(),
     issued_date: todayISO(), due_date: addDaysISO(todayISO(), 30),
     net_terms: 30, notes: '',
   });
@@ -84,6 +89,12 @@ function InvoicesPageInner() {
   const [blankCustomLines, setBlankCustomLines] = useState([]);
   const [blankAircraftRow, setBlankAircraftRow] = useState(null);
   const [blankAircraftHoursRef, setBlankAircraftHoursRef] = useState(null);
+  // Package picker — mirrors Create Quote's selectedPackage pattern. When
+  // a package is picked, its service_ids replace the current selection.
+  // If the package has a flat price > 0, that price becomes the subtotal
+  // for those services instead of hours × rate.
+  const [blankPackages, setBlankPackages] = useState([]);
+  const [blankSelectedPackageId, setBlankSelectedPackageId] = useState(null);
   // Aircraft picker state for the New Invoice modal — Create Job pattern:
   // two-select Manufacturer + Model sourced from /api/aircraft/*, with a
   // Standard / Custom toggle that swaps the selects for free-text inputs
@@ -230,6 +241,33 @@ function InvoicesPageInner() {
     }
   };
 
+  const fetchBlankPackages = async () => {
+    try {
+      const res = await fetch('/api/packages', { headers: headers() });
+      if (res.ok) {
+        const data = await res.json();
+        setBlankPackages(Array.isArray(data?.packages) ? data.packages : []);
+      }
+    } catch (err) {
+      console.error('Failed to fetch packages for new invoice:', err);
+    }
+  };
+
+  // Picking a package replaces the currently-checked services with the
+  // package's service_ids. Empty selection just clears the package id and
+  // leaves the services as-is so the user can keep editing freely.
+  const onSelectBlankPackage = (pkgId) => {
+    if (!pkgId) {
+      setBlankSelectedPackageId(null);
+      return;
+    }
+    const pkg = blankPackages.find(p => p.id === pkgId);
+    if (!pkg) return;
+    setBlankSelectedPackageId(pkg.id);
+    const ids = Array.isArray(pkg.service_ids) ? pkg.service_ids.filter(Boolean) : [];
+    setBlankSelectedServices(ids);
+  };
+
   // Wipe every piece of state the New Invoice modal reads so + Create
   // Invoice always starts from a blank slate. Call this BEFORE setting
   // createModal='blank', and from any Back affordance that leaves the
@@ -245,6 +283,7 @@ function InvoicesPageInner() {
       customer_phone: '',
       aircraft_model: '',
       tail_number: '',
+      service_date: today,
       issued_date: today,
       due_date: addDaysISO(today, 30),
       net_terms: 30,
@@ -260,11 +299,17 @@ function InvoicesPageInner() {
     setBlankSelectedServices([]);
     setBlankHourOverrides({});
     setBlankCustomLines([]);
+    setBlankPackages([]);
+    setBlankSelectedPackageId(null);
     setError('');
   };
 
   const toggleBlankService = (id) => {
     setBlankSelectedServices(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    // A manual toggle breaks the "this invoice is a <Package> package" story,
+    // so reset the package dropdown to "— Individual Services —" to avoid a
+    // misleading label. The services the user picked stay checked.
+    if (blankSelectedPackageId) setBlankSelectedPackageId(null);
   };
   const setBlankHours = (id, hours) => {
     setBlankHourOverrides(prev => ({ ...prev, [id]: hours }));
@@ -663,23 +708,41 @@ function InvoicesPageInner() {
       return;
     }
     // Assemble line items in the canonical DB shape { name, hours, rate, price }
-    // used by the edit modal. Services picker first, then custom lines.
-    const svcLines = blankSelectedServices
-      .map(id => {
-        const svc = blankServices.find(s => s.id === id);
-        if (!svc) return null;
-        const hrs = parseFloat(blankHourOverrides[id] !== undefined ? blankHourOverrides[id] : getBlankDefaultHours(svc)) || 0;
-        const rate = parseFloat(svc.hourly_rate) || 0;
-        return {
-          name: svc.name,
-          description: svc.name,
-          hours: hrs,
-          quantity: hrs,
-          rate,
-          price: Math.round(hrs * rate * 100) / 100,
-        };
-      })
-      .filter(Boolean);
+    // used by the edit modal. When a flat-priced package is picked, emit a
+    // single line at the package price instead of per-service hours × rate —
+    // matches the customer-facing Total behavior below.
+    const activePkg = blankSelectedPackageId
+      ? blankPackages.find(p => p.id === blankSelectedPackageId)
+      : null;
+    const pkgFlatPrice = activePkg ? (parseFloat(activePkg.price) || 0) : 0;
+    let svcLines;
+    if (activePkg && pkgFlatPrice > 0) {
+      svcLines = [{
+        name: activePkg.name,
+        description: activePkg.name,
+        hours: 0,
+        quantity: 1,
+        rate: pkgFlatPrice,
+        price: Math.round(pkgFlatPrice * 100) / 100,
+      }];
+    } else {
+      svcLines = blankSelectedServices
+        .map(id => {
+          const svc = blankServices.find(s => s.id === id);
+          if (!svc) return null;
+          const hrs = parseFloat(blankHourOverrides[id] !== undefined ? blankHourOverrides[id] : getBlankDefaultHours(svc)) || 0;
+          const rate = parseFloat(svc.hourly_rate) || 0;
+          return {
+            name: svc.name,
+            description: svc.name,
+            hours: hrs,
+            quantity: hrs,
+            rate,
+            price: Math.round(hrs * rate * 100) / 100,
+          };
+        })
+        .filter(Boolean);
+    }
     const customLines = blankCustomLines
       .filter(cl => (cl.name || '').trim())
       .map(cl => {
@@ -768,6 +831,7 @@ function InvoicesPageInner() {
         setBlankCustomLines([]);
         setBlankAircraftRow(null);
         setBlankAircraftHoursRef(null);
+        setBlankSelectedPackageId(null);
       } else {
         setError(data.error || 'Failed to create');
       }
@@ -1555,7 +1619,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                 </div>
               </button>
               <button
-                onClick={() => { resetBlankModal(); setCreateModal('blank'); fetchCustomers(); fetchBlankServices(); }}
+                onClick={() => { resetBlankModal(); setCreateModal('blank'); fetchCustomers(); fetchBlankServices(); fetchBlankPackages(); }}
                 className="w-full flex items-center gap-3 p-4 border border-v-border rounded-lg hover:bg-white/5 transition-colors text-left"
               >
                 <span className="text-2xl">&#128221;</span>
@@ -1756,6 +1820,30 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
               </div>
             </div>
 
+            {/* Package — optional. Picking a package auto-checks its
+                service_ids; manual service toggles drop the label back to
+                "Individual Services" via toggleBlankService. */}
+            <p className="text-xs text-v-text-secondary uppercase tracking-wider mb-2">Package (optional)</p>
+            <div className="mb-4">
+              <select
+                value={blankSelectedPackageId || ''}
+                onChange={e => onSelectBlankPackage(e.target.value)}
+                className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50"
+              >
+                <option value="">— Individual Services —</option>
+                {blankPackages.map(pkg => (
+                  <option key={pkg.id} value={pkg.id}>
+                    {pkg.name}{parseFloat(pkg.price) > 0 ? ` — ${sym}${formatPrice(pkg.price)}` : ''}
+                  </option>
+                ))}
+              </select>
+              {blankSelectedPackageId && (() => {
+                const pkg = blankPackages.find(p => p.id === blankSelectedPackageId);
+                if (!pkg?.description) return null;
+                return <p className="text-[11px] text-v-text-secondary mt-1">{pkg.description}</p>;
+              })()}
+            </div>
+
             {/* Services — grouped picker sourced from /api/services. Same
                 component used by the edit modal so the two stay in sync. */}
             <p className="text-xs text-v-text-secondary uppercase tracking-wider mb-2">Services</p>
@@ -1800,16 +1888,22 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
             <button onClick={() => setBlankCustomLines(prev => [...prev, { name: '', hours: '', rate: '' }])}
               className="text-v-gold text-xs hover:underline mb-4">+ Add custom line item</button>
 
-            {/* Live total — sum of picked services × hours × rate plus the
-                custom line items. Recomputes every render. */}
+            {/* Live total — flat package price (if picked + priced) OR sum of
+                picked services × hours × rate, plus custom line items. */}
             {(() => {
-              const svcSub = blankSelectedServices.reduce((s, id) => {
-                const svc = blankServices.find(x => x.id === id);
-                if (!svc) return s;
-                const hrs = blankHourOverrides[id] !== undefined ? blankHourOverrides[id] : getBlankDefaultHours(svc);
-                const rate = parseFloat(svc.hourly_rate) || 0;
-                return s + ((parseFloat(hrs) || 0) * rate);
-              }, 0);
+              const activePkg = blankSelectedPackageId
+                ? blankPackages.find(p => p.id === blankSelectedPackageId)
+                : null;
+              const pkgFlatPrice = activePkg ? (parseFloat(activePkg.price) || 0) : 0;
+              const svcSub = (activePkg && pkgFlatPrice > 0)
+                ? pkgFlatPrice
+                : blankSelectedServices.reduce((s, id) => {
+                    const svc = blankServices.find(x => x.id === id);
+                    if (!svc) return s;
+                    const hrs = blankHourOverrides[id] !== undefined ? blankHourOverrides[id] : getBlankDefaultHours(svc);
+                    const rate = parseFloat(svc.hourly_rate) || 0;
+                    return s + ((parseFloat(hrs) || 0) * rate);
+                  }, 0);
               const customSub = blankCustomLines.reduce((s, cl) => s + (parseFloat(cl.hours) || 0) * (parseFloat(cl.rate) || 0), 0);
               const total = svcSub + customSub;
               return (
