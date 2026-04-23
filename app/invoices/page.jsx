@@ -213,6 +213,36 @@ function InvoicesPageInner() {
     }
   };
 
+  // Wipe every piece of state the New Invoice modal reads so + Create
+  // Invoice always starts from a blank slate. Call this BEFORE setting
+  // createModal='blank', and from any Back affordance that leaves the
+  // modal without saving. blankForm shape mirrors its initial state
+  // (line_items is intentionally absent — services picker replaced it
+  // in commit 5c0f3d9).
+  const resetBlankModal = () => {
+    setBlankForm({
+      customer_id: null,
+      customer_name: '',
+      customer_email: '',
+      customer_phone: '',
+      aircraft_model: '',
+      tail_number: '',
+      net_terms: 30,
+      notes: '',
+    });
+    setInvMfr('');
+    setInvModel('');
+    setInvAcMode('standard');
+    setInvCustomMake('');
+    setInvCustomModel('');
+    setBlankAircraftRow(null);
+    setBlankAircraftHoursRef(null);
+    setBlankSelectedServices([]);
+    setBlankHourOverrides({});
+    setBlankCustomLines([]);
+    setError('');
+  };
+
   const toggleBlankService = (id) => {
     setBlankSelectedServices(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
@@ -1502,7 +1532,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                 </div>
               </button>
               <button
-                onClick={() => { setCreateModal('blank'); fetchCustomers(); fetchBlankServices(); }}
+                onClick={() => { resetBlankModal(); setCreateModal('blank'); fetchCustomers(); fetchBlankServices(); }}
                 className="w-full flex items-center gap-3 p-4 border border-v-border rounded-lg hover:bg-white/5 transition-colors text-left"
               >
                 <span className="text-2xl">&#128221;</span>
@@ -1759,7 +1789,7 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
 
             <p className="text-xs text-v-text-secondary mb-2 text-center">Saving creates a <strong className="text-white">draft</strong> — the customer is not emailed until you click Send.</p>
             <div className="flex gap-2">
-              <button onClick={() => setCreateModal('choose')} className="px-4 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5 text-sm">Back</button>
+              <button onClick={() => { resetBlankModal(); setCreateModal('choose'); }} className="px-4 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5 text-sm">Back</button>
               <button onClick={() => createBlankInvoice({ send: false })} disabled={actionLoading}
                 className="flex-1 px-4 py-2 bg-v-charcoal border border-v-border text-v-text-primary rounded-lg font-medium disabled:opacity-50 text-sm hover:bg-white/10">
                 {actionLoading ? 'Saving...' : 'Save Draft'}
