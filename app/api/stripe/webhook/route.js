@@ -14,6 +14,99 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
 }
 
+// Shared logic for marking an invoice paid from a Checkout Session. Used by
+// both checkout.session.completed (card path — fires immediately) and
+// checkout.session.async_payment_succeeded (ACH path — fires on settlement).
+// Idempotent: skips when the invoice is already paid or can't be found.
+// Side effects (detailer notification + activity log) mirror the quote branch.
+async function markInvoicePaidFromSession(supabase, session, eventTypeLabel) {
+  const invoiceId = session.metadata?.invoice_id;
+
+  // Find by metadata.invoice_id first, fall back to stripe_session_id. Two
+  // queries rather than .or() so UUID vs text column types are unambiguous.
+  let invoice = null;
+  if (invoiceId) {
+    const { data } = await supabase
+      .from('invoices')
+      .select('id, detailer_id, total, balance_due, amount_paid, status, customer_name, customer_email, aircraft_model')
+      .eq('id', invoiceId)
+      .maybeSingle();
+    invoice = data || null;
+  }
+  if (!invoice && session.id) {
+    const { data } = await supabase
+      .from('invoices')
+      .select('id, detailer_id, total, balance_due, amount_paid, status, customer_name, customer_email, aircraft_model')
+      .eq('stripe_session_id', session.id)
+      .maybeSingle();
+    invoice = data || null;
+  }
+
+  if (!invoice) {
+    console.error(`[stripe webhook ${eventTypeLabel}] No invoice found for session=${session.id} metadata.invoice_id=${invoiceId}`);
+    return;
+  }
+
+  if (invoice.status === 'paid') {
+    console.log(`[stripe webhook ${eventTypeLabel}] Invoice ${invoice.id} already paid — idempotent skip`);
+    return;
+  }
+
+  const amountPaid = typeof session.amount_total === 'number'
+    ? session.amount_total / 100
+    : (parseFloat(invoice.total) || 0);
+
+  const { error: updateErr } = await supabase
+    .from('invoices')
+    .update({
+      status: 'paid',
+      amount_paid: amountPaid,
+      balance_due: 0,
+      paid_at: new Date().toISOString(),
+      stripe_payment_intent_id: session.payment_intent || null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', invoice.id);
+
+  if (updateErr) {
+    console.error(`[stripe webhook ${eventTypeLabel}] Failed to mark invoice ${invoice.id} paid:`, updateErr.message);
+    return;
+  }
+
+  // Side effects. Best-effort — each wrapped so a single failure doesn't
+  // break the rest. Email requires the invoice's share_link for the portal
+  // button; keep this simple and defer email to the existing invoice/send
+  // flow if we don't have it here.
+  try {
+    const { data: detailer } = await supabase
+      .from('detailers')
+      .select('id, email, name, company, fcm_token, plan, sms_enabled')
+      .eq('id', invoice.detailer_id)
+      .single();
+
+    if (detailer?.id) {
+      notifyPaymentReceived({
+        detailerId: detailer.id,
+        quote: { ...invoice, total_price: amountPaid, aircraft_model: invoice.aircraft_model || '' },
+        amount: amountPaid,
+      }).catch(console.error);
+    }
+
+    if (invoice.customer_email) {
+      const aircraft = invoice.aircraft_model || 'Invoice';
+      logActivity({
+        detailer_id: invoice.detailer_id,
+        customer_email: invoice.customer_email,
+        activity_type: ACTIVITY.PAYMENT_RECEIVED,
+        summary: `Payment received $${Number(amountPaid || 0).toLocaleString()} for ${aircraft}`,
+        details: { invoice_id: invoice.id, amount: amountPaid, source: eventTypeLabel },
+      });
+    }
+  } catch (e) {
+    console.error(`[stripe webhook ${eventTypeLabel}] Side effects failed for invoice ${invoice.id}:`, e?.message || e);
+  }
+}
+
 export async function POST(request) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return new Response(JSON.stringify({ error: 'Stripe not configured' }), { status: 500 });
@@ -37,11 +130,54 @@ export async function POST(request) {
     return new Response(JSON.stringify({ error: 'Webhook signature verification failed' }), { status: 400 });
   }
 
+  // Idempotency — Stripe retries on non-2xx (and sometimes even on 2xx) so
+  // the same event.id can arrive more than once. If we already processed it
+  // successfully, return 200 immediately without re-running side effects.
+  // Best-effort — if webhook_logs is unreachable we continue rather than
+  // blocking a legitimate event.
+  try {
+    const { data: existing } = await supabase
+      .from('webhook_logs')
+      .select('id, processed')
+      .eq('source', 'stripe')
+      .eq('processed', true)
+      .filter('payload->>id', 'eq', event.id)
+      .limit(1)
+      .maybeSingle();
+    if (existing) {
+      console.log(`[stripe webhook] Duplicate event ${event.id} (${event.type}) skipped — already processed row ${existing.id}`);
+      return new Response(JSON.stringify({ received: true, duplicate: true }), { status: 200 });
+    }
+  } catch (e) {
+    console.error('[stripe webhook] Idempotency check failed (continuing):', e?.message || e);
+  }
+
+  // Insert a log row up front with processed=false so we have a forensic
+  // trail for every signature-verified event regardless of branch outcome.
+  let logRowId = null;
+  try {
+    const { data: logRow } = await supabase
+      .from('webhook_logs')
+      .insert({ source: 'stripe', topic: event.type, payload: event, processed: false })
+      .select('id')
+      .single();
+    logRowId = logRow?.id || null;
+  } catch (e) {
+    console.error('[stripe webhook] Failed to insert webhook_logs row (continuing):', e?.message || e);
+  }
+
+  // All event handling goes through one try/catch so a bug in one branch
+  // can't poison future retries. On catch we stamp the log row with the
+  // error and still return 200 — returning non-2xx makes Stripe retry the
+  // event up to 3 days, which is almost never what we want for a code bug.
+  try {
   // Handle the event
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object;
       const quoteId = session.metadata?.quote_id;
+      const invoiceId = session.metadata?.invoice_id;
+      const metaType = session.metadata?.type;
 
       if (quoteId) {
         // Check if this is a deposit payment
@@ -202,6 +338,75 @@ export async function POST(request) {
             });
           }
         }
+      } else if (invoiceId || metaType === 'invoice') {
+        // Invoice flow — customer paid an invoice via Stripe Checkout. The
+        // session metadata was set in app/api/invoices/[id]/checkout. Shared
+        // helper handles the DB update + side effects idempotently.
+        await markInvoicePaidFromSession(supabase, session, 'checkout.session.completed');
+      } else {
+        console.warn(`[stripe webhook checkout.session.completed] No recognized metadata on session ${session.id} (type=${metaType}, quote_id=${quoteId}, invoice_id=${invoiceId}) — skipping`);
+      }
+      break;
+    }
+
+    // ACH payments (us_bank_account) complete the Checkout Session
+    // immediately, but the actual bank settlement fires days later as
+    // checkout.session.async_payment_succeeded. Re-use the invoice helper —
+    // it's idempotent so it's safe if both events arrive.
+    case 'checkout.session.async_payment_succeeded': {
+      const session = event.data.object;
+      const metaType = session.metadata?.type;
+      const invoiceId = session.metadata?.invoice_id;
+      if (invoiceId || metaType === 'invoice') {
+        await markInvoicePaidFromSession(supabase, session, 'checkout.session.async_payment_succeeded');
+      } else {
+        console.log(`[stripe webhook async_payment_succeeded] No invoice metadata on session ${session.id} — skipping`);
+      }
+      break;
+    }
+
+    // Direct payment_intent flow (rare for invoices, but captured as a
+    // safety net — e.g. manual PaymentIntents outside Checkout). Find by
+    // stripe_payment_intent_id. Skip if invoice is already paid or absent.
+    case 'payment_intent.succeeded': {
+      const pi = event.data.object;
+      if (!pi?.id) { break; }
+      const { data: invoice } = await supabase
+        .from('invoices')
+        .select('id, detailer_id, total, balance_due, amount_paid, status, customer_name, customer_email, aircraft_model')
+        .eq('stripe_payment_intent_id', pi.id)
+        .maybeSingle();
+      if (!invoice) {
+        // Not every PI belongs to an invoice (subscriptions, deposits,
+        // platform fees all use PaymentIntents). Quiet skip.
+        break;
+      }
+      if (invoice.status === 'paid') {
+        console.log(`[stripe webhook payment_intent.succeeded] Invoice ${invoice.id} already paid — idempotent skip`);
+        break;
+      }
+      const amountPaid = typeof pi.amount_received === 'number'
+        ? pi.amount_received / 100
+        : (typeof pi.amount === 'number' ? pi.amount / 100 : parseFloat(invoice.total) || 0);
+      await supabase
+        .from('invoices')
+        .update({
+          status: 'paid',
+          amount_paid: amountPaid,
+          balance_due: 0,
+          paid_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', invoice.id);
+      if (invoice.customer_email) {
+        const aircraft = invoice.aircraft_model || 'Invoice';
+        logActivity({
+          detailer_id: invoice.detailer_id,
+          customer_email: invoice.customer_email,
+          activity_type: ACTIVITY.PAYMENT_RECEIVED,
+          summary: `Payment received $${Number(amountPaid || 0).toLocaleString()} for ${aircraft}`,
+          details: { invoice_id: invoice.id, amount: amountPaid, source: 'payment_intent.succeeded' },
+        });
       }
       break;
     }
@@ -225,12 +430,12 @@ export async function POST(request) {
       const charge = event.data.object;
       const paymentIntentId = charge.payment_intent;
 
-      // Find and update the quote
+      // Try the quote first (most refunds come from the quote flow).
       const { data: quote } = await supabase
         .from('quotes')
-        .select('*')
+        .select('id')
         .eq('stripe_payment_intent_id', paymentIntentId)
-        .single();
+        .maybeSingle();
 
       if (quote) {
         const isFullRefund = charge.amount_refunded >= charge.amount;
@@ -242,6 +447,26 @@ export async function POST(request) {
             refund_amount: charge.amount_refunded / 100,
           })
           .eq('id', quote.id);
+      } else {
+        // Also check invoices — refunds on invoice-flow payments land here.
+        const { data: invoice } = await supabase
+          .from('invoices')
+          .select('id, total, amount_paid')
+          .eq('stripe_payment_intent_id', paymentIntentId)
+          .maybeSingle();
+        if (invoice) {
+          const refunded = charge.amount_refunded / 100;
+          const isFullRefund = charge.amount_refunded >= charge.amount;
+          await supabase
+            .from('invoices')
+            .update({
+              status: isFullRefund ? 'refunded' : 'partially_refunded',
+              refunded_at: new Date().toISOString(),
+              refund_amount: refunded,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', invoice.id);
+        }
       }
       break;
     }
@@ -364,5 +589,29 @@ export async function POST(request) {
       console.log(`Unhandled event type: ${event.type}`);
   }
 
-  return new Response(JSON.stringify({ received: true }), { status: 200 });
+    // Success — stamp the log row so future duplicates get caught by the
+    // idempotency check at the top.
+    if (logRowId) {
+      try {
+        await supabase.from('webhook_logs').update({ processed: true }).eq('id', logRowId);
+      } catch (e) {
+        console.error('[stripe webhook] Failed to mark log row processed:', e?.message || e);
+      }
+    }
+    return new Response(JSON.stringify({ received: true }), { status: 200 });
+  } catch (err) {
+    // Any handler threw — record the error on the log row and still return
+    // 200 so Stripe doesn't queue up infinite retries for a code bug we
+    // haven't diagnosed. The row will be findable in webhook_logs later.
+    console.error(`[stripe webhook] Handler threw for event ${event.id} (${event.type}):`, err?.message || err);
+    if (logRowId) {
+      try {
+        await supabase
+          .from('webhook_logs')
+          .update({ processed: false, error: String(err?.message || err).slice(0, 2000) })
+          .eq('id', logRowId);
+      } catch {}
+    }
+    return new Response(JSON.stringify({ received: true, error: 'handler_error' }), { status: 200 });
+  }
 }
