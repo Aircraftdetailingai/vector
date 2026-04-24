@@ -16,6 +16,9 @@ function WrenchIcon() {
 function ZapIcon() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" /></svg>;
 }
+function GitBranchIcon() {
+  return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><line x1="6" y1="3" x2="6" y2="15" /><circle cx="18" cy="6" r="3" /><circle cx="6" cy="18" r="3" /><path d="M18 9a9 9 0 0 1-9 9" /></svg>;
+}
 function PlugIcon() {
   return <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round"><path d="M12 22v-5" /><path d="M9 7V2" /><path d="M15 7V2" /><path d="M6 13V8h12v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4Z" /></svg>;
 }
@@ -30,6 +33,7 @@ const BUCKETS = [
   { href: '/settings/business', label: 'Business Info', Icon: BuildingIcon },
   { href: '/settings/payments', label: 'Payments & Billing', Icon: CreditCardIcon },
   { href: '/settings/services', label: 'Services & Pricing', Icon: WrenchIcon },
+  { href: '/settings/intake-flow', label: 'Intake Flow', Icon: GitBranchIcon },
   { href: '/settings/automations', label: 'Automations', Icon: ZapIcon },
   { href: '/settings/connections', label: 'Connections', Icon: PlugIcon },
   { href: '/settings/team-access', label: 'Team & Access', Icon: UsersIcon },
