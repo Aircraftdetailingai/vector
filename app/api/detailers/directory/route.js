@@ -38,7 +38,12 @@ export async function GET(request) {
     query = query.or(`name.ilike.%${search}%,company.ilike.%${search}%`);
   }
 
-  query = query.order('company', { ascending: true });
+  // Explicit range so we never silently depend on the Supabase default
+  // (which can truncate the list under some client-version / vertical-filter
+  // combinations). 1000 is well beyond any realistic listed-directory size.
+  query = query
+    .order('company', { ascending: true })
+    .range(0, 999);
 
   const { data, error } = await query;
 
@@ -46,6 +51,7 @@ export async function GET(request) {
     console.error('Directory query error:', error);
     return Response.json({ error: 'Failed to fetch directory' }, { status: 500 });
   }
+  console.log(`[directory] returned ${data?.length || 0} rows for country=${country || '-'} airport=${airport || '-'} search=${search || '-'}`);
 
   // Attach public review stats (platform + Google)
   const detailerIds = (data || []).map(d => d.id);
@@ -101,7 +107,38 @@ export async function GET(request) {
     }
   }
 
-  // Add online booking badge based on Stripe connection
+  // Bulk-fetch active, coord-bearing locations for all listed detailers.
+  // lat/lng come back as strings from the numeric column through supabase-js
+  // — coerce to Number() here so map libraries that expect numeric pins can
+  // render without client-side parsing.
+  let locationsByDetailer = {};
+  if (detailerIds.length > 0) {
+    const { data: locRows, error: locErr } = await supabase
+      .from('detailer_locations')
+      .select('id, detailer_id, name, location_type, airport_icao, address, latitude, longitude')
+      .in('detailer_id', detailerIds)
+      .eq('active', true)
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null);
+    if (locErr) {
+      console.error('[directory] locations fetch error:', locErr.message);
+    } else if (locRows) {
+      for (const l of locRows) {
+        if (!locationsByDetailer[l.detailer_id]) locationsByDetailer[l.detailer_id] = [];
+        locationsByDetailer[l.detailer_id].push({
+          id: l.id,
+          name: l.name || null,
+          location_type: l.location_type || null,
+          airport_icao: l.airport_icao || null,
+          address: l.address || null,
+          latitude: Number(l.latitude),
+          longitude: Number(l.longitude),
+        });
+      }
+    }
+  }
+
+  // Add online booking badge based on Stripe connection + attach locations
   enriched = enriched.map(d => ({
     ...d,
     online_booking: !!(d.stripe_account_id || d.stripe_publishable_key || d.has_online_booking),
@@ -109,6 +146,9 @@ export async function GET(request) {
     logo_url: d.theme_logo_url || d.logo_url || null,
     // Attach services list
     services: servicesByDetailer[d.id] || [],
+    // Attach active, coord-bearing service locations for map rendering.
+    // lat/lng are already Number()-coerced above.
+    locations: locationsByDetailer[d.id] || [],
     // Remove sensitive/internal fields from response
     stripe_account_id: undefined,
     stripe_publishable_key: undefined,
