@@ -513,53 +513,97 @@ export default function ProductsPage() {
                     const qty = product.current_quantity || 0;
                     return (
                       <div key={product.id} className="p-4 hover:bg-white/5">
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="flex items-start gap-3 flex-1 min-w-0">
-                            {product.image_url ? (
-                              <img
-                                src={product.image_url}
-                                alt=""
-                                className="w-12 h-12 rounded object-cover flex-shrink-0 bg-v-charcoal border border-v-border"
-                                onError={(e) => { e.target.style.display = 'none'; }}
-                              />
-                            ) : (
-                              <div className="w-12 h-12 rounded bg-v-charcoal border border-v-border flex items-center justify-center text-v-text-secondary text-lg flex-shrink-0">
-                                &#128230;
-                              </div>
-                            )}
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <p className="font-medium text-v-text-primary truncate">{product.name}</p>
-                                {isLow && (
-                                  <span className="text-[10px] bg-yellow-900/40 text-yellow-400 px-2 py-0.5 rounded-full flex-shrink-0 font-medium">Low Stock</span>
-                                )}
-                              </div>
-                              {product.brand && (
-                                <p className="text-xs text-v-text-secondary mt-0.5">{product.brand}</p>
+                        {/* Mobile = thumb on the left, everything else (name,
+                            brand, metadata, action buttons) stacks in the
+                            right column. Desktop (sm:+) = original layout
+                            with the action cluster pinned to the right edge. */}
+                        <div className="flex items-start gap-3">
+                          {product.image_url ? (
+                            <img
+                              src={product.image_url}
+                              alt=""
+                              className="w-16 h-16 sm:w-12 sm:h-12 rounded object-cover flex-shrink-0 bg-v-charcoal border border-v-border"
+                              onError={(e) => { e.target.style.display = 'none'; }}
+                            />
+                          ) : (
+                            <div className="w-16 h-16 sm:w-12 sm:h-12 rounded bg-v-charcoal border border-v-border flex items-center justify-center text-v-text-secondary text-lg flex-shrink-0">
+                              &#128230;
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-medium text-v-text-primary break-words">{product.name}</p>
+                              {isLow && (
+                                <span className="text-[10px] bg-yellow-900/40 text-yellow-400 px-2 py-0.5 rounded-full flex-shrink-0 font-medium">Low Stock</span>
                               )}
-                              <div className="flex items-center gap-4 mt-2 text-xs text-v-text-secondary flex-wrap">
-                                {product.size && (
-                                  <span>Size: <strong className="text-v-text-primary">{product.size}</strong></span>
-                                )}
-                                <span>In stock: <strong className={`${isLow ? 'text-yellow-400' : 'text-v-text-primary'}`}>{qty}</strong></span>
-                                {product.cost_per_unit > 0 && (
-                                  <span>${product.cost_per_unit.toFixed(2)} each</span>
-                                )}
-                                {product.supplier && (
-                                  <span>{product.supplier}</span>
-                                )}
-                                {product.product_url && (
-                                  <a href={product.product_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300">Reorder</a>
-                                )}
-                                {getLocationName(product.location_id) && (
-                                  <span className="px-2 py-0.5 bg-indigo-900/30 text-indigo-400 rounded text-[10px] font-medium">
-                                    {getLocationName(product.location_id)}
-                                  </span>
-                                )}
-                              </div>
+                            </div>
+                            {product.brand && (
+                              <p className="text-xs text-v-text-secondary mt-0.5">{product.brand}</p>
+                            )}
+                            {/* whitespace-nowrap on each label so "In stock"
+                                never wraps mid-word at narrow widths. gap-x
+                                + gap-y let pieces wrap cleanly as a group. */}
+                            <div className="flex items-center gap-x-3 gap-y-1 mt-2 text-xs text-v-text-secondary flex-wrap">
+                              {product.size && (
+                                <span className="whitespace-nowrap">Size: <strong className="text-v-text-primary">{product.size}</strong></span>
+                              )}
+                              <span className="whitespace-nowrap">In stock: <strong className={`${isLow ? 'text-yellow-400' : 'text-v-text-primary'}`}>{qty}</strong></span>
+                              {product.cost_per_unit > 0 && (
+                                <span className="whitespace-nowrap">${product.cost_per_unit.toFixed(2)} each</span>
+                              )}
+                              {product.supplier && (
+                                <span className="whitespace-nowrap">{product.supplier}</span>
+                              )}
+                              {product.product_url && (
+                                <a href={product.product_url} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 whitespace-nowrap">Reorder</a>
+                              )}
+                              {getLocationName(product.location_id) && (
+                                <span className="px-2 py-0.5 bg-indigo-900/30 text-indigo-400 rounded text-[10px] font-medium whitespace-nowrap">
+                                  {getLocationName(product.location_id)}
+                                </span>
+                              )}
+                            </div>
+
+                            {/* Mobile-only action grid (2x2). Each button is
+                                min-h-[36px] for tap targets. Hidden at sm+
+                                where the desktop cluster takes over. */}
+                            <div className="grid grid-cols-2 gap-2 mt-3 sm:hidden">
+                              <button
+                                onClick={() => {
+                                  setShowAdjustModal(product);
+                                  setAdjustAmount('');
+                                }}
+                                className="min-h-[36px] px-3 text-xs bg-v-charcoal text-v-text-secondary hover:text-v-text-primary rounded border border-v-border"
+                              >
+                                Adjust
+                              </button>
+                              {locations.length > 0 && (
+                                <button
+                                  onClick={() => { setShowTransferModal(product); setTransferTo(''); setTransferQty(''); }}
+                                  className="min-h-[36px] px-3 text-xs text-indigo-400 hover:bg-indigo-900/20 rounded border border-indigo-900/40"
+                                >
+                                  Transfer
+                                </button>
+                              )}
+                              <button
+                                onClick={() => handleOpenModal(product)}
+                                className="min-h-[36px] px-3 text-xs text-blue-400 hover:bg-blue-900/20 rounded border border-blue-900/40"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => handleDelete(product.id, product.name)}
+                                className="min-h-[36px] px-3 text-xs text-red-400 hover:bg-red-900/20 rounded border border-red-900/40"
+                              >
+                                Delete
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
+
+                          {/* Desktop-only action cluster — original layout
+                              preserved. Hidden below sm where the mobile
+                              grid above takes over. */}
+                          <div className="hidden sm:flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
                             <button
                               onClick={() => {
                                 setShowAdjustModal(product);
