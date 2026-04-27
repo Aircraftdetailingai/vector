@@ -43,6 +43,12 @@ export default function CrewDashboard() {
   const [confirmDeleteProduct, setConfirmDeleteProduct] = useState(null); // { id, name }
   const [removingProductId, setRemovingProductId] = useState(null);
   const [usageForm, setUsageForm] = useState({ product_id: '', amount_used: '', notes: '' });
+  // Unlisted-product form lets staff log a product they're using that isn't
+  // in the catalog yet. Server inserts into job_product_usage with
+  // is_unlisted=true and skips stock deduction.
+  const [showUnlistedForm, setShowUnlistedForm] = useState(false);
+  const [unlistedForm, setUnlistedForm] = useState({ name: '', brand: '', amount: '', unit: 'each', notes: '' });
+  const [unlistedSaving, setUnlistedSaving] = useState(false);
   const [inventoryChanges, setInventoryChanges] = useState({});
   const [inventorySaving, setInventorySaving] = useState(false);
   const [showAddProduct, setShowAddProduct] = useState(false);
@@ -547,8 +553,46 @@ export default function CrewDashboard() {
       showMsg('Product usage logged!');
       setUsageForm({ product_id: '', amount_used: '', notes: '' });
       fetchProducts();
+      if (selectedJob?.id) fetchJobMaterials(selectedJob.id);
     } else {
       showMsg(data.error || 'Failed', 'error');
+    }
+  };
+
+  // Log usage for a product NOT in the catalog (one-off purchases, etc.).
+  // Server flags the row is_unlisted=true and skips stock deduction.
+  const handleLogUnlisted = async () => {
+    if (!selectedJob) return;
+    const name = (unlistedForm.name || '').trim();
+    const amt = parseFloat(unlistedForm.amount);
+    if (!name || !isFinite(amt) || amt <= 0) {
+      showMsg('Product name and amount are required', 'error');
+      return;
+    }
+    setUnlistedSaving(true);
+    try {
+      const data = await API('/api/crew/products', token, {
+        method: 'POST',
+        body: JSON.stringify({
+          job_id: selectedJob.id,
+          is_unlisted: true,
+          product_name: name,
+          product_brand: (unlistedForm.brand || '').trim() || undefined,
+          amount_used: amt,
+          unit: unlistedForm.unit || 'each',
+          notes: (unlistedForm.notes || '').trim(),
+        }),
+      });
+      if (data.success) {
+        showMsg('Unlisted product logged');
+        setUnlistedForm({ name: '', brand: '', amount: '', unit: 'each', notes: '' });
+        setShowUnlistedForm(false);
+        if (selectedJob?.id) fetchJobMaterials(selectedJob.id);
+      } else {
+        showMsg(data.error || 'Failed to log unlisted product', 'error');
+      }
+    } finally {
+      setUnlistedSaving(false);
     }
   };
 
@@ -1195,6 +1239,95 @@ export default function CrewDashboard() {
                     >
                       Log Usage
                     </button>
+                  </div>
+                )}
+
+                {/* Unlisted entries already logged on this job — show with
+                    a badge so the staff member sees what they've added. */}
+                {(jobMaterials?.product_usage || []).filter(u => u.is_unlisted).length > 0 && (
+                  <div className="mt-4 space-y-1.5">
+                    <p className="text-white/50 text-[10px] uppercase tracking-wider">Logged on this job</p>
+                    {(jobMaterials.product_usage || []).filter(u => u.is_unlisted).map(u => (
+                      <div key={u.id} className="flex items-center gap-2 bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-xs">
+                        <span className="px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-300 border border-amber-700/40 text-[9px] uppercase tracking-wider font-semibold">Unlisted</span>
+                        <span className="text-white truncate">
+                          {u.product_name}
+                          {u.product_brand ? <span className="text-white/50"> · {u.product_brand}</span> : null}
+                        </span>
+                        <span className="ml-auto text-white/60 whitespace-nowrap">{u.amount_used} {u.unit}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Toggle / inline form for an unlisted (off-catalog) product. */}
+                {!showUnlistedForm ? (
+                  <button
+                    onClick={() => setShowUnlistedForm(true)}
+                    className="mt-3 w-full bg-white/5 hover:bg-white/10 border border-white/15 text-white/80 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                  >
+                    + Add unlisted product
+                  </button>
+                ) : (
+                  <div className="mt-3 space-y-2 border border-white/15 rounded-lg p-3 bg-white/5">
+                    <p className="text-white/70 text-[10px] uppercase tracking-wider">Unlisted Product</p>
+                    <input
+                      type="text"
+                      placeholder="Product name (required)"
+                      value={unlistedForm.name}
+                      onChange={e => setUnlistedForm(f => ({ ...f, name: e.target.value }))}
+                      className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2.5 text-sm placeholder-white/40"
+                    />
+                    <input
+                      type="text"
+                      placeholder="Brand (optional)"
+                      value={unlistedForm.brand}
+                      onChange={e => setUnlistedForm(f => ({ ...f, brand: e.target.value }))}
+                      className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2.5 text-sm placeholder-white/40"
+                    />
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="number"
+                        placeholder="Quantity"
+                        value={unlistedForm.amount}
+                        onChange={e => setUnlistedForm(f => ({ ...f, amount: e.target.value }))}
+                        className="col-span-2 bg-white/10 text-white border border-white/20 rounded-lg p-2.5 text-sm placeholder-white/40"
+                        step="0.1"
+                        min="0"
+                      />
+                      <select
+                        value={unlistedForm.unit}
+                        onChange={e => setUnlistedForm(f => ({ ...f, unit: e.target.value }))}
+                        className="bg-white/10 text-white border border-white/20 rounded-lg p-2.5 text-sm"
+                      >
+                        <option value="each" className="text-gray-900">each</option>
+                        <option value="oz" className="text-gray-900">oz</option>
+                        <option value="ml" className="text-gray-900">ml</option>
+                        <option value="count" className="text-gray-900">count</option>
+                      </select>
+                    </div>
+                    <input
+                      type="text"
+                      placeholder="Notes (optional)"
+                      value={unlistedForm.notes}
+                      onChange={e => setUnlistedForm(f => ({ ...f, notes: e.target.value }))}
+                      className="w-full bg-white/10 text-white border border-white/20 rounded-lg p-2.5 text-sm placeholder-white/40"
+                    />
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={() => { setShowUnlistedForm(false); setUnlistedForm({ name: '', brand: '', amount: '', unit: 'each', notes: '' }); }}
+                        className="bg-white/5 hover:bg-white/10 border border-white/15 text-white/70 py-2.5 rounded-lg text-sm font-medium transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleLogUnlisted}
+                        disabled={unlistedSaving || !(unlistedForm.name || '').trim() || !(parseFloat(unlistedForm.amount) > 0)}
+                        className="bg-[#0081b8] hover:bg-[#006a9a] text-white py-2.5 rounded-lg text-sm font-semibold transition-colors disabled:opacity-50"
+                      >
+                        {unlistedSaving ? 'Saving...' : 'Log Unlisted'}
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

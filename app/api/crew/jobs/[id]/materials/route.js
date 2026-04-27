@@ -183,14 +183,34 @@ export async function GET(request, { params }) {
       .or(`quote_id.eq.${refId},job_id.eq.${refId}`);
     productUsage = usage || [];
 
-    // Also include job_product_usage entries
-    const { data: jpu } = await supabase
-      .from('job_product_usage')
-      .select('id, product_id, actual_quantity, amount_used, unit, notes, created_at')
-      .or(`quote_id.eq.${refId},job_id.eq.${refId}`);
+    // Also include job_product_usage entries. Surface is_unlisted +
+    // product_name / product_brand so the staff dashboard can render the
+    // freeform name with an "Unlisted" badge for entries that aren't in
+    // the catalog. Column-stripping retry handles older deploys where
+    // is_unlisted / product_brand may not yet exist.
+    let jpuSelect = 'id, product_id, product_name, product_brand, is_unlisted, actual_quantity, amount_used, unit, notes, created_at';
+    let jpu = null;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const { data, error } = await supabase
+        .from('job_product_usage')
+        .select(jpuSelect)
+        .or(`quote_id.eq.${refId},job_id.eq.${refId}`);
+      if (!error) { jpu = data; break; }
+      const colMatch = error.message?.match(/column[^"]*"([^"]+)"[^"]*does not exist/)
+        || error.message?.match(/column ([a-z_.]+) does not exist/);
+      if (colMatch) {
+        jpuSelect = jpuSelect.split(',').map(s => s.trim()).filter(c => c !== colMatch[1] && !c.endsWith(`.${colMatch[1]}`)).join(', ');
+        continue;
+      }
+      break;
+    }
     if (jpu) {
       productUsage.push(...jpu.map(u => ({
-        id: u.id, product_id: u.product_id,
+        id: u.id,
+        product_id: u.product_id,
+        product_name: u.product_name || null,
+        product_brand: u.product_brand || null,
+        is_unlisted: !!u.is_unlisted,
         amount_used: u.actual_quantity || u.amount_used,
         unit: u.unit, notes: u.notes, created_at: u.created_at,
       })));

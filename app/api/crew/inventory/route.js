@@ -2,9 +2,18 @@ import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
+// Bypass Next's Data Cache on supabase-js's internal fetch (d7b2d9e / 54b0b2e).
+// Crew inventory page reads + writes products; without no-store, freshly-saved
+// products from the catalog can be served stale.
 function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
+    { global: { fetch: (u, opts) => fetch(u, { ...opts, cache: 'no-store' }) } },
+  );
 }
 
 async function getCrewUser(request) {

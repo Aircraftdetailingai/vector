@@ -2,9 +2,18 @@ import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
+// Bypass Next's Data Cache on supabase-js's internal fetch (d7b2d9e / 54b0b2e).
+// Crew dashboard reads catalog products through this route; without no-store
+// fetch, recently-added products are served stale.
 function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
+    { global: { fetch: (u, opts) => fetch(u, { ...opts, cache: 'no-store' }) } },
+  );
 }
 
 async function getCrewUser(request) {
@@ -61,10 +70,20 @@ export async function POST(request) {
   }
 
   const body = await request.json();
-  const { quote_id, job_id, product_id, amount_used, unit, notes } = body;
+  const { quote_id, job_id, product_id, amount_used, unit, notes, is_unlisted, product_name: bodyName, product_brand: bodyBrand } = body;
   const refId = job_id || quote_id;
 
-  if (!refId || !product_id || !amount_used) {
+  // Two paths: catalog product (requires product_id, deducts stock) and
+  // unlisted/freeform (requires product_name, no stock deduction). The
+  // unlisted path lets crew log a product they don't have in the catalog
+  // yet — the row is flagged so the owner can see and optionally add it
+  // to inventory later.
+  const cleanName = (bodyName || '').trim();
+  if (is_unlisted) {
+    if (!refId || !cleanName || !amount_used) {
+      return Response.json({ error: 'job_id (or quote_id), product_name, and amount_used are required for unlisted products' }, { status: 400 });
+    }
+  } else if (!refId || !product_id || !amount_used) {
     return Response.json({ error: 'job_id (or quote_id), product_id, and amount_used are required' }, { status: 400 });
   }
 
@@ -81,32 +100,40 @@ export async function POST(request) {
   }
   if (!resolvedJobId && !resolvedQuoteId) return Response.json({ error: 'Job not found' }, { status: 404 });
 
-  // Verify product
-  const { data: product } = await supabase
-    .from('products')
-    .select('id, name, quantity, unit')
-    .eq('id', product_id)
-    .eq('detailer_id', user.detailer_id)
-    .single();
-
-  if (!product) return Response.json({ error: 'Product not found' }, { status: 404 });
-
-  const amount = parseFloat(amount_used);
-  const oldQty = parseFloat(product.quantity) || 0;
-  const newQty = Math.max(0, oldQty - amount);
+  // Catalog path: verify product exists and prep stock deduction. Unlisted
+  // path: skip both — there's nothing to deduct from.
+  let product = null;
+  let amount = parseFloat(amount_used);
+  let oldQty = 0, newQty = 0;
+  if (!is_unlisted) {
+    const { data } = await supabase
+      .from('products')
+      .select('id, name, quantity, unit')
+      .eq('id', product_id)
+      .eq('detailer_id', user.detailer_id)
+      .single();
+    if (!data) return Response.json({ error: 'Product not found' }, { status: 404 });
+    product = data;
+    oldQty = parseFloat(product.quantity) || 0;
+    newQty = Math.max(0, oldQty - amount);
+  }
 
   // Try job_product_usage first (newer table with team_member_id, logged_at, etc.)
   let usageId = null;
+  const resolvedName = is_unlisted ? cleanName : product.name;
+  const resolvedUnit = unit || (product?.unit) || 'each';
   let entry = {
     job_id: resolvedJobId,
     quote_id: resolvedQuoteId,
-    product_id,
-    product_name: product.name,
+    product_id: is_unlisted ? null : product_id,
+    product_name: resolvedName,
+    product_brand: is_unlisted ? ((bodyBrand || '').trim() || null) : null,
+    is_unlisted: !!is_unlisted,
     detailer_id: user.detailer_id,
     team_member_id: user.id,
     actual_quantity: amount,
     amount_used: amount,
-    unit: unit || product.unit || 'oz',
+    unit: resolvedUnit,
     notes: notes || '',
     logged_at: new Date().toISOString(),
   };
@@ -150,8 +177,11 @@ export async function POST(request) {
 
   if (!usageId) return Response.json({ error: 'Failed to log product usage' }, { status: 500 });
 
-  // Deduct quantity
-  await supabase.from('products').update({ quantity: newQty }).eq('id', product_id);
+  // Deduct quantity from the catalog row only when there IS a catalog row.
+  // Unlisted entries have no inventory to subtract from.
+  if (!is_unlisted && product) {
+    await supabase.from('products').update({ quantity: newQty }).eq('id', product_id);
+  }
 
   // Log to crew_activity_log (non-blocking)
   try {
@@ -162,12 +192,14 @@ export async function POST(request) {
       job_id: resolvedJobId || resolvedQuoteId,
       action_type: 'product_usage',
       action_details: {
-        product_id,
-        product_name: product.name,
+        product_id: is_unlisted ? null : product_id,
+        product_name: resolvedName,
+        product_brand: is_unlisted ? ((bodyBrand || '').trim() || null) : null,
+        is_unlisted: !!is_unlisted,
         amount_used: amount,
-        unit: unit || product.unit || 'oz',
-        old_quantity: oldQty,
-        new_quantity: newQty,
+        unit: resolvedUnit,
+        old_quantity: is_unlisted ? null : oldQty,
+        new_quantity: is_unlisted ? null : newQty,
       },
     });
   } catch (e) {

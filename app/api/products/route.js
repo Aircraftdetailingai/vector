@@ -3,12 +3,20 @@ import { getAuthUser } from '@/lib/auth';
 import { sendLowStockAlertEmail } from '@/lib/email';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
+// Bypass Next's Data Cache on supabase-js's internal fetch — same fix as
+// d7b2d9e / 54b0b2e. Without this, freshly-saved products (Brett saved
+// "Original Painter's Tape, ScotchBlue™" today and it didn't appear on
+// the staff dashboard) can be served stale even with revalidate=0.
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) return null;
-  return createClient(url, key);
+  return createClient(url, key, {
+    global: { fetch: (u, opts) => fetch(u, { ...opts, cache: 'no-store' }) },
+  });
 }
 
 const PRODUCT_CATEGORIES = [
