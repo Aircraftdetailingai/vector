@@ -51,7 +51,7 @@ export async function GET(request) {
   try {
     let quoteQuery = supabase
       .from('quotes')
-      .select(`id, aircraft_model, aircraft_type, tail_number, airport, scheduled_date, status, line_items, notes, created_at${contactCols}`)
+      .select(`id, aircraft_model, aircraft_type, tail_number, airport, scheduled_date, status, line_items, notes, created_at, progress_percentage${contactCols}`)
       .eq('detailer_id', user.detailer_id)
       .in('status', ['paid', 'accepted', 'scheduled', 'in_progress'])
       .order('scheduled_date', { ascending: true, nullsFirst: false });
@@ -77,7 +77,7 @@ export async function GET(request) {
     try {
       let jobQuery = supabase
         .from('jobs')
-        .select('id, customer_name, customer_email, aircraft_make, aircraft_model, tail_number, airport, services, total_price, status, scheduled_date, schedule_override, created_at, completion_notes')
+        .select('id, customer_name, customer_email, aircraft_make, aircraft_model, tail_number, airport, services, total_price, status, scheduled_date, schedule_override, created_at, completion_notes, progress_percentage')
         .in('status', ['scheduled', 'in_progress']);
 
       if (assignedJobIds.size > 0 && !isLead) {
@@ -105,6 +105,7 @@ export async function GET(request) {
           client_name: mj.customer_name,
           client_email: mj.customer_email,
           tail_number: mj.tail_number,
+          progress_percentage: mj.progress_percentage,
           _source: 'jobs_table',
           _services_text: mj.services,
         });
@@ -153,6 +154,7 @@ export async function GET(request) {
       services: sanitizedLineItems.length > 0 ? sanitizedLineItems : (Array.isArray(servicesText) ? servicesText.map(s => typeof s === 'string' ? { description: s } : { description: s.name || s.description || 'Service' }) : []),
       notes: job.notes,
       created_at: job.created_at,
+      progress_percentage: job.progress_percentage ?? 0,
       _source: job._source || null,
     };
 
