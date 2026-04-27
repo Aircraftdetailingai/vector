@@ -76,6 +76,14 @@ function InvoicesPageInner() {
     service_date: todayISO(),
     issued_date: todayISO(), due_date: addDaysISO(todayISO(), 30),
     net_terms: 30, notes: '',
+    // Deposit fields. Defaults seeded from detailer.booking_mode /
+    // deposit_percentage in resetBlankModal once the user record loads.
+    // When deposit_required=false, the modal sends booking_mode='regular'
+    // and zeros the values. Server enforces the free-tier gate regardless.
+    deposit_required: false,
+    deposit_mode: 'percent',
+    deposit_percentage: 25,
+    deposit_amount: 0,
   });
   const [customers, setCustomers] = useState([]);
   // Services picker state for the New Invoice modal. Aircraft-hours
@@ -276,6 +284,14 @@ function InvoicesPageInner() {
   // in commit 5c0f3d9).
   const resetBlankModal = () => {
     const today = todayISO();
+    // Seed deposit defaults from the detailer record so the modal opens with
+    // the user's saved booking-mode + deposit-percentage already applied.
+    // Free-tier reads as deposit_required=false regardless of detailer.booking_mode.
+    const planNow = (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('vector_user') || '{}'))?.plan || 'free';
+    const isAdminNow = (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('vector_user') || '{}'))?.is_admin === true;
+    const tierAllowsDeposit = isAdminNow || ['pro', 'business', 'enterprise'].includes(planNow);
+    const detailerBookingMode = detailer?.booking_mode || 'pay_to_book';
+    const detailerDepositPct = parseInt(detailer?.deposit_percentage, 10) || 25;
     setBlankForm({
       customer_id: null,
       customer_name: '',
@@ -288,6 +304,10 @@ function InvoicesPageInner() {
       due_date: addDaysISO(today, 30),
       net_terms: 30,
       notes: '',
+      deposit_required: tierAllowsDeposit && detailerBookingMode === 'pay_to_book',
+      deposit_mode: 'percent',
+      deposit_percentage: detailerDepositPct,
+      deposit_amount: 0,
     });
     setInvMfr('');
     setInvModel('');
@@ -766,6 +786,21 @@ function InvoicesPageInner() {
     setError('');
     try {
       const total = lineItems.reduce((s, li) => s + li.price, 0);
+      // Resolve deposit fields per spec:
+      //   not required → regular / 0 / 0
+      //   percent      → pay_to_book, deposit_percentage, deposit_amount=computed
+      //   flat         → pay_to_book, deposit_amount, deposit_percentage=0
+      let depositPayload;
+      if (!blankForm.deposit_required) {
+        depositPayload = { booking_mode: 'regular', deposit_percentage: 0, deposit_amount: 0 };
+      } else if (blankForm.deposit_mode === 'flat') {
+        const flat = Math.max(0, Math.min(parseFloat(blankForm.deposit_amount) || 0, total));
+        depositPayload = { booking_mode: 'pay_to_book', deposit_percentage: 0, deposit_amount: flat };
+      } else {
+        const pct = Math.max(0, Math.min(parseFloat(blankForm.deposit_percentage) || 0, 100));
+        const computed = Math.round(total * pct) / 100;
+        depositPayload = { booking_mode: 'pay_to_book', deposit_percentage: pct, deposit_amount: computed };
+      }
       const res = await fetch('/api/invoices', {
         method: 'POST',
         headers: headers(),
@@ -777,6 +812,7 @@ function InvoicesPageInner() {
           service_date: blankForm.service_date || null,
           issued_date: blankForm.issued_date || null,
           due_date: blankForm.due_date || null,
+          ...depositPayload,
           line_items: lineItems,
           total,
           net_terms: blankForm.net_terms || 30,
@@ -1935,11 +1971,103 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                   })}
                   className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none" />
               </div>
-              <div>
-                <label className="block text-xs text-v-text-secondary mb-1">Notes</label>
-                <input value={blankForm.notes} onChange={e => setBlankForm(f => ({ ...f, notes: e.target.value }))}
-                  placeholder="Optional" className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none" />
-              </div>
+              <div></div>
+            </div>
+
+            {/* Deposit (optional). Per-invoice override of the detailer's
+                booking_mode default. Free tier: section visible but locked
+                with an Upgrade affordance — server gate enforces too. */}
+            {(() => {
+              const planNow = (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('vector_user') || '{}'))?.plan || 'free';
+              const isAdminNow = (typeof window !== 'undefined' && JSON.parse(localStorage.getItem('vector_user') || '{}'))?.is_admin === true;
+              const tierAllowsDeposit = isAdminNow || ['pro', 'business', 'enterprise'].includes(planNow);
+              const total = blankSelectedServices.reduce((s, id) => {
+                const svc = blankServices.find(x => x.id === id);
+                if (!svc) return s;
+                const hrs = blankHourOverrides[id] !== undefined ? blankHourOverrides[id] : getBlankDefaultHours(svc);
+                const rate = parseFloat(svc.hourly_rate) || 0;
+                return s + ((parseFloat(hrs) || 0) * rate);
+              }, 0) + blankCustomLines.reduce((s, cl) => s + (parseFloat(cl.hours) || 0) * (parseFloat(cl.rate) || 0), 0);
+              const depositValue = !blankForm.deposit_required ? 0
+                : blankForm.deposit_mode === 'flat'
+                  ? Math.max(0, Math.min(parseFloat(blankForm.deposit_amount) || 0, total))
+                  : Math.round(total * (parseFloat(blankForm.deposit_percentage) || 0)) / 100;
+              const balanceValue = Math.max(0, total - depositValue);
+              const dueLabel = blankForm.due_date
+                ? new Date(blankForm.due_date + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                : 'due date';
+              return (
+                <div className="mb-4 p-3 border border-v-border rounded">
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <label className={`flex items-center gap-2 text-sm ${tierAllowsDeposit ? 'text-v-text-primary cursor-pointer' : 'text-v-text-secondary cursor-not-allowed'}`}>
+                      <input type="checkbox"
+                        checked={!!blankForm.deposit_required}
+                        disabled={!tierAllowsDeposit}
+                        onChange={e => setBlankForm(f => ({ ...f, deposit_required: e.target.checked }))}
+                        className="w-4 h-4 rounded accent-v-gold" />
+                      <span>Require deposit</span>
+                    </label>
+                    {!tierAllowsDeposit && (
+                      <a href="/settings#billing" className="text-xs text-v-gold hover:underline">Upgrade to Pro to require deposits</a>
+                    )}
+                  </div>
+                  {tierAllowsDeposit && blankForm.deposit_required && (
+                    <div className="space-y-2">
+                      <div className="flex items-center gap-3 text-xs text-v-text-secondary">
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="radio" name="deposit_mode" value="percent"
+                            checked={blankForm.deposit_mode === 'percent'}
+                            onChange={() => setBlankForm(f => ({ ...f, deposit_mode: 'percent' }))}
+                            className="accent-v-gold" />
+                          Percent
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="radio" name="deposit_mode" value="flat"
+                            checked={blankForm.deposit_mode === 'flat'}
+                            onChange={() => setBlankForm(f => ({ ...f, deposit_mode: 'flat' }))}
+                            className="accent-v-gold" />
+                          Flat amount
+                        </label>
+                      </div>
+                      {blankForm.deposit_mode === 'percent' ? (
+                        <div className="flex items-center gap-2">
+                          <input type="number" min="1" max="100" step="1"
+                            value={blankForm.deposit_percentage}
+                            onChange={e => {
+                              const raw = parseFloat(e.target.value);
+                              const n = Number.isNaN(raw) ? 0 : Math.max(0, Math.min(100, raw));
+                              setBlankForm(f => ({ ...f, deposit_percentage: n }));
+                            }}
+                            className="w-24 bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none" />
+                          <span className="text-sm text-v-text-secondary">%</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-v-text-secondary">{sym}</span>
+                          <input type="number" min="0" step="0.01"
+                            value={blankForm.deposit_amount}
+                            onChange={e => {
+                              const raw = parseFloat(e.target.value);
+                              const n = Number.isNaN(raw) || raw < 0 ? 0 : raw;
+                              setBlankForm(f => ({ ...f, deposit_amount: n }));
+                            }}
+                            className="w-32 bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none" />
+                        </div>
+                      )}
+                      <p className="text-xs text-v-text-secondary mt-2">
+                        Customer pays <strong className="text-v-gold">{sym}{formatPrice(depositValue)}</strong> on booking,
+                        balance <strong className="text-v-text-primary">{sym}{formatPrice(balanceValue)}</strong> due by {dueLabel}.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+
+            <div className="mb-4">
+              <label className="block text-xs text-v-text-secondary mb-1">Notes</label>
+              <input value={blankForm.notes} onChange={e => setBlankForm(f => ({ ...f, notes: e.target.value }))}
+                placeholder="Optional" className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none" />
             </div>
 
             <p className="text-xs text-v-text-secondary mb-2 text-center">Saving creates a <strong className="text-white">draft</strong> — the customer is not emailed until you click Send.</p>
