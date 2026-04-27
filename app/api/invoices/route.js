@@ -90,10 +90,60 @@ export async function POST(request) {
       issued_date: body_issued_date,
       due_date: body_due_date,
       service_date: body_service_date,
+      booking_mode: body_booking_mode,
+      deposit_percentage: body_deposit_pct,
+      deposit_amount: body_deposit_amount,
     } = body;
 
     if (!customer_name || !customer_email || !line_items || !total) {
       return Response.json({ error: 'Missing required fields: customer_name, customer_email, line_items, total' }, { status: 400 });
+    }
+
+    // Tier gate + validation for deposit fields. Allow writes that don't
+    // touch deposit fields at all (e.g. Free-tier draft creates without
+    // deposits) — only block when free-tier tries to set deposit_*.
+    const totalNum = parseFloat(total) || 0;
+    let validBookingMode = null;
+    let validDepositPct = 0;
+    let validDepositAmount = 0;
+    const depositTouched = body_booking_mode !== undefined
+      || body_deposit_pct !== undefined
+      || body_deposit_amount !== undefined;
+    if (depositTouched) {
+      const { data: detailerRow } = await supabase
+        .from('detailers')
+        .select('plan, is_admin')
+        .eq('id', user.id)
+        .single();
+      const plan = detailerRow?.plan || 'free';
+      const isAdmin = detailerRow?.is_admin === true;
+      const wantsDeposit = body_booking_mode === 'pay_to_book'
+        || (parseFloat(body_deposit_pct) || 0) > 0
+        || (parseFloat(body_deposit_amount) || 0) > 0;
+      if (wantsDeposit && plan === 'free' && !isAdmin) {
+        return Response.json({ error: 'Deposits require a Pro plan or higher.' }, { status: 403 });
+      }
+      if (body_booking_mode != null && !['regular', 'pay_to_book'].includes(body_booking_mode)) {
+        return Response.json({ error: 'Invalid booking_mode (expected regular or pay_to_book).' }, { status: 400 });
+      }
+      validBookingMode = body_booking_mode || (wantsDeposit ? 'pay_to_book' : 'regular');
+      const pctNum = parseFloat(body_deposit_pct);
+      if (!Number.isNaN(pctNum)) {
+        if (pctNum < 0 || pctNum > 100) {
+          return Response.json({ error: 'deposit_percentage must be between 0 and 100.' }, { status: 400 });
+        }
+        validDepositPct = pctNum;
+      }
+      const amtNum = parseFloat(body_deposit_amount);
+      if (!Number.isNaN(amtNum)) {
+        if (amtNum < 0) {
+          return Response.json({ error: 'deposit_amount must be >= 0.' }, { status: 400 });
+        }
+        if (totalNum > 0 && amtNum > totalNum) {
+          return Response.json({ error: 'deposit_amount cannot exceed total.' }, { status: 400 });
+        }
+        validDepositAmount = amtNum;
+      }
     }
 
     // Check for existing invoice for this job — prevent duplicates
@@ -150,6 +200,12 @@ export async function POST(request) {
       share_link,
       issued_date,
       due_date,
+      // Deposit fields — persisted only when the client touched them.
+      // Server-validated above; column-stripping retry below handles older
+      // deploys that don't have the columns yet.
+      booking_mode: depositTouched ? (validBookingMode || 'regular') : 'regular',
+      deposit_percentage: depositTouched ? validDepositPct : 0,
+      deposit_amount: depositTouched ? validDepositAmount : 0,
       // service_date = the day the work was actually performed. Optional;
       // null when the client didn't send it (e.g. older clients that haven't
       // been updated yet, or the "convert job → invoice" path). Column is

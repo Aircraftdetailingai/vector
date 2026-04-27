@@ -71,6 +71,7 @@ export async function PATCH(request, { params }) {
       'net_terms', 'due_date', 'issued_date', 'amount_paid', 'balance_due',
       'discount_type', 'discount_value', 'discount_amount', 'discount_reason',
       'show_mailing_address', 'show_ach_info',
+      'booking_mode', 'deposit_percentage', 'deposit_amount',
     ];
 
     const updates = {};
@@ -82,6 +83,49 @@ export async function PATCH(request, { params }) {
 
     if (Object.keys(updates).length === 0) {
       return Response.json({ error: 'No valid fields to update' }, { status: 400 });
+    }
+
+    // Tier gate + validation if deposit fields are being touched. Free-tier
+    // detailers can still PATCH non-deposit fields freely; only block when
+    // they try to enable a deposit.
+    const depositTouched = updates.booking_mode !== undefined
+      || updates.deposit_percentage !== undefined
+      || updates.deposit_amount !== undefined;
+    if (depositTouched) {
+      const { data: detailerRow } = await supabase
+        .from('detailers')
+        .select('plan, is_admin')
+        .eq('id', user.id)
+        .single();
+      const plan = detailerRow?.plan || 'free';
+      const isAdmin = detailerRow?.is_admin === true;
+      const wantsDeposit = updates.booking_mode === 'pay_to_book'
+        || (parseFloat(updates.deposit_percentage) || 0) > 0
+        || (parseFloat(updates.deposit_amount) || 0) > 0;
+      if (wantsDeposit && plan === 'free' && !isAdmin) {
+        return Response.json({ error: 'Deposits require a Pro plan or higher.' }, { status: 403 });
+      }
+      if (updates.booking_mode != null && !['regular', 'pay_to_book'].includes(updates.booking_mode)) {
+        return Response.json({ error: 'Invalid booking_mode (expected regular or pay_to_book).' }, { status: 400 });
+      }
+      if (updates.deposit_percentage != null) {
+        const pct = parseFloat(updates.deposit_percentage);
+        if (Number.isNaN(pct) || pct < 0 || pct > 100) {
+          return Response.json({ error: 'deposit_percentage must be between 0 and 100.' }, { status: 400 });
+        }
+        updates.deposit_percentage = pct;
+      }
+      if (updates.deposit_amount != null) {
+        const amt = parseFloat(updates.deposit_amount);
+        if (Number.isNaN(amt) || amt < 0) {
+          return Response.json({ error: 'deposit_amount must be >= 0.' }, { status: 400 });
+        }
+        const totalForCheck = updates.total != null ? parseFloat(updates.total) : null;
+        if (totalForCheck != null && totalForCheck > 0 && amt > totalForCheck) {
+          return Response.json({ error: 'deposit_amount cannot exceed total.' }, { status: 400 });
+        }
+        updates.deposit_amount = amt;
+      }
     }
 
     // Editing an invoice the customer has already viewed invalidates their view;

@@ -9,6 +9,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { DEFAULT_PRODUCT_RATIOS, SERVICE_TYPE_LABELS } from '../../lib/product-calculator';
 import { setUserCurrency, STRIPE_COUNTRIES } from '@/lib/currency';
 import { currencySymbol } from '@/lib/formatPrice';
+import MarkdownLite from '@/components/MarkdownLite';
 import { restartTour } from '@/components/DashboardTour';
 import { useTranslation, LANGUAGES } from '@/lib/i18n';
 import { generateThemeFromPrimary, applyFullTheme } from '@/lib/theme';
@@ -189,6 +190,11 @@ function SettingsShell({ bucket: activeBucket = null }) {
   // Terms & Conditions state
   const [termsText, setTermsText] = useState('');
   const [termsPdfUrl, setTermsPdfUrl] = useState(null);
+  // Platform-level legal terms — auto-included above each detailer's own
+  // terms on customer-facing share-link pages. Shown read-only here so
+  // detailers see what's stacked above their terms.
+  const [platformTerms, setPlatformTerms] = useState(null);
+  const [platformTermsExpanded, setPlatformTermsExpanded] = useState(false);
   const [termsUpdatedAt, setTermsUpdatedAt] = useState(null);
   const [termsSaving, setTermsSaving] = useState(false);
   const [termsUploading, setTermsUploading] = useState(false);
@@ -375,6 +381,11 @@ function SettingsShell({ bucket: activeBucket = null }) {
         if (data.terms_pdf_url) setTermsPdfUrl(data.terms_pdf_url);
         if (data.terms_updated_at) setTermsUpdatedAt(data.terms_updated_at);
       }).catch(() => {});
+      // Fetch platform legal terms (read-only display above detailer editor)
+      fetch('/api/platform-terms/active')
+        .then(r => r.ok ? r.json() : null)
+        .then(d => { if (d?.terms) setPlatformTerms(d.terms); })
+        .catch(() => {});
 
     return () => {
       window.removeEventListener('vector-user-updated', onUserUpdated);
@@ -2603,7 +2614,9 @@ function SettingsShell({ bucket: activeBucket = null }) {
             const plan = user?.plan || 'free';
             const isAdmin = user?.is_admin;
             const canBookLater = isAdmin || plan === 'pro' || plan === 'business' || plan === 'enterprise';
-            const canDeposit = isAdmin || plan === 'business' || plan === 'enterprise';
+            // Deposits loosened from Business+ → Pro+ to match the new
+            // pricing-page promise. Free tier still locked.
+            const canDeposit = isAdmin || plan === 'pro' || plan === 'business' || plan === 'enterprise';
             return (
             <div className="space-y-3">
               <label
@@ -2665,7 +2678,7 @@ function SettingsShell({ bucket: activeBucket = null }) {
                   <p className="font-medium text-v-text-primary">Deposit to Book</p>
                   <p className="text-sm text-v-text-secondary">Customer pays a percentage upfront to hold their date. You invoice the remainder after completion.</p>
                   {!canDeposit && (
-                    <a href="/settings#billing" className="text-xs text-v-gold hover:underline mt-1 inline-block">Available on Business — Upgrade</a>
+                    <a href="/settings#billing" className="text-xs text-v-gold hover:underline mt-1 inline-block">Available on Pro — Upgrade</a>
                   )}
                 </div>
               </div>
@@ -3196,6 +3209,39 @@ function SettingsShell({ bucket: activeBucket = null }) {
         /* Terms & Conditions */
         <div className="pb-6 mb-2">
           <h3 className="text-xs font-medium uppercase tracking-widest text-v-gold mb-4 pb-2 border-b border-v-gold/20">Terms & Conditions</h3>
+
+          {/* Platform-level terms (read-only). Stacked above the detailer's
+              own terms on customer-facing share-link pages. Detailers cannot
+              edit this — it's set by the platform admin via the
+              platform_legal_versions table. */}
+          {platformTerms && (
+            <div className="mb-6 p-4 bg-v-charcoal border border-v-border rounded-sm">
+              <div className="flex items-start justify-between gap-3 mb-2">
+                <div>
+                  <p className="text-sm font-semibold text-v-text-primary">Shiny Jets Platform Terms (auto-included)</p>
+                  <p className="text-xs text-v-text-secondary mt-0.5">
+                    Version {platformTerms.version}{platformTerms.effective_at ? ` · effective ${new Date(platformTerms.effective_at).toLocaleDateString()}` : ''}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPlatformTermsExpanded(v => !v)}
+                  className="text-xs text-v-gold hover:underline shrink-0"
+                >
+                  {platformTermsExpanded ? 'Collapse' : 'View'}
+                </button>
+              </div>
+              <p className="text-xs text-v-text-secondary/80 mb-2">
+                These terms are automatically shown to your customers above your own terms and conditions. You cannot edit them.
+              </p>
+              {platformTermsExpanded && (
+                <div className="mt-3 p-3 bg-v-surface border border-v-border-subtle rounded-sm max-h-80 overflow-y-auto text-v-text-primary">
+                  <MarkdownLite source={platformTerms.body_md} />
+                </div>
+              )}
+            </div>
+          )}
+
           <p className="text-sm text-v-text-secondary mb-4">
             Upload your business terms and conditions. Customers must agree before accepting a quote.
           </p>

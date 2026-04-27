@@ -51,8 +51,10 @@ export async function POST(request) {
   if (booking_mode === 'book_later' && plan === 'free' && !isAdmin) {
     return new Response(JSON.stringify({ error: 'Book Now, Pay Later requires Pro plan or above' }), { status: 403 });
   }
-  if (booking_mode === 'deposit' && !['business', 'enterprise'].includes(plan) && !isAdmin) {
-    return new Response(JSON.stringify({ error: 'Deposit to Book requires Business plan or above' }), { status: 403 });
+  // Deposits loosened to Pro+ to match the new pricing-page promise.
+  // Free tier still blocked.
+  if (booking_mode === 'deposit' && !['pro', 'business', 'enterprise'].includes(plan) && !isAdmin) {
+    return new Response(JSON.stringify({ error: 'Deposits require a Pro plan or higher.' }), { status: 403 });
   }
 
   const updates = { booking_mode };

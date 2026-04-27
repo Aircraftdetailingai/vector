@@ -99,6 +99,29 @@ export async function PUT(request, { params }) {
     return new Response(JSON.stringify(quote), { status: 200 });
   }
 
+  // Tier gate: free-tier detailers can't enable a deposit on a quote. Only
+  // block when the body actually attempts to set deposit fields — Free
+  // updates that omit deposit fields entirely should pass through.
+  const depositTouched = filteredBody.booking_mode !== undefined
+    || filteredBody.deposit_percentage !== undefined
+    || filteredBody.deposit_amount !== undefined;
+  if (depositTouched) {
+    const { data: planRow } = await supabase
+      .from('detailers')
+      .select('plan, is_admin')
+      .eq('id', user.id)
+      .single();
+    const plan = planRow?.plan || 'free';
+    const isAdmin = planRow?.is_admin === true;
+    const wantsDeposit = filteredBody.booking_mode === 'pay_to_book'
+      || filteredBody.booking_mode === 'deposit'
+      || (parseFloat(filteredBody.deposit_percentage) || 0) > 0
+      || (parseFloat(filteredBody.deposit_amount) || 0) > 0;
+    if (wantsDeposit && plan === 'free' && !isAdmin) {
+      return new Response(JSON.stringify({ error: 'Deposits require a Pro plan or higher.' }), { status: 403 });
+    }
+  }
+
   const { data, error } = await supabase.from('quotes').update(filteredBody).eq('id', id).select().single();
   if (error) {
     return new Response(JSON.stringify({ error: error.message }), { status: 500 });

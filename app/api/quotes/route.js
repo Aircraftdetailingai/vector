@@ -231,6 +231,29 @@ export async function POST(request) {
     const effectiveDepositAmt = deposit_amount != null ? parseFloat(deposit_amount) : null;
     const effectivePaymentMethod = payment_method ?? null;
 
+    // Tier gate: free-tier detailers can't enable deposits. Only block when
+    // the body actually attempts to set deposit fields — Free creates that
+    // omit deposit fields entirely should pass through.
+    const depositTouched = booking_mode !== undefined
+      || deposit_percentage !== undefined
+      || deposit_amount !== undefined;
+    if (depositTouched) {
+      const { data: planRow } = await supabase
+        .from('detailers')
+        .select('plan, is_admin')
+        .eq('id', user.id)
+        .single();
+      const plan = planRow?.plan || 'free';
+      const isAdmin = planRow?.is_admin === true;
+      const wantsDeposit = booking_mode === 'pay_to_book'
+        || booking_mode === 'deposit'
+        || (parseFloat(deposit_percentage) || 0) > 0
+        || (parseFloat(deposit_amount) || 0) > 0;
+      if (wantsDeposit && plan === 'free' && !isAdmin) {
+        return Response.json({ error: 'Deposits require a Pro plan or higher.' }, { status: 403 });
+      }
+    }
+
     // Validate: need at minimum an aircraft type or model, and some price
     const hasAircraft = aircraft_type || aircraft_model;
     const hasServices = services || (selected_services && selected_services.length > 0) || (line_items && line_items.length > 0);
