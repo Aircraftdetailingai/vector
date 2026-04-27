@@ -23,7 +23,15 @@ export async function POST(request, { params }) {
     if (!supabase) return Response.json({ error: 'Database not configured' }, { status: 500 });
 
     const { id } = await params;
-    const { share_link, method } = await request.json();
+    const reqBody = await request.json();
+    const { share_link, method } = reqBody || {};
+    // payment_type drives whether we charge the full balance, just the
+    // deposit slice, or the remaining balance after deposit. Defaults to
+    // 'full' to preserve historical behavior. Webhook reads this from
+    // session.metadata to decide which status transition to apply.
+    const paymentType = (reqBody?.payment_type === 'deposit' || reqBody?.payment_type === 'balance')
+      ? reqBody.payment_type
+      : 'full';
 
     if (!share_link) {
       return Response.json({ error: 'share_link is required' }, { status: 400 });
@@ -43,6 +51,12 @@ export async function POST(request, { params }) {
 
     if (invoice.status === 'paid') {
       return Response.json({ error: 'Invoice already paid' }, { status: 400 });
+    }
+    if (paymentType === 'deposit' && invoice.status === 'deposit_paid') {
+      return Response.json({ error: 'Deposit already paid for this invoice' }, { status: 400 });
+    }
+    if (paymentType === 'balance' && invoice.status !== 'deposit_paid') {
+      return Response.json({ error: 'Cannot pay balance — deposit has not been paid yet' }, { status: 400 });
     }
 
     // Fetch detailer for Stripe keys, plan, and CC fee pass-through mode
@@ -74,11 +88,42 @@ export async function POST(request, { params }) {
       }
     }
 
-    // Build line items from invoice
+    // Build line items from invoice. For deposit / balance payments, collapse
+    // to a single labeled line item at the slice amount instead of itemizing —
+    // customer would otherwise see line items totaling more than the slice.
     const invoiceLineItems = Array.isArray(invoice.line_items) ? invoice.line_items : [];
     let stripeLineItems;
+    const totalDollars = parseFloat(invoice.total) || 0;
+    const depositDollars = parseFloat(invoice.deposit_amount) || 0;
+    const amountPaidDollars = parseFloat(invoice.amount_paid) || 0;
 
-    if (invoiceLineItems.length > 0) {
+    if (paymentType === 'deposit') {
+      const sliceCents = Math.round(depositDollars * 100);
+      stripeLineItems = [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Deposit${invoice.aircraft_model ? ` - ${invoice.aircraft_model}` : ''}`,
+            description: `From ${detailer?.company || 'Service Provider'}`,
+          },
+          unit_amount: sliceCents,
+        },
+        quantity: 1,
+      }];
+    } else if (paymentType === 'balance') {
+      const sliceCents = Math.round(Math.max(0, totalDollars - amountPaidDollars) * 100);
+      stripeLineItems = [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: `Balance${invoice.aircraft_model ? ` - ${invoice.aircraft_model}` : ''}`,
+            description: `From ${detailer?.company || 'Service Provider'}`,
+          },
+          unit_amount: sliceCents,
+        },
+        quantity: 1,
+      }];
+    } else if (invoiceLineItems.length > 0) {
       stripeLineItems = invoiceLineItems.map(item => ({
         price_data: {
           currency: 'usd',
@@ -98,7 +143,7 @@ export async function POST(request, { params }) {
             name: `Invoice${invoice.aircraft_model ? ` - ${invoice.aircraft_model}` : ''}`,
             description: `From ${detailer?.company || 'Service Provider'}`,
           },
-          unit_amount: Math.round((invoice.total || 0) * 100),
+          unit_amount: Math.round(totalDollars * 100),
         },
         quantity: 1,
       }];
@@ -144,6 +189,10 @@ export async function POST(request, { params }) {
         invoice_id: invoice.id,
         detailer_id: invoice.detailer_id,
         type: 'invoice',
+        // payment_type tells the webhook which status transition to apply.
+        // 'deposit' → status='deposit_paid', 'balance' → status='paid',
+        // 'full' → status='paid'. See app/api/stripe/webhook/route.js.
+        payment_type: paymentType,
       },
     };
     if (method === 'us_bank_account') {

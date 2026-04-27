@@ -52,26 +52,67 @@ async function markInvoicePaidFromSession(supabase, session, eventTypeLabel) {
     return;
   }
 
-  const amountPaid = typeof session.amount_total === 'number'
+  // payment_type drives the status transition:
+  //   'deposit' → status='deposit_paid', amount_paid += slice, paid_at NULL
+  //   'balance' → status='paid', amount_paid = total, balance_due = 0
+  //   'full' / unset → status='paid', amount_paid = slice, balance_due = 0
+  const paymentType = session.metadata?.payment_type || 'full';
+  const totalDollars = parseFloat(invoice.total) || 0;
+  const sliceDollars = typeof session.amount_total === 'number'
     ? session.amount_total / 100
-    : (parseFloat(invoice.total) || 0);
+    : totalDollars;
+  const priorAmountPaid = parseFloat(invoice.amount_paid) || 0;
 
-  const { error: updateErr } = await supabase
-    .from('invoices')
-    .update({
+  let updates;
+  if (paymentType === 'deposit') {
+    // Idempotent re-check: if we already flipped to deposit_paid (e.g. duplicate
+    // event squeaked past the webhook_logs guard), skip.
+    if (invoice.status === 'deposit_paid') {
+      console.log(`[stripe webhook ${eventTypeLabel}] Invoice ${invoice.id} already deposit_paid — idempotent skip`);
+      return;
+    }
+    const newAmountPaid = Math.round((priorAmountPaid + sliceDollars) * 100) / 100;
+    const newBalance = Math.max(0, Math.round((totalDollars - newAmountPaid) * 100) / 100);
+    updates = {
+      status: 'deposit_paid',
+      amount_paid: newAmountPaid,
+      balance_due: newBalance,
+      stripe_payment_intent_id: session.payment_intent || null,
+      updated_at: new Date().toISOString(),
+    };
+  } else if (paymentType === 'balance') {
+    updates = {
       status: 'paid',
-      amount_paid: amountPaid,
+      amount_paid: totalDollars,
       balance_due: 0,
       paid_at: new Date().toISOString(),
       stripe_payment_intent_id: session.payment_intent || null,
       updated_at: new Date().toISOString(),
-    })
+    };
+  } else {
+    // 'full' (or unset) — original behavior preserved.
+    updates = {
+      status: 'paid',
+      amount_paid: sliceDollars,
+      balance_due: 0,
+      paid_at: new Date().toISOString(),
+      stripe_payment_intent_id: session.payment_intent || null,
+      updated_at: new Date().toISOString(),
+    };
+  }
+
+  const { error: updateErr } = await supabase
+    .from('invoices')
+    .update(updates)
     .eq('id', invoice.id);
 
   if (updateErr) {
-    console.error(`[stripe webhook ${eventTypeLabel}] Failed to mark invoice ${invoice.id} paid:`, updateErr.message);
+    console.error(`[stripe webhook ${eventTypeLabel}] Failed to mark invoice ${invoice.id}:`, updateErr.message);
     return;
   }
+  // For local downstream side effects, treat the dollar-value of THIS
+  // payment slice as the amount.
+  const amountPaid = sliceDollars;
 
   // Side effects. Best-effort — each wrapped so a single failure doesn't
   // break the rest. Email requires the invoice's share_link for the portal
