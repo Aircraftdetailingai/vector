@@ -2,11 +2,14 @@ import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 function getSupabase() {
   return createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
+    { global: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) } },
   );
 }
 
@@ -101,5 +104,5 @@ export async function PATCH(request, { params }) {
     return Response.json({ error: 'Failed to update job' }, { status: 500 });
   }
 
-  return Response.json({ success: true, job: updated });
+  return Response.json({ success: true, job: updated }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
 }

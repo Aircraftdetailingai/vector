@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import BarcodeScanner from '@/components/BarcodeScanner';
 import LanguageSelector from '@/components/LanguageSelector';
+import { useToast } from '@/components/Toast';
 import { useTranslation } from '@/lib/i18n';
 
 const API = (path, token, opts = {}) =>
@@ -11,6 +12,7 @@ const API = (path, token, opts = {}) =>
 export default function CrewDashboard() {
   const router = useRouter();
   const { t } = useTranslation();
+  const { success: toastSuccess, error: toastError } = useToast();
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [tab, setTab] = useState('jobs');
@@ -388,14 +390,16 @@ export default function CrewDashboard() {
       setProgressSaved(true);
       setSelectedJob(prev => prev ? { ...prev, progress_percentage: val, ...(markComplete ? { status: 'completed' } : {}) } : prev);
       if (markComplete) {
-        showMsg('Job marked complete!');
+        toastSuccess('Job marked complete');
         fetchJobs();
         setSelectedJob(null);
         return;
       }
+      toastSuccess(`Progress saved (${val}%)`);
       setTimeout(() => setProgressSaved(false), 2000);
     } catch {
       setProgressError(true);
+      toastError('Failed to save progress');
     } finally {
       setProgressSaving(false);
     }

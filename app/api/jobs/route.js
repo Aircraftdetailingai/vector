@@ -2,9 +2,18 @@ import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
+// Bypass Next's Data Cache on supabase-js's internal fetch — same fix as
+// d7b2d9e. Without this, freshly-saved job fields (e.g. progress_percentage)
+// can be served stale to other accounts reading the same row.
 function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
+    { global: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) } },
+  );
 }
 
 const JOB_STATUSES = ['paid', 'approved', 'accepted', 'scheduled', 'in_progress', 'completed'];
@@ -98,7 +107,7 @@ export async function GET(request) {
   };
 
   console.log(`[jobs] Returning ${jobs.length} jobs (${jobs.filter(j => j._source === 'jobs_table').length} from jobs table, ${jobs.filter(j => !j._source).length} from quotes)`);
-  return Response.json({ jobs, stats });
+  return Response.json({ jobs, stats }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
 }
 
 // POST - Record a job completion

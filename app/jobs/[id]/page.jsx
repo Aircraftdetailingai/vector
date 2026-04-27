@@ -1,13 +1,15 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import AppShell from '@/components/AppShell';
+import { useToast } from '@/components/Toast';
 import { formatPrice, currencySymbol } from '@/lib/formatPrice';
 
 export default function JobDetailPage() {
   const router = useRouter();
   const params = useParams();
   const jobId = params.id;
+  const { success: toastSuccess, error: toastError } = useToast();
 
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -71,6 +73,7 @@ export default function JobDetailPage() {
   // Edit job state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editForm, setEditForm] = useState({});
+  const [editFormInitial, setEditFormInitial] = useState({});
   const [savingEdit, setSavingEdit] = useState(false);
 
   // Dispatch / crew assignment state
@@ -82,7 +85,24 @@ export default function JobDetailPage() {
   const [dispatching, setDispatching] = useState(false);
   const [dispatchedToast, setDispatchedToast] = useState(false);
   const [planRequired, setPlanRequired] = useState(false);
-  const [savedFlash, setSavedFlash] = useState('');
+
+  const isEditFormDirty = useMemo(
+    () => JSON.stringify(editForm) !== JSON.stringify(editFormInitial),
+    [editForm, editFormInitial],
+  );
+
+  const tryCloseEditModal = () => {
+    if (isEditFormDirty && !window.confirm('You have unsaved changes. Discard?')) return;
+    setShowEditModal(false);
+  };
+
+  // Warn on tab close / browser back while edit modal is dirty
+  useEffect(() => {
+    if (!showEditModal || !isEditFormDirty) return;
+    const handler = (e) => { e.preventDefault(); e.returnValue = ''; };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [showEditModal, isEditFormDirty]);
 
   // Fetch dispatch board data scoped to this job
   const fetchAssignments = async (token) => {
@@ -206,7 +226,7 @@ export default function JobDetailPage() {
   };
 
   const openEditModal = () => {
-    setEditForm({
+    const initial = {
       customer_name: job.customer_name || job.client_name || '',
       customer_email: job.customer_email || job.client_email || '',
       customer_phone: job.customer_phone || job.client_phone || '',
@@ -223,7 +243,9 @@ export default function JobDetailPage() {
       total_price: job.total_price || '',
       completion_notes: job.completion_notes || job.notes || '',
       share_progress_with_customer: !!job.share_progress_with_customer,
-    });
+    };
+    setEditForm(initial);
+    setEditFormInitial(initial);
     setShowEditModal(true);
   };
 
@@ -244,16 +266,18 @@ export default function JobDetailPage() {
       if (res.ok) {
         // Optimistic update
         setJob(prev => prev ? { ...prev, ...editForm } : prev);
+        setEditFormInitial(editForm);
         setShowEditModal(false);
-        setSavedFlash('Saved');
-        setTimeout(() => setSavedFlash(''), 2000);
+        toastSuccess('Job updated');
         // Refresh data in background
         fetchJob(token);
       } else {
         const d = await res.json().catch(() => ({}));
+        toastError(d.error || 'Failed to save changes');
         setError(d.error || 'Failed to save changes');
       }
     } catch (err) {
+      toastError(err.message || 'Failed to save changes');
       setError(err.message);
     } finally {
       setSavingEdit(false);
@@ -574,10 +598,14 @@ export default function JobDetailPage() {
       setProgressSaved(true);
       if (markComplete && job) {
         setJob(prev => ({ ...prev, status: 'completed', completed_at: body.completed_at, progress_percentage: 100 }));
+        toastSuccess('Job marked complete');
+      } else {
+        toastSuccess(`Progress saved (${val}%)`);
       }
       setTimeout(() => setProgressSaved(false), 2000);
     } catch {
       setProgressError(true);
+      toastError('Failed to save progress');
     } finally {
       setProgressSaving(false);
     }
@@ -614,9 +642,6 @@ export default function JobDetailPage() {
   return (
     <AppShell title={`Job — ${job.tail_number || job.aircraft_model || 'Detail'}`}>
     <div className="px-6 md:px-10 py-8 pb-40 max-w-4xl">
-      {savedFlash && (
-        <div className="fixed top-4 right-4 z-[100] bg-emerald-500/10 border border-emerald-500/30 text-green-400 text-xs px-3 py-2 rounded shadow-lg">{`✓ ${savedFlash}`}</div>
-      )}
       {/* Header */}
       <div className="flex items-center justify-between mb-6">
         <div>
@@ -670,11 +695,16 @@ export default function JobDetailPage() {
         const removeEditService = (i) => setEditForm(p => ({ ...p, services: editServices.filter((_, j) => j !== i) }));
         const editTotal = editServices.reduce((s, sv) => s + (parseFloat(sv.price) || 0), 0);
         return (
-        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={() => setShowEditModal(false)}>
+        <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4" onClick={tryCloseEditModal}>
           <div onClick={e => e.stopPropagation()} className="bg-v-surface border border-v-border rounded-lg p-6 max-w-lg w-full max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-white font-semibold">Edit Job</h3>
-              <button onClick={() => setShowEditModal(false)} className="text-v-text-secondary hover:text-white text-xl leading-none">&times;</button>
+              <div className="flex items-center gap-2">
+                <h3 className="text-white font-semibold">Edit Job</h3>
+                {isEditFormDirty && (
+                  <span className="text-[10px] uppercase tracking-wider text-v-gold">Unsaved</span>
+                )}
+              </div>
+              <button onClick={tryCloseEditModal} className="text-v-text-secondary hover:text-white text-xl leading-none">&times;</button>
             </div>
 
             <div className="space-y-3">
@@ -799,7 +829,7 @@ export default function JobDetailPage() {
             </div>
 
             <div className="flex justify-end gap-3 mt-6">
-              <button onClick={() => setShowEditModal(false)} className="px-4 py-2 text-sm text-v-text-secondary border border-v-border rounded hover:bg-white/5">Cancel</button>
+              <button onClick={tryCloseEditModal} className="px-4 py-2 text-sm text-v-text-secondary border border-v-border rounded hover:bg-white/5">Cancel</button>
               <button onClick={handleSaveEdit} disabled={savingEdit} className="px-4 py-2 text-sm bg-v-gold text-v-charcoal font-semibold rounded hover:bg-v-gold-dim disabled:opacity-50">
                 {savingEdit ? 'Saving...' : 'Save Changes'}
               </button>

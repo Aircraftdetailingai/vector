@@ -2,9 +2,15 @@ import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 function getSupabase() {
-  return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY);
+  return createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
+    { global: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) } },
+  );
 }
 
 export async function POST(request, { params }) {
@@ -41,7 +47,7 @@ export async function POST(request, { params }) {
     let payload = { ...updates };
     for (let attempt = 0; attempt < 3; attempt++) {
       const { error } = await supabase.from('jobs').update(payload).eq('id', id).eq('detailer_id', detailerId);
-      if (!error) return Response.json({ success: true, ...updates });
+      if (!error) return Response.json({ success: true, ...updates }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
       const colMatch = error.message?.match(/column "([^"]+)".*does not exist/) || error.message?.match(/Could not find the '([^']+)' column/);
       if (colMatch) { delete payload[colMatch[1]]; continue; }
       console.error('[jobs/progress] jobs update error:', error.message);
@@ -55,7 +61,7 @@ export async function POST(request, { params }) {
     let payload = { ...updates };
     for (let attempt = 0; attempt < 3; attempt++) {
       const { error } = await supabase.from('quotes').update(payload).eq('id', id).eq('detailer_id', detailerId);
-      if (!error) return Response.json({ success: true, ...updates });
+      if (!error) return Response.json({ success: true, ...updates }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
       const colMatch = error.message?.match(/column "([^"]+)".*does not exist/) || error.message?.match(/Could not find the '([^']+)' column/);
       if (colMatch) { delete payload[colMatch[1]]; continue; }
       console.error('[jobs/progress] quotes update error:', error.message);
