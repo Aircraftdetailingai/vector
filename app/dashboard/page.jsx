@@ -459,7 +459,7 @@ function DashboardContent() {
                       <p className="text-v-text-primary text-sm truncate">{m.name}</p>
                       {isClocked ? (
                         <p className="text-green-400 text-[10px] truncate">
-                          {m.job_label || 'Working'} &middot; {elapsed}
+                          {m.tail_number ? `On ${m.tail_number}` : (m.job_label || 'Working')} &middot; {elapsed}
                         </p>
                       ) : (
                         <p className="text-v-text-secondary/50 text-[10px]">Not clocked in</p>
