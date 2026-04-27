@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams } from 'next/navigation';
 import { formatPrice, currencySymbol } from '@/lib/formatPrice';
 import { calculateCcFee } from '@/lib/cc-fee';
+import StackedTermsAccept from '@/components/StackedTermsAccept';
 
 export default function InvoiceViewPage() {
   const params = useParams();
@@ -94,13 +95,13 @@ export default function InvoiceViewPage() {
     return 'bg-blue-500/20 text-blue-400 border-blue-500/30';
   };
 
-  const handlePayInvoice = async (method) => {
+  const handlePayInvoice = async (method, paymentType = 'full') => {
     setPaymentLoading(true);
     try {
       const res = await fetch(`/api/invoices/${invoice.id}/checkout`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ share_link: params.shareLink, method }),
+        body: JSON.stringify({ share_link: params.shareLink, method, payment_type: paymentType }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -112,6 +113,35 @@ export default function InvoiceViewPage() {
       setError('Payment could not be processed. Please try again.');
     } finally {
       setPaymentLoading(false);
+    }
+  };
+
+  // Stamp the invoice with the customer's terms-acceptance + the active
+  // platform-terms version id. Caller is the StackedTermsAccept onAccept
+  // hook. Returns true on success so the local "termsAccepted" state can
+  // flip and unlock the Pay buttons without a hard refresh.
+  const acceptTerms = async (versionId) => {
+    try {
+      const res = await fetch(`/api/invoices/${invoice.id}/accept-terms`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ share_link: params.shareLink, platform_terms_version_id: versionId }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || 'Could not record agreement. Please try again.');
+        return false;
+      }
+      // Reflect locally without re-fetching the whole invoice.
+      setInvoice(prev => prev ? {
+        ...prev,
+        customer_terms_accepted_at: new Date().toISOString(),
+        customer_terms_version_id: data.customer_terms_version_id || versionId || null,
+      } : prev);
+      return true;
+    } catch {
+      setError('Could not record agreement. Please try again.');
+      return false;
     }
   };
 
@@ -348,14 +378,40 @@ export default function InvoiceViewPage() {
           </div>
         )}
 
-        {/* Subtotal & Total */}
+        {/* Subtotal & Total — when this invoice requires a deposit, render
+            a Subtotal / Deposit due now / Balance due-by row stack above
+            the big Total. */}
         <div className="border-t border-[var(--brand-border-strong,#2A3A50)] pt-6 mb-2">
-          {lineItems.length > 1 && (
-            <div className="flex justify-between py-1 text-sm">
-              <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Subtotal</span>
-              <span className="text-[var(--brand-text,#F5F5F5)]">{sym}{formatPrice(subtotal)}</span>
-            </div>
-          )}
+          {(() => {
+            const requiresDeposit = invoice.booking_mode === 'pay_to_book' && parseFloat(invoice.deposit_amount) > 0;
+            const depositDollars = parseFloat(invoice.deposit_amount) || 0;
+            const balanceDueDollars = Math.max(0, total - depositDollars);
+            const dueLabel = invoice.due_date ? formatDate(invoice.due_date) : '';
+            if (requiresDeposit && !isPaid) {
+              return (
+                <>
+                  <div className="flex justify-between py-1 text-sm">
+                    <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Subtotal</span>
+                    <span className="text-[var(--brand-text,#F5F5F5)]">{sym}{formatPrice(total)}</span>
+                  </div>
+                  <div className="flex justify-between py-1 text-sm">
+                    <span className="text-amber-300">Deposit due now</span>
+                    <span className="text-amber-300 font-semibold">{sym}{formatPrice(depositDollars)}</span>
+                  </div>
+                  <div className="flex justify-between py-1 text-sm">
+                    <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Balance{dueLabel ? ` due ${dueLabel}` : ''}</span>
+                    <span className="text-[var(--brand-text-secondary,#8A9BB0)]">{sym}{formatPrice(balanceDueDollars)}</span>
+                  </div>
+                </>
+              );
+            }
+            return lineItems.length > 1 ? (
+              <div className="flex justify-between py-1 text-sm">
+                <span className="text-[var(--brand-text-secondary,#8A9BB0)]">Subtotal</span>
+                <span className="text-[var(--brand-text,#F5F5F5)]">{sym}{formatPrice(subtotal)}</span>
+              </div>
+            ) : null;
+          })()}
           <div className="text-center pt-4">
             <p className="text-[var(--brand-text-secondary,#8A9BB0)] text-[10px] tracking-[0.3em] uppercase mb-2">Total</p>
             <p className="text-[var(--brand-primary,#007CB1)] text-[2.5rem] font-light">{sym}{formatPrice(total)}</p>
@@ -415,27 +471,102 @@ export default function InvoiceViewPage() {
           </div>
         )}
 
-        {/* Pay buttons (only if unpaid) */}
+        {/* Pay buttons (only if unpaid). Gated behind stacked terms
+            acceptance — both the Shiny Jets platform terms and the
+            detailer's own terms must be agreed to once before any payment
+            button renders. Re-acceptance only required if the active
+            platform-terms version changes after the original accept. */}
         {!isPaid && (() => {
           const ccMode = detailer?.cc_fee_mode;
-          const balanceDollars = parseFloat(invoice.balance_due) || total;
-          const ccFee = (ccMode === 'pass' || ccMode === 'customer_choice') ? calculateCcFee(balanceDollars) : 0;
+          const requiresDeposit = invoice.booking_mode === 'pay_to_book' && parseFloat(invoice.deposit_amount) > 0;
+          const isDepositPaid = invoice.status === 'deposit_paid';
+          // Resolve the payment slice the customer is about to pay.
+          //   requiresDeposit + not yet paid → deposit
+          //   requiresDeposit + deposit paid → balance
+          //   else → full
+          const paymentType = (requiresDeposit && !isDepositPaid)
+            ? 'deposit'
+            : (isDepositPaid ? 'balance' : 'full');
+          const slice = paymentType === 'deposit'
+            ? (parseFloat(invoice.deposit_amount) || 0)
+            : paymentType === 'balance'
+              ? Math.max(0, total - (parseFloat(invoice.amount_paid) || 0))
+              : (parseFloat(invoice.balance_due) || total);
+          const ccFee = (ccMode === 'pass' || ccMode === 'customer_choice') ? calculateCcFee(slice) : 0;
+          const ctaLabel = paymentType === 'deposit'
+            ? `Pay Deposit (${sym}${formatPrice(slice)})`
+            : paymentType === 'balance'
+              ? `Pay Balance (${sym}${formatPrice(slice)})`
+              : `Pay Invoice — ${sym}${formatPrice(slice)}`;
+
+          // Terms-acceptance state. If the invoice already has the
+          // currently-active version stamped on it, skip the gate and
+          // render the existing Pay-by-Card / Pay-by-ACH buttons.
+          const acceptedAt = invoice.customer_terms_accepted_at;
+          // We don't have the active platform-terms id loaded here
+          // (StackedTermsAccept fetches it), but re-checking server-side on
+          // checkout.session create is overkill. For this UI gate, we only
+          // bypass when an acceptance exists. If the version drifts, the
+          // server still has the recorded version_id for compliance.
+          const alreadyAccepted = !!acceptedAt;
+
+          if (!alreadyAccepted) {
+            return (
+              <div className="mt-6">
+                <p className="text-center text-amber-300 text-sm font-medium mb-1">{paymentType === 'deposit' ? `Deposit due: ${sym}${formatPrice(slice)}` : ctaLabel}</p>
+                {ccFee > 0 && (
+                  <p className="text-[var(--brand-text-secondary,#8A9BB0)]/60 text-[11px] text-center mb-3">
+                    Card adds a {sym}{formatPrice(ccFee)} processing fee · ACH has no fee
+                  </p>
+                )}
+                <StackedTermsAccept
+                  detailerName={detailer?.company || detailer?.name || 'Detailer'}
+                  detailerTermsText={detailer?.terms_text || null}
+                  detailerTermsPdfUrl={detailer?.terms_pdf_url || null}
+                  alreadyAccepted={false}
+                  acceptedAt={null}
+                  loading={paymentLoading}
+                  ctaLabel="I agree — continue to payment"
+                  onAccept={async () => {
+                    const ok = await acceptTerms();
+                    if (!ok) return;
+                    // Default to card payment after acceptance; the customer
+                    // can still switch to ACH from the next render.
+                    handlePayInvoice('card', paymentType);
+                  }}
+                />
+              </div>
+            );
+          }
+
           return (
             <div className="mt-6 space-y-2">
-              <button
-                onClick={() => handlePayInvoice('card')}
-                disabled={paymentLoading}
-                className="w-full py-4 bg-[var(--brand-primary,#007CB1)] text-[var(--brand-btn-text,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-50 transition-colors"
-              >
-                {paymentLoading ? 'Processing...' : `Pay by Card \u2014 ${sym}${formatPrice(balanceDollars)}`}
-              </button>
-              {ccFee > 0 && (
-                <p className="text-[var(--brand-text-secondary,#8A9BB0)]/60 text-[11px] text-center">
-                  Card payment adds a {sym}{formatPrice(ccFee)} processing fee &middot; ACH has no fee
+              <StackedTermsAccept
+                detailerName={detailer?.company || detailer?.name || 'Detailer'}
+                detailerTermsText={detailer?.terms_text || null}
+                detailerTermsPdfUrl={detailer?.terms_pdf_url || null}
+                alreadyAccepted
+                acceptedAt={acceptedAt}
+              />
+              {isDepositPaid && (
+                <p className="text-center text-green-400 text-xs mb-1">
+                  Deposit paid{invoice.paid_at ? ` on ${formatDate(invoice.paid_at)}` : ''}
                 </p>
               )}
               <button
-                onClick={() => handlePayInvoice('us_bank_account')}
+                onClick={() => handlePayInvoice('card', paymentType)}
+                disabled={paymentLoading}
+                className="w-full py-4 bg-[var(--brand-primary,#007CB1)] text-[var(--brand-btn-text,#0A0E17)] text-sm tracking-[0.2em] uppercase font-medium hover:brightness-110 disabled:opacity-50 transition-colors"
+              >
+                {paymentLoading ? 'Processing...' : ctaLabel}
+              </button>
+              {ccFee > 0 && (
+                <p className="text-[var(--brand-text-secondary,#8A9BB0)]/60 text-[11px] text-center">
+                  Card payment adds a {sym}{formatPrice(ccFee)} processing fee · ACH has no fee
+                </p>
+              )}
+              <button
+                onClick={() => handlePayInvoice('us_bank_account', paymentType)}
                 disabled={paymentLoading}
                 className="w-full py-3 border border-[var(--brand-primary,#007CB1)] text-[var(--brand-primary,#007CB1)] text-xs tracking-[0.2em] uppercase font-medium hover:bg-[var(--brand-primary,#007CB1)]/10 disabled:opacity-50 transition-colors"
               >

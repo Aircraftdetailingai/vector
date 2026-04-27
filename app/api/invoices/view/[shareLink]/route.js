@@ -50,7 +50,7 @@ export async function GET(request, { params }) {
     const { data: detailer } = await supabase
       .from('detailers')
       .select([
-        'company', 'phone', 'email',
+        'company', 'phone', 'email', 'name',
         'logo_url', 'theme_logo_url',
         'portal_theme', 'theme_primary', 'theme_accent', 'theme_bg', 'theme_surface',
         'font_embed_url', 'font_heading', 'font_body',
@@ -59,6 +59,11 @@ export async function GET(request, { params }) {
         // processing fee near the Pay by Card button. Safe to expose — it's
         // non-secret policy state and the fee itself is added at Stripe.
         'cc_fee_mode',
+        // Detailer-authored terms — customer must agree before payment.
+        // terms_text is plain markdown; terms_pdf_url is an embeddable
+        // public URL. Both safe to expose — they're shown to customers
+        // anyway as part of acceptance.
+        'terms_text', 'terms_pdf_url',
       ].join(', '))
       .eq('id', invoice.detailer_id)
       .single();
