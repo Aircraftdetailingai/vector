@@ -77,7 +77,10 @@ async function markInvoicePaidFromSession(supabase, session, eventTypeLabel) {
       status: 'deposit_paid',
       amount_paid: newAmountPaid,
       balance_due: newBalance,
-      stripe_payment_intent_id: session.payment_intent || null,
+      // Store the deposit PI in its own column so the eventual balance
+      // payment doesn't overwrite it. stripe_payment_intent_id is reserved
+      // for the final/balance charge.
+      deposit_payment_intent_id: session.payment_intent || null,
       updated_at: new Date().toISOString(),
     };
   } else if (paymentType === 'balance') {
