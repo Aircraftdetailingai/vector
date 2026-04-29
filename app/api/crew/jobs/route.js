@@ -49,9 +49,12 @@ export async function GET(request) {
 
   // Step 2: Fetch quote-based jobs — lead techs see all, regular crew only see assigned
   try {
+    // progress_percentage lives ONLY on the jobs table — selecting it
+    // against quotes 400s the whole call. Quote-based jobs default to 0 in
+    // the merge below; tracking has only ever been wired to the jobs table.
     let quoteQuery = supabase
       .from('quotes')
-      .select(`id, aircraft_model, aircraft_type, tail_number, airport, scheduled_date, status, line_items, notes, created_at, progress_percentage${contactCols}`)
+      .select(`id, aircraft_model, aircraft_type, tail_number, airport, scheduled_date, status, line_items, notes, created_at${contactCols}`)
       .eq('detailer_id', user.detailer_id)
       .in('status', ['paid', 'accepted', 'scheduled', 'in_progress'])
       .order('scheduled_date', { ascending: true, nullsFirst: false });

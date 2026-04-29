@@ -20,7 +20,25 @@ export async function POST(request, { params }) {
   const { id } = await params;
   const body = await request.json();
   const supabase = getSupabase();
-  const detailerId = user.detailer_id || user.id;
+  // Resolve the owning detailer_id. Owner JWTs put the detailer's id in
+  // user.id directly. Crew JWTs put the team_member id in user.id and the
+  // detailer's id in user.detailer_id — but older crew sessions / any
+  // future auth path that doesn't persist detailer_id would fall through
+  // to user.id (a team_member uuid), which then fails the
+  // .eq('detailer_id', ...) gate below and 404s the save with no log
+  // entry the user can see. Derive from team_members as a fallback so the
+  // crew save survives a stale JWT.
+  let detailerId = user.detailer_id || null;
+  if (!detailerId && user.role === 'crew' && user.id) {
+    const { data: tm } = await supabase
+      .from('team_members')
+      .select('detailer_id')
+      .eq('id', user.id)
+      .maybeSingle();
+    detailerId = tm?.detailer_id || null;
+  }
+  if (!detailerId) detailerId = user.id; // owner-shaped JWT: id IS the detailer
+  console.log('[jobs/progress] resolved detailerId:', detailerId, 'role:', user.role || 'owner', 'user.id:', user.id);
 
   const updates = {};
   if (body.progress_percentage !== undefined) {
