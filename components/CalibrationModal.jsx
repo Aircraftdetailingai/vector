@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 
 const STANDARD_REFERENCES = [
   { value: 'wash', label: 'Wash (Maintenance Wash)' },
@@ -11,12 +11,44 @@ const STANDARD_REFERENCES = [
   { value: 'leather', label: 'Leather Conditioning' },
 ];
 
+// Reference type → aircraft_hours column for ratio-based calibration. The
+// downstream endpoint /api/services/calibrations applies the same adjustment_pct
+// across every row in the `aircraft` table (using its own column map). Here we
+// only need the anchor reference hours to compute the user's ratio; the column
+// names below mirror aircraft_hours.
+const ANCHOR_REF_COLUMN = {
+  wash: 'maintenance_wash_hrs',
+  polish: 'one_step_polish_hrs',
+  compound: 'one_step_polish_hrs',
+  wax: 'wax_hrs',
+  ceramic: 'ceramic_coating_hrs',
+  detail_interior: 'carpet_hrs',
+  leather: 'leather_hrs',
+};
+
 const INPUT_CLASS =
   'w-full bg-v-surface border border-v-border text-v-text-primary rounded-sm px-3 py-2 text-sm outline-none focus:border-v-gold/50';
 
-export default function CalibrationModal({ isOpen, onClose, service, detailerServices, calibrations }) {
+function anchorRefHours(anchor, refType) {
+  if (!anchor) return null;
+  const col = ANCHOR_REF_COLUMN[refType] || 'maintenance_wash_hrs';
+  const raw = anchor[col];
+  const num = typeof raw === 'number' ? raw : parseFloat(raw);
+  return Number.isFinite(num) && num > 0 ? num : null;
+}
+
+export default function CalibrationModal({
+  isOpen,
+  onClose,
+  service,
+  detailerServices,
+  calibrations,
+  anchorA,
+  anchorB,
+}) {
   const [referenceType, setReferenceType] = useState('polish');
-  const [adjustmentPct, setAdjustmentPct] = useState(0);
+  const [hoursA, setHoursA] = useState('');
+  const [hoursB, setHoursB] = useState('');
   const [preview, setPreview] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -24,23 +56,63 @@ export default function CalibrationModal({ isOpen, onClose, service, detailerSer
   const [error, setError] = useState('');
   const debounceRef = useRef(null);
 
+  const anchorALabel = anchorA ? `${anchorA.make || ''} ${anchorA.model || ''}`.trim() : 'Anchor A';
+  const anchorBLabel = anchorB ? `${anchorB.make || ''} ${anchorB.model || ''}`.trim() : 'Anchor B';
+
+  // Resolve the reference type used for both anchor lookup AND the existing
+  // POST endpoint. svc:<id> reference still works — POST resolves it server
+  // side via `services.hours_field`, but we need a "standard" type to anchor
+  // against. We pick a sensible fallback ('wash') for svc-typed references so
+  // the ratio still computes; users editing existing svc-typed rows see the
+  // anchor reference hours computed from that fallback.
+  const standardRefType = useMemo(() => {
+    if (referenceType.startsWith('svc:')) return 'wash';
+    return referenceType;
+  }, [referenceType]);
+
+  const refA = anchorRefHours(anchorA, standardRefType);
+  const refB = anchorRefHours(anchorB, standardRefType);
+
+  // Compute adjustment_pct from the ratio: (user avg) / (platform avg) - 1.
+  // Only count anchors with both a user-entered value AND a non-null reference
+  // hour for the chosen reference type — keeps the math resilient to
+  // aircraft_hours rows that don't have that specific column populated.
+  const userHoursA = parseFloat(hoursA);
+  const userHoursB = parseFloat(hoursB);
+  const validA = Number.isFinite(userHoursA) && userHoursA > 0 && refA != null;
+  const validB = Number.isFinite(userHoursB) && userHoursB > 0 && refB != null;
+  let computedPct = 0;
+  let computedReady = false;
+  if (validA && validB) {
+    const userAvg = (userHoursA + userHoursB) / 2;
+    const refAvg = (refA + refB) / 2;
+    computedPct = Math.round(((userAvg / refAvg) - 1) * 100);
+    computedReady = true;
+  } else if (validA) {
+    computedPct = Math.round(((userHoursA / refA) - 1) * 100);
+    computedReady = true;
+  } else if (validB) {
+    computedPct = Math.round(((userHoursB / refB) - 1) * 100);
+    computedReady = true;
+  }
+  const adjustmentPct = Math.max(-50, Math.min(200, computedPct));
+
   // Load saved calibration (or reset to defaults) when modal opens
   useEffect(() => {
     if (!isOpen) return;
     setSuccessMessage('');
     setError('');
-    // Look up existing calibration for this service
+    setHoursA('');
+    setHoursB('');
     const existing = (calibrations || []).find(c => c.service_id === service?.id);
     if (existing) {
       setReferenceType(existing.reference_service_type || 'polish');
-      setAdjustmentPct(existing.adjustment_pct ?? 0);
     } else {
       setReferenceType('polish');
-      setAdjustmentPct(0);
     }
   }, [isOpen, service?.id, calibrations]);
 
-  // Debounced preview fetch
+  // Debounced preview fetch — uses the computed adjustment_pct
   useEffect(() => {
     if (!isOpen) return;
     if (debounceRef.current) clearTimeout(debounceRef.current);
@@ -69,6 +141,10 @@ export default function CalibrationModal({ isOpen, onClose, service, detailerSer
 
   const handleSave = async () => {
     if (!service) return;
+    if (!computedReady) {
+      setError('Enter your actual hours for at least one anchor aircraft.');
+      return;
+    }
     setSaving(true);
     setError('');
     try {
@@ -112,24 +188,28 @@ export default function CalibrationModal({ isOpen, onClose, service, detailerSer
 
   // Build grouped reference options: detailer's own services first, then standard
   const ownServices = (detailerServices || [])
-    .filter(s => s.id !== service.id) // exclude the service being calibrated
+    .filter(s => s.id !== service.id)
     .map(s => ({
       value: `svc:${s.id}`,
       label: s.name,
       calibrated: calibratedIds.has(s.id),
     }));
 
-  const adjustmentLabel = adjustmentPct === 0
-    ? 'SAME'
-    : adjustmentPct > 0
-      ? `+${adjustmentPct}% MORE TIME`
-      : `${adjustmentPct}% LESS TIME`;
+  const adjustmentLabel = !computedReady
+    ? '—'
+    : adjustmentPct === 0
+      ? 'SAME'
+      : adjustmentPct > 0
+        ? `+${adjustmentPct}% MORE TIME`
+        : `${adjustmentPct}% LESS TIME`;
 
-  const adjustmentColor = adjustmentPct === 0
-    ? 'text-white'
-    : adjustmentPct > 0
-      ? 'text-blue-400'
-      : 'text-red-400';
+  const adjustmentColor = !computedReady
+    ? 'text-v-text-secondary'
+    : adjustmentPct === 0
+      ? 'text-white'
+      : adjustmentPct > 0
+        ? 'text-blue-400'
+        : 'text-red-400';
 
   return (
     <div className="fixed inset-0 z-50 flex items-stretch sm:items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -151,13 +231,13 @@ export default function CalibrationModal({ isOpen, onClose, service, detailerSer
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
           <p className="text-sm text-v-text-secondary">
-            Pick a reference service and adjust how much more or less time this service takes.
+            Enter your actual hours for this service on the two aircraft you know best. We&apos;ll calibrate every other aircraft against that ratio.
           </p>
 
           {(calibrations || []).some(c => c.service_id === service?.id) && (
             <div className="flex items-center gap-2 px-3 py-2 bg-v-gold/10 border border-v-gold/30 rounded-sm text-xs text-v-gold">
               <span>&#10003;</span>
-              <span>Previously calibrated — edit below to update</span>
+              <span>Previously calibrated — re-enter hours below to update</span>
             </div>
           )}
 
@@ -190,33 +270,75 @@ export default function CalibrationModal({ isOpen, onClose, service, detailerSer
             </select>
           </div>
 
-          {/* Adjustment slider: -50 to +200 */}
+          {/* Anchor hour inputs */}
           <div>
             <label className="block text-xs font-medium text-v-text-secondary mb-2 uppercase tracking-wide">
-              Time Adjustment
+              Your actual hours
             </label>
-            <div className="text-center mb-3">
+            <div className="space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-v-text-primary truncate">{service.name} on <span className="text-v-gold">{anchorALabel}</span></p>
+                  {refA != null && (
+                    <p className="text-[10px] text-v-text-secondary">Platform reference: {refA.toFixed(1)}h</p>
+                  )}
+                  {refA == null && anchorA && (
+                    <p className="text-[10px] text-amber-400">No reference hours for this service type on {anchorALabel}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.5"
+                    value={hoursA}
+                    onChange={(e) => setHoursA(e.target.value)}
+                    placeholder="0"
+                    className="w-20 bg-v-charcoal border border-v-border text-v-text-primary rounded-sm px-2 py-2 text-sm text-right outline-none focus:border-v-gold/50"
+                  />
+                  <span className="text-xs text-v-text-secondary">hrs</span>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-v-text-primary truncate">{service.name} on <span className="text-v-gold">{anchorBLabel}</span></p>
+                  {refB != null && (
+                    <p className="text-[10px] text-v-text-secondary">Platform reference: {refB.toFixed(1)}h</p>
+                  )}
+                  {refB == null && anchorB && (
+                    <p className="text-[10px] text-amber-400">No reference hours for this service type on {anchorBLabel}</p>
+                  )}
+                </div>
+                <div className="flex items-center gap-1 shrink-0">
+                  <input
+                    type="number"
+                    inputMode="decimal"
+                    min="0"
+                    step="0.5"
+                    value={hoursB}
+                    onChange={(e) => setHoursB(e.target.value)}
+                    placeholder="0"
+                    className="w-20 bg-v-charcoal border border-v-border text-v-text-primary rounded-sm px-2 py-2 text-sm text-right outline-none focus:border-v-gold/50"
+                  />
+                  <span className="text-xs text-v-text-secondary">hrs</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Computed adjustment */}
+          <div>
+            <label className="block text-xs font-medium text-v-text-secondary mb-2 uppercase tracking-wide">
+              Calibration ratio
+            </label>
+            <div className="text-center">
               <div className={`text-3xl sm:text-4xl font-bold ${adjustmentColor}`}>
                 {adjustmentLabel}
               </div>
               <div className="text-xs text-v-text-secondary mt-1">
-                {multiplier}x reference time
+                {computedReady ? `${multiplier}x reference time` : 'Enter your hours above to compute'}
               </div>
-            </div>
-            <input
-              type="range"
-              min="-50"
-              max="200"
-              step="5"
-              value={adjustmentPct}
-              onChange={(e) => setAdjustmentPct(parseInt(e.target.value, 10))}
-              className="w-full accent-v-gold cursor-pointer"
-            />
-            <div className="flex justify-between text-[10px] text-v-text-secondary mt-1 px-0.5">
-              <span>-50% (0.5x)</span>
-              <span>Same</span>
-              <span>+100% (2x)</span>
-              <span>+200% (3x)</span>
             </div>
           </div>
 
@@ -243,7 +365,7 @@ export default function CalibrationModal({ isOpen, onClose, service, detailerSer
                       <span className="text-v-text-primary font-medium truncate mr-2">{model}</span>
                       <span className="text-xs whitespace-nowrap">
                         <span className="text-v-text-secondary">{Number(ref).toFixed(1)}h</span>
-                        <span className="text-v-text-secondary"> → </span>
+                        <span className="text-v-text-secondary"> &rarr; </span>
                         <span className={`font-semibold ${adjustmentPct < 0 ? 'text-red-400' : adjustmentPct > 0 ? 'text-blue-400' : 'text-white'}`}>
                           {cal.toFixed(1)}h
                         </span>
@@ -278,7 +400,7 @@ export default function CalibrationModal({ isOpen, onClose, service, detailerSer
           </button>
           <button
             onClick={handleSave}
-            disabled={saving}
+            disabled={saving || !computedReady}
             className="px-4 py-2 text-sm bg-v-gold text-v-charcoal font-medium rounded-sm hover:bg-v-gold/90 disabled:opacity-50"
           >
             {saving
