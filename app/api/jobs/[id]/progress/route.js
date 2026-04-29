@@ -58,16 +58,29 @@ export async function POST(request, { params }) {
 
   console.log('[jobs/progress] id:', id, 'detailer:', detailerId, 'updates:', updates);
 
+  // jobs.status CHECK constraint accepts ['scheduled','in_progress','complete','cancelled']
+  // (no trailing 'd' on complete). The crew "Mark Complete" path sends 'completed' which
+  // matches what the quotes table expects but violates this constraint and 500s the save.
+  // Normalize per-table so both code paths keep working.
+  const jobsUpdates = { ...updates };
+  if (jobsUpdates.status === 'completed') jobsUpdates.status = 'complete';
+
   // Try jobs table — check rowcount via select
   const { data: jobRow } = await supabase.from('jobs').select('id').eq('id', id).eq('detailer_id', detailerId).maybeSingle();
   if (jobRow) {
     // Column-stripping retry for new fields
-    let payload = { ...updates };
+    let payload = { ...jobsUpdates };
     for (let attempt = 0; attempt < 3; attempt++) {
       const { error } = await supabase.from('jobs').update(payload).eq('id', id).eq('detailer_id', detailerId);
-      if (!error) return Response.json({ success: true, ...updates }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
+      if (!error) return Response.json({ success: true, ...jobsUpdates }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
       const colMatch = error.message?.match(/column "([^"]+)".*does not exist/) || error.message?.match(/Could not find the '([^']+)' column/);
       if (colMatch) { delete payload[colMatch[1]]; continue; }
+      // CHECK constraint violation surfaces as code 23514. Drop the offending field
+      // (status is the only constrained one we touch) and retry rather than 500.
+      if (error.code === '23514' || /violates check constraint/i.test(error.message || '')) {
+        console.error('[jobs/progress] jobs CHECK violation, dropping status:', error.message, 'payload:', payload);
+        if ('status' in payload) { delete payload.status; continue; }
+      }
       console.error('[jobs/progress] jobs update error:', error.message);
       return Response.json({ error: error.message }, { status: 500 });
     }

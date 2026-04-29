@@ -966,6 +966,35 @@ export default function ServicesPage() {
         <a href="/dashboard" className="text-v-gold hover:underline">{'Dashboard'}</a>
       </header>
 
+      {/* Anchor-required call-out — appears above everything when anchors unset
+          so the disabled per-service Calibrate buttons have an obvious next step. */}
+      {!anchorsBothSet && (
+        <a
+          href="#calibration-aircraft-picker"
+          onClick={(e) => {
+            e.preventDefault();
+            const el = document.getElementById('calibration-aircraft-picker');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              el.classList.add('ring-2', 'ring-v-gold');
+              setTimeout(() => el.classList.remove('ring-2', 'ring-v-gold'), 1800);
+            }
+          }}
+          className="block bg-v-gold/10 border border-v-gold/50 rounded-lg p-4 mb-6 hover:bg-v-gold/15 transition-colors"
+        >
+          <div className="flex items-start gap-3">
+            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-v-gold text-v-charcoal text-sm font-bold flex-shrink-0">!</span>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-v-gold">Pick your two calibration aircraft to enable per-service calibration</p>
+              <p className="text-xs text-v-text-secondary mt-1">
+                The Calibrate buttons on each service stay disabled until you save two anchor aircraft below. Tap here to jump to the picker.
+              </p>
+            </div>
+            <span className="text-v-gold text-sm" aria-hidden>&darr;</span>
+          </div>
+        </a>
+      )}
+
       {/* Info Banner */}
       <div className="bg-blue-900/50 border border-blue-500/30 rounded-lg p-4 mb-6 text-blue-100">
         <p className="text-sm">
@@ -976,7 +1005,7 @@ export default function ServicesPage() {
       </div>
 
       {/* Calibration Aircraft picker */}
-      <div className={`rounded-lg p-4 mb-6 border ${anchorsBothSet ? 'bg-v-surface border-v-border' : 'bg-v-gold/5 border-v-gold/30'}`}>
+      <div id="calibration-aircraft-picker" className={`rounded-lg p-4 mb-6 border transition-shadow ${anchorsBothSet ? 'bg-v-surface border-v-border' : 'bg-v-gold/5 border-v-gold/50 shadow-[0_0_0_1px_rgba(201,168,76,0.3)]'}`}>
         <div className="flex items-start justify-between gap-4 mb-2">
           <div>
             <h3 className="text-sm font-semibold text-v-text-primary uppercase tracking-wide">Calibration Aircraft</h3>
