@@ -22,8 +22,13 @@ export async function GET(request) {
 
   const supabase = getSupabase();
 
-  // Debug: log what detailer_id we're querying with
-  console.log('[analytics] user.id (detailer_id):', user.id, '| days:', days, '| since:', since);
+  // Owner JWTs put detailer.id in user.id; crew JWTs put it in
+  // user.detailer_id. Resolve once so analytics queries land on the right
+  // detailer regardless of session shape.
+  const detailerId = user.detailer_id || user.id;
+  // Debug: log resolved detailer_id (the user.id was logged before, which
+  // surfaced 500s when crew JWTs fell into this route).
+  console.log('[analytics] detailerId:', detailerId, '| user.id:', user.id, '| role:', user.role || 'owner', '| days:', days, '| since:', since);
 
   // Fetch quotes with column-stripping retry (in case accepted_at or other columns don't exist yet)
   let quotesSelect = 'id, status, total_price, created_at, sent_at, viewed_at, accepted_at, paid_at, completed_at, scheduled_date, client_name, client_email, aircraft_model, aircraft_type, services';
@@ -32,7 +37,7 @@ export async function GET(request) {
     quotesRes = await supabase
       .from('quotes')
       .select(quotesSelect)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', detailerId)
       .gte('created_at', since)
       .order('created_at', { ascending: true });
     if (!quotesRes.error) break;
@@ -51,13 +56,13 @@ export async function GET(request) {
   const customersRes = await supabase
     .from('customers')
     .select('id, name, email')
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', detailerId);
 
   // Fetch ALL paid quotes for this detailer (no date filter) for LTV and churn calculations
   const allPaidRes = await supabase
     .from('quotes')
     .select('id, status, total_price, client_email, client_name, paid_at, accepted_at, created_at')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', detailerId)
     .in('status', ['accepted', 'approved', 'paid', 'scheduled', 'in_progress', 'completed']);
 
   const allQuotes = quotesRes?.data || [];
@@ -280,7 +285,7 @@ export async function GET(request) {
   const { data: staffingAlerts } = await supabase
     .from('staffing_alerts')
     .select('id, quote_id, scheduled_date, alert_type, created_at, quotes(client_name, aircraft_model, aircraft_type, total_price, assigned_team_member_ids)')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', detailerId)
     .eq('resolved', false)
     .order('scheduled_date', { ascending: true })
     .catch(() => ({ data: [] }));

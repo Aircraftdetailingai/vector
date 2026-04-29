@@ -19,11 +19,16 @@ export async function GET(request) {
 
   const supabase = getSupabase();
 
+  // Owner JWTs put detailer.id in user.id; crew JWTs put it in
+  // user.detailer_id. Resolve once so the plan-gate lookup and the jobs
+  // query land on the right detailer regardless of session shape.
+  const detailerId = user.detailer_id || user.id;
+
   // Plan gating
   const { data: detailer, error: detailerError } = await supabase
     .from('detailers')
     .select('plan')
-    .eq('id', user.id)
+    .eq('id', detailerId)
     .single();
 
   if (detailerError || !detailer) {
@@ -42,7 +47,7 @@ export async function GET(request) {
   const { data: jobs, error: jobsError } = await supabase
     .from('jobs')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', detailerId)
     .in('status', ['scheduled', 'in_progress'])
     .order('scheduled_date', { ascending: true });
 
@@ -60,7 +65,7 @@ export async function GET(request) {
       .from('job_assignments')
       .select('id, job_id, team_member_id, detailer_id, status, accepted_at, declined_at, notified_at, notes, created_at, team_members(name)')
       .in('job_id', jobIds)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', detailerId);
 
     if (assignError) {
       console.error('[dispatch/board] assignments error:', assignError);
@@ -98,7 +103,7 @@ export async function GET(request) {
     const { data, error } = await supabase
       .from('team_members')
       .select(tmCols)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', detailerId)
       .eq('status', 'active');
     if (!error) { teamMembers = data; break; }
     const colMatch = error.message?.match(/column [\w."]+ does not exist/i)

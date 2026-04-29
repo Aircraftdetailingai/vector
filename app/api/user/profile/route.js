@@ -13,6 +13,14 @@ export async function POST(request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
+  // Resolve the owning detailer_id. Owner JWTs put detailer.id in user.id
+  // directly; crew JWTs put team_member.id in user.id and the real
+  // detailer.id in user.detailer_id. Without this, a save from a crew JWT
+  // (or any session shape with detailer_id set) would .eq('id', team_member_id)
+  // → match no detailer rows → silent zero-row update + 200, which is what
+  // Brett saw on /settings/business.
+  const detailerId = user.detailer_id || user.id;
+
   const body = await request.json();
   const updates = {};
 
@@ -46,14 +54,23 @@ export async function POST(request) {
 
   const supabase = getSupabase();
 
-  const { error } = await supabase
+  // Update by resolved detailer id and return the row so silent
+  // zero-update writes (e.g. wrong id) surface as a real 404 instead of
+  // a fake `success: true`.
+  const { data: updated, error } = await supabase
     .from('detailers')
     .update(updates)
-    .eq('id', user.id);
+    .eq('id', detailerId)
+    .select('id')
+    .maybeSingle();
 
   if (error) {
     console.error('Failed to update profile:', error);
     return Response.json({ error: 'Failed to update profile' }, { status: 500 });
+  }
+  if (!updated) {
+    console.error('[user/profile] update matched zero rows for detailerId:', detailerId, 'user.id:', user.id, 'role:', user.role || 'owner');
+    return Response.json({ error: 'Detailer not found' }, { status: 404 });
   }
 
   return Response.json({ success: true });
