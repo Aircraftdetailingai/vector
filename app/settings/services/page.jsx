@@ -966,35 +966,6 @@ export default function ServicesPage() {
         <a href="/dashboard" className="text-v-gold hover:underline">{'Dashboard'}</a>
       </header>
 
-      {/* Anchor-required call-out — appears above everything when anchors unset
-          so the disabled per-service Calibrate buttons have an obvious next step. */}
-      {!anchorsBothSet && (
-        <a
-          href="#calibration-aircraft-picker"
-          onClick={(e) => {
-            e.preventDefault();
-            const el = document.getElementById('calibration-aircraft-picker');
-            if (el) {
-              el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              el.classList.add('ring-2', 'ring-v-gold');
-              setTimeout(() => el.classList.remove('ring-2', 'ring-v-gold'), 1800);
-            }
-          }}
-          className="block bg-v-gold/10 border border-v-gold/50 rounded-lg p-4 mb-6 hover:bg-v-gold/15 transition-colors"
-        >
-          <div className="flex items-start gap-3">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-v-gold text-v-charcoal text-sm font-bold flex-shrink-0">!</span>
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-v-gold">Pick your two calibration aircraft to enable per-service calibration</p>
-              <p className="text-xs text-v-text-secondary mt-1">
-                The Calibrate buttons on each service stay disabled until you save two anchor aircraft below. Tap here to jump to the picker.
-              </p>
-            </div>
-            <span className="text-v-gold text-sm" aria-hidden>&darr;</span>
-          </div>
-        </a>
-      )}
-
       {/* Info Banner */}
       <div className="bg-blue-900/50 border border-blue-500/30 rounded-lg p-4 mb-6 text-blue-100">
         <p className="text-sm">
@@ -1005,7 +976,7 @@ export default function ServicesPage() {
       </div>
 
       {/* Calibration Aircraft picker */}
-      <div id="calibration-aircraft-picker" className={`rounded-lg p-4 mb-6 border transition-shadow ${anchorsBothSet ? 'bg-v-surface border-v-border' : 'bg-v-gold/5 border-v-gold/50 shadow-[0_0_0_1px_rgba(201,168,76,0.3)]'}`}>
+      <div className="rounded-lg p-4 mb-6 border bg-v-surface border-v-border">
         <div className="flex items-start justify-between gap-4 mb-2">
           <div>
             <h3 className="text-sm font-semibold text-v-text-primary uppercase tracking-wide">Calibration Aircraft</h3>
@@ -1168,10 +1139,9 @@ export default function ServicesPage() {
                                 )}
                               </div>
                               <button
-                                onClick={(e) => { e.stopPropagation(); if (anchorsBothSet) setCalibratingService({ id: svc.id, name: svc.name }); }}
-                                disabled={!anchorsBothSet}
-                                title={anchorsBothSet ? 'Calibrate Hours' : 'Pick your two calibration aircraft above first'}
-                                className="px-2 py-1 text-[10px] font-medium text-v-text-secondary border border-v-border rounded hover:text-v-gold hover:border-v-gold/50 hover:bg-v-gold/10 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-v-text-secondary disabled:hover:border-v-border disabled:hover:bg-transparent"
+                                onClick={(e) => { e.stopPropagation(); setCalibratingService({ id: svc.id, name: svc.name }); }}
+                                title="Calibrate Hours"
+                                className="px-2 py-1 text-[10px] font-medium text-v-text-secondary border border-v-border rounded hover:text-v-gold hover:border-v-gold/50 hover:bg-v-gold/10"
                               >
                                 &#9881; Calibrate
                               </button>
@@ -1183,7 +1153,7 @@ export default function ServicesPage() {
                         {serviceSuggestions[svc.id] && (
                           <div
                             className="ml-8 mr-3 p-3 bg-v-gold/5 border border-v-gold/20 rounded-lg flex items-start gap-3 cursor-pointer hover:bg-v-gold/10 transition-colors"
-                            onClick={() => { if (anchorsBothSet) setCalibratingService({ id: svc.id, name: svc.name }); }}
+                            onClick={() => setCalibratingService({ id: svc.id, name: svc.name })}
                           >
                             <span className="text-v-gold text-sm mt-0.5">&#10022;</span>
                             <div className="flex-1 text-sm text-v-text-secondary">

@@ -49,12 +49,18 @@ export default function CalibrationModal({
   const [referenceType, setReferenceType] = useState('polish');
   const [hoursA, setHoursA] = useState('');
   const [hoursB, setHoursB] = useState('');
+  const [manualAdjustmentPct, setManualAdjustmentPct] = useState(0);
   const [preview, setPreview] = useState([]);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
   const [error, setError] = useState('');
   const debounceRef = useRef(null);
+
+  // When the detailer has not picked anchors, fall back to direct slider entry
+  // (the pre-anchor calibration UX). The anchor-based ratio path stays intact
+  // and activates as soon as anchors are set on /settings/services.
+  const noAnchors = !anchorA && !anchorB;
 
   const anchorALabel = anchorA ? `${anchorA.make || ''} ${anchorA.model || ''}`.trim() : 'Anchor A';
   const anchorBLabel = anchorB ? `${anchorB.make || ''} ${anchorB.model || ''}`.trim() : 'Anchor B';
@@ -82,20 +88,23 @@ export default function CalibrationModal({
   const validA = Number.isFinite(userHoursA) && userHoursA > 0 && refA != null;
   const validB = Number.isFinite(userHoursB) && userHoursB > 0 && refB != null;
   let computedPct = 0;
-  let computedReady = false;
+  let anchorComputedReady = false;
   if (validA && validB) {
     const userAvg = (userHoursA + userHoursB) / 2;
     const refAvg = (refA + refB) / 2;
     computedPct = Math.round(((userAvg / refAvg) - 1) * 100);
-    computedReady = true;
+    anchorComputedReady = true;
   } else if (validA) {
     computedPct = Math.round(((userHoursA / refA) - 1) * 100);
-    computedReady = true;
+    anchorComputedReady = true;
   } else if (validB) {
     computedPct = Math.round(((userHoursB / refB) - 1) * 100);
-    computedReady = true;
+    anchorComputedReady = true;
   }
-  const adjustmentPct = Math.max(-50, Math.min(200, computedPct));
+  const adjustmentPct = noAnchors
+    ? Math.max(-50, Math.min(200, manualAdjustmentPct))
+    : Math.max(-50, Math.min(200, computedPct));
+  const computedReady = noAnchors ? true : anchorComputedReady;
 
   // Load saved calibration (or reset to defaults) when modal opens
   useEffect(() => {
@@ -107,8 +116,10 @@ export default function CalibrationModal({
     const existing = (calibrations || []).find(c => c.service_id === service?.id);
     if (existing) {
       setReferenceType(existing.reference_service_type || 'polish');
+      setManualAdjustmentPct(existing.adjustment_pct ?? 0);
     } else {
       setReferenceType('polish');
+      setManualAdjustmentPct(0);
     }
   }, [isOpen, service?.id, calibrations]);
 
@@ -231,7 +242,9 @@ export default function CalibrationModal({
         {/* Body */}
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-5">
           <p className="text-sm text-v-text-secondary">
-            Enter your actual hours for this service on the two aircraft you know best. We&apos;ll calibrate every other aircraft against that ratio.
+            {noAnchors
+              ? 'Pick a reference service and adjust how much more or less time this service takes.'
+              : 'Enter your actual hours for this service on the two aircraft you know best. We\u2019ll calibrate every other aircraft against that ratio.'}
           </p>
 
           {(calibrations || []).some(c => c.service_id === service?.id) && (
@@ -270,62 +283,87 @@ export default function CalibrationModal({
             </select>
           </div>
 
-          {/* Anchor hour inputs */}
-          <div>
-            <label className="block text-xs font-medium text-v-text-secondary mb-2 uppercase tracking-wide">
-              Your actual hours
-            </label>
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-v-text-primary truncate">{service.name} on <span className="text-v-gold">{anchorALabel}</span></p>
-                  {refA != null && (
-                    <p className="text-[10px] text-v-text-secondary">Platform reference: {refA.toFixed(1)}h</p>
-                  )}
-                  {refA == null && anchorA && (
-                    <p className="text-[10px] text-amber-400">No reference hours for this service type on {anchorALabel}</p>
-                  )}
+          {/* Anchor hour inputs (only when anchors picked) */}
+          {!noAnchors && (
+            <div>
+              <label className="block text-xs font-medium text-v-text-secondary mb-2 uppercase tracking-wide">
+                Your actual hours
+              </label>
+              <div className="space-y-2">
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-v-text-primary truncate">{service.name} on <span className="text-v-gold">{anchorALabel}</span></p>
+                    {refA != null && (
+                      <p className="text-[10px] text-v-text-secondary">Platform reference: {refA.toFixed(1)}h</p>
+                    )}
+                    {refA == null && anchorA && (
+                      <p className="text-[10px] text-amber-400">No reference hours for this service type on {anchorALabel}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.5"
+                      value={hoursA}
+                      onChange={(e) => setHoursA(e.target.value)}
+                      placeholder="0"
+                      className="w-20 bg-v-charcoal border border-v-border text-v-text-primary rounded-sm px-2 py-2 text-sm text-right outline-none focus:border-v-gold/50"
+                    />
+                    <span className="text-xs text-v-text-secondary">hrs</span>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.5"
-                    value={hoursA}
-                    onChange={(e) => setHoursA(e.target.value)}
-                    placeholder="0"
-                    className="w-20 bg-v-charcoal border border-v-border text-v-text-primary rounded-sm px-2 py-2 text-sm text-right outline-none focus:border-v-gold/50"
-                  />
-                  <span className="text-xs text-v-text-secondary">hrs</span>
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm text-v-text-primary truncate">{service.name} on <span className="text-v-gold">{anchorBLabel}</span></p>
-                  {refB != null && (
-                    <p className="text-[10px] text-v-text-secondary">Platform reference: {refB.toFixed(1)}h</p>
-                  )}
-                  {refB == null && anchorB && (
-                    <p className="text-[10px] text-amber-400">No reference hours for this service type on {anchorBLabel}</p>
-                  )}
-                </div>
-                <div className="flex items-center gap-1 shrink-0">
-                  <input
-                    type="number"
-                    inputMode="decimal"
-                    min="0"
-                    step="0.5"
-                    value={hoursB}
-                    onChange={(e) => setHoursB(e.target.value)}
-                    placeholder="0"
-                    className="w-20 bg-v-charcoal border border-v-border text-v-text-primary rounded-sm px-2 py-2 text-sm text-right outline-none focus:border-v-gold/50"
-                  />
-                  <span className="text-xs text-v-text-secondary">hrs</span>
+                <div className="flex items-center gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-v-text-primary truncate">{service.name} on <span className="text-v-gold">{anchorBLabel}</span></p>
+                    {refB != null && (
+                      <p className="text-[10px] text-v-text-secondary">Platform reference: {refB.toFixed(1)}h</p>
+                    )}
+                    {refB == null && anchorB && (
+                      <p className="text-[10px] text-amber-400">No reference hours for this service type on {anchorBLabel}</p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <input
+                      type="number"
+                      inputMode="decimal"
+                      min="0"
+                      step="0.5"
+                      value={hoursB}
+                      onChange={(e) => setHoursB(e.target.value)}
+                      placeholder="0"
+                      className="w-20 bg-v-charcoal border border-v-border text-v-text-primary rounded-sm px-2 py-2 text-sm text-right outline-none focus:border-v-gold/50"
+                    />
+                    <span className="text-xs text-v-text-secondary">hrs</span>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* Manual adjustment slider (when no anchors picked) */}
+          {noAnchors && (
+            <div>
+              <label className="block text-xs font-medium text-v-text-secondary mb-2 uppercase tracking-wide">
+                Time Adjustment
+              </label>
+              <input
+                type="range"
+                min="-50"
+                max="200"
+                step="5"
+                value={manualAdjustmentPct}
+                onChange={(e) => setManualAdjustmentPct(parseInt(e.target.value, 10) || 0)}
+                className="w-full accent-v-gold"
+              />
+              <div className="flex justify-between text-[10px] text-v-text-secondary mt-1">
+                <span>-50%</span>
+                <span>0%</span>
+                <span>+200%</span>
+              </div>
+            </div>
+          )}
 
           {/* Computed adjustment */}
           <div>
@@ -338,6 +376,9 @@ export default function CalibrationModal({
               </div>
               <div className="text-xs text-v-text-secondary mt-1">
                 {computedReady ? `${multiplier}x reference time` : 'Enter your hours above to compute'}
+                {noAnchors && (
+                  <span className="ml-2 text-[10px] text-v-text-secondary">(pick anchors on Settings &rarr; Services to use ratio mode)</span>
+                )}
               </div>
             </div>
           </div>
