@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { createToken } from '@/lib/auth';
+import { redeemCompInviteIfAny } from '@/lib/comp-invites';
 
 export const dynamic = 'force-dynamic';
 
@@ -99,6 +100,17 @@ export async function POST(request) {
       } else {
         console.log('[oauth-complete] Created detailer:', newDetailer.id);
         detailer = newDetailer;
+      }
+    }
+
+    // Redeem any pending comp invite for new OAuth signups. Skip for
+    // existing accounts — the invite logic only runs once, on first signup.
+    if (isNewUser && detailer?.id) {
+      const compResult = await redeemCompInviteIfAny(supabase, detailer.id, detailer.email);
+      if (compResult.applied) {
+        detailer.plan = compResult.plan;
+        detailer.subscription_status = compResult.subscription_status;
+        if (compResult.trial_ends_at) detailer.trial_ends_at = compResult.trial_ends_at;
       }
     }
 

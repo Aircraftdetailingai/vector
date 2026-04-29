@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { createClient } from '@supabase/supabase-js';
 import { sendEmail as sendLibEmail } from '@/lib/email';
+import { redeemCompInviteIfAny } from '@/lib/comp-invites';
 
 export const dynamic = 'force-dynamic';
 
@@ -403,6 +404,20 @@ async function handleOrderPaid(supabase, payload) {
 
     if (inserted) {
       console.log(`[shopify-webhook] Created detailer ${inserted.id} for ${email}`);
+
+      // Redeem any pending comp invite for this email. A Shopify-created
+      // account is the very first signup, so the invite (if any) lands
+      // immediately. Stays non-blocking — webhook still 200s on failure.
+      // Mutating local `plan` so the welcome email below reflects the
+      // upgraded tier label.
+      const compResult = await redeemCompInviteIfAny(supabase, inserted.id, email);
+      if (compResult.applied) {
+        inserted.plan = compResult.plan;
+        inserted.subscription_status = compResult.subscription_status;
+        if (compResult.trial_ends_at) inserted.trial_ends_at = compResult.trial_ends_at;
+        plan = compResult.plan;
+      }
+
       const labels = { free: 'Free', pro: 'Pro', business: 'Business', enterprise: 'Enterprise' };
       const firstName = (name || '').split(' ')[0] || 'there';
       await sendEmail(

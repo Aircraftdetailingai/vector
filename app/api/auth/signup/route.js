@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { hashPassword, createToken } from '@/lib/auth';
 import { cookies } from 'next/headers';
 import { welcomeTemplate } from '@/lib/email-templates';
+import { redeemCompInviteIfAny } from '@/lib/comp-invites';
 
 export const dynamic = 'force-dynamic';
 
@@ -211,6 +212,16 @@ export async function POST(request) {
       } catch (e) {
         console.log('[signup] Course check failed (non-critical):', e.message);
       }
+    }
+
+    // Redeem any pending comp invite for this email. Runs AFTER the
+    // course-bundle branch so a comp invite (intentional admin grant) wins
+    // over an automatic course-bundle upgrade. Never blocks signup.
+    const compResult = await redeemCompInviteIfAny(supabase, detailer.id, normalizedEmail);
+    if (compResult.applied) {
+      detailer.plan = compResult.plan;
+      detailer.subscription_status = compResult.subscription_status;
+      if (compResult.trial_ends_at) detailer.trial_ends_at = compResult.trial_ends_at;
     }
 
     // Create default intake flow for new detailer
