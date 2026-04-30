@@ -233,10 +233,13 @@ export default function CalibrationModal({
               onChange={(e) => setManualAdjustmentPct(parseInt(e.target.value, 10) || 0)}
               className="w-full accent-v-gold"
             />
-            <div className="flex justify-between text-[10px] text-v-text-secondary mt-1">
-              <span>-50%</span>
-              <span>0%</span>
-              <span>+200%</span>
+            {/* Labels are absolutely positioned to align with slider thumb
+                positions: 0% (sentinel) sits at (0 - (-50)) / 250 = 20% from
+                left, not at the row's geometric center. */}
+            <div className="relative h-4 text-[10px] text-v-text-secondary mt-1">
+              <span className="absolute left-0 -translate-x-0">-50%</span>
+              <span className="absolute left-[20%] -translate-x-1/2">0%</span>
+              <span className="absolute left-full -translate-x-full">+200%</span>
             </div>
           </div>
 
