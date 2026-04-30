@@ -35,7 +35,12 @@ export default function CalibrationModal({
   // Slider is the sole adjustment input; ratio is always "ready" because the
   // slider always carries a value. Anchor props are still received so the
   // Live Preview fetch can render rows for the detailer's chosen aircraft.
-  const adjustmentPct = Math.max(-50, Math.min(200, manualAdjustmentPct));
+  // Symmetric -100..+100 range so 0% sits in the geometric middle of the
+  // track. Existing rows saved against the old -50..+200 range get clamped
+  // in on read so the slider thumb still snaps to a valid position; the
+  // saved DB value is left alone (the next save will overwrite with a
+  // clamped value).
+  const adjustmentPct = Math.max(-100, Math.min(100, manualAdjustmentPct));
   const computedReady = true;
 
   // Load saved calibration (or reset to defaults) when modal opens
@@ -46,7 +51,8 @@ export default function CalibrationModal({
     const existing = (calibrations || []).find(c => c.service_id === service?.id);
     if (existing) {
       setReferenceType(existing.reference_service_type || 'polish');
-      setManualAdjustmentPct(existing.adjustment_pct ?? 0);
+      const saved = Number.isFinite(existing.adjustment_pct) ? existing.adjustment_pct : 0;
+      setManualAdjustmentPct(Math.max(-100, Math.min(100, saved)));
     } else {
       setReferenceType('polish');
       setManualAdjustmentPct(0);
@@ -226,20 +232,17 @@ export default function CalibrationModal({
             </label>
             <input
               type="range"
-              min="-50"
-              max="200"
+              min="-100"
+              max="100"
               step="5"
               value={manualAdjustmentPct}
               onChange={(e) => setManualAdjustmentPct(parseInt(e.target.value, 10) || 0)}
               className="w-full accent-v-gold"
             />
-            {/* Labels are absolutely positioned to align with slider thumb
-                positions: 0% (sentinel) sits at (0 - (-50)) / 250 = 20% from
-                left, not at the row's geometric center. */}
-            <div className="relative h-4 text-[10px] text-v-text-secondary mt-1">
-              <span className="absolute left-0 -translate-x-0">-50%</span>
-              <span className="absolute left-[20%] -translate-x-1/2">0%</span>
-              <span className="absolute left-full -translate-x-full">+200%</span>
+            <div className="flex justify-between text-[10px] text-v-text-secondary mt-1">
+              <span>-100%</span>
+              <span>0%</span>
+              <span>+100%</span>
             </div>
           </div>
 
