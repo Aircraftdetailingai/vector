@@ -15,6 +15,12 @@ export async function POST(request) {
     const user = await getAuthUser(request);
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
+    // 3db3b3d resolution — owner JWTs have user.id == detailer.id, crew JWTs
+    // need user.detailer_id. Without this a crew-shaped session would write
+    // logo_url to a row matching team_member.id (no rows) instead of the
+    // detailer row, silently no-oping.
+    const detailerId = user.detailer_id || user.id;
+
     const supabase = getSupabase();
     if (!supabase) return Response.json({ error: 'Database not configured' }, { status: 500 });
 
@@ -36,7 +42,7 @@ export async function POST(request) {
     }
 
     const bucket = 'logos';
-    const filePath = `${user.id}/logo${ext}`;
+    const filePath = `${detailerId}/logo${ext}`;
 
     const { data: buckets } = await supabase.storage.listBuckets();
     if (!buckets?.find(b => b.name === bucket)) {
@@ -60,7 +66,7 @@ export async function POST(request) {
     await supabase
       .from('detailers')
       .update({ logo_url: logoUrl })
-      .eq('id', user.id);
+      .eq('id', detailerId);
 
     return Response.json({ logo_url: logoUrl });
   } catch (err) {

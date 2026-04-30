@@ -30,7 +30,12 @@ export async function GET(request) {
   if (!authUser?.id) {
     return Response.redirect(new URL(`${settingsUrl}?gcal=error&message=${encodeURIComponent('Authentication required')}`, url.origin));
   }
+  // The OAuth `auth` route signs state with user.id (whatever shape the JWT
+  // carried). Match against the same value here. For owner JWTs user.id IS
+  // the detailer id, but the connection row keys on detailer_id, so resolve
+  // separately for the upsert.
   const userId = authUser.id;
+  const detailerId = authUser.detailer_id || authUser.id;
 
   // Verify state matches user ID (CSRF protection)
   if (state !== userId) {
@@ -72,7 +77,7 @@ export async function GET(request) {
     const { error: dbError } = await supabase
       .from('google_calendar_connections')
       .upsert({
-        detailer_id: userId,
+        detailer_id: detailerId,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         token_expires_at: expiresAt.toISOString(),
@@ -81,8 +86,9 @@ export async function GET(request) {
 
     if (dbError) {
       console.error('Failed to store Google Calendar connection:', dbError);
-      return Response.redirect(new URL(`${settingsUrl}?gcal=error&message=${encodeURIComponent('Failed to save connection')}`, url.origin));
+      return Response.redirect(new URL(`${settingsUrl}?gcal=error&message=${encodeURIComponent('Failed to save connection: ' + dbError.message)}`, url.origin));
     }
+    console.log('[gcal-callback] connection persisted for detailer:', detailerId);
 
     return Response.redirect(new URL(`${settingsUrl}?gcal=success`, url.origin));
   } catch (err) {

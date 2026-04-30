@@ -56,16 +56,34 @@ export async function POST(request) {
 
   // Update by resolved detailer id and return the row so silent
   // zero-update writes (e.g. wrong id) surface as a real 404 instead of
-  // a fake `success: true`.
-  const { data: updated, error } = await supabase
-    .from('detailers')
-    .update(updates)
-    .eq('id', detailerId)
-    .select('id')
-    .maybeSingle();
+  // a fake `success: true`. Column-stripping retry guards against
+  // PostgREST schema-cache misses on newly-added columns
+  // (e.g. google_business_url) that would otherwise 500 the entire save.
+  let payload = { ...updates };
+  let updated = null;
+  let lastError = null;
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data, error } = await supabase
+      .from('detailers')
+      .update(payload)
+      .eq('id', detailerId)
+      .select('id')
+      .maybeSingle();
 
-  if (error) {
-    console.error('Failed to update profile:', error);
+    if (!error) { updated = data; lastError = null; break; }
+    lastError = error;
+    const colMatch = error.message?.match(/column "([^"]+)".*does not exist/i)
+      || error.message?.match(/Could not find the '([^']+)' column/i);
+    if (colMatch && payload[colMatch[1]] !== undefined) {
+      console.warn('[user/profile] stripping unknown column:', colMatch[1]);
+      delete payload[colMatch[1]];
+      continue;
+    }
+    break;
+  }
+
+  if (lastError) {
+    console.error('Failed to update profile:', lastError);
     return Response.json({ error: 'Failed to update profile' }, { status: 500 });
   }
   if (!updated) {
@@ -73,5 +91,6 @@ export async function POST(request) {
     return Response.json({ error: 'Detailer not found' }, { status: 404 });
   }
 
-  return Response.json({ success: true });
+  console.log('[user/profile] saved fields for detailer', detailerId, ':', Object.keys(payload));
+  return Response.json({ success: true, saved: Object.keys(payload) });
 }

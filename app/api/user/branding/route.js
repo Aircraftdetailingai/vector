@@ -2,18 +2,31 @@ import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
+// d7b2d9e cache-bust pattern — without `cache: 'no-store'` on the supabase-js
+// fetch wrapper, Vercel's Data Cache can return a row snapshot from before a
+// recent write (e.g. a logo upload), making the Branding page render "No logo"
+// despite logo_url being persisted. Mirrors /api/detailers/me.
 function getSupabase() {
   return createClient(
     process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY,
+    { global: { fetch: (url, opts) => fetch(url, { ...opts, cache: 'no-store' }) } },
   );
 }
+
+const NO_STORE = { 'Content-Type': 'application/json', 'Cache-Control': 'no-store, max-age=0' };
 
 export async function GET(request) {
   try {
     const user = await getAuthUser(request);
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    // 3db3b3d resolution — owner JWTs put detailer.id in user.id, crew JWTs
+    // put it in user.detailer_id. Avoid silently reading the wrong row.
+    const detailerId = user.detailer_id || user.id;
 
     const supabase = getSupabase();
 
@@ -22,29 +35,32 @@ export async function GET(request) {
     const { data, error } = await supabase
       .from('detailers')
       .select('*')
-      .eq('id', user.id)
+      .eq('id', detailerId)
       .single();
 
-    if (error) return Response.json({ error: error.message }, { status: 500 });
+    if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: NO_STORE });
 
-    return Response.json({
-      logo_url: data?.logo_url || null,
-      theme_primary: data?.theme_primary || '#007CB1',
-      theme_accent: data?.theme_accent || '#0D1B2A',
-      theme_bg: data?.theme_bg || '#0A0E17',
-      theme_surface: data?.theme_surface || '#111827',
-      theme_logo_url: data?.theme_logo_url || null,
-      website_url: data?.website_url || null,
-      font_heading: data?.font_heading || null,
-      font_subheading: data?.font_subheading || null,
-      font_body: data?.font_body || null,
-      font_embed_url: data?.font_embed_url || null,
-      theme_colors: data?.theme_colors || [],
-      portal_theme: data?.portal_theme || 'dark',
-      disclaimer_text: data?.disclaimer_text || null,
-    });
+    return new Response(
+      JSON.stringify({
+        logo_url: data?.logo_url || null,
+        theme_primary: data?.theme_primary || '#007CB1',
+        theme_accent: data?.theme_accent || '#0D1B2A',
+        theme_bg: data?.theme_bg || '#0A0E17',
+        theme_surface: data?.theme_surface || '#111827',
+        theme_logo_url: data?.theme_logo_url || null,
+        website_url: data?.website_url || null,
+        font_heading: data?.font_heading || null,
+        font_subheading: data?.font_subheading || null,
+        font_body: data?.font_body || null,
+        font_embed_url: data?.font_embed_url || null,
+        theme_colors: data?.theme_colors || [],
+        portal_theme: data?.portal_theme || 'dark',
+        disclaimer_text: data?.disclaimer_text || null,
+      }),
+      { status: 200, headers: NO_STORE },
+    );
   } catch (err) {
-    return Response.json({ error: err.message }, { status: 500 });
+    return new Response(JSON.stringify({ error: err.message }), { status: 500, headers: NO_STORE });
   }
 }
 
@@ -54,6 +70,8 @@ export async function POST(request) {
   try {
     const user = await getAuthUser(request);
     if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
+
+    const detailerId = user.detailer_id || user.id;
 
     const body = await request.json();
     const updates = {};
@@ -113,7 +131,7 @@ export async function POST(request) {
       const { error } = await supabase
         .from('detailers')
         .update(updates)
-        .eq('id', user.id);
+        .eq('id', detailerId);
 
       if (!error) break;
 

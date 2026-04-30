@@ -15,25 +15,44 @@ export async function GET(request) {
 
   const supabase = getSupabase();
 
-  // Check OAuth connection
+  // Check OAuth connection.
+  // The migration in 20260318_scheduling_integration.sql doesn't include
+  // `google_email` or `calendars` — they were added later via save-oauth's
+  // upsert. If the production DB is missing those columns the SELECT errors
+  // and the entire connection check silently reports "not connected" even
+  // though the row exists. Column-stripping retry survives schemas at
+  // either tier.
+  const detailerId = user.detailer_id || user.id;
   let oauthConnected = false;
   let oauthData = null;
   let needsReconnect = false;
-  try {
-    const { data: conn } = await supabase
+  let cols = ['connected_at', 'last_sync_at', 'sync_enabled', 'push_enabled', 'calendar_id', 'google_email', 'calendars', 'refresh_token', 'token_expires_at'];
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const { data: conn, error } = await supabase
       .from('google_calendar_connections')
-      .select('connected_at, last_sync_at, sync_enabled, push_enabled, calendar_id, google_email, calendars, refresh_token, token_expires_at')
-      .eq('detailer_id', user.id)
-      .single();
-    if (conn) {
-      oauthConnected = true;
-      oauthData = conn;
-      const hasRefreshToken = !!conn.refresh_token;
-      const tokenExpired = conn.token_expires_at ? new Date(conn.token_expires_at) < new Date() : true;
-      needsReconnect = !hasRefreshToken || (tokenExpired && !hasRefreshToken);
+      .select(cols.join(', '))
+      .eq('detailer_id', detailerId)
+      .maybeSingle();
+    if (!error) {
+      if (conn) {
+        oauthConnected = true;
+        oauthData = conn;
+        const hasRefreshToken = !!conn.refresh_token;
+        const tokenExpired = conn.token_expires_at ? new Date(conn.token_expires_at) < new Date() : true;
+        needsReconnect = !hasRefreshToken || (tokenExpired && !hasRefreshToken);
+      }
+      break;
     }
-  } catch (err) {
-    console.error('[gcal-status] OAuth check error:', err?.message || err);
+    const colMatch = error.message?.match(/column [\w."]*\.?"?(\w+)"? does not exist/i)
+      || error.message?.match(/Could not find the '([^']+)' column/i);
+    const missing = colMatch?.[1];
+    if (missing && cols.includes(missing)) {
+      cols = cols.filter((c) => c !== missing);
+      console.warn('[gcal-status] dropped missing column:', missing);
+      continue;
+    }
+    console.error('[gcal-status] OAuth check error:', error.message);
+    break;
   }
 
   // Check ICS sync status from detailer availability
@@ -43,7 +62,7 @@ export async function GET(request) {
     const { data: detailer } = await supabase
       .from('detailers')
       .select('availability')
-      .eq('id', user.id)
+      .eq('id', detailerId)
       .single();
     if (detailer?.availability) {
       icsUrl = detailer.availability.icsUrl || null;
