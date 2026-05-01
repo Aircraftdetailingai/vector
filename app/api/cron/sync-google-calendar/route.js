@@ -57,34 +57,35 @@ export async function GET(request) {
           conn.sync_token
         );
 
+        let items = [];
+        let nextSyncToken = null;
         if (calData.fullSyncRequired) {
-          // Do a full sync without sync token
+          // Sync token expired; redo full sync without one.
           const fullData = await fetchCalendarEvents(
             tokenData.accessToken,
             timeMin.toISOString(),
             timeMax.toISOString()
           );
-          await processEvents(supabase, conn.detailer_id, fullData.items || []);
-          if (fullData.nextSyncToken) {
-            await supabase.from('google_calendar_connections')
-              .update({ sync_token: fullData.nextSyncToken, last_sync_at: now.toISOString() })
-              .eq('detailer_id', conn.detailer_id);
-          }
+          items = fullData.items || [];
+          nextSyncToken = fullData.nextSyncToken || null;
         } else {
-          await processEvents(supabase, conn.detailer_id, calData.items || []);
-          if (calData.nextSyncToken) {
-            await supabase.from('google_calendar_connections')
-              .update({ sync_token: calData.nextSyncToken, last_sync_at: now.toISOString() })
-              .eq('detailer_id', conn.detailer_id);
-          } else {
-            await supabase.from('google_calendar_connections')
-              .update({ last_sync_at: now.toISOString() })
-              .eq('detailer_id', conn.detailer_id);
-          }
+          items = calData.items || [];
+          nextSyncToken = calData.nextSyncToken || null;
         }
+
+        const processed = await processEvents(supabase, conn.detailer_id, items);
+        console.log(`[gcal-sync] detailer=${conn.detailer_id} pulled=${items.length} upserted=${processed.upserted} cancelled=${processed.cancelled} fullSync=${!!calData.fullSyncRequired}`);
+
+        const tokenUpdate = nextSyncToken
+          ? { sync_token: nextSyncToken, last_sync_at: now.toISOString() }
+          : { last_sync_at: now.toISOString() };
+        await supabase.from('google_calendar_connections')
+          .update(tokenUpdate)
+          .eq('detailer_id', conn.detailer_id);
 
         results.synced++;
       } catch (err) {
+        console.error(`[gcal-sync] detailer=${conn.detailer_id} error:`, err?.message || err);
         results.failed++;
         results.errors.push(`${conn.detailer_id}: ${err.message}`);
       }
@@ -98,9 +99,10 @@ export async function GET(request) {
 }
 
 async function processEvents(supabase, detailerId, events) {
-  if (!events || events.length === 0) return;
+  const summary = { upserted: 0, cancelled: 0 };
+  if (!events || events.length === 0) return summary;
 
-  // Get current availability
+  // Get current availability so we can reconcile cron output with manual blocks.
   const { data: detailer } = await supabase
     .from('detailers')
     .select('availability')
@@ -111,13 +113,36 @@ async function processEvents(supabase, detailerId, events) {
   const blockedDates = new Set(availability.blockedDates || []);
   const gcalBlockedDates = new Set(availability.gcalBlockedDates || []);
 
+  // 1) Upsert non-cancelled events into google_calendar_events. The events
+  // GET endpoint reads from this table, so without these rows the in-CRM
+  // Schedule view shows nothing even though availability.blockedDates is
+  // populated. Cancelled events trigger row deletion + date un-block.
+  const upsertRows = [];
+  const cancelledIds = [];
   for (const event of events) {
+    if (!event.id) continue;
     if (event.status === 'cancelled') {
-      // Remove cancelled events from blocked dates
+      cancelledIds.push(event.id);
       const date = extractDate(event);
       if (date) gcalBlockedDates.delete(date);
       continue;
     }
+
+    const startTime = event.start?.dateTime || event.start?.date;
+    const endTime = event.end?.dateTime || event.end?.date || startTime;
+    if (!startTime) continue;
+
+    upsertRows.push({
+      detailer_id: detailerId,
+      google_event_id: event.id,
+      summary: event.summary || null,
+      description: event.description || null,
+      start_time: startTime,
+      end_time: endTime,
+      all_day: !!event.start?.date && !event.start?.dateTime,
+      status: event.status || 'confirmed',
+      synced_at: new Date().toISOString(),
+    });
 
     const date = extractDate(event);
     if (date) {
@@ -126,7 +151,33 @@ async function processEvents(supabase, detailerId, events) {
     }
   }
 
-  // Update availability
+  if (upsertRows.length > 0) {
+    const { error: upsertErr } = await supabase
+      .from('google_calendar_events')
+      .upsert(upsertRows, { onConflict: 'detailer_id,google_event_id' });
+    if (upsertErr) {
+      console.error(`[gcal-sync] upsert failed for detailer=${detailerId}:`, upsertErr.message);
+    } else {
+      summary.upserted = upsertRows.length;
+    }
+  }
+
+  if (cancelledIds.length > 0) {
+    const { error: delErr } = await supabase
+      .from('google_calendar_events')
+      .delete()
+      .eq('detailer_id', detailerId)
+      .in('google_event_id', cancelledIds);
+    if (delErr) {
+      console.error(`[gcal-sync] cancel-delete failed for detailer=${detailerId}:`, delErr.message);
+    } else {
+      summary.cancelled = cancelledIds.length;
+    }
+  }
+
+  // 2) Update availability blocked-date sets — this is what
+  // /api/quotes/[id]/availability and the customer-facing booking calendar
+  // already read, so this keeps existing booking gating working unchanged.
   await supabase
     .from('detailers')
     .update({
@@ -137,6 +188,8 @@ async function processEvents(supabase, detailerId, events) {
       },
     })
     .eq('id', detailerId);
+
+  return summary;
 }
 
 function extractDate(event) {
