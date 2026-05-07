@@ -33,7 +33,7 @@ export async function POST(request) {
   const rows = products.map(p => ({
     job_id: job?.id || null,
     quote_id,
-    detailer_id: user.id,
+    detailer_id: user.detailer_id || user.id,
     service_id: p.service_id || null,
     product_name: p.product_name,
     estimated_quantity: parseFloat(p.estimated_quantity) || 0,

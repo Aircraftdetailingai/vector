@@ -106,7 +106,7 @@ export async function POST(request) {
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com'}/shop/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://crm.shinyjets.com'}/shop/cart`,
       metadata: {
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         order_items: JSON.stringify(orderItems.map(i => ({
           product_id: i.product_id,
           vendor_id: i.vendor_id,
@@ -120,7 +120,7 @@ export async function POST(request) {
     const { data: order, error: orderError } = await supabase
       .from('shop_orders')
       .insert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         stripe_session_id: session.id,
         items: orderItems,
         total: orderTotal,

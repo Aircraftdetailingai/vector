@@ -27,7 +27,7 @@ export async function GET(request) {
   let query = supabase
     .from('notifications')
     .select('*', { count: 'exact' })
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -52,7 +52,7 @@ export async function GET(request) {
   const { count: unreadCount } = await supabase
     .from('notifications')
     .select('*', { count: 'exact', head: true })
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('read', false);
 
   return Response.json({
@@ -79,7 +79,7 @@ export async function PATCH(request) {
     const { error } = await supabase
       .from('notifications')
       .update({ read: true, read_at: new Date().toISOString() })
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('read', false);
 
     if (error) {
@@ -94,7 +94,7 @@ export async function PATCH(request) {
       .from('notifications')
       .update({ read: true, read_at: new Date().toISOString() })
       .eq('id', id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
@@ -117,7 +117,7 @@ export async function DELETE(request) {
   const { error } = await supabase
     .from('notifications')
     .delete()
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('read', true);
 
   if (error) {

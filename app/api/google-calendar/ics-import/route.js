@@ -108,7 +108,7 @@ export async function POST(request) {
 
     // Also store events in google_calendar_events table for calendar display
     const eventRows = relevantEvents.map(e => ({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       google_event_id: `ics-${e.uid || Math.random().toString(36).slice(2)}`,
       summary: e.summary || 'Busy',
       description: e.description || null,
@@ -124,7 +124,7 @@ export async function POST(request) {
       await supabase
         .from('google_calendar_events')
         .delete()
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .like('google_event_id', 'ics-%');
 
       // Insert new events

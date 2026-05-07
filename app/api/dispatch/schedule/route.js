@@ -57,7 +57,7 @@ export async function POST(request) {
     .from('jobs')
     .update(update)
     .eq('id', job_id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) {
     console.error('[dispatch/schedule] update error:', error);

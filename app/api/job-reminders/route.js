@@ -30,7 +30,7 @@ export async function GET(request) {
     const { data: todayJobs } = await supabase
       .from('quotes')
       .select('id, aircraft_type, aircraft_model, scheduled_date, scheduled_time, total_hours, status')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('scheduled_date', today)
       .in('status', ['accepted', 'scheduled', 'in_progress']);
 
@@ -133,7 +133,7 @@ export async function POST(request) {
     await supabase
       .from('dismissed_reminders')
       .upsert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         quote_id,
         reminder_type,
         action: action || 'dismissed',

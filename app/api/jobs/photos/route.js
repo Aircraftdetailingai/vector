@@ -17,7 +17,7 @@ export async function GET(request) {
   if (!quoteId) return Response.json({ error: 'Quote ID required' }, { status: 400 });
 
   const supabase = getSupabase();
-  const { data } = await supabase.from('job_photos').select('*').eq('quote_id', quoteId).eq('detailer_id', user.id).order('created_at');
+  const { data } = await supabase.from('job_photos').select('*').eq('quote_id', quoteId).eq('detailer_id', user.detailer_id || user.id).order('created_at');
 
   return Response.json({ photos: data || [] });
 }
@@ -47,7 +47,7 @@ export async function POST(request) {
   const { data: urlData } = supabase.storage.from('uploads').getPublicUrl(path);
 
   const { data: photo, error } = await supabase.from('job_photos').insert({
-    quote_id: quoteId, detailer_id: user.id,
+    quote_id: quoteId, detailer_id: user.detailer_id || user.id,
     photo_url: urlData?.publicUrl || path,
     photo_type: photoType, surface_tag: surfaceTag, caption,
   }).select().single();
@@ -67,7 +67,7 @@ export async function DELETE(request) {
   if (!id) return Response.json({ error: 'Photo ID required' }, { status: 400 });
 
   const supabase = getSupabase();
-  await supabase.from('job_photos').delete().eq('id', id).eq('detailer_id', user.id);
+  await supabase.from('job_photos').delete().eq('id', id).eq('detailer_id', user.detailer_id || user.id);
 
   return Response.json({ success: true });
 }

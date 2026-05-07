@@ -37,7 +37,7 @@ export async function GET(request) {
     const { data: custom } = await supabase
       .from('custom_aircraft')
       .select('manufacturer')
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (custom) {
       for (const c of custom) manufacturers.add(c.manufacturer);

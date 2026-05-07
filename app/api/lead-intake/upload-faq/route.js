@@ -133,7 +133,7 @@ Return ONLY the JSON object, no other text.`
       await supabase
         .from('intake_faqs')
         .upsert({
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           faqs: result.faqs,
           updated_at: new Date().toISOString(),
         }, { onConflict: 'detailer_id' });
@@ -168,7 +168,7 @@ export async function GET(request) {
     const { data: faqData, error } = await supabase
       .from('intake_faqs')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (error && error.code !== 'PGRST116') {

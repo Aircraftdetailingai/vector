@@ -39,7 +39,7 @@ export async function GET(request) {
     const { data, error } = await supabase
       .from('customer_tags')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('name', { ascending: true });
 
     if (!error && data) {
@@ -80,7 +80,7 @@ export async function POST(request) {
     const { data: existing } = await supabase
       .from('customer_tags')
       .select('id')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .ilike('name', name.trim())
       .maybeSingle();
 
@@ -92,7 +92,7 @@ export async function POST(request) {
   }
 
   let row = {
-    detailer_id: user.id,
+    detailer_id: user.detailer_id || user.id,
     name: name.trim(),
     color: color || '#6b7280',
   };
@@ -154,7 +154,7 @@ export async function DELETE(request) {
       .from('customer_tags')
       .delete()
       .eq('id', id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
   } catch (e) {
     // Ignore if table doesn't exist
   }

@@ -20,7 +20,7 @@ export async function GET(request) {
     const { data: aircraft, error } = await supabase
       .from('custom_aircraft')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('manufacturer')
       .order('model');
 
@@ -77,7 +77,7 @@ export async function POST(request) {
     const { data: aircraft, error } = await supabase
       .from('custom_aircraft')
       .insert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         manufacturer: manufacturer.trim(),
         model: model.trim(),
         category: category || null,
@@ -97,7 +97,7 @@ export async function POST(request) {
         .filter(sh => sh.hours > 0)
         .map(sh => ({
           custom_aircraft_id: aircraft.id,
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           service_id: sh.service_id || null,
           service_name: sh.service_name,
           hours: parseFloat(sh.hours),
@@ -139,13 +139,13 @@ export async function DELETE(request) {
       .from('custom_aircraft_service_hours')
       .delete()
       .eq('custom_aircraft_id', id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     const { error } = await supabase
       .from('custom_aircraft')
       .delete()
       .eq('id', id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (error) {
       console.error('Failed to delete custom aircraft:', error);

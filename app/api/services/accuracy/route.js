@@ -16,7 +16,7 @@ export async function GET(request) {
   const { data: rows, error } = await supabase
     .from('job_completion_data')
     .select('service_name, variance_pct, created_at')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('created_at', { ascending: true });
 
   if (error) {

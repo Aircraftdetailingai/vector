@@ -28,7 +28,7 @@ export async function GET(request, { params }) {
       .from('team_members')
       .select('*')
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (error || !member) {
@@ -124,7 +124,7 @@ export async function PATCH(request, { params }) {
       .from('team_members')
       .select('id')
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (!existing) {
@@ -198,7 +198,7 @@ export async function DELETE(request, { params }) {
       .from('team_members')
       .select('id')
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (!existing) {

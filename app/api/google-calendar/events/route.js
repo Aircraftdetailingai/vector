@@ -24,7 +24,7 @@ export async function GET(request) {
   const { data: events, error } = await supabase
     .from('google_calendar_events')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .gte('start_time', start)
     .lte('end_time', end)
     .order('start_time', { ascending: true });

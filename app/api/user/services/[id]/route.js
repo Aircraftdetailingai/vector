@@ -26,7 +26,7 @@ export async function PUT(request, { params }) {
     .from('detailer_services')
     .select('id')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!existing) {
@@ -73,7 +73,7 @@ export async function DELETE(request, { params }) {
     .from('detailer_services')
     .select('id, is_custom')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!existing) {

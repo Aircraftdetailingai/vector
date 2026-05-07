@@ -28,7 +28,7 @@ export async function GET(request) {
   const { data: history } = await supabase
     .from('points_ledger')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('created_at', { ascending: false })
     .limit(50);
 
@@ -37,7 +37,7 @@ export async function GET(request) {
   const { data: weekStats } = await supabase
     .from('points_ledger')
     .select('final_points')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .gte('created_at', weekAgo);
 
   const weekPoints = weekStats?.reduce((sum, h) => sum + (h.final_points || 0), 0) || 0;
@@ -46,7 +46,7 @@ export async function GET(request) {
   const { data: weekQuotes } = await supabase
     .from('quotes')
     .select('total_price')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('status', 'paid')
     .gte('paid_at', weekAgo);
 
@@ -103,7 +103,7 @@ export async function POST(request) {
     const { data: existing } = await supabase
       .from('points_ledger')
       .select('id')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('action', action)
       .limit(1);
 
@@ -116,7 +116,7 @@ export async function POST(request) {
   const { error: ledgerError } = await supabase
     .from('points_ledger')
     .insert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       action,
       base_points: config.base,
       multiplier,

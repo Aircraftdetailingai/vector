@@ -23,7 +23,7 @@ export async function GET(request, { params }) {
     .from('customers')
     .select('*')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (error || !customer) {
@@ -40,7 +40,7 @@ export async function GET(request, { params }) {
     const { data, error: qErr } = await supabase
       .from('quotes')
       .select(selectCols)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .ilike('client_email', email)
       .order('created_at', { ascending: false });
 
@@ -90,7 +90,7 @@ export async function PATCH(request, { params }) {
     .from('customers')
     .select('id')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!customer) {
@@ -140,7 +140,7 @@ export async function DELETE(request, { params }) {
     .from('customers')
     .select('id')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!customer) {
@@ -151,7 +151,7 @@ export async function DELETE(request, { params }) {
     .from('customers')
     .delete()
     .eq('id', id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });

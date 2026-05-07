@@ -207,7 +207,7 @@ export async function POST(request) {
       const { data: existing } = await supabase
         .from('customers')
         .select('email')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .in('email', emails.slice(0, 500));
       existingEmails = (existing || []).map(e => e.email?.toLowerCase());
     }
@@ -261,7 +261,7 @@ export async function PUT(request) {
     const { data: existingCustomers } = await supabase
       .from('customers')
       .select('id, email')
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
     const emailToId = {};
     for (const c of (existingCustomers || [])) {
       if (c.email) emailToId[c.email.toLowerCase()] = c.id;
@@ -295,7 +295,7 @@ export async function PUT(request) {
         } else {
           // Create new customer
           const customerData = {
-            detailer_id: user.id,
+            detailer_id: user.detailer_id || user.id,
             name: mapped.name || '',
             email: email || null,
             phone: mapped.phone || null,
@@ -339,7 +339,7 @@ export async function PUT(request) {
         const price = parseFloat(mapped.total_price) || 0;
 
         const quoteData = {
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           client_name: mapped.name || '',
           client_email: email || null,
           customer_id: customerId || null,

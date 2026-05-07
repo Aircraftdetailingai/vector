@@ -61,7 +61,7 @@ export async function POST(request, { params }) {
       const { count } = await supabase
         .from('quotes')
         .select('id', { count: 'exact', head: true })
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .neq('status', 'draft')
         .gte('created_at', firstOfMonth);
 
@@ -84,7 +84,7 @@ export async function POST(request, { params }) {
       const { data: existingCustomer, error: lookupErr } = await supabase
         .from('customers')
         .select('id')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .eq('email', clientEmail.toLowerCase().trim())
         .maybeSingle();
 
@@ -106,7 +106,7 @@ export async function POST(request, { params }) {
       } else {
         // Create new customer with column-stripping retry
         let custRow = {
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           name: clientName || '',
           email: clientEmail.toLowerCase().trim(),
           phone: clientPhone || null,
@@ -223,7 +223,7 @@ export async function POST(request, { params }) {
       const { data: customer } = await supabase
         .from('customers')
         .select('customer_language')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .eq('email', clientEmail.toLowerCase().trim())
         .maybeSingle();
       if (customer?.customer_language) customerLanguage = customer.customer_language;
@@ -284,7 +284,7 @@ export async function POST(request, { params }) {
     const aircraft = updated?.aircraft_model || updated?.aircraft_type || 'Aircraft';
     const amount = updated?.total_price ? `$${Number(updated.total_price).toLocaleString()}` : '';
     logActivity({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       customer_email: clientEmail,
       activity_type: ACTIVITY.QUOTE_SENT,
       summary: `Quote sent for ${aircraft} ${amount}`.trim(),
@@ -300,7 +300,7 @@ export async function POST(request, { params }) {
     const multiplier = TIER_MULTIPLIERS[tier] || 1.0;
     const finalPoints = calculatePoints('SEND_QUOTE', tier);
     await supabase.from('points_ledger').insert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       action: 'SEND_QUOTE',
       base_points: config.base,
       multiplier,

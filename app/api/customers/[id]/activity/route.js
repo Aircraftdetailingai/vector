@@ -54,7 +54,7 @@ export async function GET(request, { params }) {
     .from('customers')
     .select('email, created_at')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!customer) {
@@ -69,26 +69,26 @@ export async function GET(request, { params }) {
   const [activityData, quotes, feedbackData, notesData] = await Promise.all([
     // Explicit activity log entries
     queryWithRetry(supabase, 'customer_activity_log', '*',
-      { detailer_id: user.id, customer_email: email },
+      { detailer_id: user.detailer_id || user.id, customer_email: email },
       { order: 'created_at', limit: 200 }
     ).catch(() => []),
 
     // All quotes for this customer (case-insensitive email match)
     queryWithRetry(supabase, 'quotes',
       'id, aircraft_model, aircraft_type, total_price, status, created_at, sent_at, viewed_at, accepted_at, paid_at, completed_at, scheduled_date, valid_until, client_email, followup_5day_sent',
-      { detailer_id: user.id, _ilike: { client_email: email } },
+      { detailer_id: user.detailer_id || user.id, _ilike: { client_email: email } },
       { order: 'created_at', limit: 100 }
     ),
 
     // Feedback from this customer
     queryWithRetry(supabase, 'feedback', 'id, quote_id, rating, comment, created_at',
-      { detailer_id: user.id, customer_email: email },
+      { detailer_id: user.detailer_id || user.id, customer_email: email },
       { order: 'created_at', limit: 50 }
     ).catch(() => []),
 
     // Notes
     queryWithRetry(supabase, 'customer_notes', 'id, content, created_at',
-      { customer_id: id, detailer_id: user.id },
+      { customer_id: id, detailer_id: user.detailer_id || user.id },
       { order: 'created_at', limit: 50 }
     ).catch(() => []),
   ]);

@@ -21,7 +21,7 @@ export async function GET(request) {
   const { data, error } = await supabase
     .from('detailer_locations')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('created_at', { ascending: true });
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
@@ -45,7 +45,7 @@ export async function POST(request) {
   const { data, error } = await supabase
     .from('detailer_locations')
     .insert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       name,
       location_type: location_type || 'other',
       airport_icao: airport_icao || null,
@@ -85,7 +85,7 @@ export async function PUT(request) {
     .from('detailer_locations')
     .update(updates)
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .select()
     .single();
 
@@ -115,7 +115,7 @@ export async function DELETE(request) {
     .from('detailer_locations')
     .delete()
     .eq('id', id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) return Response.json({ error: error.message }, { status: 500 });
 

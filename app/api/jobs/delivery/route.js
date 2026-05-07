@@ -25,7 +25,7 @@ export async function POST(request) {
     .from('quotes')
     .select('id, client_name, client_email, aircraft_type, aircraft_model, tail_number, share_link, detailer_id, total_price')
     .eq('id', quote_id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (qErr || !quote) return Response.json({ error: 'Quote not found' }, { status: 404 });

@@ -26,7 +26,7 @@ export async function GET(request) {
     const { data: baseline } = await supabase
       .from('detailer_baselines')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     return Response.json({
@@ -72,11 +72,11 @@ export async function POST(request) {
     const { data: existing } = await supabase
       .from('detailer_baselines')
       .select('id')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     const baselineData = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       annual_revenue_estimate: parseFloat(annual_revenue_estimate) || null,
       quote_creation_time_minutes: parseInt(quote_creation_time_minutes) || null,
       quote_conversion_rate: parseInt(quote_conversion_rate) || null,

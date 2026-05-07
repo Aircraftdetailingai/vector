@@ -44,7 +44,7 @@ export async function GET(request) {
     const { data, error } = await supabase
       .from('service_calibrations')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('updated_at', { ascending: false });
 
     if (error) {
@@ -81,7 +81,7 @@ export async function POST(request) {
       .from('service_calibrations')
       .upsert(
         {
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           service_id,
           service_name,
           reference_service_type,
@@ -127,7 +127,7 @@ export async function POST(request) {
       }
       const calibratedHours = Math.round(refHours * multiplier * 100) / 100;
       return {
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         aircraft_id: ac.id,
         service_id,
         service_name,
@@ -172,7 +172,7 @@ export async function DELETE(request) {
     const { error: calErr } = await supabase
       .from('service_calibrations')
       .delete()
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('service_id', service_id);
 
     if (calErr) {
@@ -183,7 +183,7 @@ export async function DELETE(request) {
     const { error: ovErr } = await supabase
       .from('detailer_aircraft_overrides')
       .delete()
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('service_id', service_id);
 
     if (ovErr) {

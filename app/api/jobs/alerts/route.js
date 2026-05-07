@@ -26,7 +26,7 @@ export async function GET(request) {
       created_at,
       jobs ( aircraft_model, tail_number )
     `)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('acknowledged', false)
     .order('created_at', { ascending: false });
 
@@ -65,7 +65,7 @@ export async function PATCH(request) {
     .from('job_alerts')
     .update({ acknowledged: true })
     .eq('id', alert_id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) {
     console.error('[jobs/alerts] PATCH error:', error.message);

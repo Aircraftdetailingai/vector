@@ -27,7 +27,7 @@ export async function GET(request) {
     supabase
       .from('quotes')
       .select('id, client_name, aircraft_model, aircraft_type, tail_number, total_price, status, scheduled_date, time_preference, assigned_team_member_ids')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .gte('scheduled_date', start)
       .lte('scheduled_date', end)
       .not('scheduled_date', 'is', null)
@@ -37,7 +37,7 @@ export async function GET(request) {
     supabase
       .from('google_calendar_events')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .gte('start_time', start)
       .lte('end_time', end)
       .order('start_time', { ascending: true }),
@@ -53,7 +53,7 @@ export async function GET(request) {
     supabase
       .from('team_members')
       .select('id, name, role, color, availability, status')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('status', 'active'),
   ]);
 

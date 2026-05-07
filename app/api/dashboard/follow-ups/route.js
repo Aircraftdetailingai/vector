@@ -20,7 +20,7 @@ export async function GET(request) {
   const { data: completedJobs } = await supabase
     .from('quotes')
     .select('id, client_name, client_email, aircraft_model, tail_number, completed_at, status, share_link, feedback_requested_at')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('status', 'completed')
     .lte('completed_at', sevenDaysAgo.toISOString())
     .gte('completed_at', thirtyDaysAgo.toISOString())
@@ -32,7 +32,7 @@ export async function GET(request) {
   const { data: recentCompleted } = await supabase
     .from('quotes')
     .select('id, client_name, client_email, aircraft_model, tail_number, completed_at, status, share_link, customer_opened_at')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('status', 'completed')
     .gte('completed_at', thirtyDaysAgo.toISOString())
     .order('completed_at', { ascending: false })
@@ -43,7 +43,7 @@ export async function GET(request) {
   const { data: recurring } = await supabase
     .from('customer_recommendations')
     .select('*, customers(name, email, company_name)')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .lte('next_due_date', thirtyDaysOut.toISOString().split('T')[0])
     .gte('next_due_date', now.toISOString().split('T')[0])
     .order('next_due_date', { ascending: true })

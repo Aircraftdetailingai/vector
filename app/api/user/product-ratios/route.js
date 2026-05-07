@@ -19,7 +19,7 @@ export async function GET(request) {
     const { data, error } = await supabase
       .from('product_ratios')
       .select('ratios')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .maybeSingle();
 
     if (error) {
@@ -51,7 +51,7 @@ export async function POST(request) {
   const { error } = await supabase
     .from('product_ratios')
     .upsert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       ratios,
       updated_at: new Date().toISOString(),
     }, { onConflict: 'detailer_id' });

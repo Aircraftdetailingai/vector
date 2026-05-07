@@ -152,7 +152,7 @@ export async function POST(request) {
     const { error } = await supabase
       .from('google_reviews')
       .upsert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         reviewer_name: review.reviewer_name,
         rating: review.rating,
         review_text: review.review_text,
@@ -191,7 +191,7 @@ export async function GET(request) {
   const { data: reviews, error } = await supabase
     .from('google_reviews')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('imported_at', { ascending: false });
 
   if (error) {

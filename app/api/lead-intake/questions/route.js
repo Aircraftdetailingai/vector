@@ -73,7 +73,7 @@ export async function GET(request) {
     const { data: questions, error } = await supabase
       .from('intake_questions')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('display_order', { ascending: true });
 
     if (error) {
@@ -116,7 +116,7 @@ export async function POST(request) {
       const { data: newQuestion, error } = await supabase
         .from('intake_questions')
         .insert({
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           question_key: question.key || `custom_${Date.now()}`,
           question_text: question.question,
           placeholder: question.placeholder || '',
@@ -140,11 +140,11 @@ export async function POST(request) {
       await supabase
         .from('intake_questions')
         .delete()
-        .eq('detailer_id', user.id);
+        .eq('detailer_id', user.detailer_id || user.id);
 
       if (questions?.length) {
         const toInsert = questions.map((q, idx) => ({
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           question_key: q.key || `custom_${idx}`,
           question_text: q.question,
           placeholder: q.placeholder || '',
@@ -171,7 +171,7 @@ export async function POST(request) {
       await supabase
         .from('intake_questions')
         .delete()
-        .eq('detailer_id', user.id);
+        .eq('detailer_id', user.detailer_id || user.id);
 
       return Response.json({ success: true, questions: DEFAULT_QUESTIONS });
     }
@@ -207,7 +207,7 @@ export async function DELETE(request) {
       .from('intake_questions')
       .delete()
       .eq('id', questionId)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });

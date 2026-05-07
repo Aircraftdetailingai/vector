@@ -20,7 +20,7 @@ export async function GET(request) {
     const { data: overrides, error } = await supabase
       .from('detailer_aircraft_overrides')
       .select('*')
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (error) {
       console.error('Failed to fetch overrides:', error);
@@ -49,7 +49,7 @@ export async function POST(request) {
 
     // Build the upsert row
     const row = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       aircraft_id: aircraft_id || null,
       custom_aircraft_id: custom_aircraft_id || null,
       service_id: service_id || null,
@@ -61,7 +61,7 @@ export async function POST(request) {
     let query = supabase
       .from('detailer_aircraft_overrides')
       .select('id')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('service_name', service_name);
 
     if (aircraft_id) {

@@ -42,7 +42,7 @@ export async function PUT(request, { params }) {
       .from('services')
       .update(updates)
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .select()
       .single();
 
@@ -56,7 +56,7 @@ export async function PUT(request, { params }) {
         .from('services')
         .update(retryUpdates)
         .eq('id', id)
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .select()
         .single();
       if (retry.error) {
@@ -101,7 +101,7 @@ export async function DELETE(request, { params }) {
       .from('services')
       .delete()
       .eq('id', id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (error) {
       console.error('Failed to delete service:', error);

@@ -22,7 +22,7 @@ export async function GET(request) {
     const { data, error } = await supabase
       .from('scheduled_quotes')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .is('cancelled_at', null)
       .order('send_at', { ascending: true });
 
@@ -70,7 +70,7 @@ export async function POST(request) {
     }
 
     const row = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       quote_id,
       send_at: sendTime.toISOString(),
       client_name: client_name || '',

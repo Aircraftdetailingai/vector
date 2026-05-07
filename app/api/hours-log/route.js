@@ -38,7 +38,7 @@ export async function POST(request) {
       .from('quotes')
       .select('aircraft_id, aircraft_model, aircraft_type')
       .eq('id', quote_id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (!quote) {
@@ -61,7 +61,7 @@ export async function POST(request) {
     // Insert hours log entries (uses actual DB columns)
     const toInsert = entries.map(entry => ({
       quote_id,
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       aircraft_id: quote.aircraft_id || null,
       aircraft_model: aircraftModel,
       service_type: entry.hours_field || entry.service_type || 'ext_wash_hours',

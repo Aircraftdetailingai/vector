@@ -30,7 +30,7 @@ export async function GET(request) {
     let query = supabase
       .from('time_entries')
       .select('*, team_members(name, type, hourly_pay)')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('date', { ascending: false })
       .limit(500);
 
@@ -104,7 +104,7 @@ export async function POST(request) {
         .from('team_members')
         .select('id')
         .eq('id', teamMemberId)
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .single();
 
       if (!member) {

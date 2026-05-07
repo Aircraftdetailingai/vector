@@ -53,7 +53,7 @@ export async function GET(request) {
   let query = supabase
     .from('products')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('category', { ascending: true })
     .order('name', { ascending: true });
 
@@ -127,7 +127,7 @@ export async function POST(request) {
   }
 
   const row = {
-    detailer_id: user.id,
+    detailer_id: user.detailer_id || user.id,
     name,
     brand: brand || '',
     category: category || 'other',
@@ -223,7 +223,7 @@ export async function PUT(request) {
       .from('products')
       .update(updates)
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .select()
       .single();
 
@@ -267,7 +267,7 @@ export async function PATCH(request) {
     .from('products')
     .select('*')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!product) {
@@ -283,7 +283,7 @@ export async function PATCH(request) {
       quantity: newQuantity,
     })
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .select()
     .single();
 
@@ -338,7 +338,7 @@ export async function DELETE(request) {
     .from('products')
     .delete()
     .eq('id', id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });

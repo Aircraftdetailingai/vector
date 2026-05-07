@@ -32,7 +32,7 @@ export async function GET(request) {
     supabase
       .from('quotes')
       .select('id, client_name, client_email, aircraft_model, aircraft_type, total_price, status, share_link, created_at')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .or(`client_name.ilike.${pattern},client_email.ilike.${pattern},aircraft_model.ilike.${pattern},aircraft_type.ilike.${pattern}`)
       .order('created_at', { ascending: false })
       .limit(5),
@@ -41,7 +41,7 @@ export async function GET(request) {
     supabase
       .from('customers')
       .select('id, name, email, phone, company_name')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .or(`name.ilike.${pattern},email.ilike.${pattern},company_name.ilike.${pattern}`)
       .order('updated_at', { ascending: false })
       .limit(5),

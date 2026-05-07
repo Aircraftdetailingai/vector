@@ -23,7 +23,7 @@ export async function GET(request) {
     const { data, error } = await supabase
       .from('marketing_campaigns')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -58,7 +58,7 @@ export async function POST(request) {
     const recipientCount = await countRecipients(supabase, user.id, segment || 'all');
 
     const row = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       name,
       subject,
       template_type: template_type || 'promotional',

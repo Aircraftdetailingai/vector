@@ -46,41 +46,41 @@ export async function GET(request) {
       supabase
         .from('quotes')
         .select('id, total_price, status')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .gte('created_at', weekAgo),
 
       // This week's points
       supabase
         .from('points_history')
         .select('points')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .gte('created_at', weekAgo),
 
       // This month's quotes (from start of month)
       supabase
         .from('quotes')
         .select('id, total_price, status')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .gte('created_at', startOfMonth),
 
       // All time stats
       supabase
         .from('quotes')
         .select('id, total_price, status')
-        .eq('detailer_id', user.id),
+        .eq('detailer_id', user.detailer_id || user.id),
 
       // Pending quotes (sent but not accepted/paid)
       supabase
         .from('quotes')
         .select('id, total_price')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .in('status', ['sent', 'viewed']),
 
       // Today's scheduled jobs
       supabase
         .from('quotes')
         .select('id')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .gte('scheduled_date', todayStart)
         .lt('scheduled_date', todayEnd)
         .in('status', ['paid', 'scheduled', 'in_progress']),
@@ -89,7 +89,7 @@ export async function GET(request) {
       supabase
         .from('quotes')
         .select('id, aircraft_model, aircraft_type, client_name, total_price, status, created_at, accepted_at, paid_at, completed_at, sent_at, viewed_at')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .order('created_at', { ascending: false })
         .limit(10),
 
@@ -97,13 +97,13 @@ export async function GET(request) {
       supabase
         .from('feedback')
         .select('rating')
-        .eq('detailer_id', user.id),
+        .eq('detailer_id', user.detailer_id || user.id),
 
       // Quotes expiring within 24h
       supabase
         .from('quotes')
         .select('id, client_name, aircraft_model, aircraft_type, total_price, valid_until, status, share_link')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .gte('valid_until', nowISO)
         .lte('valid_until', in24h)
         .in('status', ['sent', 'viewed']),
@@ -112,7 +112,7 @@ export async function GET(request) {
       supabase
         .from('quotes')
         .select('id, client_name, aircraft_model, aircraft_type, total_price, valid_until, status, share_link')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .eq('status', 'expired')
         .gte('valid_until', new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString())
         .order('valid_until', { ascending: false })
@@ -136,7 +136,7 @@ export async function GET(request) {
       const retryRes = await supabase
         .from('quotes')
         .select('id, aircraft_model, aircraft_type, client_name, total_price, status, created_at, paid_at, completed_at, sent_at, viewed_at')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .order('created_at', { ascending: false })
         .limit(10);
       recentQuotesRaw = retryRes.data || [];

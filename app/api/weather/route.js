@@ -156,7 +156,7 @@ export async function GET(request) {
       supabase
         .from('quotes')
         .select('id, client_name, aircraft_model, scheduled_date, total_price')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .gte('scheduled_date', today)
         .lte('scheduled_date', sevenDays)
         .in('status', ['paid', 'scheduled', 'in_progress'])

@@ -23,7 +23,7 @@ export async function GET(request) {
     const { data } = await supabase
       .from('team_permissions')
       .select('permissions')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     // Merge custom overrides with defaults
@@ -62,7 +62,7 @@ export async function POST(request) {
     const { error } = await supabase
       .from('team_permissions')
       .upsert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         permissions,
         updated_at: new Date().toISOString(),
       }, { onConflict: 'detailer_id' });

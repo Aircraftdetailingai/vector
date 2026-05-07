@@ -17,13 +17,13 @@ export async function POST(request) {
   await supabase
     .from('google_calendar_events')
     .delete()
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   // Delete connection
   await supabase
     .from('google_calendar_connections')
     .delete()
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   return Response.json({ success: true });
 }

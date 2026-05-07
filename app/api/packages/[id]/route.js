@@ -38,13 +38,13 @@ export async function PUT(request, { params }) {
       .from('packages')
       .update(updates)
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .select()
       .single();
 
     if (error && error.message?.includes('discount_percent')) {
       delete updates.discount_percent;
-      const retry = await supabase.from('packages').update(updates).eq('id', id).eq('detailer_id', user.id).select().single();
+      const retry = await supabase.from('packages').update(updates).eq('id', id).eq('detailer_id', user.detailer_id || user.id).select().single();
       pkg = retry.data;
       error = retry.error;
     }
@@ -81,7 +81,7 @@ export async function DELETE(request, { params }) {
       .from('packages')
       .delete()
       .eq('id', id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (error) {
       console.error('Failed to delete package:', error);

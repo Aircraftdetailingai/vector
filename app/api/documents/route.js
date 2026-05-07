@@ -34,7 +34,7 @@ export async function GET(request) {
     let query = supabase
       .from('documents')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('created_at', { ascending: false });
 
     if (category && category !== 'all') {
@@ -102,7 +102,7 @@ export async function POST(request) {
 
     // Insert document record
     const docRow = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       name,
       category,
       file_name: file.name,

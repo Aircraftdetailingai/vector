@@ -40,7 +40,7 @@ export async function GET(request) {
     const { data } = await supabase
       .from('customers')
       .select('name, email, phone, company_name, notes, created_at')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('name', { ascending: true });
     customers = data || [];
   } catch (e) {
@@ -48,7 +48,7 @@ export async function GET(request) {
     const { data: quotes } = await supabase
       .from('quotes')
       .select('client_name, client_email, client_phone')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .not('client_email', 'is', null);
 
     const seen = new Map();

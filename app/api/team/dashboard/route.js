@@ -18,7 +18,7 @@ export async function GET(request) {
   const { data: members } = await supabase
     .from('team_members')
     .select('id, name, role, color, status, hourly_pay')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('status', 'active');
 
   const teamMembers = members || [];
@@ -57,7 +57,7 @@ export async function GET(request) {
   const { data: upcomingJobs } = await supabase
     .from('quotes')
     .select('id, client_name, aircraft_model, aircraft_type, scheduled_date, status, assigned_team_member_ids')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .gte('scheduled_date', today)
     .lte('scheduled_date', twoWeeksOut.toISOString())
     .in('status', ['scheduled', 'paid']);

@@ -37,7 +37,7 @@ export async function PUT(request, { params }) {
       .from('addon_fees')
       .update(updates)
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .select()
       .single();
 
@@ -73,7 +73,7 @@ export async function DELETE(request, { params }) {
       .from('addon_fees')
       .delete()
       .eq('id', id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (error) {
       console.error('Failed to delete addon fee:', error);

@@ -28,7 +28,7 @@ export async function GET(request) {
     let query = supabase
       .from('quotes')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('is_recurring', true)
       .order('next_service_date', { ascending: true });
 
@@ -80,7 +80,7 @@ export async function PATCH(request) {
       .from('quotes')
       .select('id')
       .eq('id', quote_id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (!existing) {

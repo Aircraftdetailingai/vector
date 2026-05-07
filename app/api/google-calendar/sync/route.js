@@ -23,7 +23,7 @@ export async function POST(request) {
   const { data: conn } = await supabase
     .from('google_calendar_connections')
     .select('sync_token')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   // Sync window: 30 days back, 90 days forward
@@ -51,7 +51,7 @@ export async function POST(request) {
       await supabase
         .from('google_calendar_events')
         .delete()
-        .eq('detailer_id', user.id);
+        .eq('detailer_id', user.detailer_id || user.id);
     }
 
     const events = result.items || [];
@@ -64,7 +64,7 @@ export async function POST(request) {
         await supabase
           .from('google_calendar_events')
           .delete()
-          .eq('detailer_id', user.id)
+          .eq('detailer_id', user.detailer_id || user.id)
           .eq('google_event_id', event.id);
         deleted++;
         continue;
@@ -80,7 +80,7 @@ export async function POST(request) {
       await supabase
         .from('google_calendar_events')
         .upsert({
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           google_event_id: event.id,
           summary: event.summary || '(No title)',
           description: event.description || null,
@@ -103,7 +103,7 @@ export async function POST(request) {
     await supabase
       .from('google_calendar_connections')
       .update(updates)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     return Response.json({ success: true, synced, deleted });
   } catch (err) {

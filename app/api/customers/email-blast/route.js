@@ -36,7 +36,7 @@ export async function POST(request) {
     const { data: customers, error } = await supabase
       .from('customers')
       .select('id, email, name')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .in('id', customerIds);
 
     if (error || !customers?.length) {

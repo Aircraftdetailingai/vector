@@ -24,7 +24,7 @@ export async function GET(request) {
     .from('quotes')
     .select('id, aircraft_type, aircraft_model, aircraft_id, selected_services, line_items, client_name, status')
     .eq('id', jobId)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!job) return Response.json({ error: 'Job not found' }, { status: 404 });
@@ -72,7 +72,7 @@ export async function GET(request) {
   const { data: serviceProducts } = await supabase
     .from('service_products')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .in('service_id', serviceIds.length > 0 ? serviceIds : ['none']);
 
   // Get all products
@@ -90,14 +90,14 @@ export async function GET(request) {
   const { data: averages } = await supabase
     .from('product_consumption_averages')
     .select('*')
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   // Check if already logged
   const { data: existingLogs } = await supabase
     .from('product_usage_log')
     .select('*')
     .eq('job_id', jobId)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   // Build the pre-filled form data
   const productMap = Object.fromEntries(products.map(p => [p.id, p]));

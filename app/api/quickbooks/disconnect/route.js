@@ -21,7 +21,7 @@ export async function POST(request) {
   const { error } = await supabase
     .from('quickbooks_connections')
     .delete()
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) {
     console.error('QB disconnect error:', error);

@@ -66,7 +66,7 @@ export async function POST(request) {
         email: detailer?.email || user.email,
         name: detailer?.company || undefined,
         metadata: {
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
         },
       });
       customerId = customer.id;
@@ -155,14 +155,14 @@ export async function POST(request) {
       success_url: `${appUrl}/settings?upgrade=success&tier=${tier}`,
       cancel_url: `${appUrl}/settings?upgrade=cancelled`,
       metadata: {
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         tier: tier,
         billing: isAnnual ? 'annual' : 'monthly',
         promo_code: promoData?.code || '',
       },
       subscription_data: {
         metadata: {
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           tier: tier,
           billing: isAnnual ? 'annual' : 'monthly',
           promo_code: promoData?.code || '',

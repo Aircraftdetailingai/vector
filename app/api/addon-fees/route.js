@@ -26,7 +26,7 @@ export async function GET(request) {
     const { data: fees, error } = await supabase
       .from('addon_fees')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('created_at', { ascending: true });
 
     if (error) {
@@ -69,7 +69,7 @@ export async function POST(request) {
     const { data: fee, error } = await supabase
       .from('addon_fees')
       .insert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         name,
         description: description || '',
         fee_type: fee_type || 'flat',

@@ -76,7 +76,7 @@ export async function GET(request) {
     const { data: categories, error } = await supabase
       .from('service_categories')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('display_order', { ascending: true });
 
     if (error) {
@@ -126,7 +126,7 @@ export async function POST(request) {
     const { data: existing } = await supabase
       .from('service_categories')
       .select('display_order')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('display_order', { ascending: false })
       .limit(1);
 
@@ -135,7 +135,7 @@ export async function POST(request) {
     const { data: category, error } = await supabase
       .from('service_categories')
       .insert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         name,
         key,
         display_order: nextOrder,
@@ -180,7 +180,7 @@ export async function PUT(request) {
       .from('service_categories')
       .update(updates)
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .select()
       .single();
 
@@ -220,7 +220,7 @@ export async function DELETE(request) {
       .from('service_categories')
       .delete()
       .eq('id', id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });

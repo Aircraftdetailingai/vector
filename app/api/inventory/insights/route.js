@@ -40,26 +40,26 @@ export async function GET(request) {
   const { data: products } = await supabase
     .from('products')
     .select('*')
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   // Get equipment
   const { data: equipment } = await supabase
     .from('equipment')
     .select('*')
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   // Get product usage from job completion logs
   const { data: completionLogs } = await supabase
     .from('job_completion_logs')
     .select('product_cost, products_used, created_at')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .gte('created_at', startDate.toISOString());
 
   // Get completed jobs for the period
   const { data: completedJobs } = await supabase
     .from('quotes')
     .select('id, total_price, product_cost')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .in('status', ['completed', 'paid'])
     .gte('completed_at', startDate.toISOString());
 

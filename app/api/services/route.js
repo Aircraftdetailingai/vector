@@ -60,7 +60,7 @@ export async function GET(request) {
     const { data: services, error } = await supabase
       .from('services')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('sort_order', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true });
 
@@ -70,7 +70,7 @@ export async function GET(request) {
         const { data: fallback, error: fallbackErr } = await supabase
           .from('services')
           .select('*')
-          .eq('detailer_id', user.id)
+          .eq('detailer_id', user.detailer_id || user.id)
           .order('created_at', { ascending: true });
         if (fallbackErr) {
           console.error('Failed to fetch services (fallback):', fallbackErr);
@@ -91,7 +91,7 @@ export async function GET(request) {
         const { data: detailerServices } = await supabase
           .from('detailer_services')
           .select('service_name, db_field, default_hours, hourly_rate')
-          .eq('detailer_id', user.id)
+          .eq('detailer_id', user.detailer_id || user.id)
           .eq('enabled', true);
 
         if (detailerServices && detailerServices.length > 0) {
@@ -144,7 +144,7 @@ export async function POST(request) {
     }
 
     const row = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       name,
       description: description || '',
       hourly_rate: parseFloat(hourly_rate) || 0,
@@ -173,7 +173,7 @@ export async function POST(request) {
       const { count } = await supabase
         .from('services')
         .select('id', { count: 'exact', head: true })
-        .eq('detailer_id', user.id);
+        .eq('detailer_id', user.detailer_id || user.id);
       row.sort_order = count || 0;
     } catch (e) {
       // sort_order column may not exist yet

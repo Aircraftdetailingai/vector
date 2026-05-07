@@ -70,7 +70,7 @@ export async function POST(request) {
       reason: 'requested_by_customer',
       metadata: {
         quote_id: quoteId,
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         internal_reason: reason || 'No reason provided',
       },
     });

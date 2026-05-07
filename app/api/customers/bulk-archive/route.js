@@ -25,7 +25,7 @@ export async function POST(request) {
     const { data, error } = await supabase
       .from('customers')
       .update({ is_archived: archived })
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .in('id', customerIds)
       .select('id');
 

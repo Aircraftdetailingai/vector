@@ -21,7 +21,7 @@ export async function DELETE(request, { params }) {
     .from('jobs')
     .delete()
     .eq('id', id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (jobErr) {
     // Try deleting from quotes table (legacy jobs)
@@ -29,7 +29,7 @@ export async function DELETE(request, { params }) {
       .from('quotes')
       .delete()
       .eq('id', id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
     if (quoteErr) return Response.json({ error: 'Failed to delete' }, { status: 500 });
   }
 

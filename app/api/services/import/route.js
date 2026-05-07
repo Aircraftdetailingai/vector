@@ -32,7 +32,7 @@ export async function POST(request) {
 
     const toInsert = services.map(svc => {
       const row = {
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         name: svc.name,
         description: svc.description || '',
         hourly_rate: parseFloat(svc.hourly_rate) || 0,

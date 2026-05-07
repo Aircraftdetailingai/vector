@@ -51,7 +51,7 @@ export async function GET(request) {
     let customQuery = supabase
       .from('custom_aircraft')
       .select('id, manufacturer, model, category')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('model');
 
     if (manufacturer) customQuery = customQuery.eq('manufacturer', manufacturer);

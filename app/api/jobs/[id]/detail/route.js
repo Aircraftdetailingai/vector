@@ -23,7 +23,7 @@ export async function GET(request, { params }) {
     .from('jobs')
     .select('*')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (error || !job) return Response.json({ error: 'Job not found' }, { status: 404 });
@@ -61,7 +61,7 @@ export async function GET(request, { params }) {
   const { data: detailerServices } = await supabase
     .from('services')
     .select('name, hours_field, hourly_rate')
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
   const svcMap = {};
   for (const ds of (detailerServices || [])) {
     svcMap[ds.name?.toLowerCase()] = ds;

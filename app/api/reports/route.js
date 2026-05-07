@@ -30,7 +30,7 @@ export async function GET(request) {
     let quotes = null;
 
     for (let attempt = 0; attempt < 5; attempt++) {
-      let query = supabase.from('quotes').select(selectCols).eq('detailer_id', user.id);
+      let query = supabase.from('quotes').select(selectCols).eq('detailer_id', user.detailer_id || user.id);
       if (startDate) query = query.gte('created_at', startDate);
       if (endDate) query = query.lte('created_at', endDate);
       query = query.order('created_at', { ascending: true });

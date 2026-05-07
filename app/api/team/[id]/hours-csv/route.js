@@ -29,7 +29,7 @@ export async function GET(request, { params }) {
       .from('team_members')
       .select('id, name, pay_period_start')
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (memberErr || !member) {

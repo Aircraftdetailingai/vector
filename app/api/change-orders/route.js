@@ -109,7 +109,7 @@ export async function POST(request) {
       .insert({
         quote_id,
         job_id: job_id || null,
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         services: services || null,
         line_items: line_items || services || [],
         amount: parseFloat(amount),

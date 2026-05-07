@@ -18,7 +18,7 @@ export async function GET(request, { params }) {
     .from('team_members')
     .select('id, availability, name')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!member) return Response.json({ error: 'Team member not found' }, { status: 404 });
@@ -39,7 +39,7 @@ export async function POST(request, { params }) {
     .from('team_members')
     .select('id')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!member) return Response.json({ error: 'Team member not found' }, { status: 404 });

@@ -26,7 +26,7 @@ export async function GET(request) {
     let query = supabase
       .from('invoices')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('created_at', { ascending: false });
 
     if (status) {
@@ -152,7 +152,7 @@ export async function POST(request) {
         .from('invoices')
         .select('id, status, share_link, customer_email, total, created_at')
         .eq('job_id', job_id)
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .order('created_at', { ascending: false })
         .limit(1)
         .maybeSingle();
@@ -184,7 +184,7 @@ export async function POST(request) {
       : new Date(Date.now() + (net_terms || 30) * 24 * 60 * 60 * 1000).toISOString();
 
     const invoiceRow = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       job_id: job_id || null,
       customer_name,
       customer_email,

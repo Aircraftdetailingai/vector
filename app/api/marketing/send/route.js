@@ -97,7 +97,7 @@ export async function POST(request) {
       const { data: unsubs } = await supabase
         .from('marketing_unsubscribes')
         .select('email')
-        .eq('detailer_id', user.id);
+        .eq('detailer_id', user.detailer_id || user.id);
       if (unsubs) unsubscribedEmails = new Set(unsubs.map(u => u.email?.toLowerCase()));
     } catch {
       // Table might not exist yet
@@ -107,7 +107,7 @@ export async function POST(request) {
     let query = supabase
       .from('quotes')
       .select('client_email, client_name')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .not('client_email', 'is', null)
       .neq('client_email', '');
 

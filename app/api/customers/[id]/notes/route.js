@@ -23,7 +23,7 @@ export async function GET(request, { params }) {
     .from('customer_notes')
     .select('*')
     .eq('customer_id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('pinned', { ascending: false })
     .order('created_at', { ascending: false });
 
@@ -58,12 +58,12 @@ export async function POST(request, { params }) {
     .from('customers')
     .select('email')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   const row = {
     customer_id: id,
-    detailer_id: user.id,
+    detailer_id: user.detailer_id || user.id,
     content: content.trim(),
     pinned: pinned || false,
   };
@@ -82,7 +82,7 @@ export async function POST(request, { params }) {
   // Log activity
   if (customer?.email) {
     logActivity({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       customer_email: customer.email,
       activity_type: ACTIVITY.NOTE_ADDED,
       summary: `Note added: ${content.trim().slice(0, 80)}${content.trim().length > 80 ? '...' : ''}`,
@@ -115,7 +115,7 @@ export async function PATCH(request, { params }) {
     .from('customer_notes')
     .update(updates)
     .eq('id', note_id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .select()
     .single();
 
@@ -143,7 +143,7 @@ export async function DELETE(request, { params }) {
     .from('customer_notes')
     .delete()
     .eq('id', noteId)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });

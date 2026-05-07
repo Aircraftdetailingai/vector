@@ -56,7 +56,7 @@ export async function POST(request) {
     const { data: existing } = await supabase
       .from('points_ledger')
       .select('id')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('action', action)
       .limit(1);
 
@@ -102,7 +102,7 @@ export async function POST(request) {
   const { error: ledgerError } = await supabase
     .from('points_ledger')
     .insert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       action,
       base_points: config.base,
       multiplier,
@@ -123,7 +123,7 @@ export async function POST(request) {
     await supabase
       .from('points_ledger')
       .insert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         action: streakAction,
         base_points: streakConfig.base,
         multiplier,

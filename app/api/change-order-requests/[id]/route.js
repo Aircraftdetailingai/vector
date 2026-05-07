@@ -16,7 +16,7 @@ export async function GET(request, { params }) {
   const supabase = getSupabase();
 
   const { data, error } = await supabase.from('change_order_requests')
-    .select('*').eq('id', id).eq('detailer_id', user.id).single();
+    .select('*').eq('id', id).eq('detailer_id', user.detailer_id || user.id).single();
   if (error || !data) return Response.json({ error: 'Not found' }, { status: 404 });
   return Response.json(data);
 }
@@ -31,7 +31,7 @@ export async function PATCH(request, { params }) {
   const supabase = getSupabase();
 
   const { data: cor } = await supabase.from('change_order_requests')
-    .select('*').eq('id', id).eq('detailer_id', user.id).single();
+    .select('*').eq('id', id).eq('detailer_id', user.detailer_id || user.id).single();
   if (!cor) return Response.json({ error: 'Not found' }, { status: 404 });
 
   if (action === 'reject') {
@@ -39,7 +39,7 @@ export async function PATCH(request, { params }) {
     // Notify crew
     if (cor.team_member_id) {
       try { await supabase.from('notifications').insert({
-        detailer_id: user.id, type: 'change_order_rejected',
+        detailer_id: user.detailer_id || user.id, type: 'change_order_rejected',
         title: 'Change Order Rejected', message: `Your change order request was not approved.`,
         metadata: { change_order_request_id: id },
       }); } catch {}
@@ -59,7 +59,7 @@ export async function PATCH(request, { params }) {
     // Notify crew
     if (cor.team_member_id) {
       try { await supabase.from('notifications').insert({
-        detailer_id: user.id, type: 'change_order_approved',
+        detailer_id: user.detailer_id || user.id, type: 'change_order_approved',
         title: 'Change Order Approved', message: `Proceed with: ${cor.description?.slice(0, 80)}`,
         metadata: { change_order_request_id: id },
       }); } catch {}

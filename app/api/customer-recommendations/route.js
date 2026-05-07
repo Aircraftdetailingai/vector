@@ -17,7 +17,7 @@ export async function GET(request) {
   const tailNumber = searchParams.get('tail_number');
 
   const supabase = getSupabase();
-  let query = supabase.from('customer_recommendations').select('*').eq('detailer_id', user.id);
+  let query = supabase.from('customer_recommendations').select('*').eq('detailer_id', user.detailer_id || user.id);
   if (customerId) query = query.eq('customer_id', customerId);
   if (tailNumber) query = query.eq('tail_number', tailNumber);
   query = query.order('next_due_date', { ascending: true });
@@ -44,7 +44,7 @@ export async function POST(request) {
     : null;
 
   const record = {
-    detailer_id: user.id,
+    detailer_id: user.detailer_id || user.id,
     customer_id: customer_id || null,
     tail_number: tail_number || null,
     service_name,
@@ -58,7 +58,7 @@ export async function POST(request) {
 
   let result;
   if (id) {
-    const { data, error } = await supabase.from('customer_recommendations').update(record).eq('id', id).eq('detailer_id', user.id).select().single();
+    const { data, error } = await supabase.from('customer_recommendations').update(record).eq('id', id).eq('detailer_id', user.detailer_id || user.id).select().single();
     if (error) return Response.json({ error: error.message }, { status: 500 });
     result = data;
   } else {
@@ -81,7 +81,7 @@ export async function DELETE(request) {
   if (!id) return Response.json({ error: 'ID required' }, { status: 400 });
 
   const supabase = getSupabase();
-  await supabase.from('customer_recommendations').delete().eq('id', id).eq('detailer_id', user.id);
+  await supabase.from('customer_recommendations').delete().eq('id', id).eq('detailer_id', user.detailer_id || user.id);
 
   return Response.json({ success: true });
 }

@@ -25,7 +25,7 @@ export async function GET(request) {
   const { data: jobs } = await supabase
     .from('quotes')
     .select('id, aircraft_type, aircraft_model, aircraft_id, selected_services, line_items, scheduled_date, client_name, status')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .in('status', ['scheduled', 'in_progress', 'paid'])
     .gte('scheduled_date', now.toISOString())
     .lte('scheduled_date', future.toISOString())
@@ -39,7 +39,7 @@ export async function GET(request) {
   const { data: products } = await supabase
     .from('products')
     .select('*')
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (!products || products.length === 0) {
     return Response.json({ forecast: [], jobs: jobs || [], alerts: [] });
@@ -49,13 +49,13 @@ export async function GET(request) {
   const { data: serviceProducts } = await supabase
     .from('service_products')
     .select('*')
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   // Get consumption averages
   const { data: averages } = await supabase
     .from('product_consumption_averages')
     .select('*')
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   // Get network averages for enterprise users
   const { data: detailer } = await supabase

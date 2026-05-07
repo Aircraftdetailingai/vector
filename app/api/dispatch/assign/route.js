@@ -106,7 +106,7 @@ export async function POST(request) {
     .from('jobs')
     .select('*')
     .eq('id', job_id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (jobErr || !job) {
@@ -117,7 +117,7 @@ export async function POST(request) {
   const { data: members, error: mErr } = await supabase
     .from('team_members')
     .select('id, name, email')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .in('id', team_member_ids);
 
   if (mErr) {
@@ -139,7 +139,7 @@ export async function POST(request) {
         {
           job_id,
           team_member_id: member.id,
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           status: 'pending',
           notified_at: new Date().toISOString(),
         },
@@ -170,7 +170,7 @@ export async function POST(request) {
     // Activity log
     try {
       await supabase.from('crew_activity_log').insert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         team_member_id: member.id,
         team_member_name: member.name || null,
         job_id,
@@ -212,7 +212,7 @@ export async function DELETE(request) {
     .delete()
     .eq('job_id', job_id)
     .eq('team_member_id', team_member_id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) {
     console.error('[dispatch/assign] delete error:', error);

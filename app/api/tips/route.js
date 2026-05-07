@@ -169,7 +169,7 @@ export async function GET(request) {
   const { data: completedTips } = await supabase
     .from('points_history')
     .select('metadata')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('reason', 'complete_tip_task');
 
   const completedTipIds = (completedTips || [])
@@ -228,7 +228,7 @@ export async function POST(request) {
   const { data: existing } = await supabase
     .from('points_history')
     .select('id')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('reason', 'complete_tip_task')
     .contains('metadata', { tipId })
     .limit(1);
@@ -243,7 +243,7 @@ export async function POST(request) {
   await supabase
     .from('points_history')
     .insert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       points,
       reason: 'complete_tip_task',
       metadata: { tipId, tipTitle: tip.title },

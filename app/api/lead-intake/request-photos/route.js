@@ -17,7 +17,7 @@ export async function POST(request) {
 
   const supabase = getSupabase();
 
-  const { data: lead } = await supabase.from('intake_leads').select('*').eq('id', lead_id).eq('detailer_id', user.id).single();
+  const { data: lead } = await supabase.from('intake_leads').select('*').eq('id', lead_id).eq('detailer_id', user.detailer_id || user.id).single();
   if (!lead) return Response.json({ error: 'Lead not found' }, { status: 404 });
 
   const { data: detailer } = await supabase.from('detailers').select('company, name').eq('id', user.id).single();

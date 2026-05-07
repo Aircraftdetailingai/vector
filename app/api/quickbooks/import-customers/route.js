@@ -24,7 +24,7 @@ export async function POST(request) {
     const { data: connection, error: connErr } = await supabase
       .from('quickbooks_connections')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (connErr || !connection) {
@@ -50,7 +50,7 @@ export async function POST(request) {
             token_expires_at: new Date(Date.now() + newTokens.expires_in * 1000).toISOString(),
             updated_at: new Date().toISOString(),
           })
-          .eq('detailer_id', user.id);
+          .eq('detailer_id', user.detailer_id || user.id);
       } catch (refreshErr) {
         console.error('QB token refresh failed:', refreshErr);
         return Response.json({
@@ -84,7 +84,7 @@ export async function POST(request) {
         const { data: existing } = await supabase
           .from('customers')
           .select('id, phone, company_name')
-          .eq('detailer_id', user.id)
+          .eq('detailer_id', user.detailer_id || user.id)
           .eq('email', email)
           .maybeSingle();
 
@@ -104,7 +104,7 @@ export async function POST(request) {
         } else {
           // Insert new customer with column-stripping retry
           let row = {
-            detailer_id: user.id,
+            detailer_id: user.detailer_id || user.id,
             name: mapped.name,
             email,
             phone: mapped.phone || null,

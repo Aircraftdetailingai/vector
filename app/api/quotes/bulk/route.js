@@ -30,7 +30,7 @@ export async function POST(request) {
     .from('quotes')
     .select('id, detailer_id, status, client_email, client_name, share_link, aircraft_model, aircraft_type, total_price')
     .in('id', ids)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (fetchErr) {
     return Response.json({ error: fetchErr.message }, { status: 500 });

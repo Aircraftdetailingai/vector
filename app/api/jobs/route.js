@@ -35,7 +35,7 @@ export async function GET(request) {
     const { data, error } = await supabase
       .from('quotes')
       .select(selectCols)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .in('status', JOB_STATUSES)
       .order('scheduled_date', { ascending: true, nullsFirst: false });
 
@@ -60,7 +60,7 @@ export async function GET(request) {
     const { data: manualJobs } = await supabase
       .from('jobs')
       .select('id, customer_name, customer_email, customer_phone, aircraft_make, aircraft_model, tail_number, airport, services, total_price, status, scheduled_date, scheduled_time, schedule_override, payment_method, created_at, completed_at, completion_notes')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('created_at', { ascending: false });
 
     if (manualJobs?.length > 0) {
@@ -155,7 +155,7 @@ export async function POST(request) {
     .from('job_completions')
     .insert({
       quote_id,
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       revenue: quote.total_price,
       actual_hours: parseFloat(actual_hours),
       labor_rate: parseFloat(effectiveLaborRate),

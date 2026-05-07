@@ -437,7 +437,7 @@ export async function GET(request, { params }) {
   if (!quote) {
     const user = await getAuthUser(request);
     if (user) {
-      const { data } = await supabase.from('quotes').select('*').eq('id', id).eq('detailer_id', user.id).single();
+      const { data } = await supabase.from('quotes').select('*').eq('id', id).eq('detailer_id', user.detailer_id || user.id).single();
       quote = data;
     } else if (!shareToken) {
       return new Response('Unauthorized', { status: 401 });

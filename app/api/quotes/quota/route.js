@@ -33,7 +33,7 @@ export async function GET(request) {
   const { count, error } = await supabase
     .from('quotes')
     .select('id', { count: 'exact', head: true })
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .neq('status', 'draft')
     .gte('created_at', firstOfMonth);
 

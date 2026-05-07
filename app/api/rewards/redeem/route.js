@@ -74,7 +74,7 @@ export async function POST(request) {
   const { data: redemption, error: redemptionErr } = await supabase
     .from('reward_redemptions')
     .insert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       reward_id: reward.id,
       points_spent: reward.points_cost,
       status: 'pending',
@@ -99,7 +99,7 @@ export async function POST(request) {
   await supabase
     .from('points_ledger')
     .insert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       action: 'REDEEM_REWARD',
       base_points: -reward.points_cost,
       multiplier: 1.0,

@@ -20,7 +20,7 @@ export async function PATCH(request, { params }) {
     .from('feedback')
     .select('id, detailer_id')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!review) {

@@ -36,7 +36,7 @@ export async function GET(request) {
     const { count: serviceCount } = await supabase
       .from('services')
       .select('id', { count: 'exact', head: true })
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     return Response.json({
       onboarding_complete: data?.onboarding_complete || false,
@@ -141,7 +141,7 @@ export async function POST(request) {
             .from('services')
             .update({ hourly_rate: parseFloat(r.hourly_rate) || 0 })
             .eq('id', r.service_id)
-            .eq('detailer_id', user.id);
+            .eq('detailer_id', user.detailer_id || user.id);
         }
       }
       await supabase.from('detailers').update({ onboarding_step: 4 }).eq('id', user.id);
@@ -178,7 +178,7 @@ export async function POST(request) {
       const { data: existingCustomer } = await supabase
         .from('customers')
         .select('id')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .eq('email', normalizedEmail)
         .maybeSingle();
 
@@ -186,7 +186,7 @@ export async function POST(request) {
         await supabase.from('customers').update({ name: customerName || '' }).eq('id', existingCustomer.id);
       } else {
         await supabase.from('customers').insert({
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           email: normalizedEmail,
           name: customerName || '',
         });

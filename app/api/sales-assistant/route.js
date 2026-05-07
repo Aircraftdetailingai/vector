@@ -26,7 +26,7 @@ export async function GET(request) {
     const { data, error } = await supabase
       .from('sales_scripts')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('created_at', { ascending: false })
       .limit(20);
 

@@ -64,7 +64,7 @@ export async function POST(request, { params }) {
     .from('quotes')
     .select('id, detailer_id')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (quoteError || !quote) {

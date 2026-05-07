@@ -34,7 +34,7 @@ export async function GET(request) {
     let query = supabase
       .from('quotes')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order(sortField, { ascending: order === 'asc' })
       .limit(limit);
 
@@ -70,7 +70,7 @@ export async function GET(request) {
         const { data: customers } = await supabase
           .from('customers')
           .select('email, tags')
-          .eq('detailer_id', user.id)
+          .eq('detailer_id', user.detailer_id || user.id)
           .in('email', emails.map(e => e.toLowerCase()));
 
         if (customers) {
@@ -129,7 +129,7 @@ export async function POST(request) {
       const { count } = await supabase
         .from('quotes')
         .select('id', { count: 'exact', head: true })
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .neq('status', 'draft')
         .gte('created_at', firstOfMonth);
 
@@ -284,7 +284,7 @@ export async function POST(request) {
 
     // Build insert row - start with core columns that definitely exist
     const insertRow = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       aircraft_type,
       aircraft_model: aircraft_model || '',
       total_price: parseFloat(total_price) || 0,

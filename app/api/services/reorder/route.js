@@ -35,7 +35,7 @@ export async function POST(request) {
         .from('services')
         .update({ sort_order: index })
         .eq('id', id)
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
     );
 
     const results = await Promise.all(updates);

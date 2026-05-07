@@ -29,7 +29,7 @@ export async function POST(request, { params }) {
       .from('invoices')
       .select('*')
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (invoiceError || !invoice) {

@@ -24,13 +24,13 @@ export async function GET(request) {
   const { count } = await supabase
     .from('points_ledger')
     .select('id', { count: 'exact', head: true })
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   // Get paginated history
   const { data: history, error } = await supabase
     .from('points_ledger')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('created_at', { ascending: false })
     .range(offset, offset + limit - 1);
 

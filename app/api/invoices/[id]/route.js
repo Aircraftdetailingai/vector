@@ -25,7 +25,7 @@ export async function GET(request, { params }) {
       .from('invoices')
       .select('*')
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (error || !data) {
@@ -57,7 +57,7 @@ export async function PATCH(request, { params }) {
       .from('invoices')
       .select('id, status')
       .eq('id', id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (fetchError || !existing) {
@@ -147,7 +147,7 @@ export async function PATCH(request, { params }) {
         .from('invoices')
         .update(updateData)
         .eq('id', id)
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .select()
         .single();
 

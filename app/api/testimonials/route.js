@@ -27,7 +27,7 @@ export async function GET(request) {
     const { data: testimonials } = await supabase
       .from('testimonials')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('created_at', { ascending: false });
 
     // Get detailer info
@@ -41,7 +41,7 @@ export async function GET(request) {
     const { data: quotes } = await supabase
       .from('quotes')
       .select('total_price, status')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .in('status', ['paid', 'completed']);
 
     const totalRevenue = (quotes || []).reduce((sum, q) => sum + (q.total_price || 0), 0);
@@ -117,7 +117,7 @@ export async function POST(request) {
     const { data: quotes } = await supabase
       .from('quotes')
       .select('total_price, status')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .in('status', ['paid', 'completed']);
 
     const totalRevenue = (quotes || []).reduce((sum, q) => sum + (q.total_price || 0), 0);
@@ -126,7 +126,7 @@ export async function POST(request) {
     const { data: testimonial, error: testimonialError } = await supabase
       .from('testimonials')
       .insert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         rating,
         text: text || null,
         milestone: milestone || null,
@@ -152,7 +152,7 @@ export async function POST(request) {
     await supabase
       .from('points_history')
       .insert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         points: pointsAwarded,
         reason: 'testimonial',
         metadata: { testimonial_id: testimonial.id, has_text: !!text },

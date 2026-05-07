@@ -69,7 +69,7 @@ export async function GET(request) {
     .from('jobs')
     .select('id, services, airport, scheduled_date, scheduled_time, estimated_hours')
     .eq('id', jobId)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (jobErr || !job) {
@@ -83,7 +83,7 @@ export async function GET(request) {
   const { data: members, error: mErr } = await supabase
     .from('team_members')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('status', 'active');
 
   if (mErr) {
@@ -99,7 +99,7 @@ export async function GET(request) {
     const { data: dayAssignments, error: aErr } = await supabase
       .from('job_assignments')
       .select('team_member_id, jobs!inner(id, scheduled_date, estimated_hours)')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .in('team_member_id', memberIds)
       .in('status', ['pending', 'accepted']);
 

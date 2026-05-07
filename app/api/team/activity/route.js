@@ -23,7 +23,7 @@ export async function GET(request) {
   let query = supabase
     .from('crew_activity_log')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .gte('created_at', new Date(Date.now() - days * 86400000).toISOString())
     .order('created_at', { ascending: false })
     .limit(100);

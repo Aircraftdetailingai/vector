@@ -32,7 +32,7 @@ export async function GET(request) {
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = getSupabase();
-  const { data } = await supabase.from('intake_flows').select('questions, flow_nodes, flow_edges, updated_at').eq('detailer_id', user.id).single();
+  const { data } = await supabase.from('intake_flows').select('questions, flow_nodes, flow_edges, updated_at').eq('detailer_id', user.detailer_id || user.id).single();
 
   return Response.json({
     questions: data?.questions || DEFAULT_QUESTIONS,
@@ -54,7 +54,7 @@ export async function POST(request) {
   const supabase = getSupabase();
 
   const upsertData = {
-    detailer_id: user.id,
+    detailer_id: user.detailer_id || user.id,
     updated_at: new Date().toISOString(),
   };
 
@@ -92,7 +92,7 @@ export async function DELETE(request) {
   if (!user) return Response.json({ error: 'Unauthorized' }, { status: 401 });
 
   const supabase = getSupabase();
-  await supabase.from('intake_flows').delete().eq('detailer_id', user.id);
+  await supabase.from('intake_flows').delete().eq('detailer_id', user.detailer_id || user.id);
 
   return Response.json({ success: true, questions: DEFAULT_QUESTIONS });
 }

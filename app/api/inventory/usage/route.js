@@ -22,7 +22,7 @@ export async function GET(request) {
     const { data: logs } = await supabase
       .from('product_usage_log')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('job_id', jobId)
       .order('created_at', { ascending: true });
 
@@ -33,7 +33,7 @@ export async function GET(request) {
   const { data: logs } = await supabase
     .from('product_usage_log')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('created_at', { ascending: false })
     .limit(100);
 
@@ -58,7 +58,7 @@ export async function POST(request) {
     .from('quotes')
     .select('aircraft_type, aircraft_model, aircraft_id')
     .eq('id', job_id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!job) {
@@ -85,13 +85,13 @@ export async function POST(request) {
     .from('product_usage_log')
     .delete()
     .eq('job_id', job_id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   // Insert new log entries
   const rows = entries
     .filter(e => e.product_id && parseFloat(e.quantity_used) > 0)
     .map(e => ({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       job_id,
       product_id: e.product_id,
       service_id: e.service_id || null,

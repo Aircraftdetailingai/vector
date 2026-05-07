@@ -26,7 +26,7 @@ export async function GET(request) {
     const { data: services, error } = await supabase
       .from('detailer_services')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('category', { ascending: true })
       .order('display_order', { ascending: true });
 
@@ -69,7 +69,7 @@ export async function POST(request) {
     const { data: existing } = await supabase
       .from('detailer_services')
       .select('display_order')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('category', category || 'other')
       .order('display_order', { ascending: false })
       .limit(1);
@@ -79,7 +79,7 @@ export async function POST(request) {
     const { data: service, error } = await supabase
       .from('detailer_services')
       .insert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         service_key,
         service_name,
         description: description || '',
@@ -129,13 +129,13 @@ export async function PUT(request) {
       await supabase
         .from('detailer_services')
         .delete()
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .eq('category', categoryKey);
     }
 
     // Insert all services
     const toInsert = services.map((s, i) => ({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       service_key: `${categoryKey}_${Date.now()}_${i}`,
       service_name: s.name,
       description: s.description || '',

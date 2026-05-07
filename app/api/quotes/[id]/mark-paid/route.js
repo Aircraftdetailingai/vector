@@ -21,7 +21,7 @@ export async function POST(request, { params }) {
     .from('quotes')
     .select('*')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (qErr || !quote) return Response.json({ error: 'Quote not found' }, { status: 404 });
@@ -42,7 +42,7 @@ export async function POST(request, { params }) {
   try {
     await supabase.from('jobs').insert({
       quote_id: id,
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       customer_name: quote.client_name,
       customer_email: quote.client_email,
       tail_number: quote.tail_number,

@@ -28,11 +28,11 @@ export async function GET(request) {
       supabase
         .from('services')
         .select('id, hourly_rate', { count: 'exact', head: false })
-        .eq('detailer_id', user.id),
+        .eq('detailer_id', user.detailer_id || user.id),
       supabase
         .from('quotes')
         .select('id', { count: 'exact', head: true })
-        .eq('detailer_id', user.id),
+        .eq('detailer_id', user.detailer_id || user.id),
     ]);
 
     const detailer = detailerRes.data || {};

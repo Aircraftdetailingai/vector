@@ -49,7 +49,7 @@ export async function POST(request) {
       .from('quotes')
       .select('*')
       .eq('id', quote_id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (quoteError || !quote) {
@@ -61,7 +61,7 @@ export async function POST(request) {
       .from('job_completion_logs')
       .insert({
         quote_id,
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         customer_email: quote.customer_email,
         actual_hours: parseFloat(actual_hours) || quote.total_hours,
         quoted_hours: quote.total_hours,
@@ -103,7 +103,7 @@ export async function POST(request) {
 
         const hoursEntries = service_hours.map(sh => ({
           quote_id,
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           aircraft_id: quote.aircraft_id || null,
           aircraft_model: aircraftModel,
           service_type: sh.hours_field || 'ext_wash_hours',
@@ -229,7 +229,7 @@ export async function POST(request) {
       } else {
         await supabase.from('jobs').insert({
           quote_id,
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           customer_name: quote.client_name || quote.customer_name,
           customer_email: quote.client_email || quote.customer_email,
           tail_number: quote.tail_number,
@@ -251,7 +251,7 @@ export async function POST(request) {
     if (clientEmail) {
       const aircraft = quote.aircraft_model || quote.aircraft_type || 'Aircraft';
       logActivity({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         customer_email: clientEmail,
         activity_type: ACTIVITY.JOB_COMPLETED,
         summary: `Job completed for ${aircraft}`,
@@ -278,7 +278,7 @@ export async function POST(request) {
             .from('products')
             .select('quantity')
             .eq('id', usage.product_id)
-            .eq('detailer_id', user.id)
+            .eq('detailer_id', user.detailer_id || user.id)
             .single();
 
           if (product) {
@@ -290,7 +290,7 @@ export async function POST(request) {
                 updated_at: new Date().toISOString(),
               })
               .eq('id', usage.product_id)
-              .eq('detailer_id', user.id);
+              .eq('detailer_id', user.detailer_id || user.id);
           }
         }
       }
@@ -304,7 +304,7 @@ export async function POST(request) {
           .from('equipment')
           .select('jobs_completed')
           .eq('id', equipmentId)
-          .eq('detailer_id', user.id)
+          .eq('detailer_id', user.detailer_id || user.id)
           .single();
 
         if (equipment) {
@@ -315,7 +315,7 @@ export async function POST(request) {
               updated_at: new Date().toISOString(),
             })
             .eq('id', equipmentId)
-            .eq('detailer_id', user.id);
+            .eq('detailer_id', user.detailer_id || user.id);
         }
       }
     }
@@ -357,7 +357,7 @@ export async function POST(request) {
       await supabase
         .from('points_history')
         .insert({
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           points: totalPoints,
           reason: 'job_completion',
           metadata: {

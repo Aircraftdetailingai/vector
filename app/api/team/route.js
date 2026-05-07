@@ -27,7 +27,7 @@ export async function GET(request) {
     const { data: members, error } = await supabase
       .from('team_members')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -98,7 +98,7 @@ export async function POST(request) {
     const inviteToken = body.email ? crypto.randomUUID() : null;
 
     const insertData = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       name: body.name,
       email: body.email || null,
       phone: body.phone || null,
@@ -220,7 +220,7 @@ export async function PATCH(request) {
       .from('team_members')
       .select('*')
       .eq('id', member_id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (memberErr || !member) {

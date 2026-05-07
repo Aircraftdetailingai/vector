@@ -24,7 +24,7 @@ export async function GET(request) {
   const { data: members } = await supabase
     .from('team_members')
     .select('id, name, role, color, availability, status')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('status', 'active');
 
   if (!members?.length) {
@@ -45,7 +45,7 @@ export async function GET(request) {
   const { data: jobs } = await supabase
     .from('quotes')
     .select('id, client_name, aircraft_model, scheduled_date, status, assigned_team_member_ids')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .gte('scheduled_date', start)
     .lte('scheduled_date', end)
     .not('scheduled_date', 'is', null);

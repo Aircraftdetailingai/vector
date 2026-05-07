@@ -17,7 +17,7 @@ export async function GET(request) {
 
   const { data, error } = await supabase.from('change_order_requests')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('status', status)
     .order('created_at', { ascending: false })
     .limit(20);

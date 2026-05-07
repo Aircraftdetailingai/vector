@@ -23,7 +23,7 @@ export async function GET(request) {
   const { data: jobs, error } = await supabase
     .from('job_completions')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .gte('completed_at', startDate.toISOString());
 
   if (error) {

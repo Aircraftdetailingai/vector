@@ -24,7 +24,7 @@ export async function POST(request, { params }) {
     .from('jobs')
     .select('id, detailer_id, customer_name, aircraft_model, tail_number, delivery_link, status')
     .eq('id', jobId)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (jobErr || !job) return Response.json({ error: 'Job not found' }, { status: 404 });

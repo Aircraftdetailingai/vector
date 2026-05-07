@@ -379,7 +379,7 @@ Return ONLY valid JSON, no other text.`;
     if (supabase) {
       try {
         await supabase.from('sales_scripts').insert({
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           customer_type,
           company_name: company_name || null,
           contact_name: contact_name || null,

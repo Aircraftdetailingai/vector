@@ -19,7 +19,7 @@ export async function GET(request) {
   const { data: alerts, error } = await supabase
     .from('staffing_alerts')
     .select('id, quote_id, scheduled_date, alert_type, created_at, quotes(id, client_name, client_email, aircraft_model, aircraft_type, total_price, assigned_team_member_ids, status)')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .eq('resolved', false)
     .order('scheduled_date', { ascending: true });
 
@@ -53,7 +53,7 @@ export async function PATCH(request) {
       resolved_by: user.id,
     })
     .eq('id', id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) {
     console.error('[staffing-alerts] resolve error:', error.message);

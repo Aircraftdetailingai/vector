@@ -91,7 +91,7 @@ export async function POST(request) {
             product_description: 'Aircraft detailing services',
             mcc: '7349',
           },
-          metadata: { detailer_id: user.id },
+          metadata: { detailer_id: user.detailer_id || user.id },
         });
 
         accountId = account.id;
@@ -166,7 +166,7 @@ export async function POST(request) {
               product_description: 'Aircraft detailing services',
               mcc: '7349',
             },
-            metadata: { detailer_id: user.id },
+            metadata: { detailer_id: user.detailer_id || user.id },
           });
 
           await supabase.from('detailers').update({ stripe_account_id: freshAccount.id, stripe_onboarding_complete: false }).eq('id', user.id);

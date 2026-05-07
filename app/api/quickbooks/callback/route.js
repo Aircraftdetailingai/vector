@@ -56,7 +56,7 @@ export async function GET(request) {
     const { error: dbError } = await supabase
       .from('quickbooks_connections')
       .upsert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
         realm_id: realmId,

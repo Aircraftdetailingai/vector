@@ -16,7 +16,7 @@ export async function GET(request) {
   const { data: reviews, error } = await supabase
     .from('feedback')
     .select('id, rating, comment, customer_name, customer_email, is_public, created_at, quote_id, quotes(aircraft_model, aircraft_type)')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('created_at', { ascending: false });
 
   if (error) {

@@ -22,7 +22,7 @@ export async function GET(request) {
     const { data: connection } = await supabase
       .from('quickbooks_connections')
       .select('realm_id, token_expires_at, connected_at')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (!connection) {

@@ -35,7 +35,7 @@ export async function POST(request) {
     .from(table)
     .select('*')
     .eq('id', item_id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!item) return Response.json({ error: 'Item not found' }, { status: 404 });
@@ -49,7 +49,7 @@ export async function POST(request) {
       .from('products')
       .update({ quantity: (item.quantity || 0) - quantity })
       .eq('id', item_id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     // Create new product at destination with transferred quantity
     const newRow = { ...item };
@@ -63,7 +63,7 @@ export async function POST(request) {
     const { data: existing } = await supabase
       .from('products')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('name', item.name)
       .eq('location_id', to_location_id)
       .limit(1);
@@ -83,12 +83,12 @@ export async function POST(request) {
       .from(table)
       .update({ location_id: to_location_id })
       .eq('id', item_id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
   }
 
   // Log the transfer
   const transferRow = {
-    detailer_id: user.id,
+    detailer_id: user.detailer_id || user.id,
     item_type,
     item_id,
     from_location_id: fromLocationId,
@@ -118,7 +118,7 @@ export async function GET(request) {
   const { data, error } = await supabase
     .from('location_transfers')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('transferred_at', { ascending: false })
     .limit(50);
 

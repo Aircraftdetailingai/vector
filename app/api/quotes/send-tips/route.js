@@ -26,7 +26,7 @@ export async function POST(request) {
 
     if (user) {
       // Detailer: must own the quote
-      query = query.eq('detailer_id', user.id);
+      query = query.eq('detailer_id', user.detailer_id || user.id);
     } else if (shareLink) {
       // Customer: must provide valid share_link
       query = query.eq('share_link', shareLink);

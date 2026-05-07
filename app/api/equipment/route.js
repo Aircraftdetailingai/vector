@@ -83,7 +83,7 @@ export async function GET(request) {
   let query = supabase
     .from('equipment')
     .select('*')
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .order('category', { ascending: true })
     .order('name', { ascending: true });
 
@@ -192,7 +192,7 @@ export async function POST(request) {
   }
 
   const row = {
-    detailer_id: user.id,
+    detailer_id: user.detailer_id || user.id,
     name,
     brand: brand || null,
     model: model || null,
@@ -280,7 +280,7 @@ export async function PUT(request) {
   if (body.locationId !== undefined) updates.location_id = body.locationId || null;
 
   const { data: item, error } = await retryStrippingColumns(
-    supabase, 'equipment', 'update', updates, { id, detailer_id: user.id }
+    supabase, 'equipment', 'update', updates, { id, detailer_id: user.detailer_id || user.id }
   );
 
   if (error) {
@@ -314,7 +314,7 @@ export async function PATCH(request) {
     .from('equipment')
     .select('jobs_completed')
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .single();
 
   if (!current) {
@@ -328,7 +328,7 @@ export async function PATCH(request) {
       updated_at: new Date().toISOString(),
     })
     .eq('id', id)
-    .eq('detailer_id', user.id)
+    .eq('detailer_id', user.detailer_id || user.id)
     .select()
     .single();
 
@@ -362,7 +362,7 @@ export async function DELETE(request) {
     .from('equipment')
     .delete()
     .eq('id', id)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (error) {
     return Response.json({ error: error.message }, { status: 500 });

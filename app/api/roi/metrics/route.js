@@ -30,7 +30,7 @@ export async function GET(request) {
     const { data: baseline } = await supabase
       .from('detailer_baselines')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     // Get detailer info
@@ -55,14 +55,14 @@ export async function GET(request) {
     const { data: quotes } = await supabase
       .from('quotes')
       .select('id, status, total_price, created_at, sent_at, paid_at, creation_seconds')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .gte('created_at', startDate.toISOString());
 
     // Get change orders (upsells)
     const { data: changeOrders } = await supabase
       .from('change_orders')
       .select('id, amount, status, created_at')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('status', 'approved')
       .gte('created_at', startDate.toISOString());
 
@@ -70,7 +70,7 @@ export async function GET(request) {
     const { data: recommendations } = await supabase
       .from('smart_recommendations')
       .select('id, type, data, acted_on_at')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('acted_on', true)
       .gte('acted_on_at', startDate.toISOString());
 
@@ -78,7 +78,7 @@ export async function GET(request) {
     const { data: completionLogs } = await supabase
       .from('job_completion_logs')
       .select('wait_time_minutes, repositioning_needed')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .gte('created_at', startDate.toISOString());
 
     // Calculate metrics

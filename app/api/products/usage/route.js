@@ -31,7 +31,7 @@ export async function GET(request) {
   const { data: userQuotes } = await supabase
     .from('quotes')
     .select('id')
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   const quoteIds = userQuotes?.map(q => q.id) || [];
   if (quoteIds.length === 0) {
@@ -117,7 +117,7 @@ export async function POST(request) {
   await supabase
     .from('points_history')
     .insert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       points,
       reason: 'log_product_usage',
       metadata: { quoteId, productId },

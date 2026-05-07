@@ -213,7 +213,7 @@ export async function GET(request) {
     const { data: existing, error: existingError } = await supabase
       .from('smart_recommendations')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('acted_on', false)
       .eq('dismissed', false)
       .order('priority', { ascending: false })
@@ -239,7 +239,7 @@ export async function GET(request) {
     // Save new recommendations to database
     if (newRecs.length > 0) {
       const toInsert = newRecs.map(r => ({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         type: r.type,
         priority: r.priority,
         title: r.title,
@@ -257,7 +257,7 @@ export async function GET(request) {
     const { data: allRecs } = await supabase
       .from('smart_recommendations')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .eq('acted_on', false)
       .eq('dismissed', false)
       .order('priority', { ascending: false })
@@ -299,7 +299,7 @@ export async function POST(request) {
       .from('smart_recommendations')
       .select('*')
       .eq('id', recommendationId)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (!rec) {
@@ -329,7 +329,7 @@ export async function POST(request) {
       await supabase
         .from('points_history')
         .insert({
-          detailer_id: user.id,
+          detailer_id: user.detailer_id || user.id,
           points: pointsAwarded,
           reason: 'act_on_recommendation',
           metadata: { recommendationId, type: rec.type, title: rec.title },

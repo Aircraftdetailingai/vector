@@ -37,7 +37,7 @@ export async function GET(request) {
       let query = supabase
         .from('customers')
         .select(selectCols)
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .order('created_at', { ascending: false })
         .limit(limit);
 
@@ -93,7 +93,7 @@ export async function GET(request) {
         const { data: quotes } = await supabase
           .from('quotes')
           .select('id, status, total_price, created_at')
-          .eq('detailer_id', user.id)
+          .eq('detailer_id', user.detailer_id || user.id)
           .eq('client_email', c.email)
           .order('created_at', { ascending: false });
 
@@ -190,7 +190,7 @@ export async function POST(request) {
       const { data: existing, error: lookupErr } = await supabase
         .from('customers')
         .select('*')
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', user.detailer_id || user.id)
         .eq('email', normalizedEmail)
         .single();
 
@@ -229,7 +229,7 @@ export async function POST(request) {
 
     // Create new customer
     const row = {
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       name,
       email: normalizedEmail,
       phone: phone || null,

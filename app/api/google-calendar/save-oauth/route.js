@@ -26,7 +26,7 @@ export async function POST(request) {
   const { error: dbError } = await supabase
     .from('google_calendar_connections')
     .upsert({
-      detailer_id: user.id,
+      detailer_id: user.detailer_id || user.id,
       access_token,
       refresh_token: refresh_token || null,
       token_expires_at: expiresAt.toISOString(),
@@ -41,7 +41,7 @@ export async function POST(request) {
     const { error: retryError } = await supabase
       .from('google_calendar_connections')
       .upsert({
-        detailer_id: user.id,
+        detailer_id: user.detailer_id || user.id,
         access_token,
         refresh_token: refresh_token || null,
         token_expires_at: expiresAt.toISOString(),

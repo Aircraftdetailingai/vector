@@ -52,13 +52,13 @@ export async function GET(request) {
   // Fetch all data in parallel
   const [customersRes, quotesRes, servicesRes, productsRes] = await Promise.all([
     supabase.from('customers').select('name, email, phone, company_name, tags, notes, created_at')
-      .eq('detailer_id', user.id).order('name'),
+      .eq('detailer_id', user.detailer_id || user.id).order('name'),
     supabase.from('quotes').select('client_name, client_email, aircraft_type, aircraft_model, tail_number, total_price, total_hours, status, notes, created_at')
-      .eq('detailer_id', user.id).order('created_at', { ascending: false }),
+      .eq('detailer_id', user.detailer_id || user.id).order('created_at', { ascending: false }),
     supabase.from('services').select('name, description, hourly_rate, category, sort_order')
-      .eq('detailer_id', user.id).order('sort_order'),
+      .eq('detailer_id', user.detailer_id || user.id).order('sort_order'),
     supabase.from('products').select('name, brand, category, unit, size, cost_per_unit, quantity, reorder_level, supplier, notes')
-      .eq('detailer_id', user.id).order('name'),
+      .eq('detailer_id', user.detailer_id || user.id).order('name'),
   ]);
 
   const customers = (customersRes.data || []).map(c => ({

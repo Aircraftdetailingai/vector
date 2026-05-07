@@ -68,7 +68,7 @@ export async function POST(request) {
       .from('services')
       .select('id')
       .eq('id', service_id)
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', user.detailer_id || user.id)
       .single();
 
     if (!svc) return Response.json({ error: 'Service not found' }, { status: 404 });

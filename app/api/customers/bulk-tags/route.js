@@ -37,7 +37,7 @@ export async function POST(request) {
     .from('customers')
     .select('id, tags')
     .in('id', customerIds)
-    .eq('detailer_id', user.id);
+    .eq('detailer_id', user.detailer_id || user.id);
 
   if (fetchErr) {
     return Response.json({ error: fetchErr.message }, { status: 500 });
@@ -67,7 +67,7 @@ export async function POST(request) {
       .from('customers')
       .update({ tags: newTags, updated_at: new Date().toISOString() })
       .eq('id', customer.id)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', user.detailer_id || user.id);
 
     if (!updateErr) updated++;
   }
