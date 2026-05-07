@@ -1,8 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import { Resend } from 'resend';
 import { getAuthUser } from '@/lib/auth';
+import { resolveDetailerId } from '@/lib/resolve-detailer';
 
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+export const fetchCache = 'force-no-store';
 
 let _resend;
 function getResend() {
@@ -10,11 +13,16 @@ function getResend() {
   return _resend;
 }
 
+// no-store fetch (d7b2d9e) — Next's Data Cache otherwise serves stale
+// intake_leads snapshots inside the Function runtime, which is what made
+// Brett's Requests page render zero leads while 10 rows existed in DB.
 function getSupabase() {
   const url = process.env.SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_KEY;
   if (!url || !key) return null;
-  return createClient(url, key);
+  return createClient(url, key, {
+    global: { fetch: (u, opts) => fetch(u, { ...opts, cache: 'no-store' }) },
+  });
 }
 
 // GET - Get leads for detailer
@@ -30,13 +38,16 @@ export async function GET(request) {
       return Response.json({ error: 'Database not configured' }, { status: 500 });
     }
 
+    const detailerId = await resolveDetailerId(supabase, user);
+    console.log('[requests-list] resolved detailerId:', detailerId, 'user.id:', user.id, 'user.detailer_id:', user.detailer_id, 'role:', user.role || 'owner');
+
     const { searchParams } = new URL(request.url);
     const status = searchParams.get('status');
 
     let query = supabase
       .from('intake_leads')
       .select('*')
-      .eq('detailer_id', user.id)
+      .eq('detailer_id', detailerId)
       .order('created_at', { ascending: false });
 
     const id = searchParams.get('id');
@@ -56,7 +67,11 @@ export async function GET(request) {
       return Response.json({ error: error.message }, { status: 500 });
     }
 
-    return Response.json({ leads: leads || [] });
+    console.log('[requests-list] returned rows:', leads?.length || 0);
+    return new Response(JSON.stringify({ leads: leads || [] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store, max-age=0' },
+    });
 
   } catch (err) {
     return Response.json({ error: err.message }, { status: 500 });
@@ -159,6 +174,7 @@ export async function POST(request) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
+      const detailerId = await resolveDetailerId(supabase, user);
       const { lead_id, status } = body;
 
       const updateData = { status };
@@ -168,7 +184,7 @@ export async function POST(request) {
         .from('intake_leads')
         .update(updateData)
         .eq('id', lead_id)
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', detailerId)
         .select()
         .single();
 
@@ -178,7 +194,7 @@ export async function POST(request) {
           .from('intake_leads')
           .update({ status })
           .eq('id', lead_id)
-          .eq('detailer_id', user.id)
+          .eq('detailer_id', detailerId)
           .select()
           .single();
         if (retryErr) return Response.json({ error: retryErr.message }, { status: 500 });
@@ -199,6 +215,7 @@ export async function POST(request) {
         return Response.json({ error: 'Unauthorized' }, { status: 401 });
       }
 
+      const detailerId = await resolveDetailerId(supabase, user);
       const { lead_id } = body;
 
       // Get lead
@@ -206,7 +223,7 @@ export async function POST(request) {
         .from('intake_leads')
         .select('*')
         .eq('id', lead_id)
-        .eq('detailer_id', user.id)
+        .eq('detailer_id', detailerId)
         .single();
 
       if (leadError || !lead) {
@@ -217,7 +234,7 @@ export async function POST(request) {
       const { data: quote, error: quoteError } = await supabase
         .from('quotes')
         .insert({
-          detailer_id: user.id,
+          detailer_id: detailerId,
           customer_name: lead.customer_name,
           customer_email: lead.customer_email,
           customer_phone: lead.customer_phone,
@@ -245,8 +262,14 @@ export async function POST(request) {
     }
 
     // No action field — treat as direct quote request submission
+    // PUBLIC PATH: no Authorization header required. detailer_id arrives in
+    // the body after the public form resolves slug → detailer via
+    // /api/detailers/resolve. Photo URLs are pre-uploaded by the public
+    // /api/lead-intake/upload-photos endpoint (also unauthenticated).
     if (body.detailer_id && (body.name || body.email)) {
       const { detailer_id, name, email, phone, aircraft_model, tail_number, airport, services_requested, notes, photo_urls, sms_opted_in, intake_responses, source } = body;
+
+      console.log('[public-quote-request] detailer_id:', detailer_id, 'source:', source, 'photos:', Array.isArray(photo_urls) ? photo_urls.length : 0, 'name:', name, 'email:', email);
 
       const { data: lead, error } = await supabase
         .from('intake_leads')
@@ -270,9 +293,11 @@ export async function POST(request) {
         .single();
 
       if (error) {
-        console.error('Lead insert error:', error);
+        console.error('[public-quote-request] insert error:', error.message, 'detailer_id:', detailer_id);
         return Response.json({ error: error.message }, { status: 500 });
       }
+
+      console.log('[public-quote-request] inserted lead:', lead?.id, 'for detailer:', detailer_id);
 
       // Send emails (non-blocking — don't hold up the response)
       if (process.env.RESEND_API_KEY) {
@@ -377,6 +402,7 @@ export async function DELETE(request) {
       return Response.json({ error: 'Database not configured' }, { status: 500 });
     }
 
+    const detailerId = await resolveDetailerId(supabase, user);
     const { searchParams } = new URL(request.url);
     const leadId = searchParams.get('id');
 
@@ -388,7 +414,7 @@ export async function DELETE(request) {
       .from('intake_leads')
       .delete()
       .eq('id', leadId)
-      .eq('detailer_id', user.id);
+      .eq('detailer_id', detailerId);
 
     if (error) {
       return Response.json({ error: error.message }, { status: 500 });
