@@ -35,12 +35,13 @@ export default function CalibrationModal({
   // Slider is the sole adjustment input; ratio is always "ready" because the
   // slider always carries a value. Anchor props are still received so the
   // Live Preview fetch can render rows for the detailer's chosen aircraft.
-  // Symmetric -100..+100 range so 0% sits in the geometric middle of the
-  // track. Existing rows saved against the old -50..+200 range get clamped
-  // in on read so the slider thumb still snaps to a valid position; the
-  // saved DB value is left alone (the next save will overwrite with a
-  // clamped value).
-  const adjustmentPct = Math.max(-100, Math.min(100, manualAdjustmentPct));
+  // Symmetric -300..+300 range so 0% sits in the geometric middle of the
+  // track while still giving Brett headroom for fixed-minimum and 3x-of-
+  // reference services. Existing rows saved against the old -50..+200 or
+  // -100..+100 ranges get clamped in on read so the slider thumb still
+  // snaps to a valid position; the saved DB value is left alone (the
+  // next save will overwrite with a clamped value).
+  const adjustmentPct = Math.max(-300, Math.min(300, manualAdjustmentPct));
   const computedReady = true;
 
   // Load saved calibration (or reset to defaults) when modal opens
@@ -52,7 +53,7 @@ export default function CalibrationModal({
     if (existing) {
       setReferenceType(existing.reference_service_type || 'polish');
       const saved = Number.isFinite(existing.adjustment_pct) ? existing.adjustment_pct : 0;
-      setManualAdjustmentPct(Math.max(-100, Math.min(100, saved)));
+      setManualAdjustmentPct(Math.max(-300, Math.min(300, saved)));
     } else {
       setReferenceType('polish');
       setManualAdjustmentPct(0);
@@ -232,17 +233,17 @@ export default function CalibrationModal({
             </label>
             <input
               type="range"
-              min="-100"
-              max="100"
+              min="-300"
+              max="300"
               step="5"
               value={manualAdjustmentPct}
               onChange={(e) => setManualAdjustmentPct(parseInt(e.target.value, 10) || 0)}
               className="w-full accent-v-gold"
             />
             <div className="flex justify-between text-[10px] text-v-text-secondary mt-1">
-              <span>-100%</span>
+              <span>-300%</span>
               <span>0%</span>
-              <span>+100%</span>
+              <span>+300%</span>
             </div>
           </div>
 
