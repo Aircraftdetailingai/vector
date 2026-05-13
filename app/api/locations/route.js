@@ -10,12 +10,20 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-// Returns { allowed, limit, current, plan } — allowed=true when the detailer
-// can have one more active location. Reads limits from plan_limits at
-// runtime so plan tiers can be retuned without a code change. Existing
-// over-limit detailers (Pristine Jets) are NOT trimmed here; the cron
-// handles their 30-day grace period. We only block NEW active additions.
-async function checkAirportLimit(supabase, detailerId) {
+function normalizeTier(t) {
+  const v = String(t || 'secondary').toLowerCase();
+  return v === 'primary' ? 'primary' : 'secondary';
+}
+
+// Returns { allowed, limit, current, plan, tier } — allowed=true when the
+// detailer can have one more active location in the requested tier. Reads
+// per-tier limits from plan_limits at runtime so plan tiers can be retuned
+// without a code change. Existing over-limit detailers (Pristine Jets et al)
+// are NOT trimmed here; the cron handles their 30-day grace period.
+async function checkAirportTierLimit(supabase, detailerId, tier) {
+  const normTier = normalizeTier(tier);
+  const limitCol = normTier === 'primary' ? 'primary_limit' : 'secondary_limit';
+
   const { data: detailer } = await supabase
     .from('detailers')
     .select('plan')
@@ -25,27 +33,29 @@ async function checkAirportLimit(supabase, detailerId) {
 
   const { data: limitRow } = await supabase
     .from('plan_limits')
-    .select('airport_limit')
+    .select(`${limitCol}`)
     .eq('plan', plan)
     .maybeSingle();
-  const limit = limitRow?.airport_limit;
+  const limit = limitRow?.[limitCol];
   if (typeof limit !== 'number') {
-    // Plan missing from plan_limits — allow through and let the cron log it.
-    return { allowed: true, limit: null, current: 0, plan };
+    // Plan missing from plan_limits — allow through, let the cron log it.
+    return { allowed: true, limit: null, current: 0, plan, tier: normTier };
   }
 
   const { count } = await supabase
     .from('detailer_locations')
     .select('id', { count: 'exact', head: true })
     .eq('detailer_id', detailerId)
-    .eq('active', true);
+    .eq('active', true)
+    .eq('tier', normTier);
 
-  return { allowed: (count || 0) < limit, limit, current: count || 0, plan };
+  return { allowed: (count || 0) < limit, limit, current: count || 0, plan, tier: normTier };
 }
 
-function airportLimitResponse({ limit, current, plan }) {
+function airportLimitResponse({ limit, current, plan, tier }) {
   return Response.json({
     error: 'airport_limit_reached',
+    tier,
     limit,
     current,
     plan,
@@ -81,15 +91,16 @@ export async function POST(request) {
   if (!supabase) return Response.json({ error: 'DB not configured' }, { status: 500 });
 
   const body = await request.json();
-  const { name, location_type, airport_icao, address, notes } = body;
+  const { name, location_type, airport_icao, address, notes, tier } = body;
 
   if (!name) return Response.json({ error: 'Name required' }, { status: 400 });
 
   const detailerId = user.detailer_id || user.id;
+  const normTier = normalizeTier(tier);
 
   // New rows default to active=true at the DB layer, so this insert counts
-  // against the plan limit. Block before insert.
-  const check = await checkAirportLimit(supabase, detailerId);
+  // against the destination-tier plan limit. Block before insert.
+  const check = await checkAirportTierLimit(supabase, detailerId, normTier);
   if (!check.allowed) return airportLimitResponse(check);
 
   const { data, error } = await supabase
@@ -101,6 +112,7 @@ export async function POST(request) {
       airport_icao: airport_icao || null,
       address: address || null,
       notes: notes || null,
+      tier: normTier,
     })
     .select()
     .single();
@@ -119,23 +131,32 @@ export async function PUT(request) {
   if (!supabase) return Response.json({ error: 'DB not configured' }, { status: 500 });
 
   const body = await request.json();
-  const { id, name, location_type, airport_icao, address, notes, active } = body;
+  const { id, name, location_type, airport_icao, address, notes, active, tier } = body;
 
   if (!id) return Response.json({ error: 'Location ID required' }, { status: 400 });
 
   const detailerId = user.detailer_id || user.id;
 
-  // Reactivating an inactive row counts as a new active addition. Look up
-  // the current row to know whether this PUT actually flips active false→true.
-  if (active === true) {
-    const { data: existing } = await supabase
-      .from('detailer_locations')
-      .select('active')
-      .eq('id', id)
-      .eq('detailer_id', detailerId)
-      .maybeSingle();
-    if (existing && existing.active === false) {
-      const check = await checkAirportLimit(supabase, detailerId);
+  // Resolve the row's final state after this PUT applies. Limit-check fires
+  // when the row would become (or already is) active in a tier it wasn't
+  // already counted toward — i.e. inactive→active, OR active+tier change.
+  const { data: existing } = await supabase
+    .from('detailer_locations')
+    .select('active, tier')
+    .eq('id', id)
+    .eq('detailer_id', detailerId)
+    .maybeSingle();
+
+  if (existing) {
+    const wasActive = existing.active === true;
+    const wasTier = normalizeTier(existing.tier);
+    const nextActive = active === undefined ? wasActive : !!active;
+    const nextTier = tier === undefined ? wasTier : normalizeTier(tier);
+
+    const becameActive = !wasActive && nextActive;
+    const switchedTierWhileActive = wasActive && nextActive && wasTier !== nextTier;
+    if (becameActive || switchedTierWhileActive) {
+      const check = await checkAirportTierLimit(supabase, detailerId, nextTier);
       if (!check.allowed) return airportLimitResponse(check);
     }
   }
@@ -147,6 +168,7 @@ export async function PUT(request) {
   if (address !== undefined) updates.address = address || null;
   if (notes !== undefined) updates.notes = notes || null;
   if (active !== undefined) updates.active = active;
+  if (tier !== undefined) updates.tier = normalizeTier(tier);
 
   const { data, error } = await supabase
     .from('detailer_locations')
