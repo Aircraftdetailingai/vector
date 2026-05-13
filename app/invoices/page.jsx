@@ -2137,8 +2137,19 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
             <div className="grid grid-cols-2 gap-3 mb-4">
               <div>
                 <label className="block text-xs text-v-text-secondary mb-1">Name</label>
-                <input value={editForm.customer_name} onChange={e => setEditForm(f => ({ ...f, customer_name: e.target.value }))}
-                  className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
+                <CustomerAutocomplete
+                  value={editForm.customer_name}
+                  onChange={(v) => setEditForm(f => ({ ...f, customer_name: v }))}
+                  onSelect={(c) => setEditForm(f => ({
+                    ...f,
+                    customer_name: c.name || '',
+                    customer_email: c.email || f.customer_email,
+                    customer_phone: c.phone || f.customer_phone,
+                  }))}
+                  onCreateNew={(typed) => setEditForm(f => ({ ...f, customer_name: typed }))}
+                  placeholder="Customer name"
+                  className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50"
+                />
               </div>
               <div>
                 <label className="block text-xs text-v-text-secondary mb-1">Email</label>
