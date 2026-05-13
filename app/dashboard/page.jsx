@@ -110,6 +110,8 @@ function DashboardContent() {
   const [quota, setQuota] = useState(null);
   const [jobAlerts, setJobAlerts] = useState([]);
   const [liveStatus, setLiveStatus] = useState(null);
+  const [airportWarning, setAirportWarning] = useState(null);
+  const [airportBannerDismissedKey, setAirportBannerDismissedKey] = useState('');
 
   useEffect(() => {
     const token = localStorage.getItem('vector_token');
@@ -216,6 +218,15 @@ function DashboardContent() {
           setJobAlerts(alertsData.alerts || []);
         }
       } catch {}
+
+      // Fetch airport-limit warning state (drives the over-limit banner)
+      try {
+        const awRes = await fetch('/api/airport-limit-warning', { headers });
+        if (awRes.ok) {
+          const awData = await awRes.json();
+          setAirportWarning(awData.warning || null);
+        }
+      } catch {}
     };
 
     checkOnboarding().then(redirected => {
@@ -312,6 +323,49 @@ function DashboardContent() {
         <h1 className="font-heading text-[2rem] font-light text-v-text-primary mb-10" style={{ letterSpacing: '0.15em' }}>
           DASHBOARD
         </h1>
+
+        {/* Airport-limit over-quota banner — warning (pre-deadline) or enforced (post-deadline) */}
+        {airportWarning && (() => {
+          const enforced = !!airportWarning.enforced_at;
+          // Keyed by the relevant timestamp so a fresh enforcement re-shows
+          // even if the user dismissed the prior warning state.
+          const dismissKey = `airport_banner_dismissed_${enforced ? airportWarning.enforced_at : airportWarning.deadline_at}`;
+          if (typeof window !== 'undefined' && localStorage.getItem(dismissKey)) return null;
+          const plan = airportWarning.plan_at_warning || user?.plan || 'current';
+          const limit = airportWarning.airport_limit_at_warning;
+          const count = airportWarning.airport_count_at_warning;
+          const over = Math.max(0, count - limit);
+          const deadline = airportWarning.deadline_at ? new Date(airportWarning.deadline_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+          const enforcedDate = airportWarning.enforced_at ? new Date(airportWarning.enforced_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '';
+          const tone = enforced
+            ? 'from-red-900/30 to-red-800/10 border-red-700/40'
+            : 'from-amber-900/25 to-amber-800/10 border-amber-700/40';
+          const message = enforced
+            ? `${airportWarning.airports_deactivated || over} airport${(airportWarning.airports_deactivated || over) === 1 ? ' was' : 's were'} automatically deactivated on ${enforcedDate} because your ${plan} plan allows ${limit}. Upgrade to restore.`
+            : `${over} of your airports exceed your ${plan} plan limit (${limit}). Deactivate excess or upgrade by ${deadline} to avoid automatic deactivation.`;
+          return (
+            <div className={`mb-6 bg-gradient-to-r ${tone} border rounded-lg p-4 flex items-center justify-between gap-4`}>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm text-v-text-primary">{message}</p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <a href="/settings/locations" className="px-4 py-2 bg-v-charcoal/60 hover:bg-v-charcoal text-white text-xs font-semibold rounded-lg transition-colors">
+                  Manage airports
+                </a>
+                <a href="https://pricing.shinyjets.com" target="_blank" rel="noreferrer" className="px-4 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-xs font-semibold rounded-lg transition-colors">
+                  Upgrade plan
+                </a>
+                <button
+                  onClick={() => { localStorage.setItem(dismissKey, String(Date.now())); setAirportBannerDismissedKey(dismissKey); }}
+                  className="text-white/30 hover:text-white/60 text-lg leading-none"
+                  aria-label="Dismiss"
+                >
+                  &times;
+                </button>
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Free Plan Upgrade Banner */}
         {user && (!user.plan || user.plan === 'free') && (() => {
