@@ -1,4 +1,11 @@
 {
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/find-a-detailer",
+      "has": [{ "type": "host", "value": "directory.shinyjets.com" }]
+    }
+  ],
   "crons": [
     { "path": "/api/cron/drip", "schedule": "0 9 * * *" },
     { "path": "/api/cron/followups", "schedule": "0 10 * * *" },
