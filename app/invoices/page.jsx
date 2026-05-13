@@ -3,6 +3,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import ServicesPicker from '@/components/ServicesPicker';
+import CustomerAutocomplete from '@/components/CustomerAutocomplete';
 import { formatPrice, currencySymbol } from '@/lib/formatPrice';
 
 const statusColors = {
@@ -1736,26 +1737,34 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs text-v-text-secondary mb-1">Customer name *</label>
-                  <input value={blankForm.customer_name}
-                    onChange={e => {
-                      const v = e.target.value;
-                      // When the typed value matches a known customer's name
-                      // exactly (case-insensitive, trimmed), auto-fill email,
-                      // phone, and customer_id. This powers the silent tail
-                      // learning on save (commit d5f522d). Unknown names just
-                      // update the name — we never clobber email/phone the
-                      // user has already typed, per the task spec.
+                  <CustomerAutocomplete
+                    value={blankForm.customer_name}
+                    onChange={(v) => {
+                      // Same exact-name match-and-link behavior as before so
+                      // silent tail learning (commit d5f522d) keeps working
+                      // when the user types a name that matches a known
+                      // customer without tapping a dropdown row.
                       const key = v.trim().toLowerCase();
                       const match = key ? customers.find(c => (c.name || '').trim().toLowerCase() === key) : null;
                       setBlankForm(f => match
                         ? { ...f, customer_name: v, customer_id: match.id, customer_email: match.email || f.customer_email, customer_phone: match.phone || f.customer_phone }
                         : { ...f, customer_name: v, customer_id: null });
                     }}
-                    list="customer-names" placeholder="Customer name"
-                    className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50" />
-                  <datalist id="customer-names">
-                    {customers.map((c, i) => <option key={i} value={c.name} />)}
-                  </datalist>
+                    onSelect={(c) => {
+                      setBlankForm(f => ({
+                        ...f,
+                        customer_name: c.name || '',
+                        customer_id: c.id || null,
+                        customer_email: c.email || f.customer_email,
+                        customer_phone: c.phone || f.customer_phone,
+                      }));
+                    }}
+                    onCreateNew={(typed) => {
+                      setBlankForm(f => ({ ...f, customer_name: typed, customer_id: null }));
+                    }}
+                    placeholder="Customer name"
+                    className="w-full bg-v-charcoal border border-v-border rounded px-3 py-2 text-sm text-white outline-none focus:border-v-gold/50"
+                  />
                 </div>
                 <div>
                   <label className="block text-xs text-v-text-secondary mb-1">Email *</label>

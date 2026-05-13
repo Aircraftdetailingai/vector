@@ -2,6 +2,7 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import SendQuoteModal from '../../../components/SendQuoteModal.jsx';
+import CustomerAutocomplete from '../../../components/CustomerAutocomplete.jsx';
 import LoadingSpinner from '../../../components/LoadingSpinner.jsx';
 import { useToast } from '../../../components/Toast.jsx';
 import { formatPrice, currencySymbol } from '../../../lib/formatPrice';
@@ -1311,12 +1312,18 @@ function NewQuoteContent() {
             {!preselectedCustomer && customerMode === 'new' && (
               <div className="space-y-2">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                  <input
-                    type="text"
+                  <CustomerAutocomplete
                     value={newCustomer.name}
-                    onChange={e => setNewCustomer(p => ({ ...p, name: e.target.value }))}
+                    onChange={(v) => setNewCustomer(p => ({ ...p, name: v }))}
+                    onSelect={(c) => {
+                      // Picking an existing customer flips this section into
+                      // the "selected pill" state, skipping the manual
+                      // email/phone/company fields entirely.
+                      setPreselectedCustomer(c);
+                    }}
+                    onCreateNew={(typed) => setNewCustomer(p => ({ ...p, name: typed }))}
                     placeholder="Name *"
-                    className="bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary focus:outline-none focus:ring-2 focus:ring-v-gold text-sm"
+                    className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary focus:outline-none focus:ring-2 focus:ring-v-gold text-sm"
                   />
                   <input
                     type="text"
