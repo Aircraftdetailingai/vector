@@ -15,7 +15,9 @@ function SignupForm() {
   const [inviteOnly, setInviteOnly] = useState(true);
   const [invite, setInvite] = useState(null);
   const [error, setError] = useState('');
-  const [form, setForm] = useState({ name: '', company: '', email: '', password: '', confirmPassword: '', country: 'US' });
+  // website_url is a honeypot — see hidden input below. Stays empty for
+  // real humans; bots scraping all inputs fill it and get silently rejected.
+  const [form, setForm] = useState({ name: '', company: '', email: '', password: '', confirmPassword: '', country: 'US', website_url: '' });
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState('');
   const [success, setSuccess] = useState(false);
@@ -88,6 +90,7 @@ function SignupForm() {
           plan: planParam || 'free',
           invite_token: inviteToken || null,
           referral_code: refCode || localStorage.getItem('vector_referral_code') || null,
+          website_url: form.website_url,
         }),
       });
       const data = await res.json();
@@ -246,6 +249,20 @@ function SignupForm() {
           )}
 
           <div className="space-y-3.5">
+            {/* Honeypot — visually + interaction-hidden. Real users never see
+                or focus this; bots scraping all inputs fill it and get
+                silently rejected server-side. Do not remove. */}
+            <input
+              type="text"
+              name="website_url"
+              tabIndex={-1}
+              autoComplete="off"
+              aria-hidden="true"
+              value={form.website_url}
+              onChange={(e) => setForm(f => ({ ...f, website_url: e.target.value }))}
+              style={{ position: 'absolute', left: '-9999px', top: '-9999px', width: '1px', height: '1px', opacity: 0, pointerEvents: 'none' }}
+            />
+
             <div>
               <label className="block text-sm text-v-text-secondary mb-1">Full Name <span className="text-red-400">*</span></label>
               <input

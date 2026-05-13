@@ -13,6 +13,98 @@ function getSupabase() {
   return createClient(url, key);
 }
 
+// ── Bot mitigation ────────────────────────────────────────────────────────────
+// Three layers stacked because each catches a different attack profile:
+//   1) honeypot field   — dumb bots that fill every input
+//   2) gibberish check  — bots filling random strings for name/company
+//   3) per-IP rate limit — IP-cycling abusers and rapid retries
+// All three respond with fake success rather than 4xx so the attacker doesn't
+// learn what tripped them; rate-limit is the only one that returns 429 (so
+// real users hit by it have a chance to back off).
+
+const VOWELS = new Set(['a', 'e', 'i', 'o', 'u']);
+
+function alphaOnly(s) {
+  return String(s || '').toLowerCase().replace(/[^a-z]/g, '');
+}
+
+// Returns true if the string looks machine-generated.
+// Calibrated so single-word brand names (Aviture, JetGlow, SparrowHawk,
+// Soar, Shiny Jets, Aero Aesthetics) and short multi-word names pass.
+function isLikelyGibberish(rawStr) {
+  if (!rawStr) return false;
+  const raw = String(rawStr);
+  const alpha = alphaOnly(raw);
+  if (alpha.length < 4) return false;
+
+  // Rule 1: length >= 8 AND vowel ratio < 0.20.
+  // Real English-derived names average ~38-40% vowels; bot-random hits 15-25%.
+  if (alpha.length >= 8) {
+    let vowelCount = 0;
+    for (const ch of alpha) if (VOWELS.has(ch)) vowelCount++;
+    if (vowelCount / alpha.length < 0.20) return true;
+  }
+
+  // Rule 2: 4+ consecutive consonants. English clusters cap at 3 ("strength"
+  // is the famous exception but its alpha-only check stays well under our
+  // length threshold elsewhere). y treated as a vowel here so real names
+  // like "Snyder" don't trigger.
+  let run = 0;
+  for (const ch of alpha) {
+    if (VOWELS.has(ch) || ch === 'y') run = 0;
+    else { run++; if (run >= 4) return true; }
+  }
+
+  // Rule 3: length >= 8 AND case-transition ratio > 0.40 over alphabetic
+  // chars. Short CamelCase brands (JetGlow, SparrowHawk) sit under length 8
+  // and so are exempt; long zig-zag-case strings (ZwbyFoODResvKuXRkff,
+  // vwhcxAanqtIzOhxOZnVk) blow past 0.40.
+  const rawAlpha = raw.replace(/[^a-zA-Z]/g, '');
+  if (rawAlpha.length >= 8) {
+    let transitions = 0;
+    for (let i = 1; i < rawAlpha.length; i++) {
+      const aU = rawAlpha[i - 1] === rawAlpha[i - 1].toUpperCase();
+      const bU = rawAlpha[i] === rawAlpha[i].toUpperCase();
+      if (aU !== bU) transitions++;
+    }
+    if (transitions / rawAlpha.length > 0.40) return true;
+  }
+
+  return false;
+}
+
+const SIGNUP_WINDOW_MS = 60 * 60 * 1000;
+const SIGNUP_MAX_PER_WINDOW = 3;
+// Module-scoped Map — survives across requests in the same Function instance
+// (Fluid Compute re-uses instances), resets on cold start. v1 trade-off vs.
+// adding a signup_attempts table; promote to DB only if cold-start churn
+// proves to be a real evasion vector.
+const signupAttempts = new Map();
+
+function getClientIp(request) {
+  const xff = request.headers.get('x-forwarded-for') || '';
+  const first = xff.split(',')[0].trim();
+  return first || request.headers.get('x-real-ip') || 'unknown';
+}
+
+function withinRateLimit(ip) {
+  const now = Date.now();
+  const prior = (signupAttempts.get(ip) || []).filter((t) => now - t < SIGNUP_WINDOW_MS);
+  if (prior.length >= SIGNUP_MAX_PER_WINDOW) {
+    signupAttempts.set(ip, prior);
+    return false;
+  }
+  prior.push(now);
+  signupAttempts.set(ip, prior);
+  return true;
+}
+
+// Common "this was a bot — pretend it worked" response. No JWT, no cookie,
+// no DB write. The bot moves on; we never expose detection.
+function fakeSuccess() {
+  return Response.json({ success: true, token: null, user: null });
+}
+
 /**
  * Check if signup is invite-only.
  * Priority: DB app_settings override > INVITE_ONLY env var > default false
@@ -44,7 +136,34 @@ export async function POST(request) {
     const supabase = getSupabase();
     if (!supabase) return Response.json({ error: 'Server error' }, { status: 500 });
 
-    const { email, password, name, company, country, invite_token, referral_code, plan: requestedPlan } = await request.json();
+    const body = await request.json();
+    const { email, password, name, company, country, invite_token, referral_code, plan: requestedPlan } = body;
+
+    const ip = getClientIp(request);
+
+    // Layer 1: honeypot. The signup form has a visually-hidden input named
+    // website_url; real users never fill it. Bots scraping all <input>s do.
+    if (body.website_url && String(body.website_url).trim() !== '') {
+      console.warn('[signup-bot] honeypot triggered:', { ip, email });
+      return fakeSuccess();
+    }
+
+    // Layer 2: gibberish in name or company. Random-string bot signups
+    // ("ZwbyFoODResvKuXRkff" / "vwhcxAanqtIzOhxOZnVk") fail both vowel-
+    // ratio and consecutive-consonant heuristics.
+    if (isLikelyGibberish(name) || isLikelyGibberish(company)) {
+      console.warn('[signup-bot] gibberish detected:', { ip, name, company });
+      return fakeSuccess();
+    }
+
+    // Layer 3: per-IP rate limit. > 3 signup attempts in the last hour from
+    // one IP gets a 429 (the only layer where the attacker sees a 4xx,
+    // because real humans hitting this would be a network or shared-NAT
+    // issue we want them to back off from rather than silently confuse).
+    if (!withinRateLimit(ip)) {
+      console.warn('[signup-bot] rate limit exceeded:', { ip, email });
+      return Response.json({ error: 'Too many attempts, please try again later' }, { status: 429 });
+    }
 
     const inviteOnly = await isInviteOnly(supabase);
 
