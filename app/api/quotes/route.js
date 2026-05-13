@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 import { nanoid } from 'nanoid';
+import { upsertCustomerAircraft } from '@/lib/upsertCustomerAircraft';
 
 export const dynamic = 'force-dynamic';
 
@@ -396,6 +397,35 @@ export async function POST(request) {
         }).catch((e) => console.error('[quotes] pin failed:', e?.message || e));
       } catch (e) {
         console.error('[quotes] pin import failed:', e?.message || e);
+      }
+    }
+
+    // CRM-side pin via customers.id (the pin call above writes via
+    // customer_account_id on the portal table). Quotes use client_email
+    // primarily, falling back to poc_email if the client didn't share an
+    // email but a POC did. aircraft_type is the manufacturer slot on
+    // quotes (not aircraft_make like on jobs).
+    const quoteContactEmail = client_email || body.poc_email;
+    if (tail_number && quoteContactEmail) {
+      try {
+        const detailerId = user.detailer_id || user.id;
+        const { data: customerRow } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('detailer_id', detailerId)
+          .ilike('email', quoteContactEmail)
+          .maybeSingle();
+        if (customerRow?.id) {
+          await upsertCustomerAircraft(supabase, {
+            detailer_id: detailerId,
+            customer_id: customerRow.id,
+            tail_number,
+            model: aircraft_model,
+            manufacturer: aircraft_type ?? null,
+          });
+        }
+      } catch (e) {
+        console.error('[quotes] customer-aircraft upsert failed:', e?.message || e);
       }
     }
 

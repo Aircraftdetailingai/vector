@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
 import crypto from 'crypto';
+import { upsertCustomerAircraft } from '@/lib/upsertCustomerAircraft';
 
 export const dynamic = 'force-dynamic';
 
@@ -253,6 +254,32 @@ export async function POST(request) {
         }).catch((e) => console.error('[invoices] pin failed:', e?.message || e));
       } catch (e) {
         console.error('[invoices] pin import failed:', e?.message || e);
+      }
+    }
+
+    // Also pin to the CRM-side customer_aircraft row (customer_id FK). The
+    // pin-customer-aircraft helper above writes via customer_account_id
+    // (portal table); this one writes via customer_id (CRM customers) so
+    // the customer detail page's Aircraft tab surfaces newly invoiced tails.
+    if (tail_number && customer_email) {
+      try {
+        const detailerId = user.detailer_id || user.id;
+        const { data: customerRow } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('detailer_id', detailerId)
+          .ilike('email', customer_email)
+          .maybeSingle();
+        if (customerRow?.id) {
+          await upsertCustomerAircraft(supabase, {
+            detailer_id: detailerId,
+            customer_id: customerRow.id,
+            tail_number,
+            model: aircraft_model,
+          });
+        }
+      } catch (e) {
+        console.error('[invoices] customer-aircraft upsert failed:', e?.message || e);
       }
     }
 

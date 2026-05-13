@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { getAuthUser } from '@/lib/auth';
+import { upsertCustomerAircraft } from '@/lib/upsertCustomerAircraft';
 
 export const dynamic = 'force-dynamic';
 
@@ -83,6 +84,36 @@ export async function POST(request) {
           detailer_id: detailerId,
         });
       } catch {}
+    }
+  }
+
+  // Auto-pin to customer_aircraft (CRM-side, via customer_id). Direct job
+  // creates land here; jobs spawned from an invoice are pinned by the
+  // invoice route already, so we don't need to double up on that path.
+  // Prefer customer_id when the client sent it; fall back to email lookup.
+  if (job?.tail_number) {
+    try {
+      let resolvedCustomerId = customer_id || null;
+      if (!resolvedCustomerId && customer_email) {
+        const { data: customerRow } = await supabase
+          .from('customers')
+          .select('id')
+          .eq('detailer_id', detailerId)
+          .ilike('email', customer_email)
+          .maybeSingle();
+        if (customerRow?.id) resolvedCustomerId = customerRow.id;
+      }
+      if (resolvedCustomerId) {
+        await upsertCustomerAircraft(supabase, {
+          detailer_id: detailerId,
+          customer_id: resolvedCustomerId,
+          tail_number: job.tail_number,
+          model: job.aircraft_model,
+          manufacturer: job.aircraft_make ?? null,
+        });
+      }
+    } catch (e) {
+      console.error('[jobs/create] customer-aircraft upsert failed:', e?.message || e);
     }
   }
 
