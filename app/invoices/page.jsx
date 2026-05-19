@@ -705,6 +705,43 @@ function InvoicesPageInner() {
     }
   }, [searchParams, invoices]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Pre-fill the blank-modal form from a selected job, then return to the
+  // blank modal so the user can review/edit before saving. Submission goes
+  // through the normal blank-modal save path (POST /api/invoices) — this
+  // function does NOT post. Replaces the old createInvoiceFromJob which
+  // submitted directly from the picker overlay.
+  const prefillFromJob = (jobId) => {
+    if (!jobId) return;
+    const job = allJobs.find(j => j.id === jobId);
+    if (!job) { setError('Job not found'); return; }
+    const total = parseFloat(job.total) || 0;
+    const aircraftLabel = job.aircraft || 'Service';
+    setBlankForm(prev => ({
+      ...prev,
+      customer_id: prev.customer_id || null,
+      customer_name: job.customer_name || prev.customer_name || '',
+      customer_email: job.email || job.customer_email || prev.customer_email || '',
+      customer_phone: job.phone || job.customer_phone || prev.customer_phone || '',
+      aircraft_model: job.aircraft || prev.aircraft_model || '',
+      tail_number: job.tail_number || prev.tail_number || '',
+    }));
+    // Seed a single flat-priced custom line from the job total. hours=1,
+    // rate=total → submit-time math produces price=total, matching the
+    // shape the old direct-POST path emitted.
+    setBlankCustomLines([{
+      name: aircraftLabel,
+      hours: 1,
+      rate: total,
+    }]);
+    // Clear any services pre-selected from the empty-form open so the
+    // invoice total reflects the job's flat price rather than ad-hoc
+    // services on top of it.
+    setBlankSelectedServices([]);
+    setBlankHourOverrides({});
+    setSelectedQuoteId('');
+    setCreateModal('blank');
+  };
+
   const createInvoiceFromJob = async ({ send = false } = {}) => {
     if (!selectedQuoteId) return;
     setActionLoading(true);
@@ -1165,7 +1202,18 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-3">
         <h1 className="font-heading text-[2rem] font-light text-v-text-primary" style={{ letterSpacing: '0.15em' }}>INVOICES</h1>
         <button
-          onClick={() => { setCreateModal('choose'); setError(''); }}
+          onClick={() => {
+            // Skip the old "choose" picker — open the blank New Invoice
+            // modal directly. Job-prefill is now an affordance INSIDE the
+            // form (the "Pre-fill from a job" button), not a separate
+            // routing step. One flow, not two.
+            resetBlankModal();
+            fetchCustomers();
+            fetchBlankServices();
+            fetchBlankPackages();
+            setCreateModal('blank');
+            setError('');
+          }}
           className="px-5 py-2 rounded-lg text-sm font-semibold bg-v-gold text-white shadow hover:brightness-110 transition-colors"
         >
           + Create Invoice
@@ -1661,39 +1709,8 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
         </div>
       )}
 
-      {/* Create Invoice — Choose Mode */}
-      {createModal === 'choose' && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
-          <div className="bg-v-surface rounded-xl max-w-sm w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-v-text-primary mb-4">Create Invoice</h3>
-            <div className="space-y-3">
-              <button
-                onClick={() => { setCreateModal('from_job'); fetchAllJobs(); }}
-                className="w-full flex items-center gap-3 p-4 border border-v-border rounded-lg hover:bg-white/5 transition-colors text-left"
-              >
-                <span className="text-2xl">&#128203;</span>
-                <div>
-                  <p className="text-sm font-semibold text-v-text-primary">From a Job</p>
-                  <p className="text-xs text-v-text-secondary">Invoice an existing job</p>
-                </div>
-              </button>
-              <button
-                onClick={() => { resetBlankModal(); setCreateModal('blank'); fetchCustomers(); fetchBlankServices(); fetchBlankPackages(); }}
-                className="w-full flex items-center gap-3 p-4 border border-v-border rounded-lg hover:bg-white/5 transition-colors text-left"
-              >
-                <span className="text-2xl">&#128221;</span>
-                <div>
-                  <p className="text-sm font-semibold text-v-text-primary">Quick Invoice</p>
-                  <p className="text-xs text-v-text-secondary">Add services — no job needed. Save draft or send.</p>
-                </div>
-              </button>
-            </div>
-            <button onClick={() => setCreateModal(false)} className="w-full mt-3 text-xs text-v-text-secondary hover:text-white">Cancel</button>
-          </div>
-        </div>
-      )}
-
-      {/* Create Invoice — From a Job */}
+      {/* Create Invoice — From a Job (prefill overlay opened from inside the
+          blank modal). Replaces the old standalone "choose" picker. */}
       {createModal === 'from_job' && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
           <div className="bg-v-surface rounded-xl max-w-md w-full p-6 shadow-xl" onClick={e => e.stopPropagation()}>
@@ -1731,16 +1748,12 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
                 })}
               </div>
             )}
-            <p className="text-xs text-v-text-secondary mb-2 text-center">Saving creates a <strong className="text-white">draft</strong> — the customer is not emailed until you click Send.</p>
+            <p className="text-xs text-v-text-secondary mb-2 text-center">Selecting a job pre-fills the invoice form — you can review and edit before saving.</p>
             <div className="flex gap-2">
-              <button onClick={() => setCreateModal('choose')} className="px-4 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5 text-sm">Back</button>
-              <button onClick={() => createInvoiceFromJob({ send: false })} disabled={!selectedQuoteId || actionLoading}
-                className="flex-1 px-4 py-2 bg-v-charcoal border border-v-border text-v-text-primary rounded-lg font-medium disabled:opacity-50 text-sm hover:bg-white/10">
-                {actionLoading ? 'Saving...' : 'Save Draft'}
-              </button>
-              <button onClick={() => createInvoiceFromJob({ send: true })} disabled={!selectedQuoteId || actionLoading}
+              <button onClick={() => setCreateModal('blank')} className="px-4 py-2 border border-v-border rounded-lg text-v-text-secondary hover:bg-white/5 text-sm">Back</button>
+              <button onClick={() => prefillFromJob(selectedQuoteId)} disabled={!selectedQuoteId}
                 className="flex-1 px-4 py-2 bg-v-gold text-white rounded-lg font-medium disabled:opacity-50 text-sm">
-                {actionLoading ? 'Working...' : 'Save & Send'}
+                Use this job
               </button>
             </div>
           </div>
@@ -1751,7 +1764,16 @@ ${invoice.notes ? `<div style="margin-top:16px;padding:12px;background:#fffbeb;b
       {createModal === 'blank' && (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={() => setCreateModal(false)}>
           <div className="bg-v-surface rounded-xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-v-text-primary mb-4">New Invoice</h3>
+            <div className="flex items-center justify-between mb-4 gap-3">
+              <h3 className="text-lg font-bold text-v-text-primary">New Invoice</h3>
+              <button
+                type="button"
+                onClick={() => { setCreateModal('from_job'); fetchAllJobs(); }}
+                className="text-xs text-v-text-secondary hover:text-v-gold underline underline-offset-2 decoration-v-border hover:decoration-v-gold/50 transition-colors whitespace-nowrap"
+              >
+                Pre-fill from a job &rarr;
+              </button>
+            </div>
             {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
 
             <div className="space-y-3 mb-4">
