@@ -1299,40 +1299,29 @@ function NewQuoteContent() {
             )}
 
             {!preselectedCustomer && customerMode === 'existing' && (
-              <div>
-                <input
-                  type="text"
-                  value={customerSearch}
-                  onChange={e => setCustomerSearch(e.target.value)}
-                  placeholder="Search customers by name or email..."
-                  className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary focus:outline-none focus:ring-2 focus:ring-v-gold focus:border-v-gold text-sm mb-2"
-                />
-                <div className="max-h-48 overflow-y-auto border border-v-border/40 rounded-sm divide-y divide-v-border/40">
-                  {customers
-                    .filter(c => {
-                      if (!customerSearch) return true;
-                      const q = customerSearch.toLowerCase();
-                      return (c.name || '').toLowerCase().includes(q)
-                        || (c.email || '').toLowerCase().includes(q)
-                        || (c.company_name || '').toLowerCase().includes(q);
-                    })
-                    .slice(0, 20)
-                    .map(c => (
-                      <button
-                        key={c.id}
-                        type="button"
-                        onClick={() => setPreselectedCustomer(c)}
-                        className="w-full text-left px-3 py-2 hover:bg-white/5 transition-colors"
-                      >
-                        <div className="text-sm text-v-text-primary">{c.name || '—'}</div>
-                        <div className="text-xs text-gray-500">{c.email}{c.company_name ? ` · ${c.company_name}` : ''}</div>
-                      </button>
-                    ))}
-                  {customers.length === 0 && (
-                    <div className="px-3 py-4 text-xs text-gray-500 text-center">No customers yet — switch to "New" to add one</div>
-                  )}
-                </div>
-              </div>
+              <CustomerAutocomplete
+                value={customerSearch}
+                onChange={(v) => setCustomerSearch(v)}
+                onSelect={(c) => {
+                  // Mirror the behavior the local-filter list had: selecting a
+                  // row populates preselectedCustomer, which the rest of the
+                  // page (aircraft picker, tail-learning, step 2 nav) already
+                  // keys off. Component fetches /api/customers?q=… per
+                  // keystroke with no-store + token rehydrated from
+                  // localStorage at request time, so the token-race that left
+                  // the local list empty for Brett can't recur here.
+                  setPreselectedCustomer(c);
+                  setCustomerSearch('');
+                }}
+                onCreateNew={(typed) => {
+                  // Switch over to the New tab and seed the name. Saves a tap
+                  // vs. forcing the user back up to the EXISTING/NEW toggle.
+                  setCustomerMode('new');
+                  setNewCustomer(p => ({ ...p, name: typed }));
+                }}
+                placeholder="Search customers by name, company, or email..."
+                className="w-full bg-v-surface border border-v-border rounded-sm px-3 py-2 text-v-text-primary focus:outline-none focus:ring-2 focus:ring-v-gold focus:border-v-gold text-sm"
+              />
             )}
 
             {!preselectedCustomer && customerMode === 'new' && (
