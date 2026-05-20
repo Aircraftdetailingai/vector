@@ -4,14 +4,15 @@ import { useParams, useRouter } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import LoadingSpinner from '@/components/LoadingSpinner';
 
+// Canonical pipeline — matches the intake_leads CHECK constraint
+// (new, reviewed, quoted, won, lost, archived).
 const STATUS_STYLES = {
-  new:       { label: 'New', bg: 'bg-blue-500/20', text: 'text-blue-400', border: 'border-blue-500/30' },
-  opened:    { label: 'Opened', bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
-  viewed:    { label: 'Opened', bg: 'bg-yellow-500/20', text: 'text-yellow-400', border: 'border-yellow-500/30' },
-  quoted:    { label: 'Quoted', bg: 'bg-purple-500/20', text: 'text-purple-400', border: 'border-purple-500/30' },
-  converted: { label: 'Converted', bg: 'bg-v-gold/20', text: 'text-v-gold', border: 'border-v-gold/30' },
-  closed:    { label: 'Closed', bg: 'bg-gray-500/20', text: 'text-gray-400', border: 'border-gray-500/30' },
-  declined:  { label: 'Declined', bg: 'bg-red-500/10', text: 'text-red-400/70', border: 'border-red-500/20' },
+  new:      { label: 'New',      bg: 'bg-blue-500/20',    text: 'text-blue-400',    border: 'border-blue-500/30' },
+  reviewed: { label: 'Reviewed', bg: 'bg-amber-500/20',   text: 'text-amber-400',   border: 'border-amber-500/30' },
+  quoted:   { label: 'Quoted',   bg: 'bg-purple-500/20',  text: 'text-purple-400',  border: 'border-purple-500/30' },
+  won:      { label: 'Won',      bg: 'bg-emerald-500/20', text: 'text-emerald-400', border: 'border-emerald-500/30' },
+  lost:     { label: 'Lost',     bg: 'bg-red-500/10',     text: 'text-red-400/70',  border: 'border-red-500/20' },
+  archived: { label: 'Archived', bg: 'bg-gray-500/20',    text: 'text-gray-400',    border: 'border-gray-500/30' },
 };
 
 export default function RequestDetailPage() {
@@ -40,12 +41,14 @@ export default function RequestDetailPage() {
         const found = (data.leads || []).find(l => l.id === id);
         if (found) {
           setLead(found);
-          // Mark as opened if currently new
+          // Mark as 'reviewed' on open if currently 'new'. The legacy
+          // 'opened'/'viewed' values are gone — the new CHECK constraint
+          // rejects them.
           if (found.status === 'new') {
             fetch('/api/lead-intake/leads', {
               method: 'POST',
               headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-              body: JSON.stringify({ action: 'update_status', lead_id: id, status: 'opened' }),
+              body: JSON.stringify({ action: 'update_status', lead_id: id, status: 'reviewed' }),
             }).catch(() => {});
           }
         }
@@ -60,10 +63,12 @@ export default function RequestDetailPage() {
   const handleDismiss = async () => {
     setDismissing(true);
     const token = localStorage.getItem('vector_token');
+    // 'closed' is no longer a valid status — the canonical equivalent is
+    // 'archived' under the new pipeline.
     await fetch('/api/lead-intake/leads', {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update_status', lead_id: id, status: 'closed' }),
+      body: JSON.stringify({ action: 'update_status', lead_id: id, status: 'archived' }),
     }).catch(() => {});
     router.push('/requests');
   };

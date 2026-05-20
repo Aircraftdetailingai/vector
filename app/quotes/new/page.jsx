@@ -1018,6 +1018,17 @@ function NewQuoteContent() {
         if (res.ok) {
           const data = await res.json();
           if (data.id) setDraftId(data.id);
+          // Lead → quote transition: when this quote came from a lead
+          // (CustomerAutocomplete prefill set leadContext.leadId), bump the
+          // intake_lead's status to 'quoted' so it falls out of the Open
+          // tab on /requests. Fire-and-forget — never blocks the save.
+          if (leadContext?.leadId) {
+            fetch('/api/lead-intake/leads', {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({ action: 'update_status', lead_id: leadContext.leadId, status: 'quoted' }),
+            }).catch(() => {});
+          }
         }
       }
       if (silent) {
